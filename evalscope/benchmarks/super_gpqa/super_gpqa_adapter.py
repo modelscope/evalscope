@@ -7,10 +7,7 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
-
-logger = get_logger()
 
 SUBSET_MAPPING = {
     'Electronic Science and Technology': ['Engineering'],
@@ -91,6 +88,7 @@ SUBSET_MAPPING = {
 @register_benchmark(
     BenchmarkMeta(
         name='super_gpqa',
+        supports_choice=True,
         pretty_name='SuperGPQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description="""
@@ -125,9 +123,12 @@ SuperGPQA is a large-scale multiple-choice question answering dataset designed t
 - Results can be grouped by field or discipline category
 """,  # noqa: E501
         dataset_id='m-a-p/SuperGPQA',
+        hf_dataset_id='m-a-p/SuperGPQA',
         subset_list=list(SUBSET_MAPPING.keys()),
         metric_list=['acc'],
         few_shot_num=0,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 5),
         train_split=None,
         eval_split='train',  # only have train split
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
@@ -137,12 +138,6 @@ class SuperGPQAAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
-        if self.few_shot_num > 0 and self.few_shot_num != 5:
-            logger.warning(
-                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {self.few_shot_num}. Use 5-shot by default.'
-            )
-            self.few_shot_num = 5
-
         self.reformat_subset = True
         self.category_map = SUBSET_MAPPING
 
@@ -159,6 +154,13 @@ class SuperGPQAAdapter(MultiChoiceAdapter):
                 'explanation': record.get('answer', ''),
             },
         )
+
+    def choice_examples(self, subset: str) -> list[str]:
+        """Return the benchmark's fixed demonstrations for Choice evaluation."""
+        from .prompt import FEW_SHOT_SAMPLES
+
+        examples = 'Question:' + FEW_SHOT_SAMPLES.split('Question:', 1)[1]
+        return [examples] if self.few_shot_num else []
 
     def format_fewshot_template(self, fewshot, sample):
         from .prompt import FEW_SHOT_SAMPLES

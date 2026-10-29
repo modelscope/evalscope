@@ -7,11 +7,15 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from evalscope.api.model.generate_config import GenerateConfig
+
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
+SHARED_SCORING_VERSION = 'v1.1'
+"""Version of shared judge rendering and metric failure semantics used in cache identities."""
 _VERSION_RE = re.compile(r'^v\d+\.\d+$')
 _SECRET_KEYS = {
     'api-key',
@@ -57,11 +61,12 @@ class ResolvedBenchmarkSpec(BaseModel):
         primary_metric = meta.primary_metric
         if primary_metric is not None and hasattr(primary_metric, 'model_dump'):
             primary_metric = primary_metric.model_dump(mode='json')
+        dataset_source = meta.dataset_source
         return cls(
             name=meta.name,
-            dataset_id=meta.dataset_id,
+            dataset_id=dataset_source.resolve_dataset_id(task_config.dataset_hub),
             dataset_hub=task_config.dataset_hub,
-            dataset_revision=getattr(meta, 'dataset_revision', None),
+            dataset_revision=dataset_source.resolve_revision(task_config.dataset_hub),
             eval_split=meta.eval_split,
             train_split=meta.train_split,
             subset_list=list(meta.subset_list),
@@ -100,6 +105,8 @@ class BenchmarkEvaluationIdentity(BaseModel):
     evaluation_version: str
     fingerprint: str
     cache_source: Optional[CacheSource] = None
+    review_pending: bool = False
+    """A review rerun was started but has not completed successfully."""
 
 
 class EvaluationIdentity(BaseModel):
@@ -121,9 +128,18 @@ def cache_source_for_identity(
     the sole explicit override: it keeps old predictions and recomputes review
     results under the current evaluation version.
     """
+    if previous is not None and previous.review_pending:
+        if not rerun_review:
+            raise ValueError(
+                'Cached review rerun is incomplete. Use rerun_review=True to reuse predictions and '
+                'finish rescoring before reusing reviews.'
+            )
+        return previous.cache_source or CacheSource(
+            evaluation_version='unknown', fingerprint='unknown', inferred_legacy=True
+        )
     if previous is not None and previous.fingerprint == current.fingerprint:
         if not rerun_review:
-            return None
+            return previous.cache_source
         return CacheSource(
             evaluation_version=previous.evaluation_version,
             fingerprint=previous.fingerprint,
@@ -164,6 +180,7 @@ def build_benchmark_identity(
     """Build a stable cache identity from effective evaluation semantics."""
     validate_evaluation_version(evaluation_version)
     payload = {
+        'shared_scoring_version': SHARED_SCORING_VERSION,
         'evaluation_version': evaluation_version,
         'benchmark': spec.model_dump(mode='json'),
         'task': _fingerprint_task_config(task_config),
@@ -189,10 +206,21 @@ def build_evaluation_identity(
 def build_generated_evaluation_metadata(
     specs: Dict[str, ResolvedBenchmarkSpec],
     identity: EvaluationIdentity,
+    previous_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Build output-only metadata stored alongside the user task configuration."""
+    """Build output metadata, preserving unselected benchmarks in the same model namespace."""
+    resolved = {name: spec.model_dump(mode='json') for name, spec in specs.items()}
+    previous_identity = _identity_from_config(previous_config)
+    if previous_identity is not None:
+        previous_specs = previous_config.get('resolved_benchmarks', {})
+        if isinstance(previous_specs, dict):
+            resolved = {
+                **{name: spec for name, spec in previous_specs.items() if name in previous_identity.benchmarks},
+                **resolved,
+            }
+        identity = identity.model_copy(update={'benchmarks': {**previous_identity.benchmarks, **identity.benchmarks}})
     return {
-        'resolved_benchmarks': {name: spec.model_dump(mode='json') for name, spec in specs.items()},
+        'resolved_benchmarks': resolved,
         'evaluation_identity': identity.model_dump(mode='json'),
     }
 
@@ -218,7 +246,10 @@ def validate_cached_evaluation_identity(
             previous = legacy_identity_from_config(previous_config, benchmark_name)
             inferred_legacy = previous is not None
 
-        source = cache_source_for_identity(current, previous, inferred_legacy, rerun_review)
+        try:
+            source = cache_source_for_identity(current, previous, inferred_legacy, rerun_review)
+        except ValueError as exc:
+            raise ValueError(f'Cannot reuse cache for {benchmark_name}: {exc}') from exc
         if source is not None:
             sources[benchmark_name] = source
     return sources
@@ -264,6 +295,43 @@ def _identity_from_config(config: Optional[Dict[str, Any]]) -> Optional[Evaluati
         return None
 
 
+_GENERATION_TRANSPORT_KEYS = frozenset({'batch_size', 'timeout', 'stream', 'retries', 'retry_interval'})
+"""Generation-config keys that steer transport/concurrency only and never alter model outputs.
+
+``batch_size`` mirrors ``TaskConfig.eval_batch_size`` (see
+``TaskConfig._init_default_generation_config``); the rest are request-level knobs.
+"""
+
+
+def _canonicalize_generation_config(config: Any) -> Any:
+    """Reduce a fingerprinted ``generation_config`` to the values that carry semantic information.
+
+    Configs that produce identical model requests must hash identically, so this drops
+    transport/concurrency keys, values restating the declared field default, explicit
+    ``None`` and empty mappings/lists (same as unset), and the ``n=1`` residue left by the
+    deprecated ``n`` -> ``repeats`` migration (``repeats`` holds the multiplicity). Nested
+    payloads such as ``extra_body`` are provider-specific and are kept verbatim.
+    """
+    if config is None:
+        return {}
+    if not isinstance(config, dict):
+        return config
+    fields = GenerateConfig.model_fields
+    result = {}
+    for key, value in config.items():
+        if key in _GENERATION_TRANSPORT_KEYS:
+            continue
+        if value is None or value == {} or value == []:
+            continue
+        field = fields.get(key)
+        if field is not None and not field.is_required() and value == field.default:
+            continue
+        if key == 'n' and value == 1:
+            continue
+        result[key] = value
+    return result
+
+
 def _fingerprint_task_config(task_config: 'TaskConfig') -> Dict[str, Any]:
     return _fingerprint_task_mapping(task_config.to_dict())
 
@@ -285,7 +353,9 @@ def _fingerprint_task_mapping(task_config: Dict[str, Any]) -> Dict[str, Any]:
         'sandbox',
         'agent_config',
     )
-    return {key: task_config.get(key) for key in keys}
+    result = {key: task_config.get(key) for key in keys}
+    result['generation_config'] = _canonicalize_generation_config(result.get('generation_config'))
+    return result
 
 
 def _canonical_json(value: Any) -> str:

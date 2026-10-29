@@ -9,11 +9,13 @@
 | `--model` | `str` | 测试模型名称，或模型路径 | - |
 | `--url` | `str` | API地址，支持`/chat/completions`、`/completions`和`/responses`端点 | - |
 | `--name` | `str` | wandb/swanlab数据库结果名称和结果数据库名称 | `{model_name}_{current_time}` |
+| `--alias` | `str` | 在 Web 界面列表与报告中展示的运行别名，用于区分同一模型的多次压测（仅展示用途） | `None` |
 | `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容Chat Completions API（需提供`--url`）<br>• `openai_responses`: OpenAI官方Responses API<br>• `openai_embedding`: OpenAI兼容Embedding API<br>• `openai_rerank`: OpenAI/Cohere兼容Rerank API<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
 | `--port` | `int` | 本地推理服务端口<br>仅对`local`和`local_vllm`有效 | `8877` |
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
 | `--debug` | `bool` | 是否输出调试信息 | `False` |
+| `--scenario` | `str` | 外部 workload 场景。`agentx` 运行 AIPerf AgentX MVP，也接受 AgentX JSON；见 [AgentX MVP](./agentx.md)。 | `None` |
 
 ## 网络配置
 
@@ -35,6 +37,7 @@
 | `--log-every-n-query` | `int` | 每N个查询记录日志 | `100` |
 | `--stream` | `bool` | 是否使用SSE流输出<br>需要启用以测量TTFT（Time to First Token）指标 | `True` |
 | `--sleep-interval` | `int` | 每次性能测试之间的休眠时间（秒）<br>避免过载服务器 | `5` |
+| `--enable-pd-metrics` | `bool` | 启用可选的PD分离交接指标<br>开启后报告会基于输出chunk间隔展示 `Steady ITL`、`PD Handoff Latency` 和 `PD Handoff Overhead`<br>普通非PD压测建议保持关闭 | `False` |
 | `--open-loop` | `bool` | 启用开放环路（open-loop）模式：<br>请求按 `--rate` 指定的速率发出，无论服务端是否已处理完之前的请求。<br>• `--rate` 变为扫描变量（支持多值）<br>• `--number` 须与 `--rate` 等长，表示每轮发出的请求总数<br>• `--parallel` 在此模式下被忽略（内部设为 -1 / INF）<br>详见[使用示例](./examples.md#open-loop-开放环路) | `False` |
 | `--warmup-num` | `float` | 预热请求数量或比例：<br>• `0`：禁用预热（默认）<br>• `>= 1`：绝对数量，如 `--warmup-num 10` 表示预热 10 个请求<br>• `0 < value < 1`：比例模式，如 `--warmup-num 0.1` 表示预热数量为 `--number` 的 10%<br>预热请求使用与正式压测相同的并发/速率发送，但**不计入性能指标**<br>适用于消除冷启动影响（如 KV-cache 填充、JIT 编译等）<br>闭环模式下建议设为 `--parallel` 或更大，否则最初几个请求会拉高 `p99`<br>详见[使用示例](./examples.md#warmup-预热) | `0` |
 | `--duration` | `float` | 单次压测的墙钟时间预算（秒）<br>软退出语义：到点后**不再启动新请求**，但**已经在飞行中的请求会跑完**才退出<br>多轮模式下的"已在飞"指的是**已经 claim 的 trace 跑完所有剩余 turn**（trace-level soft exit，与上游 trie 一致）<br>与 `--number` 同时设置时取**先达到的那个**为停止条件 | `None` |
@@ -56,7 +59,7 @@
 |------|------|------|--------|
 | `--sla-auto-tune` | `bool` | 是否启用SLA自动调优模式 | `False` |
 | `--sla-variable` | `str` | 自动调优的变量<br>可选：`parallel`（并发数）、`rate`（请求速率） | `parallel` |
-| `--sla-params` | `str` | SLA约束条件<br>JSON字符串<br>支持指标：`avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>支持操作符：`<=`, `<`, `min` (延时类); `>=`, `>`, `max` (吞吐类)<br>示例：`'[{"p99_latency": "<=2"}]'` | `None` |
+| `--sla-params` | `str` | SLA约束条件<br>JSON字符串<br>支持指标：`avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>支持操作符：`<=`, `<`, `min` (延时类); `>=`, `>`, `max` (吞吐类)<br>延迟单位：支持 `s` / `ms` 后缀；不加后缀时，`latency` 按秒、`ttft` / `tpot` 按毫秒解释<br>示例：`'[{"p99_latency": "<=2s"}]'` | `None` |
 | `--sla-upper-bound` | `int` | 被调优变量的搜索上界 | `65536` |
 | `--sla-lower-bound` | `int` | 被调优变量的搜索下界 | `1` |
 | `--sla-fixed-parallel` | `int` | 在 `--sla-variable=rate` 时使用的固定并发数；未设置时默认回退到 `--sla-upper-bound` 以兼容旧行为 | `None` |
@@ -97,7 +100,8 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 |------|------|------------------|
 | `openqa` | 从ModelScope自动下载[OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)<br>prompt长度较短（一般<100 token）<br>指定`dataset_path`时使用jsonl文件的`question`字段 | ✓ |
 | `longalpaca` | 从ModelScope自动下载[LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)<br>prompt长度较长（一般>6000 token）<br>指定`dataset_path`时使用jsonl文件的`instruction`字段 | ✓ |
-| `line_by_line` | 逐行将txt文件的每一行作为一个prompt<br>**必需提供`dataset_path`** | ✓（必需） |
+| `line_by_line` | 每行可为纯文本 prompt、OpenAI messages JSON 数组或完整请求体 JSON 对象；JSON 按原样转发<br>**必需提供`dataset_path`** | ✓（必需） |
+| `open_decisions` | 从ModelScope自动下载[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions)<br>把题目转成 System One 决策请求体，仅配合 `--api systemone` 使用 | ✓（目录） |
 | `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#随机数据集) | ✗ |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
 
@@ -108,6 +112,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#随机图文数据集) | ✗ |
+| `mmmu_multi_image` | 轮转加载全部 30 个 MMMU validation subject，构造真实多图请求<br>仅用于性能压测；不接受 `--dataset-args`；服务端需支持多图 data URL | ✓（兼容 MMMU schema 的 `datasets` 目录） |
 
 **Embedding 类**
 
@@ -211,7 +216,8 @@ evalscope perf \
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--prefix-length` | `int` | prompt 的随机 token 前缀长度<br>仅对 `random` 数据集有效；所有请求共享同一前缀，可用于制造 Prefix-Cache 命中 | `0` |
+| `--prefix-length` | `int` | prompt 的随机 token 前缀长度<br>用于 `random` 数据集；每轮共享前缀池中每个前缀的原始 token 长度 | `0` |
+| `--prefix-count` | `int` | 每轮不同共享原始 token 前缀的数量；按 `request_index % prefix_count` 轮转，包含 warmup。必须 >= 1；大于 1 时要求 `--dataset random`、`--prefix-length > 0` 且不使用 `--prompt`。 | `1` |
 | `--image-width` | `int` | 随机VL数据集图像宽度 | `224` |
 | `--image-height` | `int` | 随机VL数据集图像高度 | `224` |
 | `--image-format` | `str` | 随机VL数据集图像格式 | `RGB` |

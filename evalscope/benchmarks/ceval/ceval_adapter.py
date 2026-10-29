@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import parse_answers_zh
 
 logger = get_logger()
 
@@ -87,6 +88,8 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
 @register_benchmark(
     BenchmarkMeta(
         name='ceval',
+        supports_choice=True,
+        evaluation_version='v1.1',
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
         description="""
@@ -118,6 +121,7 @@ C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the kn
 - Use `subset_list` parameter to evaluate specific subjects
 """,
         dataset_id='evalscope/ceval',
+        hf_dataset_id='ceval/ceval-exam',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],
         few_shot_num=5,
@@ -173,22 +177,5 @@ class CEVALAdapter(MultiChoiceAdapter):
         return USER_PROMPT_TEMPLATE.format(subject=subject_name, question=sample.input, choices=choices_str)
 
     def extract_answer(self, prediction, task_state) -> str:
-        """
-        Extract the answer from the prediction based on the task state.
-
-        Args:
-            prediction (str): The model's prediction string
-            task_state (dict): The current task state containing metadata
-
-        Returns:
-            str: The extracted answer from the prediction
-        """
-        import re
-
-        # Use regex to find the answer in the format "答案：LETTER"
-        matches = re.findall(r'答案：([A-D])', prediction)
-        if matches:
-            return matches[-1]
-        else:
-            logger.warning(f'No valid answer found in prediction: {prediction}')
-            return ''
+        """Parse the '答案：X' line with the shared Chinese multiple-choice parser, as CMMLU does."""
+        return ''.join(sorted(parse_answers_zh(task_state, completion=prediction)))

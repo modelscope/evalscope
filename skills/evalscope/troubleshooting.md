@@ -18,7 +18,7 @@ Common error patterns and recovery steps.
 **Steps**:
 1. **401**: Check `--api-key` value
 2. **404**: Model name doesn't match server — verify with `curl .../v1/models`
-3. **422**: Request format mismatch — check `--api` type matches the server (openai vs dashscope)
+3. **422**: Request format mismatch — check that `--api` matches the server protocol (for example, `openai`, `embedding`, `rerank`, or `local`)
 
 ## Evaluation Interrupted Mid-Run
 

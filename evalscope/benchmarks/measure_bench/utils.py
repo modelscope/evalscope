@@ -4,7 +4,6 @@
 Reference: https://github.com/flageval-baai/MeasureBench/blob/main/evaluation/measure_bench_evaluator.py
 """
 
-import math
 import re
 import unicodedata
 from typing import Dict, List, Optional, Union
@@ -19,44 +18,27 @@ def normalize_string(text: str) -> str:
 
 
 def extract_numbers(text: str) -> List[float]:
-    """Extract all numbers from *text* (integers, decimals, fractions).
+    """Return the finite final reading selected and parsed by Math-Verify."""
+    from evalscope.metrics.math.parser import extract_boxed_answer_text, parse_digits
 
-    Fractions such as ``3/4`` are converted to floats.  Numbers appear in the
-    order they are found in the text.
-    """
-
-    def norm_minus(s: str) -> str:
-        return s.replace('\u2212', '-')
-
-    pattern = re.compile(
-        r"""
-        (?P<fraction>[+\-\u2212]?\d+\s*[/]\s*[+\-\u2212]?\d+)
-        |
-        (?P<decimal>[+\-\u2212]?(?:\d*\.\d+|\d+\.\d*))
-        |
-        (?P<integer>[+\-\u2212]?\d+)
-    """,
-        re.VERBOSE,
+    # Unit labels are benchmark policy, not mathematical variables. Leave their
+    # original text intact for unit scoring and pass only the reading upstream.
+    unit_power = r'(?:\^(?:[+-]?\d+|\{[+-]?\d+\})|[²³])?'
+    unit_symbol = rf'[A-Za-z°μµΩ%]+{unit_power}'
+    unit_suffix = re.compile(
+        rf'(?<=[\d}}])(?:\s|\\[,;!])*'
+        rf'(?:\\(?:text|mathrm)\{{[^{{}}]*\}}|(?![eE](?:[+-]?\d|\b)|pi\b){unit_symbol}(?:[/·]{unit_symbol})*)'
+        r'(?=\s*[$]*\s*[.,]?\s*$)',
     )
-
-    out: List[float] = []
-    for m in pattern.finditer(text):
-        kind = m.lastgroup
-        s = norm_minus(m.group(0)).strip()
-        if kind == 'fraction':
-            num_str, den_str = re.split(r'\s*/\s*', s, maxsplit=1)
-            try:
-                num, den = int(num_str), int(den_str)
-                if den != 0:
-                    out.append(num / den)
-            except ValueError:
-                continue
-        else:
-            try:
-                out.append(float(s))
-            except ValueError:
-                continue
-    return out
+    while True:
+        reading = unit_suffix.sub('', text)
+        if reading.lstrip().startswith((r'\boxed', r'\fbox')):
+            reading = extract_boxed_answer_text(reading)
+        if reading == text:
+            break
+        text = reading
+    number = parse_digits(text, prediction_mode='output')
+    return [] if number is None else [number]
 
 
 def extract_answer_text(prediction: str) -> str:
@@ -68,10 +50,12 @@ def extract_answer_text(prediction: str) -> str:
     indicators = ['Answer:', 'Answer', '答案：', '答案:', '答案']
     for indicator in indicators:
         if indicator in prediction:
-            return prediction.split(indicator)[-1].strip()
-    boxed_match = re.search(r'\\boxed\{([^}]+)\}', prediction)
-    if boxed_match:
-        return boxed_match.group(1).strip()
+            prediction = prediction.split(indicator)[-1].strip()
+            break
+    if re.search(r'\\(?:boxed|fbox)\s*\{', prediction):
+        from evalscope.metrics.math.parser import extract_boxed_answer_text
+
+        return extract_boxed_answer_text(prediction)
     return prediction
 
 
@@ -102,9 +86,15 @@ def _interval_matching(
         'unit_correct': 0,
     }
     pred_lower = unicodedata.normalize('NFKC', answer_text.lower()).replace('µ', 'μ')
+    unit_labels = [unicodedata.normalize('NFKC', unit.lower()).replace('µ', 'μ') for unit in units]
+    # LaTeX commands such as \frac must not count as the unit A.
+    pred_lower = re.sub(
+        r'\\[a-z]+',
+        lambda match: match[0] if any(match[0] in label for label in unit_labels) else '',
+        pred_lower,
+    )
 
-    for unit in units:
-        unit_lower = unicodedata.normalize('NFKC', unit.lower()).replace('µ', 'μ')
+    for unit_lower in unit_labels:
         if unit_lower in pred_lower:
             eval_result['unit_correct'] = 1
     if len(units) == 0:
@@ -131,7 +121,7 @@ def _interval_matching(
         left_interval = float(interval[0])
         right_interval = float(interval[1])
         numbers = extract_numbers(answer_text)
-        if not numbers or math.isinf(numbers[-1]) or math.isnan(numbers[-1]):
+        if not numbers:
             return eval_result
         pred_ans = numbers[-1]
 

@@ -9,7 +9,8 @@ import pytest
 
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.evaluator.cache import CacheManager, ModelResult
+from evalscope.api.evaluator.cache import CacheManager, ModelResult, ReviewResult
+from evalscope.api.model import ModelOutput
 from evalscope.utils.io_utils import OutputsStructure
 
 
@@ -32,6 +33,16 @@ def _review_row(sample_id: int, value: float) -> Dict[str, Any]:
             },
         },
     }
+
+
+def test_review_result_migrates_legacy_target_to_alternatives() -> None:
+    legacy = ReviewResult.from_cache_item(_review_row(0, 1.0))
+    current = ReviewResult.from_cache_item({**_review_row(1, 1.0), 'target': ['A', 'B']})
+
+    assert legacy.target == ['answer']
+    assert current.target == ['A', 'B']
+    with pytest.raises(ValueError, match='must not be an empty list'):
+        ReviewResult.from_cache_item({**_review_row(2, 1.0), 'target': []})
 
 
 def _make_manager(tmp_path: Path) -> CacheManager:
@@ -169,3 +180,40 @@ def test_filter_prediction_cache_skips_malformed_and_schema_invalid_rows(
     assert [sample.id for sample in filtered_dataset.samples] == [1]
     assert 'Skipping invalid JSONL row' in caplog_evalscope.text
     assert 'Skipping invalid prediction cache row' in caplog_evalscope.text
+
+
+@pytest.mark.parametrize('invalid_tail', [False, True])
+def test_filter_prediction_cache_keeps_last_valid_prediction(tmp_path: Path, invalid_tail: bool) -> None:
+    manager = _make_manager(tmp_path)
+    dataset = MemoryDataset(samples=[Sample(id=i, input=f'question-{i}', target='answer') for i in range(3)])
+    for sample_id, answer in [(0, 'first'), (1, 'other'), (0, 'latest')]:
+        state = _make_task_state(sample_id)
+        state.output = ModelOutput.from_content(model='mock-model', content=answer)
+        manager.save_prediction_cache('default', state)
+    manager.close()
+    if invalid_tail:
+        row = ModelResult.from_task_state(_make_task_state(0)).model_dump(mode='json')
+        row['model_output'] = None
+        with open(manager.get_prediction_cache_path('default'), 'a', encoding='utf-8') as f:
+            f.write(json.dumps(row) + '\n')
+
+    cached_states, remaining_dataset = manager.filter_prediction_cache('default', dataset)
+
+    assert [state.sample_id for state in cached_states] == [0, 1]
+    assert [state.output.completion for state in cached_states] == ['latest', 'other']
+    assert [sample.id for sample in remaining_dataset] == [2]
+
+
+def test_filter_prediction_cache_keeps_distinct_repeat_samples(tmp_path: Path) -> None:
+    manager = _make_manager(tmp_path)
+    states = [_make_task_state(i, group_id=0) for i in range(2)]
+    dataset = MemoryDataset(samples=[Sample(id=i, group_id=0, input='question', target='answer') for i in range(2)])
+    for state in states:
+        manager.save_prediction_cache('default', state)
+    manager.close()
+
+    cached_states, remaining_dataset = manager.filter_prediction_cache('default', dataset)
+
+    assert [state.sample_id for state in cached_states] == [0, 1]
+    assert [state.group_id for state in cached_states] == [0, 0]
+    assert len(remaining_dataset) == 0

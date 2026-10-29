@@ -8,6 +8,8 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 @register_benchmark(
     BenchmarkMeta(
         name='winogrande',
+        supports_choice=True,
+        choice_instructions='Which option correctly fills the blank `_` in `question`?',
         pretty_name='Winogrande',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description="""
@@ -39,6 +41,7 @@ Winogrande is a large-scale benchmark for commonsense reasoning, specifically de
 - Commonly used for commonsense reasoning assessment
 """,
         dataset_id='AI-ModelScope/winogrande_val',
+        hf_dataset_id='liyucheng/winogrande_val',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

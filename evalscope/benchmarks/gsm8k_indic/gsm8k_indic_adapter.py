@@ -35,6 +35,7 @@ LANGUAGE_NAMES = {
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='gsm8k_indic',
         pretty_name='GSM8K-Indic',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],
@@ -60,6 +61,7 @@ available in native script and a romanized (Latin transliteration) variant, plus
   translated
 """,
         dataset_id='sarvamai/gsm8k-indic',
+        hf_dataset_id='sarvamai/gsm8k-indic',
         subset_list=SUBSET_LIST,
         few_shot_num=0,
         train_split=None,

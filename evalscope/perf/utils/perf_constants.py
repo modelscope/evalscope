@@ -42,6 +42,9 @@ class Metrics:
     AVERAGE_TIME_TO_FIRST_TOKEN = 'Avg TTFT (ms)'
     AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Avg TPOT (ms)'
     AVERAGE_INTER_TOKEN_LATENCY = 'Avg ITL (ms)'
+    AVERAGE_STEADY_INTER_TOKEN_LATENCY = 'Avg Steady ITL (ms)'
+    AVERAGE_PD_HANDOFF_LATENCY = 'Avg PD Handoff Latency (ms)'
+    AVERAGE_PD_HANDOFF_OVERHEAD = 'Avg PD Handoff Overhead (ms)'
     AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Avg Output Tokens'
 
     # Embedding / Rerank-specific
@@ -65,6 +68,11 @@ class Metrics:
         api_lower = api_name.lower()
         return 'embedding' in api_lower or 'rerank' in api_lower or 'embed' in api_lower
 
+    @staticmethod
+    def is_input_only(api_name: str) -> bool:
+        """Use request and input metrics for APIs without generated token streams."""
+        return Metrics.is_embedding_or_rerank(api_name) or api_name in ('systemone', 'autotrust')
+
 
 # ---------------------------------------------------------------------------
 # Percentile-level metric names  (keys in benchmark_percentile.json)
@@ -80,6 +88,9 @@ class PercentileMetrics:
 
     TTFT = 'TTFT (ms)'
     ITL = 'ITL (ms)'
+    STEADY_ITL = 'Steady ITL (ms)'
+    PD_HANDOFF_LATENCY = 'PD Handoff Latency (ms)'
+    PD_HANDOFF_OVERHEAD = 'PD Handoff Overhead (ms)'
     TPOT = 'TPOT (ms)'
     LATENCY = 'Latency (s)'
     INPUT_TOKENS = 'Input tokens'

@@ -3,7 +3,7 @@
 
 ## 概述
 
-CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用于评估多模态大语言模型在来自 arXiv 论文的真实科学图表上的表现。该基准同时考察模型对图表元素的底层感知能力（描述性任务）和对图表数据的高层推理能力。
+CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用于评估多模态大语言模型在来自 arXiv 论文的真实科学图表上的表现。该基准同时考察模型对图表元素的低层次感知能力（描述性任务）和对图表数据的高层次推理能力。
 
 ## 任务描述
 
@@ -14,11 +14,11 @@ CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用�
 
 ## 主要特点
 
-- 包含来自 8 个学科 arXiv 论文的 2,323 张真实科学图表
+- 包含来自 8 个学科的 arXiv 论文中提取的 2,323 张真实科学图表
 - 两种问题类型：
   - **描述性**（每张图表 4 个）：基础元素识别（标题、坐标轴、图例、趋势等）
   - **推理型**（每张图表 1 个）：需要数据综合的高阶推理
-- 19 种描述性问题模板，涵盖信息提取、枚举、模式识别、计数和组合性任务
+- 19 种描述性问题模板，涵盖信息抽取、枚举、模式识别、计数和组合性任务
 - 4 种推理答案类型：图表内文本、通用文本、图表内数值、通用数值
 - 验证集（1,000 张图表）和测试集（1,323 张图表）
 - 依据官方 CharXiv 评分协议，通过 LLM 作为评判器进行评估
@@ -42,7 +42,7 @@ CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用�
 | **论文** | [Paper](https://arxiv.org/abs/2406.18521) |
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 
 
@@ -88,7 +88,7 @@ CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用�
 
 ## 使用方法
 
-### 通过 CLI 使用
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -96,10 +96,11 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets charxiv \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 通过 Python 使用
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -110,6 +111,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['charxiv'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 

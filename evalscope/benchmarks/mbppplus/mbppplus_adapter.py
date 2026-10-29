@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from pathlib import Path
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -9,6 +10,7 @@ from evalscope.api.metric import Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -43,7 +45,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 - Default configuration uses **0-shot** evaluation
 - **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation
-- Default timeout is 20 seconds per problem
+- Default timeout is 60 seconds per problem to accommodate the expanded test suites
 - Stricter evaluation than original MBPP benchmark
 """  # noqa: E501
 
@@ -55,14 +57,16 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
         tags=[Tags.CODING],
         description=DESCRIPTION,
         dataset_id='evalscope/mbppplus',
+        hf_dataset_id='evalplus/mbppplus',
         subset_list=['default'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='test',
         prompt_template=PROMPT,
-        review_timeout=20,
-        sandbox_config={'image': 'python:3.11-slim', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
+        review_timeout=60,
+        evaluation_version='v1.1',
+        sandbox_config={'image': 'python3.11-numpy', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
     )
 )
 class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -99,6 +103,16 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
             code = code[: code.index('if __name__ ==')]
         return code
 
+    def get_sandbox_image_spec(self) -> DockerImageSpec:
+        """Use HumanEval+'s image: the MBPP+ test suites import numpy."""
+        docker_path = Path(__file__).parent.parent / 'humanevalplus' / 'docker'
+        return DockerImageSpec(
+            name_prefix='python3.11-numpy',
+            context_dir=docker_path.as_posix(),
+            dockerfile=(docker_path / 'Dockerfile').as_posix(),
+            cache_key_parts=['sandbox', 'python3.11-numpy'],
+        )
+
     @classmethod
     def postprocess_completion(cls, completion, stop_words=['\nassert', '\n"""']):
         from evalscope.utils.code_utils import extract_code_from_freeform_completion
@@ -129,10 +143,8 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
             prediction=original_prediction,
         )
         problem = task_state.metadata
-        completion = filtered_prediction
-        # Append test cases to the completion
-        for test in task_state.metadata['test_list']:
-            completion += '\n' + test + '\n'
+        # Keep future imports at the start of the solution; test imports only need to precede the asserts.
+        completion = '\n'.join([filtered_prediction, *problem['test_imports'], *problem['test_list'], problem['test']])
 
         res = self.execute_code_in_sandbox(code=completion, timeout=self.review_timeout, language='python')
         passed = res.get('status') == 'success'

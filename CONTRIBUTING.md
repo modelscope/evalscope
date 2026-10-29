@@ -18,7 +18,8 @@ Thank you for considering contributing to EvalScope! This guide covers everythin
     - [Key methods you can override](#key-methods-you-can-override)
     - [BenchmarkMeta key fields](#benchmarkmeta-key-fields)
     - [Step 3: Add extra dependencies (if any)](#step-3-add-extra-dependencies-if-any)
-    - [Step 4: Update documentation (optional)](#step-4-update-documentation-optional)
+    - [Step 4: Regenerate the registry index](#step-4-regenerate-the-registry-index)
+    - [Step 5: Update documentation (optional)](#step-5-update-documentation-optional)
     - [Verify your benchmark](#verify-your-benchmark)
   - [Code Quality](#code-quality)
     - [Linting](#linting)
@@ -168,7 +169,7 @@ evalscope/
 
 ## Adding a New Benchmark
 
-EvalScope uses a **decorator-based registry** pattern. Adding a benchmark requires only two files.
+EvalScope uses a **decorator-based registry** pattern. Adding a benchmark requires two adapter files and an updated generated registry index.
 
 ### Step 1: Create the adapter directory
 
@@ -178,7 +179,7 @@ evalscope/benchmarks/my_benchmark/
 └── my_benchmark_adapter.py
 ```
 
-Adapters are **auto-discovered**: any `*_adapter.py` under `evalscope/benchmarks/` is automatically imported at startup, which triggers the `@register_benchmark` decorator.
+Adapters are **auto-discovered** from `*_adapter.py` files under `evalscope/benchmarks/` and loaded on demand. The generated `evalscope/benchmarks/_index.json` maps benchmark names to their adapter modules so that resolving one benchmark imports only its module.
 
 ### Step 2: Write the adapter
 
@@ -212,6 +213,10 @@ Brief description of what this benchmark evaluates.
 - **Task Type**: ...
 - **Input**: ...
 - **Output**: ...
+- **Domain**: ...
+
+## Key Features
+- Describe the dataset scale/source and the capabilities evaluated.
 
 ## Evaluation Notes
 - Default configuration uses **0-shot** evaluation
@@ -220,6 +225,7 @@ Brief description of what this benchmark evaluates.
 @register_benchmark(
     BenchmarkMeta(
         name='my_benchmark',           # unique identifier (snake_case)
+        evaluation_version='v1.0',      # initial evaluation semantics version
         pretty_name='MyBenchmark',      # display name
         dataset_id='org/dataset-name',  # ModelScope / HuggingFace dataset ID
         tags=[Tags.REASONING],          # category tags
@@ -256,6 +262,7 @@ class MyBenchmarkAdapter(DefaultDataAdapter):
 ```python
 BenchmarkMeta(
     name='...',              # Required: unique snake_case ID
+    evaluation_version='v1.0', # Explicit initial version for new benchmarks
     dataset_id='...',        # Required: remote dataset ID or local path
     pretty_name='...',       # Display name
     tags=[...],              # From evalscope.constants.Tags
@@ -291,7 +298,18 @@ my_benchmark = {file = ["evalscope/benchmarks/my_benchmark/requirements.txt"]}
 
 Users can install via `pip install 'evalscope[my_benchmark]'`.
 
-### Step 4: Update documentation (optional)
+### Step 4: Regenerate the registry index
+
+After adding, renaming, or moving a benchmark, run these commands from the repository root:
+
+```bash
+make docs-update-index
+pytest tests/api/test_benchmark_registry_contract.py
+```
+
+Commit the generated `evalscope/benchmarks/_index.json` with your adapter changes; do not edit it by hand. A missing entry falls back to importing all adapters, and a stale index fails the registry contract tests above. These tests are not collected by CI Tests Lite, so run them locally.
+
+### Step 5: Update documentation (optional)
 
 Run the doc pipeline to auto-generate benchmark documentation:
 
@@ -303,9 +321,11 @@ make docs-generate
 
 ### Verify your benchmark
 
+Replace `my_benchmark` with your registered benchmark name and configure its dataset before running the command below. The mock model checks the evaluation pipeline; its scores do not measure model quality.
+
 ```bash
-# Check it's registered
-evalscope eval --benchmarks my_benchmark --model dummy --limit 5
+# Run a smoke evaluation with the mock model (no model download or API key required)
+evalscope eval --datasets my_benchmark --model dummy --eval-type mock_llm --limit 5
 
 # Run via service
 evalscope service

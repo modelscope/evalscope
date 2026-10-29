@@ -3,12 +3,16 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import pandas as pd
 from pandas import DataFrame
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
+from evalscope.api.metric.semantics import MetricDirection, MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
-from evalscope.metrics.semantics.identity import canonicalize_producer_identity
-from evalscope.metrics.semantics.resolver import select_primary_identity
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
+from evalscope.metrics.semantics.primary import PrimarySelection, PrimarySelectionStatus, select_primary
+from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX
 from evalscope.report.report import Category, Metric, Report, Subset
+from evalscope.utils import get_logger
+
+logger = get_logger()
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -40,12 +44,28 @@ class ReportGenerator:
             identity = canonicalize_producer_identity(metric_name, 'mean')
             semantics = resolver.resolve(all_dataset_name, identity).semantics
             metrics_list.append(Metric(identity=identity, categories=categories, semantics=semantics))
+
+        # A collection reporting exactly one scored metric does carry a conclusion, so it goes
+        # through the same selection policy as any other report. Several scored metrics is not an
+        # authoring error here: a collection aggregates arbitrary datasets and has no adapter that
+        # could declare which one wins.
+        selection = select_primary(
+            [metric.identity for metric in metrics_list],
+            {metric.identity.key: metric.semantics for metric in metrics_list},
+            None,
+        )
+        unavailable_reason = selection.unavailable_reason
+        if selection.status is PrimarySelectionStatus.AMBIGUOUS:
+            unavailable_reason = (
+                'The collection contains multiple scored metrics, so no single primary metric is selected.'
+            )
         return Report(
             name=DataCollection.NAME,
             metrics=metrics_list,
             dataset_name=all_dataset_name,
             model_name=model_name,
-            primary_metric_identity=None,
+            primary_metric_identity=selection.identity,
+            primary_metric_unavailable_reason=unavailable_reason,
         )
 
     @staticmethod
@@ -76,6 +96,11 @@ class ReportGenerator:
             >>> report = ReportGenerator.generate_report(score_dict, 'Model', data_adapter)
         """  # noqa: E501
 
+        if len(score_dict) != 1 and any(
+            score.aggregation in {'bayes_at_n', 'bayes_at_n_sd'} for scores in score_dict.values() for score in scores
+        ):
+            raise ValueError('Bayes@N reports support one subset; posterior SD cannot be averaged across subsets.')
+
         dataset_name = data_adapter.name
         category_map = data_adapter.category_map
         report_name = f'{model_name}@{dataset_name}'
@@ -102,6 +127,8 @@ class ReportGenerator:
                             name=subset_name,
                             score=agg_score_item.score,
                             num=agg_score_item.num,
+                            num_correct=agg_score_item.num_correct,
+                            metadata=agg_score_item.metadata,
                             identity_key=identity.key,
                             identity=identity,
                             categories=tuple(categories),
@@ -124,7 +151,7 @@ class ReportGenerator:
             )
 
         identities = list({identity.key: identity for identity in df['identity']}.values())
-        semantics_by_identity, primary_identity, primary_metric_unavailable_reason = ReportGenerator._resolve_semantics(
+        semantics_by_identity, selection = ReportGenerator._resolve_semantics(
             benchmark_name=dataset_name,
             identities=identities,
             selector=data_adapter.primary_metric,
@@ -132,16 +159,30 @@ class ReportGenerator:
 
         metrics_list = []
         for identity_key, group_metric in df.groupby('identity_key', sort=False):
+            semantics = semantics_by_identity[identity_key]
+            # A count of 1s reads as "correct" only when higher values are better, and a graded metric
+            # that happens to hit only 0 and 1 in some subsets must not get counts on those rows alone.
+            counts_correct = (
+                semantics.direction == MetricDirection.HIGHER_IS_BETTER and group_metric['num_correct'].notna().all()
+            )
             categories = []
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []
                 for _, row in group_category.iterrows():
-                    subsets.append(Subset(name=row['name'], score=row['score'], num=row['num']))
+                    num_correct = row['num_correct'] if counts_correct and pd.notna(row['num_correct']) else None
+                    subsets.append(
+                        Subset(
+                            name=row['name'],
+                            score=row['score'],
+                            num=row['num'],
+                            num_correct=num_correct,
+                            metadata=row['metadata'],
+                        )
+                    )
 
                 categories.append(Category(name=category_name, subsets=subsets))
 
             identity = group_metric.iloc[0]['identity']
-            semantics = semantics_by_identity[identity_key]
             metric = Metric(
                 identity=identity,
                 categories=categories,
@@ -156,8 +197,8 @@ class ReportGenerator:
             model_name=model_name,
             dataset_description=data_adapter.description,
             dataset_pretty_name=data_adapter.pretty_name,
-            primary_metric_identity=primary_identity,
-            primary_metric_unavailable_reason=primary_metric_unavailable_reason,
+            primary_metric_identity=selection.identity,
+            primary_metric_unavailable_reason=None if selection.identity else selection.unavailable_reason,
         )
         return report
 
@@ -166,7 +207,7 @@ class ReportGenerator:
         benchmark_name: str,
         identities: List[MetricIdentity],
         selector: Optional[MetricSelector],
-    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[MetricIdentity], Optional[str]]:
+    ) -> Tuple[Dict[str, 'MetricSemantics'], PrimarySelection]:
         """Resolve the semantics of every metric this report will contain.
 
         An undeclared metric degrades to a diagnostic, which shows the stored value without
@@ -179,8 +220,10 @@ class ReportGenerator:
             selector: Structured primary selector from benchmark metadata.
 
         Returns:
-            Identity key -> semantics mapping, the uniquely selected primary identity, and an
-            unavailable reason when an explicit primary metric was not emitted for this run.
+            Identity key -> semantics mapping, and the primary metric selection.
+
+        Raises:
+            ValueError: If the benchmark's own declaration makes the choice ambiguous.
         """
         resolver = get_semantics_resolver()
 
@@ -189,11 +232,12 @@ class ReportGenerator:
             resolved = resolver.resolve(benchmark_name, identity)
             resolved.log_audit_messages()
             semantics_by_identity[identity.key] = resolved.semantics
-        primary = select_primary_identity(identities, semantics_by_identity, selector)
-        unavailable_reason = None
-        if selector is not None and primary is None:
-            unavailable_reason = (
-                f'Primary metric selector {selector.model_dump()} did not match any metric emitted for this run. '
-                'The required observations may be absent from the selected samples.'
-            )
-        return semantics_by_identity, primary, unavailable_reason
+        selection = select_primary(identities, semantics_by_identity, selector)
+        if selection.status in (PrimarySelectionStatus.AMBIGUOUS, PrimarySelectionStatus.DIAGNOSTIC):
+            reason = selection.unavailable_reason
+            if selection.status is PrimarySelectionStatus.AMBIGUOUS and selector is None:
+                reason = f'{reason} Please declare BenchmarkMeta.primary_metric.'
+            raise ValueError(reason)
+        if selection.identity is None and selection.unavailable_reason is not None:
+            logger.warning(f'{AUDIT_MESSAGE_PREFIX} {selection.unavailable_reason}')
+        return semantics_by_identity, selection

@@ -1,15 +1,16 @@
 # Humanity's-Last-Exam
 
+
 ## 概述
 
-Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含2,500道涵盖广泛学科的问题。该基准由人工智能安全中心（Center for AI Safety）与Scale AI联合创建，是目前最具挑战性的学术基准之一。
+Humanity's Last Exam（HLE）是一个全面的语言模型基准测试，包含2,500道涵盖广泛学科的问题。该基准由人工智能安全中心（Center for AI Safety）与Scale AI联合创建，是目前最具挑战性的学术基准之一。
 
 ## 任务描述
 
 - **任务类型**：专家级问答
-- **输入**：问题（14%为多模态，含图片）
+- **输入**：问题（14%为多模态，含可选图像）
 - **输出**：答案、解释及置信度分数
-- **领域分布**：数学（41%）、物理（9%）、生物/医学（11%）、计算机科学/AI（10%）、人文（9%）、工程（4%）、化学（7%）、其他（9%）
+- **领域分布**：数学（41%）、物理（9%）、生物/医学（11%）、计算机科学/AI（10%）、人文学科（9%）、工程（4%）、化学（7%）、其他（9%）
 
 ## 主要特点
 
@@ -22,10 +23,10 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 ## 评估说明
 
 - 默认使用 **test** 数据划分进行评估
-- 主要指标：基于大语言模型（LLM）裁判的 **准确率（Accuracy）**
+- 主要指标：基于大语言模型（LLM）评判的 **准确率（Accuracy）**
 - 响应格式包括：解释（Explanation）、答案（Answer）和置信度（Confidence，0–100%）
 - **注意**：对于纯文本模型，请将 `extra_params["include_multi_modal"]` 设为 `False`
-- 使用 GRADE: C/I 格式进行 LLM 裁判评分
+- 使用 GRADE: C/I 格式进行 LLM 评判打分
 
 ## 属性
 
@@ -36,8 +37,9 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 | **论文** | N/A |
 | **标签** | `Knowledge`, `QA` |
 | **指标** | `accuracy` |
-| **默认示例数（Shots）** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
+
 
 ## 数据统计
 
@@ -49,7 +51,7 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 
 **各子集统计信息：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `Biology/Medicine` | 280 | 1259.39 | 246 | 13702 |
 | `Chemistry` | 165 | 812.72 | 236 | 6942 |
@@ -66,8 +68,9 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 |--------|-------|
 | 图像总数 | 342 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
-| 分辨率范围 | 329x12 – 14950x2780 |
-| 图像格式 | gif, jpeg, png, webp |
+| 分辨率范围 | 329x12 - 14950x2780 |
+| 格式 | gif, jpeg, png, webp |
+
 
 ## 样例示例
 
@@ -121,7 +124,7 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 
 ## 使用方法
 
-### 通过命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -129,10 +132,11 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets hle \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 通过 Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -143,6 +147,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['hle'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'hle': {
             # subset_list: ['Biology/Medicine', 'Chemistry', 'Computer Science/AI']  # 可选，用于评估特定子集

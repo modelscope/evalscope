@@ -5,7 +5,15 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import Self
 
 from evalscope.api.metric import JudgeSummary
@@ -150,10 +158,20 @@ def normalize_score(score: Union[float, dict, int], keep_num: int = 4) -> Union[
     return score
 
 
+def _sum_correct(items: List[Union['Subset', 'Category']]) -> Optional[int]:
+    """Total correct count, or ``None`` unless every item carries one."""
+    counts = [item.num_correct for item in items]
+    return sum(counts) if counts and None not in counts else None
+
+
 class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
+    num_correct: Optional[int] = None
+    """Samples scored 1 when the metric is binary; ``None`` otherwise."""
+    metadata: Optional[Dict[str, Any]] = None
+    """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
     """True for derived/summary subsets (e.g. BFCL OVERALL, MULTI_TURN) that
     aggregate other real subsets. Excluded from num/score totals so they
@@ -168,6 +186,7 @@ class Subset(BaseModel):
 class Category(BaseModel):
     name: Tuple[str, ...] = Field(default_factory=tuple)
     num: int = 0
+    num_correct: Optional[int] = None
     score: float = 0.0
     macro_score: float = 0.0
     subsets: List[Subset] = Field(default_factory=list)
@@ -188,6 +207,7 @@ class Category(BaseModel):
     def _compute_aggregates(self) -> Self:
         real = [s for s in self.subsets if not s.is_aggregate]
         self.num = sum(s.num for s in real)
+        self.num_correct = _sum_correct(real)
         self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
@@ -199,6 +219,7 @@ class Metric(BaseModel):
     identity: MetricIdentity
     legacy_name: Optional[str] = None
     num: int = 0
+    num_correct: Optional[int] = None
     score: float = 0.0
     macro_score: float = 0.0
     categories: List[Category] = Field(default_factory=list)
@@ -215,13 +236,18 @@ class Metric(BaseModel):
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
+        """Derive missing totals without replacing a producer's authoritative score."""
         if not self.categories:
             return self
         # Categories whose subsets are all is_aggregate end up with num=0; skip them
         # so they don't drag down macro_mean.
         real = [c for c in self.categories if c.num > 0]
         self.num = sum(c.num for c in real)
-        self.score = normalize_score(micro_mean(real)) if real else 0.0
+        if 'score' in self.model_fields_set:
+            self.score = normalize_score(self.score)
+        else:
+            self.num_correct = _sum_correct(real)
+            self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
 
@@ -239,6 +265,7 @@ class ReportKey:
     category_prefix = 'Cat.'
     subset_name = 'Subset'
     num = 'Num'
+    num_correct = 'Correct'
     score = 'Score'
     raw_score = 'Raw Score'
     display_score = 'Display Score'
@@ -314,17 +341,23 @@ class Report(BaseModel):
     @computed_field
     @property
     def num(self) -> int:
-        """Total sample count derived from one metric's subsets.
+        """Count explicitly partitioned metric cohorts without recounting shared metrics.
 
-        Counting a single metric avoids double-counting datasets that evaluate several metrics over
-        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Any one
-        metric satisfies that, so a report whose primary metric could not be resolved still reports
-        its real sample count instead of zero.
+        Metrics carrying a ``subset`` dimension declare separate question cohorts. Otherwise
+        retain the primary/first metric's count, since other metrics may report derived subsets.
         """
         metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
         if metric is None:
             return 0
-        return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+        if not all('subset' in item.identity.dimensions for item in self.metrics):
+            return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+        counts: Dict[str, int] = {}
+        metrics = sorted(self.metrics, key=lambda metric: metric.identity != self.primary_metric_identity)
+        for metric in metrics:
+            count = sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+            subset_key = json.dumps(metric.identity.dimensions['subset'], ensure_ascii=False)
+            counts.setdefault(subset_key, count)
+        return sum(counts.values())
 
     @property
     def primary_metric(self) -> Optional[Metric]:
@@ -337,15 +370,14 @@ class Report(BaseModel):
 
     @property
     def score(self) -> Optional[float]:
-        """Compatibility score derived from the primary or first available metric.
+        """Score of this report's primary metric.
 
-        ``None`` when an explicit primary metric was unavailable or the report carries no metric:
-        a report that could not compute its conclusion did not score zero. Report v2 serializes
-        the structured metric list and primary identity instead of this convenience value.
+        ``None`` when no primary metric was resolved or the report carries no metric: a report that
+        could not name its conclusion did not score zero. It never falls back to the first metric,
+        which may be a diagnostic such as a token count and would misreport the run. Report v2
+        serializes the structured metric list and primary identity instead of this convenience value.
         """
-        if self.primary_metric_unavailable_reason is not None:
-            return None
-        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        metric = self._find_primary_metric()
         return metric.score if metric is not None else None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -425,6 +457,7 @@ class Report(BaseModel):
                     table[ReportKey.category_name].append(category.name)
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
+                    table[ReportKey.num_correct].append(subset.num_correct)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
             if metric_count > 1 and add_overall_metric and not has_overall_subset:
@@ -434,11 +467,14 @@ class Report(BaseModel):
                 table[ReportKey.category_name].append(('-',))
                 table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
+                table[ReportKey.num_correct].append(metric.num_correct)
                 table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
                 break
         df = pd.DataFrame.from_dict(table, orient='columns')
+        if ReportKey.num_correct in df:
+            df[ReportKey.num_correct] = df[ReportKey.num_correct].astype('Int64')
         if flatten_categories:
             df = self._flatten_categories(df)
         return df

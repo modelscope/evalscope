@@ -1,0 +1,762 @@
+{
+  "source_revision": "5026a13ad6e5a8606810a3a5c4e410d8d6638e71",
+  "source_sha256": "06994fe9fffca7819c34b3dd985ab4fdcdd00fa115d8e37a98076377dcb0d03e",
+  "tasks": [
+    {
+      "id": "choice-easy-0",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "X",
+      "tier": "easy"
+    },
+    {
+      "id": "choice-easy-1",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Y",
+      "tier": "easy"
+    },
+    {
+      "id": "choice-easy-2",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Z",
+      "tier": "easy"
+    },
+    {
+      "id": "choice-standard-0",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "X",
+      "tier": "standard"
+    },
+    {
+      "id": "choice-standard-1",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Y",
+      "tier": "standard"
+    },
+    {
+      "id": "choice-standard-2",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Z",
+      "tier": "standard"
+    },
+    {
+      "id": "choice-judge-0",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "X",
+      "tier": "judge"
+    },
+    {
+      "id": "choice-judge-1",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Y",
+      "tier": "judge"
+    },
+    {
+      "id": "choice-judge-2",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Z",
+      "tier": "judge"
+    },
+    {
+      "id": "choice-hard-0",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "X",
+      "tier": "hard"
+    },
+    {
+      "id": "choice-hard-1",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Y",
+      "tier": "hard"
+    },
+    {
+      "id": "choice-hard-2",
+      "question": {
+        "type": "choice"
+      },
+      "labels": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "expected": "Z",
+      "tier": "hard"
+    },
+    {
+      "id": "noul-easy-0",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "easy"
+    },
+    {
+      "id": "noul-easy-1",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "yes",
+      "tier": "easy"
+    },
+    {
+      "id": "noul-easy-2",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "easy"
+    },
+    {
+      "id": "noul-standard-0",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "standard"
+    },
+    {
+      "id": "noul-standard-1",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "yes",
+      "tier": "standard"
+    },
+    {
+      "id": "noul-standard-2",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "standard"
+    },
+    {
+      "id": "noul-judge-0",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "judge"
+    },
+    {
+      "id": "noul-judge-1",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "yes",
+      "tier": "judge"
+    },
+    {
+      "id": "noul-judge-2",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "judge"
+    },
+    {
+      "id": "noul-hard-0",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "hard"
+    },
+    {
+      "id": "noul-hard-1",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "yes",
+      "tier": "hard"
+    },
+    {
+      "id": "noul-hard-2",
+      "question": {
+        "type": "noul"
+      },
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "expected": "no",
+      "tier": "hard"
+    },
+    {
+      "id": "score-easy-0",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "0",
+      "tier": "easy"
+    },
+    {
+      "id": "score-easy-1",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "1",
+      "tier": "easy"
+    },
+    {
+      "id": "score-easy-2",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "2",
+      "tier": "easy"
+    },
+    {
+      "id": "score-standard-0",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "0",
+      "tier": "standard"
+    },
+    {
+      "id": "score-standard-1",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "1",
+      "tier": "standard"
+    },
+    {
+      "id": "score-standard-2",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "2",
+      "tier": "standard"
+    },
+    {
+      "id": "score-judge-0",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "0",
+      "tier": "judge"
+    },
+    {
+      "id": "score-judge-1",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "1",
+      "tier": "judge"
+    },
+    {
+      "id": "score-judge-2",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "2",
+      "tier": "judge"
+    },
+    {
+      "id": "score-hard-0",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "0",
+      "tier": "hard"
+    },
+    {
+      "id": "score-hard-1",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "1",
+      "tier": "hard"
+    },
+    {
+      "id": "score-hard-2",
+      "question": {
+        "type": "score"
+      },
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "expected": "2",
+      "tier": "hard"
+    }
+  ],
+  "predictions": [
+    {
+      "id": "choice-easy-0",
+      "probs": {
+        "X": 0.1667,
+        "Y": 0.3333,
+        "Z": 0.5
+      }
+    },
+    {
+      "id": "choice-easy-1",
+      "probs": {
+        "X": 0.2222,
+        "Y": 0.3333,
+        "Z": 0.4444
+      }
+    },
+    {
+      "id": "choice-easy-2",
+      "probs": {
+        "X": 0.375,
+        "Y": 0.5,
+        "Z": 0.125
+      }
+    },
+    {
+      "id": "choice-standard-0",
+      "probs": {
+        "X": 0.2222,
+        "Y": 0.3333,
+        "Z": 0.4444
+      }
+    },
+    {
+      "id": "choice-standard-1",
+      "probs": {
+        "X": 0.375,
+        "Y": 0.5,
+        "Z": 0.125
+      }
+    },
+    {
+      "id": "choice-standard-2",
+      "probs": {
+        "X": 0.5714,
+        "Y": 0.1429,
+        "Z": 0.2857
+      }
+    },
+    {
+      "id": "choice-judge-0",
+      "probs": {
+        "X": 0.375,
+        "Y": 0.5,
+        "Z": 0.125
+      }
+    },
+    {
+      "id": "choice-judge-1",
+      "probs": {
+        "X": 0.5714,
+        "Y": 0.1429,
+        "Z": 0.2857
+      }
+    },
+    {
+      "id": "choice-hard-0",
+      "probs": {
+        "X": 0.5714,
+        "Y": 0.1429,
+        "Z": 0.2857
+      }
+    },
+    {
+      "id": "choice-hard-1",
+      "probs": {
+        "X": 0.1667,
+        "Y": 0.3333,
+        "Z": 0.5
+      }
+    },
+    {
+      "id": "choice-hard-2",
+      "probs": {
+        "X": 0.2222,
+        "Y": 0.3333,
+        "Z": 0.4444
+      }
+    },
+    {
+      "id": "noul-easy-0",
+      "probs": {
+        "no": 0.3333,
+        "yes": 0.6667
+      }
+    },
+    {
+      "id": "noul-easy-1",
+      "probs": {
+        "no": 0.4,
+        "yes": 0.6
+      }
+    },
+    {
+      "id": "noul-easy-2",
+      "probs": {
+        "no": 0.4286,
+        "yes": 0.5714
+      }
+    },
+    {
+      "id": "noul-standard-0",
+      "probs": {
+        "no": 0.4,
+        "yes": 0.6
+      }
+    },
+    {
+      "id": "noul-standard-1",
+      "probs": {
+        "no": 0.4286,
+        "yes": 0.5714
+      }
+    },
+    {
+      "id": "noul-standard-2",
+      "probs": {
+        "no": 0.8,
+        "yes": 0.2
+      }
+    },
+    {
+      "id": "noul-judge-0",
+      "probs": {
+        "no": 0.4286,
+        "yes": 0.5714
+      }
+    },
+    {
+      "id": "noul-judge-1",
+      "probs": {
+        "no": 0.8,
+        "yes": 0.2
+      }
+    },
+    {
+      "id": "noul-hard-0",
+      "probs": {
+        "no": 0.8,
+        "yes": 0.2
+      }
+    },
+    {
+      "id": "noul-hard-1",
+      "probs": {
+        "no": 0.3333,
+        "yes": 0.6667
+      }
+    },
+    {
+      "id": "noul-hard-2",
+      "probs": {
+        "no": 0.4,
+        "yes": 0.6
+      }
+    },
+    {
+      "id": "score-easy-0",
+      "probs": {
+        "0": 0.1,
+        "1": 0.2,
+        "2": 0.3,
+        "3": 0.4
+      }
+    },
+    {
+      "id": "score-easy-1",
+      "probs": {
+        "0": 0.2,
+        "1": 0.3,
+        "2": 0.4,
+        "3": 0.1
+      }
+    },
+    {
+      "id": "score-easy-2",
+      "probs": {
+        "0": 0.3,
+        "1": 0.4,
+        "2": 0.1,
+        "3": 0.2
+      }
+    },
+    {
+      "id": "score-standard-0",
+      "probs": {
+        "0": 0.2,
+        "1": 0.3,
+        "2": 0.4,
+        "3": 0.1
+      }
+    },
+    {
+      "id": "score-standard-1",
+      "probs": {
+        "0": 0.3,
+        "1": 0.4,
+        "2": 0.1,
+        "3": 0.2
+      }
+    },
+    {
+      "id": "score-standard-2",
+      "probs": {
+        "0": 0.4,
+        "1": 0.1,
+        "2": 0.2,
+        "3": 0.3
+      }
+    },
+    {
+      "id": "score-judge-0",
+      "probs": {
+        "0": 0.3,
+        "1": 0.4,
+        "2": 0.1,
+        "3": 0.2
+      }
+    },
+    {
+      "id": "score-judge-1",
+      "probs": {
+        "0": 0.4,
+        "1": 0.1,
+        "2": 0.2,
+        "3": 0.3
+      }
+    },
+    {
+      "id": "score-hard-0",
+      "probs": {
+        "0": 0.4,
+        "1": 0.1,
+        "2": 0.2,
+        "3": 0.3
+      }
+    },
+    {
+      "id": "score-hard-1",
+      "probs": {
+        "0": 0.1,
+        "1": 0.2,
+        "2": 0.3,
+        "3": 0.4
+      }
+    },
+    {
+      "id": "score-hard-2",
+      "probs": {
+        "0": 0.2,
+        "1": 0.3,
+        "2": 0.4,
+        "3": 0.1
+      }
+    }
+  ],
+  "expected": {
+    "capability": 32.38909090909091,
+    "intelligence": 1.1842378929335002e-15,
+    "calibration": 64.77818181818182,
+    "competence_per_type": {
+      "choice": 3.552713678800501e-15,
+      "noul": 0.0,
+      "score": 0.0
+    },
+    "calibration_per_type": {
+      "choice": 58.199999999999996,
+      "noul": 59.13454545454546,
+      "score": 77.0
+    },
+    "accuracy_per_type": {
+      "choice": 25.0,
+      "noul": 41.66666666666667,
+      "score": 25.0
+    },
+    "items": 36,
+    "predicted": 33
+  }
+}

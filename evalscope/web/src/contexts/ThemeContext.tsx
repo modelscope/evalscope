@@ -13,8 +13,12 @@ const ThemeContext = createContext<ThemeCtx>({
 })
 
 function resolveInitialTheme(): Theme {
-  const saved = localStorage.getItem('evalscope-theme')
-  if (saved === 'light' || saved === 'dark') return saved
+  try {
+    const saved = localStorage.getItem('evalscope-theme')
+    if (saved === 'light' || saved === 'dark') return saved
+  } catch {
+    // Browser storage can be unavailable; retain an in-memory preference.
+  }
   if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches) {
     return 'light'
   }
@@ -32,7 +36,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark'
-      localStorage.setItem('evalscope-theme', next)
+      try {
+        localStorage.setItem('evalscope-theme', next)
+      } catch {
+        // Theme changes still work when persistence is unavailable.
+      }
       return next
     })
   }, [])

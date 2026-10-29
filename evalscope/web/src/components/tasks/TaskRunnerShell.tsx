@@ -1,15 +1,22 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
-import { usePolling } from '@/hooks/usePolling'
+import { useEffect, useState, type ReactNode } from 'react'
+import type { EvalInvokeResponse, LogResponse } from '@/api/types'
+import { isDomainError } from '@/api/errors'
+import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
-import TaskMonitor from '@/components/eval/TaskMonitor'
+import TaskRunMonitor from '@/components/tasks/TaskRunMonitor'
 
 interface FormRenderProps {
   onSubmit: (config: Record<string, unknown>) => Promise<void>
   disabled: boolean
 }
 
-interface TaskRunnerShellProps {
+export interface TaskSelectionProps {
+  selectedTaskId: string | null
+  onSelect: (taskId: string) => void
+  active?: boolean
+}
+
+interface TaskRunnerShellProps extends TaskSelectionProps {
   idPrefix: string
   title: string
   configTitle: string
@@ -18,13 +25,15 @@ interface TaskRunnerShellProps {
   renderForm: (props: FormRenderProps) => ReactNode
   submitTask: (config: Record<string, unknown>, taskId: string) => Promise<EvalInvokeResponse>
   stopTask: (taskId: string) => Promise<unknown>
-  getProgress: (taskId: string) => Promise<ProgressResponse>
   getLog: (taskId: string, tailLine: number) => Promise<LogResponse>
-  getReportUrl: (taskId: string) => string
 }
 
 function createTaskId(prefix: string): string {
   return `${prefix}_${Date.now()}`
+}
+
+function TaskForm({ renderForm, ...props }: FormRenderProps & Pick<TaskRunnerShellProps, 'renderForm'>) {
+  return renderForm(props)
 }
 
 export default function TaskRunnerShell({
@@ -36,97 +45,64 @@ export default function TaskRunnerShell({
   renderForm,
   submitTask,
   stopTask,
-  getProgress,
   getLog,
-  getReportUrl,
+  selectedTaskId,
+  onSelect,
+  active = true,
 }: TaskRunnerShellProps) {
-  const [taskId, setTaskId] = useState<string | null>(null)
-  const [running, setRunning] = useState(false)
+  const { t } = useLocale()
+  const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<EvalInvokeResponse | null>(null)
-  const [logText, setLogText] = useState('')
-  const [logLine, setLogLine] = useState(0)
-  const [progress, setProgress] = useState(0)
-
-  const handleSubmit = async (config: Record<string, unknown>) => {
+  const [rejectedTaskId, setRejectedTaskId] = useState<string | null>(null)
+  useEffect(() => {
+    try {
+      if (selectedTaskId && selectedTaskId === rejectedTaskId) {
+        sessionStorage.removeItem(`evalscope-active-task-${idPrefix}`)
+      } else if (selectedTaskId) {
+        sessionStorage.setItem(`evalscope-active-task-${idPrefix}`, selectedTaskId)
+      }
+    } catch {
+      return
+    }
+  }, [idPrefix, selectedTaskId, rejectedTaskId])
+  const handleSubmit = async (config: Record<string, unknown>): Promise<void> => {
     const id = createTaskId(idPrefix)
-    setTaskId(id)
-    setRunning(true)
-    setLogText('')
-    setLogLine(0)
-    setProgress(0)
-    setResult(null)
+    setSubmitting(true)
+    onSelect(id)
     try {
       setResult(await submitTask(config, id))
     } catch (error) {
-      setResult({ status: 'error', task_id: id, error: String(error) })
+      const rejected = isDomainError(error) && (error.status === 400 || error.status === 422)
+      setRejectedTaskId(rejected ? id : null)
+      setResult({ status: 'error', task_id: id, error: rejected ? error.message : t('tasks.submitUnconfirmed') })
     } finally {
-      setRunning(false)
+      setSubmitting(false)
     }
   }
-
-  const handleStop = async () => {
-    if (!taskId) return
-    try {
-      await stopTask(taskId)
-    } catch {
-      // The local task state still needs to stop when the backend is unavailable.
-    }
-    setRunning(false)
-    setResult({ status: 'stopped', task_id: taskId })
-  }
-
-  const progressFn = useCallback(async () => {
-    if (!taskId) throw new Error('no task')
-    return getProgress(taskId)
-  }, [getProgress, taskId])
-
-  const logFn = useCallback(async () => {
-    if (!taskId) throw new Error('no task')
-    return getLog(taskId, logLine)
-  }, [getLog, logLine, taskId])
-
-  usePolling<ProgressResponse>({
-    fn: progressFn,
-    enabled: running && !!taskId,
-    interval: 5000,
-    onData: (data) => {
-      setProgress(data.percent ?? 0)
-      // Stop polling when benchmark finishes (via percent) or when the
-      // backend progress tracker reports error / completed (status key).
-      if (data.percent >= 100 || data.status === 'error' || data.status === 'completed') {
-        setRunning(false)
-      }
-    },
-  })
-
-  usePolling<LogResponse>({
-    fn: logFn,
-    enabled: running && !!taskId,
-    interval: 5000,
-    onData: (data) => {
-      if (!data.text) return
-      setLogText((previous) => previous + data.text)
-      setLogLine(data.tail_line)
-    },
-  })
-
-  const reportUrl = useMemo(() => (taskId ? getReportUrl(taskId) : null), [getReportUrl, taskId])
-
   return (
-    <div className="page-enter">
-      <h1 className="text-xl font-semibold mb-6">{title}</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title={configTitle}>{renderForm({ onSubmit: handleSubmit, disabled: running })}</Card>
-        <Card title={statusTitle}>
-          <TaskMonitor
-            running={running}
-            progress={progress}
-            logText={logText}
-            result={result}
-            reportUrl={reportUrl}
-            readyLabel={readyLabel}
-            onStop={handleStop}
-          />
+    <div className="page-enter min-w-0">
+      <h2 className="sr-only">{title}</h2>
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Card title={`${t('tasks.newTask')} · ${configTitle}`}>
+          <TaskForm renderForm={renderForm} onSubmit={handleSubmit} disabled={submitting} />
+        </Card>
+        <Card title={statusTitle} className="min-w-0 lg:sticky lg:top-20">
+          {selectedTaskId ? (
+            <TaskRunMonitor
+              key={selectedTaskId}
+              taskId={selectedTaskId}
+              active={active}
+              result={result?.task_id === selectedTaskId ? result : null}
+              submissionRejected={rejectedTaskId === selectedTaskId}
+              stopTask={stopTask}
+              getLog={getLog}
+            />
+          ) : (
+            <div className="space-y-2 py-3">
+              <p className="text-sm text-[var(--text)]">{readyLabel}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t('tasks.library.emptyMonitor')}</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>

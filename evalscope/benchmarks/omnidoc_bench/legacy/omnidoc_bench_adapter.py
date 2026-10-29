@@ -88,6 +88,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 - Scores from this legacy integration are not directly comparable with v1.6 scores.
 """,  # noqa: E501
         dataset_id='evalscope/OmniDocBench_tsv',
+        hf_dataset_id='ouyanglinke/OmniDocBench_tsv',
         metric_list=[
             {'text_block': {'metric': ['Edit_dist', 'BLEU', 'METEOR']}},
             {'display_formula': {'metric': ['Edit_dist']}},

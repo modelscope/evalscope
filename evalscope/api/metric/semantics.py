@@ -39,9 +39,12 @@ KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset(
         'pass_at_k',
         'pass_hat_k',
         'vote_at_k',
+        'bayes_at_n',
+        'bayes_at_n_sd',
         'max',
         # Benchmark-owned aggregations, computed inside an adapter's `aggregate_scores`.
         'official',
+        'decision',
         'rate',
     }
 )

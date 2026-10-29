@@ -58,6 +58,7 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
         name='vlms_are_biased',
         pretty_name='VLMs Are Biased',
         dataset_id='evalscope/vlms-are-biased',
+        hf_dataset_id='anvo25/vlms-are-biased',
         subset_list=SUBSET_LIST,
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.REASONING],
         description=DESCRIPTION,

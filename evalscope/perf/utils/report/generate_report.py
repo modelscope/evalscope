@@ -11,11 +11,12 @@ Public API
 
 from __future__ import annotations
 
+import math
 import os
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
+from evalscope.perf.utils.perf_constants import Metrics
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
@@ -24,13 +25,25 @@ from .summary import (
     build_basic_info,
     build_best_config,
     build_recommendations,
+    build_run_config,
     build_summary_items,
     build_summary_table,
     format_summary_rows,
-    is_embedding,
 )
 
 logger = get_logger()
+PERF_HTML_MARKER = '<!-- evalscope-perf-render:v3 -->'
+
+
+def is_current_perf_report(report_file: str) -> bool:
+    try:
+        with open(report_file, encoding='utf-8', errors='replace') as source:
+            doctype = source.readline().strip()
+            render_marker = source.readline().strip()
+    except OSError:
+        return False
+    return doctype == '<!DOCTYPE html>' and render_marker == PERF_HTML_MARKER
+
 
 _TEMPLATE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
@@ -56,7 +69,13 @@ def _build_run_section(run, is_embedding_flag: bool) -> Dict[str, Any]:
         'summary_items': build_summary_items(run.summary, is_embedding_flag),
         # percentile table
         'percentile_columns': list(pct[0].keys()) if pct else [],
-        'percentile_rows': [list(p.values()) for p in pct],
+        'percentile_rows': [
+            [
+                '—' if value is None or isinstance(value, float) and not math.isfinite(value) else value
+                for value in percentile.values()
+            ]
+            for percentile in pct
+        ],
         # charts
         'percentile_chart': pct_charts[0],
         'percentile_token_lat_chart': pct_charts[1],
@@ -108,43 +127,52 @@ def gen_perf_html_report(
 
     # Resolve API type from args or first run's stored args
     api_type = getattr(args, 'api', '') or runs[0].args.get('api', '')
-    is_emb = is_embedding(api_type)
+    input_only = Metrics.is_input_only(api_type)
     first_args = runs[0].args
 
     # ── Tab groups ──────────────────────────────────────────────────────────
     latency_tabs = [{'label': 'Latency', 'chart': charts.build_latency_chart(runs)}]
-    if not is_emb:
+    if not input_only:
         latency_tabs.append({'label': 'TTFT', 'chart': charts.build_ttft_chart(runs)})
         latency_tabs.append({'label': 'TPOT', 'chart': charts.build_tpot_chart(runs)})
 
     throughput_tabs = [
         {'label': 'Request Throughput', 'chart': charts.build_rps_chart(runs)},
-        {'label': 'Token Throughput', 'chart': charts.build_throughput_chart(runs, is_emb)},
+        {'label': 'Token Throughput', 'chart': charts.build_throughput_chart(runs, input_only)},
         {'label': 'Success Rate', 'chart': charts.build_success_chart(runs)},
     ]
 
     # ── Summary table ───────────────────────────────────────────────────────
-    summary_columns, summary_rows = build_summary_table(runs, is_emb)
+    summary_columns, summary_rows = build_summary_table(runs, input_only)
     summary_rows = format_summary_rows(summary_columns, summary_rows)
 
     # ── Template rendering ──────────────────────────────────────────────────
     env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)
     template = env.get_template('perf_report.html.j2')
 
+    basic_info = build_basic_info(first_args, runs, input_only)
     html_content = template.render(
+        render_marker=PERF_HTML_MARKER,
+        alias=first_args.get('alias') or '',
+        endpoint=basic_info.get('Endpoint', ''),
+        configuration=build_run_config(first_args, runs),
         model=first_args.get('model', first_args.get('model_id', 'N/A')),
         api_type=api_type,
         dataset=first_args.get('dataset', 'N/A'),
         generated_at=current_time().strftime('%Y-%m-%d %H:%M:%S'),
         evalscope_version=_evalscope_version,
-        basic_info=build_basic_info(first_args, runs, is_emb),
+        basic_info={
+            key: value
+            for key, value in basic_info.items()
+            if key not in ('Model', 'Alias', 'Endpoint', 'API Type', 'Dataset')
+        },
         summary_columns=[column['label'] for column in summary_columns],
         summary_rows=summary_rows,
         best_config=build_best_config(runs),
         recommendations=build_recommendations(runs),
         latency_tabs=latency_tabs,
         throughput_tabs=throughput_tabs,
-        run_sections=[_build_run_section(r, is_emb) for r in runs],
+        run_sections=[_build_run_section(r, input_only) for r in runs],
         default_lang=DEFAULT_LANGUAGE,
         plotly_cdn_url=PLOTLY_CDN_URL,
     )

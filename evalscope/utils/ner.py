@@ -229,6 +229,7 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
     # Reconstruct the original text to find character positions for each token
     original_text = ' '.join(original_tokens)
+    preserves_text = re.sub(r'<[^>]+>', '', xml_text) == original_text
 
     # Track token start positions in the original text
     token_positions = []
@@ -247,6 +248,12 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
     # Map entities to tokens based on character positions
     for entity_type, entity_text, start_pos, end_pos in entities:
+        # Text-preserving annotations give an exact offset, even for repeated names.
+        if preserves_text and not re.search(r'<[^>]+>', entity_text):
+            entity_start = len(re.sub(r'<[^>]+>', '', xml_text[:start_pos]))
+        else:
+            entity_start = -1
+
         # Extract the context from the XML text to help locate the correct entity occurrence
         # Get some context before and after the entity in the XML text
         context_start = max(0, start_pos - 20)
@@ -258,9 +265,7 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
         # Use context to find the correct entity position in original text
         search_pos = 0
-        entity_start = -1
-
-        while search_pos < len(original_text):
+        while entity_start == -1 and search_pos < len(original_text):
             # Find the next occurrence of the entity
             potential_start = original_text.find(entity_text, search_pos)
             if potential_start == -1:
@@ -293,16 +298,13 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
         entity_end = entity_start + len(entity_text)
 
         # Find tokens that overlap with this entity
+        first_token = True
         for i, (token_start, token_end) in enumerate(zip(token_positions, token_ends)):
-            if token_start <= entity_end and token_end >= entity_start:
+            if token_start < entity_end and token_end > entity_start:
                 # This token overlaps with the entity
                 if bio_tags[i] == 'O':
-                    # Start of entity
-                    if i == 0 or bio_tags[i - 1] == 'O' or not bio_tags[i - 1].endswith(entity_type):
-                        bio_tags[i] = f'B-{entity_type}'
-                    else:
-                        # Continuation of entity
-                        bio_tags[i] = f'I-{entity_type}'
+                    bio_tags[i] = f'{"B" if first_token else "I"}-{entity_type}'
+                first_token = False
 
     return bio_tags
 

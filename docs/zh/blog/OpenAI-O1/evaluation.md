@@ -407,4 +407,4 @@ OpenAI的o1在各个方面展现出了卓越的性能，尤其是在逻辑推理
 4. [OpenAI o1模型官方介绍](https://openai.com/index/introducing-openai-o1-preview/)
 5. [实际体验GPT-O1模型](https://selfboot.cn/2024/09/13/gpto1_hands_on/)
 6. [OpenAI发布o1推理模型](https://www.thepaper.cn/newsDetail_forward_28729012)
-7. [「草莓」实测：可能只是工程 Trick，且有扣费陷阱！](https://mp.weixin.qq.com/s/-DeHD6vjf0Tt5bwmeeQuXA)
+7. [“草莓”实测：可能只是工程 Trick，且有扣费陷阱！](https://mp.weixin.qq.com/s/-DeHD6vjf0Tt5bwmeeQuXA)

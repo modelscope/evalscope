@@ -16,15 +16,15 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 
 - 覆盖七个基础学科
 - 多种题型（单选、多选、填空）
-- 中文 K-12 教育内容
-- 考察领域特定的视觉推理能力
+- 基于中国 K-12 教育内容
+- 测试领域特定的视觉推理能力
 - 题目形式多样
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 在验证集（validation split）上进行评估
-- 使用数值准确率（numeric accuracy）作为指标
+- 使用数值准确率作为评估指标
 - 使用思维链（Chain-of-thought）提示进行推理
 
 
@@ -51,7 +51,7 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `biology` | 270 | 284.66 | 140 | 854 |
 | `chemistry` | 265 | 343.22 | 143 | 1404 |
@@ -68,7 +68,7 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 | 图像总数 | 1,800 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 121x20 - 2327x1809 |
-| 图像格式 | gif, jpeg, png |
+| 格式 | gif, jpeg, png |
 
 
 ## 样例示例
@@ -113,7 +113,7 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 }
 ```
 
-*注：部分内容为显示需要已截断。*
+*注：部分内容为显示需要已被截断。*
 
 ## 提示模板
 
@@ -137,6 +137,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets cmmu \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -151,9 +152,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['cmmu'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'cmmu': {
-            # subset_list: ['biology', 'chemistry', 'geography']  # 可选，用于评估特定子集
+            # subset_list: ['biology', 'chemistry', 'geography']  # 可选，用于评估指定子集
         }
     },
     limit=10,  # 正式评估时请删除此行

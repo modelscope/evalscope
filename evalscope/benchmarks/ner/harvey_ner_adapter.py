@@ -33,9 +33,11 @@ HarveyNER is a dataset with fine-grained locations annotated in tweets, collecte
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='harvey_ner',
         pretty_name='HarveyNER',
         dataset_id='extraordinarylab/harvey-ner',
+        hf_dataset_id='extraordinarylab/harvey-ner',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

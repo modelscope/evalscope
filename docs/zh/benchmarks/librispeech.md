@@ -1,33 +1,32 @@
 # LibriSpeech
 
-
 ## 概述
 
-LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语语音，源自有声读物。它是评估自动语音识别（ASR）系统最广泛使用的基准测试之一。
+LibriSpeech 是一个大规模的语料库，包含大约 1000 小时的有声读物中的英语朗读语音。它是评估自动语音识别（ASR）系统最常用的基准之一。
 
 ## 任务描述
 
-- **任务类型**：自动语音识别（ASR）
-- **输入**：来自有声读物的朗读英语语音录音
-- **输出**：转录文本
-- **语言**：英语
+- **任务类型**: 自动语音识别 (ASR)
+- **输入**: 有声读物中的英语朗读录音
+- **输出**: 转录文本
+- **语言**: 英语
 
 ## 主要特点
 
-- 1,000 小时高质量朗读语音
-- 源自 LibriVox 有声读物（公共领域）
-- 包含“clean”和“other”测试集，用于不同难度评估
-- ASR 研究中广泛使用的基线数据集
+- 1000 小时高质量朗读语音
+- 来自 LibriVox 有声读物（公共领域）
+- 清晰和“其他”测试集用于不同难度
+- ASR 研究中广泛使用的基线
 - 标准化的评估协议
 
 ## 评估说明
 
-- 默认配置使用 **test_clean** 划分
-- 主要指标：**词错误率（WER）**
-- 评估过程中应用文本归一化
-- 提示词："Please recognize the speech and only output the recognized content"
-- 元数据包含音频 ID 和时长信息
-
+- 支持的评估分割: **test_clean** 和 **test_other**
+- 主要指标: **词错误率 (WER)**
+- 评估过程中应用文本规范化
+- 提示: "请识别语音并仅输出识别内容"
+- 元数据包括音频 ID 和持续时间信息
+- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器以进行音频输入。
 
 ## 属性
 
@@ -39,35 +38,40 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
 | **标签** | `Audio`, `SpeechRecognition` |
 | **指标** | `wer` |
 | **默认样本数** | 0-shot |
-| **评估划分** | `test_clean` |
-
+| **评估分割** | `N/A` |
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
-| 总样本数 | 87 |
-| 提示词长度（平均） | 67 字符 |
-| 提示词长度（最小/最大） | 67 / 67 字符 |
+| 总样本数 | 177 |
+| 提示词长度（平均值） | 67 字符 |
+| 提示词长度（最小/最大值） | 67 / 67 字符 |
 
-**音频统计：**
+**子集统计数据:**
+
+| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
+|--------|---------|-------------|------------|------------|
+| `test_clean` | 87 | 67 | 67 | 67 |
+| `test_other` | 90 | 67 | 67 | 67 |
+
+**音频统计数据:**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 87 |
-| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 177 |
+| 每个样本的音频数量 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | wav |
-
 
 ## 样例示例
 
-**子集**: `default`
+**子集**: `test_clean`
 
 ```json
 {
   "input": [
     {
-      "id": "fd0309e6",
+      "id": "732c90a4",
       "content": [
         {
           "text": "Please recognize the speech and only output the recognized content:"
@@ -79,7 +83,7 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
       ]
     }
   ],
-  "target": "Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.",
+  "target": "Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED 7380 chars] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.",
   "id": 0,
   "group_id": 0,
   "metadata": {
@@ -89,11 +93,11 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注：部分内容因显示需要被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Please recognize the speech and only output the recognized content:
 ```
@@ -108,7 +112,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets librispeech \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -122,7 +126,12 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['librispeech'],
-    limit=10,  # 正式评估时请删除此行
+    dataset_args={
+        'librispeech': {
+            # subset_list: ['test_clean', 'test_other']  # optional, evaluate specific subsets
+        }
+    },
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

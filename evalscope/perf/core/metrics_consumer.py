@@ -7,7 +7,7 @@ from tqdm import tqdm as tqdm_std
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.core.http_client import AioHttpClient, test_connection
+from evalscope.perf.core.http_client import test_connection
 from evalscope.perf.utils.benchmark_util import Metrics, MetricsAccumulator
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data
 from evalscope.perf.utils.handler import exception_handler
@@ -44,7 +44,11 @@ async def statistic_benchmark_metric(
         ``workload_timeline`` always accumulates regardless of mode, callers
         may inspect ``n_points`` before rendering downstream tables.
     """
-    accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
+    accumulator = MetricsAccumulator(
+        concurrency=args.parallel,
+        rate=args.rate,
+        enable_pd_metrics=args.enable_pd_metrics,
+    )
     trace_acc = TraceAccumulator()
     workload_timeline = WorkloadTimeline()
     result_db_path = get_result_db_path(args)
@@ -123,11 +127,17 @@ async def statistic_benchmark_metric(
                 # default): building the message for every request would be
                 # pure per-request overhead.
                 if args.visualizer:
-                    message = accumulator.to_result().create_message(api_type=args.api)
+                    message = accumulator.to_result().create_message(
+                        api_type=args.api,
+                        enable_pd_metrics=args.enable_pd_metrics,
+                    )
                     await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
                 if int(accumulator.n_total) % args.log_every_n_query == 0:
-                    message = accumulator.to_result().create_message(api_type=args.api)
+                    message = accumulator.to_result().create_message(
+                        api_type=args.api,
+                        enable_pd_metrics=args.enable_pd_metrics,
+                    )
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
                     logger.info(msg)
 
@@ -158,7 +168,7 @@ async def connect_test(args: Arguments, api_plugin: 'ApiPluginBase') -> None:
     Raises:
         TimeoutError: If the test connection fails.
     """
-    if Metrics.is_embedding_or_rerank(args.api):
+    if Metrics.is_input_only(args.api):
         return
 
     if args.no_test_connection:

@@ -13,6 +13,7 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
@@ -43,7 +44,7 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         args.rate = args.rate[0]
 
     logger.info('Starting benchmark with args: ')
-    logger.info(args)
+    logger.info(args.model_copy(update={'url': sanitize_endpoint(args.url)}))
 
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -152,7 +153,9 @@ def run_perf_benchmark(args):
         args: Arguments object, dict, or Namespace
 
     Returns:
-        Dict with benchmark results in format {parallel_x_number_x: {metrics: ..., percentiles: ...}}
+        SLA mode returns pressure-keyed benchmark results with tuning details
+        available as Python attributes. Other modes return benchmark results in
+        the format {parallel_x_number_x: {metrics: ..., percentiles: ...}}.
     """
     # Check if args is a dictionary or Namespace
     if isinstance(args, dict):
@@ -167,6 +170,11 @@ def run_perf_benchmark(args):
     output_path = get_output_path(args)
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
     args.outputs_dir = output_path
+
+    if args.scenario is not None:
+        from .scenarios import run_agentx_benchmark
+
+        return run_agentx_benchmark(args, output_path)
 
     if args.sla_auto_tune:
         results = run_sla_auto_tune(args, run_one_benchmark)

@@ -143,6 +143,7 @@ LANGUAGE_BY_CODE = {
         name='wmt24pp',
         pretty_name='WMT2024++',
         dataset_id='extraordinarylab/wmt24pp',
+        hf_dataset_id='extraordinarylab/wmt24pp',
         tags=[Tags.MULTI_LINGUAL, Tags.MT],
         description="""
 ## Overview

@@ -210,6 +210,10 @@ class AgentLoopAdapter(AgentAdapter):
             return ac.mcp_servers or None
         return None
 
+    @staticmethod
+    def _resolve_validate_tool_arguments(ac: Any) -> bool:
+        return isinstance(ac, NativeAgentConfig) and ac.validate_tool_arguments
+
     # ------------------------------------------------------------------
     # Overridden inference hook
     # ------------------------------------------------------------------
@@ -257,6 +261,7 @@ class AgentLoopAdapter(AgentAdapter):
             trace_strategy_name=getattr(strategy, 'name', None),
             trace_env_name=environment.name if environment else None,
             mcp_configs=mcp_configs,
+            validate_tool_arguments=self._resolve_validate_tool_arguments(ac),
         )
 
         finalization_prompt = self.build_max_steps_finalization_message(sample)

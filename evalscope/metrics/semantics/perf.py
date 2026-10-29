@@ -98,6 +98,18 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='perf.latency.milliseconds',
         metric_name=Metrics.AVERAGE_INTER_TOKEN_LATENCY,
     ),
+    Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY,
+    ),
+    Metrics.AVERAGE_PD_HANDOFF_LATENCY: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=Metrics.AVERAGE_PD_HANDOFF_LATENCY,
+    ),
+    Metrics.AVERAGE_PD_HANDOFF_OVERHEAD: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=Metrics.AVERAGE_PD_HANDOFF_OVERHEAD,
+    ),
     Metrics.AVERAGE_FIRST_TURN_TTFT: MetricEntry(
         baseline='perf.latency.milliseconds',
         metric_name=Metrics.AVERAGE_FIRST_TURN_TTFT,
@@ -147,6 +159,18 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
     PercentileMetrics.ITL: MetricEntry(
         baseline='perf.latency.milliseconds',
         metric_name=PercentileMetrics.ITL,
+    ),
+    PercentileMetrics.STEADY_ITL: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=PercentileMetrics.STEADY_ITL,
+    ),
+    PercentileMetrics.PD_HANDOFF_LATENCY: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=PercentileMetrics.PD_HANDOFF_LATENCY,
+    ),
+    PercentileMetrics.PD_HANDOFF_OVERHEAD: MetricEntry(
+        baseline='perf.latency.milliseconds',
+        metric_name=PercentileMetrics.PD_HANDOFF_OVERHEAD,
     ),
     PercentileMetrics.TPOT: MetricEntry(
         baseline='perf.latency.milliseconds',

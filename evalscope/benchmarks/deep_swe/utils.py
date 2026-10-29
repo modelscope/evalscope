@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import url2pathname
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
+from evalscope.api.dataset import DatasetHub
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.constants import HubType
@@ -16,31 +17,19 @@ def download_snapshot(
     data_id_or_path: str,
     data_source: str,
     cache_dir: str,
+    revision: Optional[str] = None,
     force_redownload: bool = False,
 ) -> Path:
     """Download or resolve a DeepSWE dataset snapshot root."""
-    data_source = data_source or HubType.MODELSCOPE
-    if data_source == HubType.LOCAL or os.path.exists(data_id_or_path):
-        return Path(data_id_or_path).resolve()
-
-    if data_source == HubType.HUGGINGFACE:
-        from huggingface_hub import snapshot_download
-
-        return Path(
-            snapshot_download(
-                repo_id=data_id_or_path,
-                repo_type='dataset',
-                cache_dir=cache_dir,
-                force_download=force_redownload,
-            )
-        )
-
-    if data_source == HubType.MODELSCOPE:
-        from modelscope import dataset_snapshot_download
-
-        return Path(dataset_snapshot_download(data_id_or_path, cache_dir=cache_dir))
-
-    raise ValueError(f'Unsupported dataset hub for DeepSWE: {data_source}')
+    return Path(
+        DatasetHub(
+            data_id_or_path=data_id_or_path,
+            data_source=data_source,
+            revision=revision,
+            force_redownload=force_redownload,
+            cache_dir=cache_dir,
+        ).download_snapshot()
+    )
 
 
 def load_task_records(snapshot_path: Path) -> List[Dict[str, Any]]:

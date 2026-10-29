@@ -25,6 +25,7 @@ Please think step by step. After your reasoning, put your final answer within \\
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='gsm8k_v',
         pretty_name='GSM8K-V',
         dataset_id='evalscope/GSM8K-V',

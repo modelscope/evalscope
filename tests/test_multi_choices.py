@@ -1,9 +1,11 @@
+import pytest
+
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
+from evalscope.utils.multi_choices import extract_answer_line, parse_answers, parse_answers_zh
 
 CHOICES = ['first', 'second', 'third', 'fourth']
 
@@ -56,6 +58,23 @@ def test_parse_answers_multiple_correct_slash_and_ideographic_comma() -> None:
     assert parse_answers(_make_state('reasoning\nANSWER: A/B/C'), multiple_correct=True) == {'A', 'B', 'C'}
     assert parse_answers(_make_state('reasoning\nANSWER: A、B'), multiple_correct=True) == {'A', 'B'}
     assert parse_answers(_make_state('reasoning\nANSWER: (A/B)'), multiple_correct=True) == {'A', 'B'}
+
+
+def test_parse_answers_multiple_correct_full_width_comma() -> None:
+    """A full-width comma between labels separates them in the unbracketed form too.
+
+    Regression test: the bracketed pattern and the Chinese parser already read ``，`` as a
+    separator, and the splitting below normalizes it to a plain comma, but the plain-label
+    pattern stopped at it. 'ANSWER: A，C' therefore kept only its first label and a correct
+    multi-select answer was scored as wrong.
+    """
+    assert parse_answers(_make_state('reasoning\nANSWER: A，C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers(_make_state('reasoning\nANSWER: A，B，D'), multiple_correct=True) == {'A', 'B', 'D'}
+    assert parse_answers(_make_state('reasoning\nANSWER: A， B'), multiple_correct=True) == {'A', 'B'}
+    # A full-width comma now scores exactly like its ASCII spelling.
+    assert parse_answers(_make_state('reasoning\nANSWER: A，C')) == parse_answers(
+        _make_state('reasoning\nANSWER: A,C')
+    )
 
 
 def test_parse_answers_connector_joins_labels_only() -> None:
@@ -122,6 +141,33 @@ def test_parse_answers_wrapped_multiple_answers_full_width_comma() -> None:
     """
     assert parse_answers(_make_state('reasoning\nANSWER: (A，C)'), multiple_correct=True) == {'A', 'C'}
     assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
+
+
+def test_parse_answers_zh_multiple_correct_slash_and_ideographic_comma() -> None:
+    """An unbracketed slash or ideographic comma between labels is a separator, not the end.
+
+    Mirrors ``test_parse_answers_multiple_correct_slash_and_ideographic_comma`` for the Chinese
+    parser. The plain-label pattern used to stop at ``、`` / ``/``, so a multi-select answer such
+    as ``答案：A、C`` kept only its first label and was scored as wrong.
+    """
+    assert parse_answers_zh(_make_state('推理过程\n答案：A、C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A/C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A、B、D'), multiple_correct=True) == {'A', 'B', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A，C'), multiple_correct=True) == {'A', 'C'}
+
+
+def test_parse_answers_zh_multiple_correct_space_separated() -> None:
+    """A space between labels ('A, C', 'A C') does not end a Chinese multi-select answer.
+
+    The English plain-label pattern already allows spaces; the Chinese one stopped at the
+    first space, so '答案：A, C' was read as 'A' and a correct answer was scored as wrong.
+    """
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, B, D'), multiple_correct=True) == {'A', 'B', 'D'}
+    # Prose after the labels still ends the answer.
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, C 是正确的'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：B because C is wrong')) == {'B'}
 
 
 def test_parse_answers_ignores_bracketed_prose() -> None:
@@ -272,3 +318,22 @@ def test_configured_filter_reaches_multi_choice_extraction() -> None:
 
     assert adapter.filter_ensemble is not None
     assert adapter.filter_prediction(state.output.completion, state) == 'B'
+
+
+@pytest.mark.parametrize('label', ['$B$', '$\\boxed{B}$', '\\boxed{B}', '\\(\\text{B}\\)', '$\\boxed{\\text{B}}$'])
+def test_parse_answers_math_wrapped_label_with_trailing_text(label: str) -> None:
+    # Without the label, the last capital of the trailing sentence ('I') was taken instead.
+    assert parse_answers(_make_state(f'reasoning\nANSWER: {label}\n\nI hope this helps.')) == {'B'}
+    assert parse_answers_zh(_make_state(f'推理\n答案：{label}\n\nHope this helps.')) == {'B'}
+
+
+@pytest.mark.parametrize(
+    'text',
+    ['ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', '**ANSWER:** 45', 'Answer: 45', 'reasoning\nANSWER: 12\nfix\nANSWER: 45'],
+)
+def test_extract_answer_line(text: str) -> None:
+    assert extract_answer_line(text) == '45'
+
+
+def test_extract_answer_line_without_marker() -> None:
+    assert extract_answer_line('The value is 45.') is None

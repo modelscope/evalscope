@@ -14,7 +14,7 @@ Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简
 
 ## 主要特点
 
-- 覆盖多个知识领域的多样化主题
+- 覆盖多种知识领域的多样化主题
 - 测试世界知识的简单事实性问题
 - 中文语言能力评估
 - 使用 LLM-as-judge 评估答案正确性
@@ -48,7 +48,7 @@ Chinese SimpleQA 是一个中文问答数据集，旨在评估语言模型在简
 | 提示词长度（平均） | 32.45 字符 |
 | 提示词长度（最小/最大） | 16 / 129 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -102,6 +102,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets chinese_simpleqa \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -116,6 +117,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['chinese_simpleqa'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'chinese_simpleqa': {
             # subset_list: ['中华文化', '人文与社会科学', '工程、技术与应用科学']  # 可选，用于评估特定子集

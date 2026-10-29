@@ -9,11 +9,13 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--model` | `str` | Name or path of the test model | - |
 | `--url` | `str` | API address, supporting `/chat/completions`, `/completions`, and `/responses` endpoints | - |
 | `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
+| `--alias` | `str` | Human-readable run alias shown in the Web dashboard lists and reports to distinguish runs of the same model (display label only) | `None` |
 | `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible Chat Completions API (requires `--url`)<br>• `openai_responses`: OpenAI official Responses API<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
 | `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |
 | `--debug` | `bool` | Whether to output debug information | `False` |
+| `--scenario` | `str` | External workload scenario. `agentx` runs AIPerf AgentX MVP; also accepts AgentX JSON. See [AgentX MVP](./agentx.md). | `None` |
 
 ## Network Configuration
 
@@ -35,6 +37,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--log-every-n-query` | `int` | Log every N queries | `100` |
 | `--stream` | `bool` | Whether to use SSE stream output<br>Must be enabled to measure TTFT (Time to First Token) metric | `True` |
 | `--sleep-interval` | `int` | Sleep time between each performance test (seconds)<br>Helps avoid overloading the server | `5` |
+| `--enable-pd-metrics` | `bool` | Enable optional PD-disaggregation handoff metrics for streaming generation<br>When enabled, the report includes `Steady ITL`, `PD Handoff Latency`, and `PD Handoff Overhead` based on inter-output chunk intervals<br>Keep disabled for standard non-PD benchmarks | `False` |
 | `--open-loop` | `bool` | Enable open-loop mode: dispatch requests following a Poisson arrival schedule without semaphore backpressure.<br>Requests are fired at the rate set by `--rate` regardless of whether the server has finished processing previous requests.<br>• `--rate` becomes the sweep variable (accepts multiple values), replacing `--parallel` to drive multi-run iterations<br>• `--number` must have the same length as `--rate`; each pair `(rate, number)` corresponds to one independent run<br>• `--parallel` is ignored in this mode (internally set to -1 / INF)<br>See [Usage Example](./examples.md#open-loop-mode) | `False` |
 | `--warmup-num` | `float` | Number or ratio of warmup requests:<br>• `0`: disabled (default)<br>• `>= 1`: absolute count, e.g. `--warmup-num 10` sends 10 warmup requests<br>• `0 < value < 1`: ratio mode, e.g. `--warmup-num 0.1` = 10% of `--number`<br>Warmup requests are sent with the same concurrency/rate as the benchmark but **excluded from performance metrics**<br>Useful for eliminating cold-start effects (KV-cache filling, JIT compilation, etc.)<br>In closed-loop mode, set it to `--parallel` or more, otherwise the first few requests inflate `p99`<br>See [Usage Example](./examples.md#warmup) | `0` |
 | `--duration` | `float` | Wall-clock budget for one benchmark run (seconds)<br>Soft-exit semantics: once the deadline elapses **no new requests are dispatched**, but **already in-flight requests are allowed to finish** before exit<br>In multi-turn mode "in-flight" means **already-claimed traces run every remaining turn** (trace-level soft exit, aligned with upstream trie)<br>When combined with `--number`, **whichever cap is hit first** ends the run | `None` |
@@ -56,7 +59,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 |------|------|------|--------|
 | `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
 | `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
-| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Example: `'[{"p99_latency": "<=2"}]'` | `None` |
+| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Latency units: `s` or `ms`; without a suffix, `latency` uses seconds and `ttft`/`tpot` use milliseconds<br>Example: `'[{"p99_latency": "<=2s"}]'` | `None` |
 | `--sla-upper-bound` | `int` | Upper bound of the tuned SLA variable search range | `65536` |
 | `--sla-lower-bound` | `int` | Lower bound of the tuned SLA variable search range | `1` |
 | `--sla-fixed-parallel` | `int` | Fixed parallel workers used when `--sla-variable=rate`; defaults to `--sla-upper-bound` for backward compatibility | `None` |
@@ -97,7 +100,8 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 |------|-------------|----------------------|
 | `openqa` | Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope<br>Prompts are relatively short (usually <100 tokens)<br>Uses `question` field from jsonl file when `dataset_path` is specified | ✓ |
 | `longalpaca` | Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope<br>Prompts are much longer (generally >6000 tokens)<br>Uses `instruction` field from jsonl file when `dataset_path` is specified | ✓ |
-| `line_by_line` | Each line in txt file is used as a separate prompt<br>**Requires `dataset_path`** | ✓ (Required) |
+| `line_by_line` | Each line is a plain prompt, an OpenAI messages JSON array, or a complete request-body JSON object; JSON is forwarded unchanged<br>**Requires `dataset_path`** | ✓ (Required) |
+| `open_decisions` | Automatically downloads [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) from ModelScope<br>Converts items into System One decision request bodies; use with `--api systemone` only | ✓ (directory) |
 | `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#random-dataset) | ✗ |
 | `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 
@@ -108,6 +112,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 | `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#random-multimodal-dataset) | ✗ |
+| `mmmu_multi_image` | Round-robins all 30 MMMU validation subjects to build real multi-image requests<br>For performance traffic only; does not accept `--dataset-args`; requires multi-image data URL support | ✓ (MMMU-compatible `datasets` directory) |
 
 **Embedding**
 
@@ -211,7 +216,8 @@ The `prefix_file` in this section injects a **real text** prefix for real datase
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--prefix-length` | `int` | Length of the random token prefix<br>Only effective for the `random` dataset; all requests share the same prefix, which can be used to induce prefix-cache hits | `0` |
+| `--prefix-length` | `int` | Length of the random token prefix<br>For the `random` dataset; raw token length of each shared prefix in the per-run pool | `0` |
+| `--prefix-count` | `int` | Number of distinct shared raw token prefixes per run; requests use `request_index % prefix_count`, including warmup. Must be >= 1; values > 1 require `--dataset random`, `--prefix-length > 0`, and no `--prompt`. | `1` |
 | `--image-width` | `int` | Image width for random VL dataset | `224` |
 | `--image-height` | `int` | Image height for random VL dataset | `224` |
 | `--image-format` | `str` | Image format for random VL dataset | `RGB` |

@@ -195,6 +195,7 @@ def _is_hit(status: str) -> bool:
         name='one_million_bench',
         pretty_name='$OneMillion-Bench',
         dataset_id='evalscope/OneMillion-Bench',
+        hf_dataset_id='humanlaya-data-lab/OneMillion-Bench',
         tags=[Tags.AGENT, Tags.KNOWLEDGE, Tags.QA, Tags.REASONING, Tags.MULTI_LINGUAL],
         description=_DESCRIPTION,
         paper_url='https://arxiv.org/abs/2603.07980',

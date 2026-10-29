@@ -19,6 +19,7 @@ DIST_DIR ?= $(CURDIR)/dist
 #
 # WHAT IS AFFECTED:
 #   docs-update        Writes evalscope/benchmarks/_meta/<name>.json (metadata only)
+#   docs-update-index  Writes evalscope/benchmarks/_index.json (name -> adapter module)
 #   docs-update-stats  Same as above + downloads dataset to compute sample statistics
 #   docs-translate     Updates readme.zh field inside each _meta/<name>.json
 #   docs-generate      Overwrites docs/en/benchmarks/*.md + docs/zh/benchmarks/*.md
@@ -70,19 +71,25 @@ docs: docs-translate docs-generate
 	$(MAKE) docs-zh
 
 .PHONY: docs-update
-docs-update:
+docs-update: docs-update-index
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update $(_FORCE_FLAG) --workers $(WORKERS)
 
 .PHONY: docs-update-stats
-docs-update-stats:
+docs-update-stats: docs-update-index
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --compute-stats $(_FORCE_FLAG) --workers $(WORKERS)
+
+# Regenerates evalscope/benchmarks/_index.json (benchmark name -> adapter module).
+# Generated artifact: never hand-edit it.
+.PHONY: docs-update-index
+docs-update-index:
+	python -m evalscope.cli.cli benchmark-info --update-index
 
 .PHONY: docs-translate
 docs-translate:
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --translate $(_FORCE_FLAG) --workers $(WORKERS)
 
 .PHONY: docs-pipeline
-docs-pipeline:
+docs-pipeline: docs-update-index
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --update --compute-stats $(_FORCE_FLAG) --workers $(WORKERS)
 	python -m evalscope.cli.cli benchmark-info $(_BENCH_ARGS) --translate $(_FORCE_FLAG) --workers $(WORKERS)
 	python -m evalscope.cli.cli benchmark-info --generate-docs
@@ -152,6 +159,11 @@ package-check:
 .PHONY: lint
 lint:
 	pre-commit run --all-files
+
+# Architecture contracts (see .importlinter). Checks import direction only.
+.PHONY: lint-imports
+lint-imports:
+	lint-imports
 
 .PHONY: dev
 dev:

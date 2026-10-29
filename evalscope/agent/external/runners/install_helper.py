@@ -1,6 +1,6 @@
 """Installation helpers shared by external runners."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from evalscope.agent.skills import install_agent_skills, skills_from_sample_metadata
 from evalscope.utils.logger import get_logger
@@ -13,10 +13,19 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
-async def node_present(env: 'AgentEnvironment') -> bool:
-    """Return ``True`` when both ``node`` and ``npm`` are on PATH."""
+async def node_present(
+    env: 'AgentEnvironment',
+    *,
+    version_checker: Optional[Callable[[str], bool]] = None,
+) -> bool:
+    """Return whether Node.js and npm are available and satisfy an optional version checker."""
     probe = await env.exec(['bash', '-c', 'command -v node && command -v npm'])
-    return probe.returncode == 0
+    if probe.returncode != 0:
+        return False
+    if version_checker is None:
+        return True
+    version = await env.exec(['node', '-p', 'process.versions.node'])
+    return version.returncode == 0 and version_checker(version.stdout.strip())
 
 
 async def ensure_node_via_apt(
@@ -25,9 +34,10 @@ async def ensure_node_via_apt(
     node_setup_url: str,
     timeout_s: float,
     runner_name: str,
+    version_checker: Optional[Callable[[str], bool]] = None,
 ) -> None:
     """Ensure Node.js and npm are available, installing via nodesource if needed."""
-    if await node_present(env):
+    if await node_present(env, version_checker=version_checker):
         return
     logger.info(
         f'{runner_name}.setup: installing Node.js via {node_setup_url} '

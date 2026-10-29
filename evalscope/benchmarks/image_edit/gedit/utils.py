@@ -232,12 +232,12 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
             if not isinstance(new_data['score'], list):
                 new_data['score'] = [new_data['score']]
         except Exception:
-            logger.info('Now fixing: ', json_str)
+            logger.info('Now fixing: %s', json_str)
             try:
                 new_data = json.loads(fix_json(json_str))
                 return new_data
             except Exception:
-                logger.info('Error: Cannot fix', json_str)
+                logger.info('Error: Cannot fix %s', json_str)
                 return False
         return new_data
     else:

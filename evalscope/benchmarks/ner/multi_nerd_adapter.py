@@ -35,9 +35,11 @@ MultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grain
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='multi_nerd',
         pretty_name='MultiNERD',
         dataset_id='extraordinarylab/multi-nerd',
+        hf_dataset_id='extraordinarylab/multi-nerd',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

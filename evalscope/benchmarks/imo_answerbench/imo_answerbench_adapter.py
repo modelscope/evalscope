@@ -51,9 +51,11 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='imo_answerbench',
         pretty_name='IMO-AnswerBench',
         dataset_id='evalscope/imo-answerbench',
+        hf_dataset_id='Hwilner/imo-answerbench',
         description=DESCRIPTION.strip(),
         tags=[Tags.MATH, Tags.REASONING],
         subset_list=['Algebra', 'Combinatorics', 'Geometry', 'Number theory'],

@@ -33,9 +33,11 @@ OntoNotes Release 5.0 is a large, multilingual corpus containing text in English
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='ontonotes5',
         pretty_name='OntoNotes5',
         dataset_id='extraordinarylab/ontonotes5',
+        hf_dataset_id='extraordinarylab/ontonotes5',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

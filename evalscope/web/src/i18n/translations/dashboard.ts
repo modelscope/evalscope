@@ -43,6 +43,8 @@ export const en: Dict = {
   sortBy: 'Sort by ${column}',
   expandRow: 'Show history',
   collapseRow: 'Hide history',
+  selectRuns: 'Select evaluation runs to compare',
+  selectRun: 'Select run ${ref}',
   trendLabel: 'History of ${metric} over ${runs} runs',
   trendDetailLabel: 'Every recorded run; select one to open it',
   openLatestRun: 'Open latest run',
@@ -56,6 +58,7 @@ export const en: Dict = {
   outOfRangeHint:
     'Some runs recorded values outside this metric declared range, so they are shown as recorded '
     + 'and not converted. The benchmark most likely changed the scale it reports.',
+  showMoreRows: 'Show ${n} more (of ${total})',
 
   // Shared
   noReportsHint: 'Enter an output directory and click Scan to discover reports',
@@ -99,6 +102,8 @@ export const zh: Dict = {
   sortBy: '按${column}排序',
   expandRow: '展开历史',
   collapseRow: '收起历史',
+  selectRuns: '选择要对比的评测运行',
+  selectRun: '选择运行 ${ref}',
   trendLabel: '${metric} 在 ${runs} 次运行中的历史',
   trendDetailLabel: '全部运行记录，点击任一条打开',
   openLatestRun: '打开最新运行',
@@ -110,6 +115,7 @@ export const zh: Dict = {
   statRuns: '次数',
   singleRunHint: '只跑过一次，暂无可对比的历史。',
   outOfRangeHint: '部分运行记录的数值超出了该指标声明的量程，因此按原样显示、不做换算。通常是该 benchmark 改变了上报的刻度。',
+  showMoreRows: '显示更多 ${n} 行（共 ${total} 行）',
 
   noReportsHint: '输入输出目录路径并点击扫描来发现报告',
   welcomeTitle: '欢迎使用 EvalScope',

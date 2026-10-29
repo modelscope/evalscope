@@ -3,6 +3,8 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union
 
+import aiohttp
+
 from evalscope.models.utils.openai_responses import (
     normalize_responses_input,
     response_text_from_dict,
@@ -70,17 +72,20 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             output_tokens += len(self.tokenizer.encode(''.join(choice_contents), add_special_tokens=False))
         return input_tokens, output_tokens
 
-    async def process_request(self, client_session, url: str, headers: Dict, body: Dict) -> BenchmarkData:
+    async def process_request(
+        self, client_session: aiohttp.ClientSession, url: str, headers: Dict, body: Dict
+    ) -> BenchmarkData:
+        """Collect response metrics, preserving protocol errors as failed requests."""
         headers = {'Content-Type': 'application/json', **headers}
         data = json.dumps(body, ensure_ascii=False)
 
         output = BenchmarkData()
-        ttft = 0.0
         generated_text = ''
         st = time.perf_counter()
         output.start_time = st
         output.request = data
         most_recent_timestamp = st
+        last_output_timestamp: float | None = None
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
                 content_type = response.headers.get('Content-Type', '')
@@ -111,21 +116,24 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                             chunk = _extract_sse_data(message)
                             if not chunk:
                                 continue
-                            if chunk == '[DONE]':
+
+                            # Skip non-JSON payloads (stream terminators like "[DONE]"), not data chunks.
+                            try:
+                                payload = json.loads(chunk)
+                            except json.JSONDecodeError:
                                 continue
 
                             timestamp = time.perf_counter()
-                            payload = json.loads(chunk)
                             event_type = payload.get('type')
                             delta = payload.get('delta') or ''
                             if event_type in _DELTA_EVENT_TYPES and delta:
-                                if ttft == 0.0:
-                                    ttft = timestamp - st
-                                    output.first_chunk_latency = ttft
+                                if last_output_timestamp is None:
+                                    output.first_chunk_latency = timestamp - st
                                 else:
-                                    output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
+                                    output.inter_chunk_latency.append(timestamp - last_output_timestamp)
+                                last_output_timestamp = timestamp
                                 generated_text += delta
-                            elif event_type == 'response.completed':
+                            elif event_type in ('response.completed', 'response.incomplete'):
                                 response_payload = payload.get('response', {})
                                 usage = response_usage_from_dict(response_payload)
                                 if usage is not None:
@@ -133,7 +141,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                                     self._set_cached_tokens(output, response_payload.get('usage', {}))
                                 if not generated_text:
                                     generated_text = response_text_from_dict(response_payload)
-                            elif event_type == 'response.failed':
+                            elif event_type in ('response.failed', 'error'):
                                 stream_failed = True
                                 output.error = json.dumps(payload.get('response', payload), ensure_ascii=False)
 
@@ -158,6 +166,8 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 output.first_chunk_latency = output.query_latency
 
                 if isinstance(payload, dict):
+                    if payload.get('status') == 'failed':
+                        output.error = json.dumps(payload, ensure_ascii=False)
                     output.generated_text = response_text_from_dict(payload)
                     usage = response_usage_from_dict(payload)
                     if usage is not None:
@@ -167,7 +177,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 else:
                     output.generated_text = str(payload)
                     output.response_messages.append(payload)
-                output.success = True
+                output.success = output.error is None
                 return output
         except Exception:
             import sys
@@ -213,6 +223,9 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
         if param.extra_args is not None:
             payload.update(param.extra_args)
         return payload
+
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        request['max_output_tokens'] = max_tokens
 
     def _count_input_tokens(self, request_str: str) -> int:
         request = json.loads(request_str)

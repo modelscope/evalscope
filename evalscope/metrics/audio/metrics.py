@@ -105,7 +105,9 @@ class AudioWER(Metric):
         if not isinstance(payload, dict):
             raise ValueError(f'Unexpected response payload format (expected dict): {payload}')
 
-        text = payload.get('text') or payload.get('transcription')
+        text = payload.get('text')
+        if text is None:
+            text = payload.get('transcription')
         if text is None and isinstance(payload.get('result'), dict):
             text = payload['result'].get('text')
         if text is None:
@@ -252,3 +254,21 @@ class MER(Metric):
                 else:
                     i += 1
         return tokens
+
+
+@register_metric(name='per')
+class PER(Metric):
+    """Phone Error Rate over whitespace-separated phone tokens."""
+
+    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+        import editdistance
+
+        scores = []
+        for prediction, reference in zip(predictions, references):
+            predicted_phones = prediction.split()
+            reference_phones = reference.split()
+            if not reference_phones:
+                scores.append(float(bool(predicted_phones)))
+                continue
+            scores.append(editdistance.eval(reference_phones, predicted_phones) / len(reference_phones))
+        return scores

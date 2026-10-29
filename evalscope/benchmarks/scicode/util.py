@@ -3,23 +3,27 @@ from evalscope.api.evaluator import TaskState
 
 def extract_code(block: str) -> str:
     """
-    Extract the Python code from a code block by removing markdown-style code fences.
+    Extract the Python code from a response: the content of its first markdown code block.
 
-    This function removes the "```python" and "```" delimiters often used in markdown to denote
-    Python code blocks, and strips any leading or trailing whitespace.
+    As in the SciCode harness (``extract_python_script`` in ``src/scicode/gen/models.py``), the first
+    "```python" block is used, or else the first "```" block, and a response without fences is used whole.
+    Text outside the block is not Python, and every later subproblem's script includes this code.
 
     Parameters:
     -----------
     block: str
-        A string containing a Python code block with markdown-style code fences.
+        A model response, usually a Python code block with markdown-style code fences.
 
     Returns:
     --------
     str
-        The extracted code with the code fences and surrounding whitespace removed.
+        The extracted code with the code fences, surrounding text and whitespace removed.
 
     """
-    return block.replace('```python', '').replace('```', '').strip()
+    if '```' in block:
+        fence = '```python' if '```python' in block else '```'
+        block = block.split(fence, 1)[1].split('```', 1)[0]
+    return block.strip()
 
 
 def get_generated_code(state: TaskState) -> list[str]:

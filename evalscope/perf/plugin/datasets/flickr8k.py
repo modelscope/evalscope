@@ -1,5 +1,6 @@
-from typing import Any, Dict, Iterator, List
+from typing import Dict, Iterator, List
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.registry import register_dataset
@@ -12,11 +13,16 @@ class FlickrDatasetPlugin(DatasetPluginBase):
     Datasets: https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/files
     """
 
+    dataset_source = DatasetSource(
+        dataset_id='clip-benchmark/wds_flickr8k',
+        hf_dataset_id='clip-benchmark/wds_flickr8k',
+    )
+
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        dataset = self.load_hub_dataset(dataset_id='clip-benchmark/wds_flickr8k', split='test')
+        dataset = self.load_hub_dataset(split='test')
 
         for item in dataset:
             pil_image = item['jpg']

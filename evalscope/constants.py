@@ -79,6 +79,8 @@ class EvalType:
     TEXT2SPEECH = 'text2speech'  # text-to-speech service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'
+    SYSTEMONE_API = 'systemone_api'
+    AUTOTRUST_API = 'autotrust_api'
     OPENAI_RESPONSES_API = 'openai_responses_api'
     ANTHROPIC_API = 'anthropic_api'
     LITELLM = 'litellm'
@@ -173,7 +175,9 @@ class ModelTask:
 
 class Tags:
     KNOWLEDGE = 'Knowledge'
+    SAFETY = 'Safety'
     MULTIPLE_CHOICE = 'MCQ'
+    DECISION = 'Decision'
     MATH = 'Math'
     REASONING = 'Reasoning'
     CODING = 'Coding'

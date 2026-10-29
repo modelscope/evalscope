@@ -63,6 +63,7 @@ task_cfg = TaskConfig(
                 'generation_config': {
                     'temperature': 0.7,
                 },
+                'max_steps': 100,
                 # 仅 banking_knowledge 使用，其他领域忽略：
                 'retrieval_config': 'bm25',
                 'retrieval_config_kwargs': {},
@@ -77,6 +78,10 @@ task_cfg = TaskConfig(
 
 run_task(task_cfg)
 ```
+
+## 最大执行步数
+
+`max_steps` 限制每个任务中 Tau2 agent/simulation 的最大执行步数，并会透传给 `tau2.run.run_task(max_steps=...)`。所有领域的默认值均为 `100`。调大该值可为较长任务提供更多完成机会，但会增加评测耗时和模型调用成本。
 
 ## 检索配置（banking_knowledge）
 

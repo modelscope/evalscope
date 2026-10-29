@@ -38,9 +38,11 @@ Usage:
 """
 
 import json
-from argparse import ArgumentParser, Namespace
+from argparse import Namespace
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.cli.base import CLICommand
+from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+from evalscope.cli.base import ArgumentParserWithSubParsers, CLICommand
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -76,7 +78,7 @@ class BenchmarkInfoCMD(CLICommand):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: ArgumentParser):
+    def define_args(parsers: ArgumentParserWithSubParsers) -> None:
         parser = parsers.add_parser(
             BenchmarkInfoCMD.name,
             help='Display benchmark information and manage documentation',
@@ -139,6 +141,12 @@ class BenchmarkInfoCMD(CLICommand):
         )
 
         parser.add_argument(
+            '--update-index',
+            action='store_true',
+            help='Regenerate evalscope/benchmarks/_index.json (benchmark name -> adapter module)',
+        )
+
+        parser.add_argument(
             '--format',
             choices=['text', 'json', 'markdown'],
             default='text',
@@ -161,6 +169,11 @@ class BenchmarkInfoCMD(CLICommand):
         from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 
         os.environ['BUILD_DOC'] = '1'
+
+        # Handle --update-index flag
+        if self.args.update_index:
+            self._update_index()
+            return
 
         # Handle --list flag
         if self.args.list:
@@ -209,7 +222,7 @@ class BenchmarkInfoCMD(CLICommand):
                     raise
 
     @staticmethod
-    def _format_metric_list(metric_list):
+    def _format_metric_list(metric_list: List[Union[str, Dict[str, Any]]]):
         """Format metric_list (mixed strings and dicts) into readable strings."""
         formatted = []
         for item in metric_list or []:
@@ -301,13 +314,25 @@ class BenchmarkInfoCMD(CLICommand):
             for name, error in result['errors'][:5]:
                 print(f'    - {name}: {error}')
 
+    def _update_index(self):
+        """Regenerate the benchmark name -> adapter module index.
+
+        The index is a generated artifact and must not be hand-edited: it is derived
+        from the registry, because a benchmark name is not derivable from its module
+        path (one module may register several names).
+        """
+        from evalscope.benchmarks import write_index
+
+        index = write_index()
+        print(f'Benchmark index updated: {len(index)} entries')
+
     def _generate_docs(self):
         """Generate documentation from persisted benchmark data."""
         from evalscope.utils.doc_utils.generate_dataset_md import generate_docs
 
         generate_docs()
 
-    def _display_info(self, adapter):
+    def _display_info(self, adapter: DataAdapter) -> None:
         """Display benchmark information."""
         from evalscope.utils.doc_utils.generate_dataset_md import get_adapter_category
 
@@ -321,7 +346,7 @@ class BenchmarkInfoCMD(CLICommand):
         else:
             self._display_text(meta, category)
 
-    def _display_text(self, meta, category=None):
+    def _display_text(self, meta: BenchmarkMeta, category: Optional[str] = None) -> None:
         """Display info in text format."""
         print(f'\n{"=" * 60}')
         print(f'Benchmark: {meta.pretty_name or meta.name}')
@@ -393,7 +418,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         print()
 
-    def _display_json(self, adapter, category=None):
+    def _display_json(self, adapter: DataAdapter, category: Optional[str] = None) -> None:
         """Display info in JSON format."""
         from evalscope.utils.doc_utils import load_benchmark_data
 
@@ -432,10 +457,9 @@ class BenchmarkInfoCMD(CLICommand):
         }
         print(json.dumps(data, indent=2, ensure_ascii=False))
 
-    def _display_markdown(self, adapter):
+    def _display_markdown(self, adapter: DataAdapter) -> None:
         """Display info in markdown format."""
         from evalscope.utils.doc_utils import load_benchmark_data
-        from evalscope.utils.doc_utils.generate_dataset_md import generate_readme_content
 
         # Try to load from persisted data first
         try:
@@ -449,7 +473,12 @@ class BenchmarkInfoCMD(CLICommand):
             pass
 
         # Fall back to generating from adapter
-        from evalscope.utils.readme_generator import generate_benchmark_readme
+        from evalscope.utils.doc_utils.generate_dataset_md import extract_adapter_meta
+        from evalscope.utils.doc_utils.readme_generator import generate_readme_from_dict
 
-        readme = generate_benchmark_readme(adapter, compute_if_missing=False)
+        readme = generate_readme_from_dict(
+            adapter.name,
+            extract_adapter_meta(adapter),
+            lang='en',
+        )
         print(readme)

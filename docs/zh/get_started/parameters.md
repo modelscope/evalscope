@@ -109,7 +109,7 @@
 | `shuffle` | `bool` | 是否打乱数据 |
 | `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
 | `metric_list` | `list[str\|dict]` | 指标列表。应使用 `accuracy` 等规范名称；`acc` 等旧别名仅为兼容用途并会被规范化。 |
-| `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`） |
+| `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）、`bayes_at_n`。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`）<br>• `bayes_at_n`：固定题集上重复正确率的后验均值与后验标准差（`repeats=N`；仅二元 `accuracy`/`exact_match`，限单个 subset；见[常见问题](./faq.md)） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
 | `force_redownload` | `bool` | 是否强制重新下载数据集 |
 | `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定。SWE-bench agentic 等基准的扩展参数请参见 [Agent 评测](../user_guides/agent/native.md#用例swe-bench-agentic) |
@@ -151,7 +151,7 @@
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容Chat Completions API服务<br>• `openai_responses_api`: OpenAI官方Responses API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM服务商）<br>• `text2image`: 文本转图像模型（本地 diffusers 或 OpenAI 兼容 Images API 服务）<br>• `text2speech`: 文本转语音模型服务<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
+| `--eval-type` | `str` | 评测类型<br>• `llm_ckpt`: 本地模型推理（transformers）<br>• `openai_api`: OpenAI兼容Chat Completions API服务<br>• `systemone_api`: System One 文本Choice决策模型<br>• `openai_responses_api`: OpenAI官方Responses API服务<br>• `anthropic_api`: Anthropic Claude API服务<br>• `litellm`: LiteLLM多厂商路由（支持100+ LLM服务商）<br>• `text2image`: 文本转图像模型（本地 diffusers 或 OpenAI 兼容 Images API 服务）<br>• `text2speech`: 文本转语音模型服务<br>• `image_editing`: 图像编辑模型<br>• `mock_llm`: 模拟推理（功能验证）<br>• `custom`: 自定义评测类型 | `None`（自动判断） |
 | `--eval-batch-size` | `int` | 评测批量大小，作用于以下阶段：<br>• 推理阶段：并发请求数（远程 API 模式）或批量大小（`llm_ckpt`模式）<br>• LLM-judge 评审阶段：并发线程数<br>• batch_calculate_metrics 阶段：每批次处理的样本数 | `1`（`openai_api`、`openai_responses_api`、`anthropic_api`、`litellm` 等远程 API 模式为`8`） |
 | `--eval-backend` | `str` | 评测后端<br>• `Native`: 默认后端<br>• `OpenCompass`: 大语言模型评测<br>• `VLMEvalKit`: 多模态模型评测<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP评测<br>• `ThirdParty`: 特殊任务评测 | `Native` |
 | `--eval-config` | `str` | 非Native后端的配置文件路径 | - |
@@ -207,6 +207,9 @@ Judge 短路直接判定样本时，得分 metadata 会记录 `judge_skipped=tru
 面板会将其标为规则直接判分，而非 LLM verdict。native 评测复用 prediction 和 review 前要求缓存的评测身份完全匹配。
 设置 `rerun_review=True` 可复用 prediction 并重算 review，新的 review 文件只有成功后才原子替换旧文件；它也是身份
 不匹配时唯一的显式覆盖开关，生成的配置会在当前评测版本下记录 prediction 来源。
+
+如果重评失败或被中断，请保持 `use_cache` 指向原评测输出目录，并设置 `rerun_review=True` 继续重评。
+系统会复用已保存的模型回答并重新评分。尚未完成重评的基准不能直接复用旧评分结果。
 
 旧 `judge_strategy` 和单个 mapping `judge_model_args` 仅保留一轮输入迁移并会告警。已删除的
 `judge_worker_num` 和 `score_pattern` 会明确报错。

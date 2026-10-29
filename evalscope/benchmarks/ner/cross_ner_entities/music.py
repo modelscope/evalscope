@@ -7,10 +7,10 @@ def get_entity_mappings():
         'EVENT': 'event',
         'LOCATION': 'location',
         'MISC': 'misc',
-        'MUSICALARTIST': 'musical_artist',
-        'MUSICALINSTRUMENT': 'musical_instrument',
-        'MUSICGENRE': 'music_genre',
-        'ORGANISATION': 'organisation',
+        'MUSICAL_ARTIST': 'musical_artist',
+        'MUSICAL_INSTRUMENT': 'musical_instrument',
+        'MUSIC_GENRE': 'music_genre',
+        'ORGANIZATION': 'organisation',
         'PERSON': 'person',
         'SONG': 'song',
     }
@@ -24,10 +24,10 @@ def get_entity_mappings():
             'A venue, studio, or place relevant to music (e.g., "Madison Square Garden", "Abbey Road Studios").'
         ),
         'MISC': ('Miscellaneous music-related terms (e.g., "synthesizer", "major key", "a cappella").'),
-        'MUSICALARTIST': ('A solo musician or singer (e.g., "Michael Jackson", "Taylor Swift", "Ed Sheeran").'),
-        'MUSICALINSTRUMENT': ('A musical instrument (e.g., "guitar", "piano", "violin").'),
-        'MUSICGENRE': ('A genre or style of music (e.g., "Rock", "Pop", "Jazz", "K-Pop").'),
-        'ORGANISATION': ('A record label or music organization (e.g., "Capitol Records", "Sony Music").'),
+        'MUSICAL_ARTIST': ('A solo musician or singer (e.g., "Michael Jackson", "Taylor Swift", "Ed Sheeran").'),
+        'MUSICAL_INSTRUMENT': ('A musical instrument (e.g., "guitar", "piano", "violin").'),
+        'MUSIC_GENRE': ('A genre or style of music (e.g., "Rock", "Pop", "Jazz", "K-Pop").'),
+        'ORGANIZATION': ('A record label or music organization (e.g., "Capitol Records", "Sony Music").'),
         'PERSON': (
             'A person related to music who is not a primary artist (e.g., a producer, a songwriter, "John Lennon").'
         ),

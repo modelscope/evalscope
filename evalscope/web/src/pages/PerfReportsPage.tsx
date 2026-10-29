@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Copy, Check } from 'lucide-react'
+import { useCopy } from '@/hooks/useCopy'
 import { useLocale, type Translate } from '@/contexts/LocaleContext'
 import { useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
@@ -32,15 +33,6 @@ const EMPTY_RUNS: PerfRunSummary[] = []
 const EMPTY_SELECTION: string[] = []
 const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
 
-/** Format the avg input/output token pair as e.g. `10000→300t`; `—` when absent. */
-function formatIoTokens(run: PerfRunSummary): string {
-  const input = run.avg_input_tokens
-  const output = run.avg_output_tokens
-  // Only treat missing fields as "no data"; a legitimate 0 still renders.
-  if (input == null || output == null) return '—'
-  return `${Math.round(input)}→${Math.round(output)}t`
-}
-
 function PerfRunCard({
   run,
   selected,
@@ -57,8 +49,13 @@ function PerfRunCard({
   /** Field key -> semantics, provided by the perf run list API. */
   perfSemantics?: Record<string, MetricSemantics | undefined>
 }) {
-  const identity = resolveProvider(run)
-  const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
+  const { copy, copied } = useCopy()
+  const displayName = run.alias || run.model || run.dataset || '—'
+  const metrics = [
+    { key: 'best_rps', label: t('perf.archive.sort_rps'), value: run.best_rps },
+    { key: 'best_latency', label: t('perf.archive.sort_latency'), value: run.best_latency },
+    { key: 'success_rate', label: t('perf.archive.successColumn'), value: run.success_rate },
+  ]
 
   return (
     <div
@@ -70,54 +67,51 @@ function PerfRunCard({
       <SelectionCheckbox
         checked={selected}
         onClick={onToggle}
-        label={`${t('perf.archive.selectRun')}: ${run.model || run.dataset || '—'}`}
+        label={`${t('perf.archive.selectRun')}: ${displayName}`}
         className="shrink-0 cursor-pointer"
       />
       <button
         type="button"
         onClick={onClick}
-        className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left lg:grid-cols-[minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_auto]"
+        className="grid min-h-16 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 py-2 text-left sm:grid-cols-[minmax(0,1fr)_17rem_auto]"
       >
-        <div className="flex min-w-0 flex-col gap-0.5">
-          {/* Model alias is the primary identity; fall back to dataset, never
-              the raw path/timestamp, when the alias is absent. */}
-          <span className="type-body-sm font-semibold text-[var(--text)] break-words min-w-0">{run.model || run.dataset || '—'}</span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {identity.provider} · {identity.protocol}
-          </span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
-          </span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatTimestamp(run.timestamp, 'seconds')}
-          </span>
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span title={displayName} className="type-body-sm min-w-0 truncate font-semibold text-[var(--text)]">{displayName}</span>
+            <time dateTime={run.timestamp || undefined} title={formatTimestamp(run.timestamp, 'seconds')} className="shrink-0 text-xs tabular-nums text-[var(--text-muted)]">
+              {formatTimestamp(run.timestamp)}
+            </time>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
+            {run.alias && <span className="max-w-48 truncate" title={run.model}>{run.model}</span>}
+            {run.api_host && <span className="max-w-full truncate font-mono text-[var(--text)]" title={run.api_host}>{run.api_host}</span>}
+            <span className="max-w-32 truncate" title={run.dataset || undefined}>{run.dataset || '—'}</span>
+            {run.num_runs > 1 && <span>{run.num_runs} {t('perf.archive.runs')}</span>}
+          </div>
         </div>
-        <div className="hidden min-w-0 flex-col gap-0.5 lg:flex">
-          <span className="type-body-sm text-[var(--text)] break-words">{run.dataset || '—'}</span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
-          </span>
+        <div className="col-span-2 row-start-2 grid grid-cols-3 gap-3 sm:col-span-1 sm:col-start-2 sm:row-start-1">
+          {metrics.map(({ key, label, value }) => (
+            <div key={key} className="min-w-0 sm:text-right">
+              <span className="block text-xs text-[var(--text-muted)]">{label}</span>
+              <span className="mt-1 block whitespace-nowrap text-sm font-medium tabular-nums text-[var(--text)]">
+                {formatMetric(value, perfSemantics?.[key]).primary}
+              </span>
+            </div>
+          ))}
         </div>
-        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] lg:block">
-          {formatTimestamp(run.timestamp, 'seconds')}
-        </span>
-        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatIoTokens(run)}
-        </span>
-        {/* Domain metrics render through the shared formatter so the same
-            value rounds identically here, in the detail view and per-run
-            tables. */}
-        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetric(run.best_rps, perfSemantics?.best_rps).primary}
-        </span>
-        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetric(run.best_latency, perfSemantics?.best_latency).primary}
-        </span>
-        <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetric(run.success_rate, perfSemantics?.success_rate).primary}
-        </span>
-        <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
+        <ChevronRight size={16} className="col-start-2 row-start-1 shrink-0 text-[var(--text-dim)] sm:col-start-3" />
       </button>
+      {run.api_host && (
+        <button
+          type="button"
+          aria-label={`${t(copied ? 'tasks.copied' : 'tasks.copy')}: ${run.api_host}`}
+          title={t(copied ? 'tasks.copied' : 'tasks.copy')}
+          onClick={() => copy(run.api_host!)}
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded text-[var(--text-muted)] hover:text-[var(--text)]"
+        >
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+        </button>
+      )}
     </div>
   )
 }
@@ -202,7 +196,7 @@ export default function PerfReportsPage() {
       selected.map((path) => {
         const run = runs.find((r) => r.path === path)
         if (!run) return path
-        return `${run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
+        return `${run.alias || run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
       }),
     [selected, runs],
   )
@@ -236,6 +230,8 @@ export default function PerfReportsPage() {
               (r.model || '').toLowerCase().includes(q) ||
               (r.dataset || '').toLowerCase().includes(q) ||
               (r.api_type || '').toLowerCase().includes(q) ||
+              (r.alias || '').toLowerCase().includes(q) ||
+              (r.api_host || '').toLowerCase().includes(q) ||
               identity.provider.toLowerCase().includes(q) ||
               identity.protocol.toLowerCase().includes(q)
             )
@@ -283,7 +279,7 @@ export default function PerfReportsPage() {
               value={query}
               onChange={setQuery}
               placeholder={t('perf.archive.searchPlaceholder')}
-              className="w-full sm:w-72 [&>input]:h-10 [&>input]:py-0"
+              className="w-full sm:max-w-lg sm:flex-1 [&>input]:h-10 [&>input]:py-0"
             />
             <SegmentedControl
               options={SORT_KEYS.map((k) => ({ value: k, label: t(`perf.archive.sort_${k}`) }))}
@@ -297,17 +293,6 @@ export default function PerfReportsPage() {
 
           {visibleRuns.length > 0 ? (
             <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-              <div className="hidden grid-cols-[2.75rem_minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_1rem] items-center gap-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] lg:grid">
-                <span />
-                <span>{t('reports.columns.model')}</span>
-                <span>{t('reports.columns.dataset')}</span>
-                <span>{t('reports.columns.time')}</span>
-                <span>{t('perf.archive.ioTokens')}</span>
-                <span>{t('perf.archive.sort_rps')}</span>
-                <span>{t('perf.archive.sort_latency')}</span>
-                <span>{t('perf.archive.successColumn')}</span>
-                <span />
-              </div>
               <div className="divide-y divide-[var(--border)]">
                 {visibleRuns.map((run) => (
                   <PerfRunCard

@@ -8,11 +8,13 @@ from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta, MultiCh
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentAudio, ContentText
-from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric import MetricSelector
+from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 logger = get_logger()
 
@@ -30,6 +32,7 @@ MMAU_PROMPT = r"""Answer the following multiple choice question based on the aud
         name='mmau',
         pretty_name='MMAU',
         dataset_id='lmms-lab/mmau',
+        hf_dataset_id='lmms-lab/mmau',
         tags=[Tags.AUDIO, Tags.MULTIPLE_CHOICE],
         description="""
 ## Overview
@@ -41,27 +44,33 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 - **Task Type**: Audio Understanding (Multiple Choice)
 - **Input**: Audio recordings with multiple-choice questions
 - **Output**: Correct answer choice (A/B/C/D)
-- **Categories**: Speech, Sound, Music
+- **Domain**: Speech, Sound, Music
 
 ## Key Features
 
 - Large-scale audio understanding benchmark
 - Covers multiple audio domains (speech, environmental sounds, music)
 - Multiple-choice format with 4 options
-- Includes both mini and full test sets
+- Scores the `test_mini` split; the full `test` split ships without answers (`'NA'`)
 - Per-category accuracy reporting
 
 ## Evaluation Notes
 
 - Default configuration uses **test_mini** split
 - Primary metric: **Accuracy** (exact match on predicted letter)
+- Uses the last `ANSWER:` line containing only a single choice letter (case-insensitive, with optional brackets or Markdown bold); a bare choice letter is also accepted.
+- Unparseable replies score zero. Natural-language answers are not mapped to choices.
+- Evaluation version **v1.1** excludes the unlabeled `test` split and removes guessed answers.
 - Reports overall accuracy and per-task-category accuracy
 - Prompt includes chain-of-thought instruction
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
-        subset_list=['test_mini', 'test'],
+        subset_list=['test_mini'],
         eval_split='test_mini',
         metric_list=['acc'],
+        primary_metric=MetricSelector(name='accuracy', dimensions={'scope': 'overall'}),
         prompt_template=MMAU_PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
@@ -75,11 +84,10 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
         answer_text = record['answer']
 
         # Map answer text to letter
-        answer_char = 'A'
-        for i, choice in enumerate(choices):
-            if choice.strip().lower() == answer_text.strip().lower():
-                answer_char = LETTERS[i]
-                break
+        matches = [i for i, choice in enumerate(choices) if choice.strip().lower() == answer_text.strip().lower()]
+        if not matches:
+            raise ValueError(f'MMAU answer {answer_text!r} is not one of the choices {choices}.')
+        answer_char = LETTERS[matches[0]]
 
         # Format choices string
         letters_str = ', '.join(LETTERS[: len(choices)])
@@ -107,65 +115,29 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
             },
         )
 
-    def match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        predicted_letter = self._parse_choice(original_prediction)
-        correct = 1.0 if predicted_letter == reference else 0.0
-
-        score = Score(
-            extracted_prediction=predicted_letter,
-            prediction=original_prediction,
-        )
-        score.value = {'acc': correct}
-        return score
-
-    @staticmethod
-    def _parse_choice(response: str) -> str:
-        """Parse the predicted choice letter from model response."""
-        import re
-
-        # Look for "ANSWER: X" pattern (case-insensitive)
-        match = re.search(r'ANSWER\s*:\s*([A-D])', response, re.IGNORECASE)
-        if match:
-            return match.group(1).upper()
-        # Fallback: look for standalone letter
-        for char in [',', '.', '!', '?', ';', ':', "'"]:
-            response = response.strip(char)
-        response = ' ' + response + ' '
-        candidates = []
-        for letter in LETTERS:
-            if f'({letter})' in response:
-                candidates.append(letter)
-        if not candidates:
-            for letter in LETTERS:
-                if f' {letter} ' in response:
-                    candidates.append(letter)
-        if not candidates:
-            for letter in LETTERS:
-                if f'{letter}.' in response:
-                    candidates.append(letter)
-        if len(candidates) == 1:
-            return candidates[0]
-        elif len(candidates) > 1:
-            start_indexes = [response.rfind(f' {c} ') for c in candidates]
-            return candidates[start_indexes.index(max(start_indexes))]
-        return 'A'  # Default fallback
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        """Read the last explicit single-choice answer without guessing from prose."""
+        for line in reversed(prediction.splitlines()):
+            answer = extract_answer_line(line.replace('**', ''))
+            if answer is not None:
+                letter = answer.strip(' *().[]').upper()
+                if letter in LETTERS:
+                    return letter
+        letter = prediction.strip().strip(' *().[]').upper()
+        return letter if letter in LETTERS else ''
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate scores with overall and per-task category accuracy."""
         total = len(sample_scores)
         if total == 0:
-            return [AggScore(metric_name='accuracy', score=0.0, num=0)]
+            return [AggScore(metric_name='accuracy', dimensions={'scope': 'overall'}, score=0.0, num=0)]
 
         total_correct = sum(ss.score.main_value for ss in sample_scores)
         overall_acc = total_correct / total
 
-        agg_scores: List[AggScore] = [AggScore(metric_name='accuracy', score=overall_acc, num=total)]
+        agg_scores: List[AggScore] = [
+            AggScore(metric_name='accuracy', dimensions={'scope': 'overall'}, score=overall_acc, num=total)
+        ]
 
         # Per-task category accuracy
         group_totals: Dict[str, int] = defaultdict(int)

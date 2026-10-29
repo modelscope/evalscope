@@ -51,6 +51,7 @@ InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evalu
 - Uses same dataset source as DocVQA (InfographicVQA subset)
 """,  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
+        hf_dataset_id='lmms-lab/DocVQA',
         subset_list=['InfographicVQA'],
         metric_list=['anls'],
         eval_split='validation',
@@ -81,9 +82,7 @@ class InfoVQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        import re
+        from evalscope.utils.multi_choices import extract_answer_line
 
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip()
-        return prediction.strip()
+        answer = extract_answer_line(prediction)
+        return answer if answer is not None else prediction.strip()

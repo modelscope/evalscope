@@ -81,6 +81,7 @@ Please rate the helpfulness, relevance, accuracy, and comprehensiveness of their
         name='air_bench_chat',
         pretty_name='AIR-Bench-Chat',
         dataset_id=HF_REPO_ID,
+        hf_dataset_id='qyang1021/AIR-Bench-Dataset',
         paper_url='https://aclanthology.org/2024.acl-long.109/',
         tags=[Tags.AUDIO, Tags.QA, Tags.INSTRUCTION_FOLLOWING],
         description="""
@@ -108,6 +109,7 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 - The judge LLM receives the question, the textual audio description (`meta_info`), the reference answer (`answer_gt`), and the model's response, and outputs two integer scores in `[1, 10]`. Use a judge that supports long contexts, since `meta_info` may exceed 4k tokens for dialogue tasks.
 - The official leaderboard uses `gpt-4-0125-preview`. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
 - If the dataset is already on disk, pass `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Chat/`.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
@@ -178,8 +180,11 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
         track_root = download_air_bench(
             track='Chat',
             dataset_id=self.dataset_id,
+            data_source=self.dataset_hub,
             cache_dir=self.dataset_dir,
             subset_dirs=relevant_folders,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
         )
         self._track_root = track_root
         self._audio_cache_dir = os.path.join(self.dataset_dir, 'air_bench_converted_audio')
@@ -291,7 +296,6 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
         return bool(self.extra_params.get('do_swap', True))
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
-
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             metadata = judge_context.task_state.metadata or {}
             reference_first = placement is Placement.ORIGINAL

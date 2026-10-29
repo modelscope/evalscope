@@ -77,7 +77,7 @@ def accuracy(output, target, topk=(1, )):
     pred = output.topk(max(topk), 1, True, True)[1].t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))
     n = len(target)
-    return [float(correct[:k].reshape(-1).float().sum(0, keepdim=True).cpu().numpy()) / n for k in topk]
+    return [correct[:k].reshape(-1).float().sum().item() / n for k in topk]
 
 
 def run_classification(model, classifier, dataloader, device, amp=True, limit=None):
@@ -111,6 +111,10 @@ def run_classification(model, classifier, dataloader, device, amp=True, limit=No
                 image_features = model.encode_image(images)
                 logits = 100.0 * image_features @ classifier
 
+            # Keep the batch that reaches the limit, then trim it to exactly `limit` samples below.
+            true.append(target.cpu())
+            pred.append(logits.float().cpu())
+
             if limit is not None:
                 # Update sample counter
                 sample_count += len(images)
@@ -118,11 +122,8 @@ def run_classification(model, classifier, dataloader, device, amp=True, limit=No
                 if sample_count >= limit:
                     break
 
-            true.append(target.cpu())
-            pred.append(logits.float().cpu())
-
-    pred = torch.cat(pred)
-    true = torch.cat(true)
+    pred = torch.cat(pred)[:limit]
+    true = torch.cat(true)[:limit]
     return pred, true
 
 

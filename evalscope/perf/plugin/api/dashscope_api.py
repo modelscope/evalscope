@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Iterator, List
+from typing import Dict, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
@@ -75,6 +75,9 @@ class DashScopeApiPlugin(ApiPluginBase):
         if param.top_p is not None:
             payload['parameters']['top_p'] = param.top_p
         return payload
+
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        request.setdefault('parameters', {})['max_tokens'] = max_tokens
 
     def parse_responses(self, responses, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.

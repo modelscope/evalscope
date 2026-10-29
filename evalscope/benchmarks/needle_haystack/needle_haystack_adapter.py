@@ -1,6 +1,7 @@
 import os
+from collections import defaultdict
 from itertools import product
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Tuple, Union
 
 from pydantic import BaseModel, Field
 from tqdm import tqdm
@@ -10,7 +11,7 @@ from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_record
 from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
-from evalscope.api.metric import Score
+from evalscope.api.metric import AggScore, MetricSelector, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
@@ -78,6 +79,8 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
 """,  # noqa: E501
         dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
         metric_list=['acc'],
+        primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
+        evaluation_version='v1.2',
         subset_list=['english', 'chinese'],
         eval_split='test',
         system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
@@ -385,29 +388,23 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
             prediction=original_prediction,
         )
 
-        # Get metadata from task state
-        context_length = task_state.metadata.get('context_length', 0)
-        depth_percent = task_state.metadata.get('depth_percent', 0)
-
         norm_gold = normalize_answer(reference)
         norm_pred = normalize_answer(filtered_prediction)
         accuracy = exact_match(gold=norm_gold, pred=norm_pred)
 
-        metric_name = f'Context#{context_length} Depth#{depth_percent}'
-        score.value = {metric_name: accuracy}
-        score.main_score_name = metric_name
+        score.value = {'acc': accuracy}
+        score.main_score_name = 'acc'
 
         return score
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
-        metric_name = self._metric_name(context.task_state)
-
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
 
             prompt = (
                 ORM_USER_TEMPLATE.format(
-                    question=judge_context.task_state.input_text,
+                    # Like the official evaluator, ask only the retrieval question, not the haystack prompt.
+                    question=self.retrieval_question,
                     gold=judge_context.reference,
                     pred=judge_context.filtered_prediction,
                 )
@@ -418,32 +415,51 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
-            return ReducedVerdict(value={metric_name: case_verdicts[0].value.verdict / 10.0})
+            return ReducedVerdict(value={'acc': case_verdicts[0].value.verdict / 10.0})
 
         return JudgeDefinition.workflow(
             cases=[JudgeCase(case_id='score', output_contract=SCORE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name=metric_name,
+            main_score_name='acc',
         )
 
-    @staticmethod
-    def _metric_name(task_state: TaskState) -> str:
-        metadata = task_state.metadata or {}
-        return f'Context#{metadata.get("context_length", 0)} Depth#{metadata.get("depth_percent", 0)}'
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate accuracy over all samples and for each context length and needle depth.
+
+        The overall aggregate is the primary metric. Each (context length, depth) cell keeps both
+        values as identity dimensions rather than in the metric name, and the heatmap reads them
+        from there. Samples whose score was excluded carry no value and are left out of every cell.
+        """
+        aggregate_scores = super().aggregate_scores(sample_scores)
+        for aggregate_score in aggregate_scores:
+            aggregate_score.dimensions = {**aggregate_score.dimensions, 'scope': 'overall'}
+
+        cells: Dict[Tuple[Any, Any], List[SampleScore]] = defaultdict(list)
+        for sample_score in sample_scores:
+            metadata = sample_score.sample_metadata or {}
+            if 'context_length' in metadata and 'depth_percent' in metadata:
+                cells[(metadata['context_length'], metadata['depth_percent'])].append(sample_score)
+
+        for (context_length, depth_percent), cell_scores in sorted(cells.items()):
+            for aggregate_score in super().aggregate_scores(cell_scores):
+                aggregate_score.dimensions = {
+                    **aggregate_score.dimensions,
+                    'context_length': context_length,
+                    'depth_percent': depth_percent,
+                }
+                aggregate_scores.append(aggregate_score)
+        return aggregate_scores
 
     def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         try:
             import os
 
-            from .utils import draw_score_chat
+            from .utils import collect_cell_scores, draw_score_chat
 
             report_path = output_dir
-            data_frame = report.to_dataframe()
-            # split `Metric` to `Context` and `Depth`
-            data_frame[['Context', 'Depth']] = data_frame['Metric'].str.split(' ', n=1, expand=True)
-            data_frame['Depth'] = data_frame['Depth'].str.replace('Depth#', '').astype(float)
-            data_frame['Context'] = data_frame['Context'].str.replace('Context#', '').astype(int)
+            # one row per subset and (context length, depth) cell, read from the metric dimensions
+            data_frame = collect_cell_scores(report)
             # split by `Subset` to multi sub data frame
             for subset in data_frame['Subset'].unique():
                 sub_df = data_frame[data_frame['Subset'] == subset]

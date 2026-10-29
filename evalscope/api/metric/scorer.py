@@ -156,6 +156,9 @@ class AggScore(BaseModel):
     num: int = Field(default=0)
     """Number of samples used in the aggregation."""
 
+    num_correct: Optional[int] = Field(default=None)
+    """Number of samples scored 1, set only when every sample value is 0 or 1."""
+
     ids: Optional[List[Union[str, int]]] = Field(default=None)
     """List of sample IDs used in the aggregation, if applicable."""
 
@@ -183,7 +186,7 @@ class AggScore(BaseModel):
     @model_validator(mode='after')
     def _canonicalize_identity_fields(self) -> 'AggScore':
         """Normalize producer syntax without assigning legacy semantics."""
-        from evalscope.metrics.semantics.identity import canonicalize_producer_identity
+        from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 
         identity = canonicalize_producer_identity(self.metric_name, self.aggregation, self.dimensions)
         self.metric_name = identity.name

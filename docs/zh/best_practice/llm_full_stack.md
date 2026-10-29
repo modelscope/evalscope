@@ -12,7 +12,7 @@
 1.  [modelscope](https://github.com/modelscope/modelscope)
     提供模型、数据集下载能力
         
-2.  [data-juicer](https://github.com/modelscope/data-juicer)
+2.  [data-juicer](https://github.com/datajuicer/data-juicer)
     提供数据集处理能力
         
 3.  [ms-swift](https://github.com/modelscope/ms-swift)
@@ -87,7 +87,7 @@ df.to_json("data/zhihu.jsonl", orient="records", lines=True, force_ascii=False)
 'METADATA': '{"question_id": 357137111.0, "answer_id": 914332816.0, "url": '"https://www.zhihu.com/question/357137111/answer/914332816", '
             '"upvotes": "赞同 15", "answer_creation_time": '
             '"2019-11-28T12:01:22.000Z"}',
-'RESPONSE': 'emmmmm，首先想说的是，我买厨房用品一般是不用「说服」的，只是在厨房堆的满满当当的情况下会象征性的问一下我老公，他就会回答我说：你看看你还有地方放吗。然后我会思考一下，如果是特别想买的，就不会问他了。自己决定就好。 '
+'RESPONSE': 'emmmmm，首先想说的是，我买厨房用品一般是不用“说服”的，只是在厨房堆的满满当当的情况下会象征性的问一下我老公，他就会回答我说：你看看你还有地方放吗。然后我会思考一下，如果是特别想买的，就不会问他了。自己决定就好。 '
     '比如，前几天我又买了两个盘子~~~~他还不知道。 可以给题主看看我有多少的锅具：自家炒菜用什么锅好？各有什么优缺点？ '
     '说回烤箱的问题，买的时候处于热恋期，我告诉他我有一个买烤箱的计划。虽然他基本不吃点心，也不喜欢烘焙，但那个时期的他欣然同意并热情洋溢的给我选烤箱。可能是他有憧憬我会给他做什么好吃的吧。又因为我是一个不怎么吃甜食的湖南人，烤箱在我家烘焙的使用率很低。 '
     '但是！！你还是可以告诉他烤箱的作用是可以烤制各种肉类！！！我不相信有不喜欢吃肉的男生！！烤箱真的是可以烤一切的肉类，熟悉之后会觉得非常简单。 '
@@ -104,23 +104,23 @@ df.to_json("data/zhihu.jsonl", orient="records", lines=True, force_ascii=False)
 ## 3. 使用data-juicer进行数据清洗
 
 ### 介绍
-Data-Juicer 是一个一站式多模态数据处理系统，旨在为大语言模型 (LLM) 提供更高质量、更丰富、更易“消化”的数据。设计简单易用，提供全面的文档、简易入门指南和演示配置，并且可以轻松地添加/删除现有配置中的算子。[详细介绍](https://github.com/modelscope/data-juicer/blob/main/README\_ZH.md)
+Data-Juicer 是一个一站式多模态数据处理系统，旨在为大语言模型 (LLM) 提供更高质量、更丰富、更易“消化”的数据。设计简单易用，提供全面的文档、简易入门指南和演示配置，并且可以轻松地添加/删除现有配置中的算子。[详细介绍](https://github.com/datajuicer/data-juicer/blob/main/README_ZH.md)
 
 ### 使用流程
 
 #### 1. 编写yaml配置文件
 
-Data-Juicer 中的[算子](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md)分为以下 5 种类型：
+Data-Juicer 中的[算子](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md)分为以下 5 种类型：
 
 |  类型  |  数量  |  描述  |
 | --- | --- | --- |
-|  [Formatter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#formatter)  |  7  |  发现、加载、规范化原始数据  |
-|  [Mapper](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#mapper)  |  43  |  对数据样本进行编辑和转换  |
-|  [Filter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#filter)  |  41  |  过滤低质量样本  |
-|  [Deduplicator](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#deduplicator)  |  5  |  识别、删除重复样本  |
-|  [Selector](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#selector)  |  4  |  基于排序选取高质量样本  |
+|  [Formatter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#formatter)  |  7  |  发现、加载、规范化原始数据  |
+|  [Mapper](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#mapper)  |  43  |  对数据样本进行编辑和转换  |
+|  [Filter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#filter)  |  41  |  过滤低质量样本  |
+|  [Deduplicator](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#deduplicator)  |  5  |  识别、删除重复样本  |
+|  [Selector](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#selector)  |  4  |  基于排序选取高质量样本  |
 
-在[全部算子的配置文件](https://github.com/modelscope/data-juicer/blob/main/configs/config_all.yaml)的基础上进行修改，编写如下配置文件：
+在[全部算子的配置文件](https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml)的基础上进行修改，编写如下配置文件：
 
 ```yaml
 # global parameters
@@ -256,7 +256,7 @@ pip install flash-attn --no-build-isolation
 
 #### 编写训练脚本
 
-参考：[模型训练命令行参数](https://swift.readthedocs.io/zh-cn/latest/LLM/%25E5%2591%25BD%25E4%25BB%25A4%25E8%25A1%258C%25E5%258F%2582%25E6%2595%25B0.html)
+参考：[模型训练命令行参数](https://swift.readthedocs.io/zh-cn/latest/Instruction/Command-line-parameters.html)
 
 ```{note}
 需要注意的参数有：
@@ -341,7 +341,7 @@ EvalScope是一个LLM/VLM评测框架，预置了多个常用测试基准，实�
 
 #### 评测脚本
 
-参考：[模型评测支持的参数](https://swift.readthedocs.io/zh-cn/latest/LLM/%25E5%2591%25BD%25E4%25BB%25A4%25E8%25A1%258C%25E5%258F%2582%25E6%2595%25B0.html#infer-merge-lora)
+参考：[模型评测支持的参数](https://swift.readthedocs.io/zh-cn/latest/Instruction/Command-line-parameters.html)
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift eval \
     --ckpt_dir output/qwen2-7b-instruct/v1-20240819-150005/checkpoint-371 \

@@ -21,6 +21,7 @@ The runner defaults to ``--yolo`` (auto-approve all actions) for
 batch execution.
 """
 
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -162,6 +163,10 @@ class HermesRunner(AgentRunner):
         bridge: BridgeEndpoint,
     ) -> AgentRunResult:
         home_dir = self._resolve_home()
+        # Only the default-path branch (``home_override is None``) creates a
+        # fresh tempdir we own; user-supplied paths and the inherit case must
+        # not be deleted out from under them.
+        owns_home_dir = home_dir is not None and self._home_override is None
         env_vars: Dict[str, str] = {
             # Point Hermes at the bridge's OpenAI-compatible endpoint.
             # Bridge routes are at /openai/v1/chat/completions — so base_url
@@ -179,87 +184,91 @@ class HermesRunner(AgentRunner):
         }
         if home_dir is not None:
             env_vars['HERMES_HOME'] = home_dir
-        await install_task_skills(
-            env,
-            task,
-            home_dir=None,
-            native_install_paths=[],
-            runner_name='HermesRunner',
-        )
-
-        # Write a config.yaml that points Hermes at the bridge endpoint.
-        # When base_url is set, Hermes ignores the provider and calls the
-        # endpoint directly (using api_key or OPENAI_API_KEY for auth).
-        hermes_home = home_dir or '/root/.hermes'
-        config_yaml = (
-            f'model:\n'
-            f'  provider: custom\n'
-            f'  default: {self._model_name or "default"}\n'
-            f'  base_url: "{bridge.base_url}/openai/v1"\n'
-            f'  api_key: "{bridge.trial_token}"\n'
-            f'  context_length: 65536\n'
-        )
-        await env.exec(
-            [
-                'bash',
-                '-c',
-                f"mkdir -p {hermes_home} && cat > {hermes_home}/config.yaml << 'EOFCFG'\n{config_yaml}EOFCFG",
-            ],
-            timeout=10,
-        )
-
-        # Build the command.
-        cmd: List[str] = ['hermes', 'chat']
-
-        # Model selection (also passed via config but CLI flag takes priority)
-        if self._model_name:
-            cmd.extend(['--model', self._model_name])
-
-        # Toolsets
-        if self._toolsets:
-            cmd.extend(['--toolsets', self._toolsets])
-
-        # Auto-approve all tool calls (belt-and-suspenders with env var)
-        cmd.append('--yolo')
-
-        # Quiet mode — suppress banner/spinner, only output final response
-        cmd.append('--quiet')
-
-        # Extra user-supplied args
-        cmd.extend(self._extra_args)
-
-        # Single-query mode (non-interactive) — must be last
-        cmd.extend(['-q', task.instruction])
-
-        sample_id = (task.metadata or {}).get('sample_id')
-        env_name = getattr(env, 'name', type(env).__name__)
-        logger.info(
-            f'hermes launching: sample={sample_id} env={env_name} '
-            f'model={self._model_name or "<default>"} '
-            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
-        )
-        result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
-        logger.info(
-            f'hermes exited: sample={sample_id} rc={result.returncode} '
-            f'wall={result.duration:.1f}s '
-            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
-            f'timed_out={result.timed_out}'
-        )
-        if result.timed_out:
-            raise RunnerTimeoutError(f'hermes timed out after {task.timeout}s (returncode={result.returncode})')
-        if result.returncode != 0:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            tail_stdout = (result.stdout or '').strip()[-2000:]
-            raise RuntimeError(
-                f'hermes exited with code {result.returncode}:\n  stderr: {tail_stderr}\n  stdout: {tail_stdout}'
+        try:
+            await install_task_skills(
+                env,
+                task,
+                home_dir=None,
+                native_install_paths=[],
+                runner_name='HermesRunner',
             )
-        return AgentRunResult(
-            output=result.stdout.strip(),
-            metrics={
-                'wall_time': result.duration,
-                'returncode': result.returncode,
-            },
-        )
+
+            # Write a config.yaml that points Hermes at the bridge endpoint.
+            # When base_url is set, Hermes ignores the provider and calls the
+            # endpoint directly (using api_key or OPENAI_API_KEY for auth).
+            hermes_home = home_dir or '/root/.hermes'
+            config_yaml = (
+                f'model:\n'
+                f'  provider: custom\n'
+                f'  default: {self._model_name or "default"}\n'
+                f'  base_url: "{bridge.base_url}/openai/v1"\n'
+                f'  api_key: "{bridge.trial_token}"\n'
+                f'  context_length: 65536\n'
+            )
+            await env.exec(
+                [
+                    'bash',
+                    '-c',
+                    f"mkdir -p {hermes_home} && cat > {hermes_home}/config.yaml << 'EOFCFG'\n{config_yaml}EOFCFG",
+                ],
+                timeout=10,
+            )
+
+            # Build the command.
+            cmd: List[str] = ['hermes', 'chat']
+
+            # Model selection (also passed via config but CLI flag takes priority)
+            if self._model_name:
+                cmd.extend(['--model', self._model_name])
+
+            # Toolsets
+            if self._toolsets:
+                cmd.extend(['--toolsets', self._toolsets])
+
+            # Auto-approve all tool calls (belt-and-suspenders with env var)
+            cmd.append('--yolo')
+
+            # Quiet mode — suppress banner/spinner, only output final response
+            cmd.append('--quiet')
+
+            # Extra user-supplied args
+            cmd.extend(self._extra_args)
+
+            # Single-query mode (non-interactive) — must be last
+            cmd.extend(['-q', task.instruction])
+
+            sample_id = (task.metadata or {}).get('sample_id')
+            env_name = getattr(env, 'name', type(env).__name__)
+            logger.info(
+                f'hermes launching: sample={sample_id} env={env_name} '
+                f'model={self._model_name or "<default>"} '
+                f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
+            )
+            result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
+            logger.info(
+                f'hermes exited: sample={sample_id} rc={result.returncode} '
+                f'wall={result.duration:.1f}s '
+                f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+                f'timed_out={result.timed_out}'
+            )
+            if result.timed_out:
+                raise RunnerTimeoutError(f'hermes timed out after {task.timeout}s (returncode={result.returncode})')
+            if result.returncode != 0:
+                tail_stderr = (result.stderr or '').strip()[-2000:]
+                tail_stdout = (result.stdout or '').strip()[-2000:]
+                raise RuntimeError(
+                    f'hermes exited with code {result.returncode}:\n  stderr: {tail_stderr}\n  stdout: {tail_stdout}'
+                )
+            return AgentRunResult(
+                output=result.stdout.strip(),
+                metrics={
+                    'wall_time': result.duration,
+                    'returncode': result.returncode,
+                },
+            )
+        finally:
+            if owns_home_dir and home_dir:
+                shutil.rmtree(home_dir, ignore_errors=True)
 
     def _resolve_home(self) -> Optional[str]:
         """Pick the HERMES_HOME value for the subprocess."""

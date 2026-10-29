@@ -2,6 +2,8 @@
 
 This framework supports multiple-choice questions, question-answering questions, and function calling, with three predefined dataset formats. The usage process is as follows:
 
+To evaluate decision probabilities for Choice, Noul or Score tasks, use the separate [decision-model dataset format](decision.md).
+
 ## Multiple-Choice Question Format (MCQ)
 Suitable for scenarios where users need multiple-choice questions. The evaluation metric is accuracy.
 
@@ -79,11 +81,11 @@ run_task(task_cfg=task_cfg)
 
 Results:
 ```text
-+---------------------+-------------+-----------------+----------+-------+---------+---------+
-| Model               | Dataset     | Metric          | Subset   |   Num |   Score | Cat.0   |
-+=====================+=============+=================+==========+=======+=========+=========+
-| Qwen2-0.5B-Instruct | general_mcq | Accuracy ↑ | example | 12 | 58.3% | default |
-+---------------------+-------------+-----------------+----------+-------+---------+---------+
++---------------------+-------------+------------+---------+-----+-------+---------+
+| Model               | Dataset     | Metric     | Subset  | Num | Score | Cat.0   |
++=====================+=============+============+=========+=====+=======+=========+
+| Qwen2-0.5B-Instruct | general_mcq | Accuracy ↑ | example | 12  | 58.3% | default |
++---------------------+-------------+------------+---------+-----+-------+---------+
 ```
 
 ### Multiple Correct Answers
@@ -206,35 +208,35 @@ run_task(task_cfg=task_cfg)
 <details><summary>Click to view evaluation results</summary>
 
 ```text
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Model                 | Dataset    | Metric    | Subset   |   Num |   Score | Cat.0   |
-+================+============+===========+==========+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · Recall    | example | 12 | 69.4% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · Precision | example | 12 | 17.6% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · F1        | example | 12 | 22.8% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · Recall    | example | 12 | 46.7% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · Precision | example | 12 | 9.4%  | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · F1        | example | 12 | 12.3% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · Recall    | example | 12 | 65.3% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · Precision | example | 12 | 16.3% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · F1        | example | 12 | 20.6% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 1              | example | 12 | 16.4% | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 2              | example | 12 | 9.4%  | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 3              | example | 12 | 6.6%  | default |
-+----------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 4              | example | 12 | 5.6%  | default |
-+----------------+------------+-----------+----------+-------+---------+---------+ 
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Model                 | Dataset    | Metric                         | Subset  | Num | Score | Cat.0   |
++=======================+============+================================+=========+=====+=======+=========+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · Recall    | example | 12  | 69.4% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · Precision | example | 12  | 17.6% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · F1        | example | 12  | 22.8% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · Recall    | example | 12  | 46.7% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · Precision | example | 12  | 9.4%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · F1        | example | 12  | 12.3% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · Recall           | example | 12  | 65.3% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · Precision        | example | 12  | 16.3% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · F1               | example | 12  | 20.6% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 1              | example | 12  | 16.4% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 2              | example | 12  | 9.4%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 3              | example | 12  | 6.6%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 4              | example | 12  | 5.6%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
 ```
 </details>
 
@@ -288,11 +290,11 @@ run_task(task_cfg=task_cfg)
 <details><summary>Click to view evaluation results</summary>
 
 ```text
-+----------------+------------+----------------+----------+-------+---------+---------+
-| Model                 | Dataset    | Metric          | Subset   |   Num |   Score | Cat.0   |
-+================+============+================+==========+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | General-QA | Accuracy ↑ | example | 12 | 58.3% | default |
-+----------------+------------+----------------+----------+-------+---------+---------+ 
++-----------------------+------------+------------+---------+-----+-------+---------+
+| Model                 | Dataset    | Metric     | Subset  | Num | Score | Cat.0   |
++=======================+============+============+=========+=====+=======+=========+
+| Qwen2.5-0.5B-Instruct | General-QA | Accuracy ↑ | example | 12  | 58.3% | default |
++-----------------------+------------+------------+---------+-----+-------+---------+
 ```
 </details>
 
@@ -340,11 +342,11 @@ run_task(task_cfg=task_cfg)
 <details><summary>Click to view evaluation results</summary>
 
 ```text
-+----------------+------------+----------------+----------+-------+---------+---------+
-| Model                 | Dataset    | Metric          | Subset   |   Num |   Score | Cat.0   |
-+================+============+================+==========+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | General-QA | Accuracy ↑ | example | 12 | 63.8% | default |
-+----------------+------------+----------------+----------+-------+---------+---------+
++-----------------------+------------+------------+---------+-----+-------+---------+
+| Model                 | Dataset    | Metric     | Subset  | Num | Score | Cat.0   |
++=======================+============+============+=========+=====+=======+=========+
+| Qwen2.5-0.5B-Instruct | General-QA | Accuracy ↑ | example | 12  | 63.8% | default |
++-----------------------+------------+------------+---------+-----+-------+---------+
 ```
 
 </details>
@@ -424,12 +426,13 @@ Field descriptions:
 Method 1: Using preset dataset ([evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/dataPeview))
 
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],  # Function calling format is fixed as 'general_fc'
     # To explicitly specify, add dataset_args={"general_fc": {"dataset_id": "evalscope/GeneralFunctionCall-Test"}}
 )
@@ -454,12 +457,13 @@ Simple example (example.jsonl, 3 lines):
 
 Execution example:
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],
     dataset_args={
         'general_fc': {
@@ -481,15 +485,15 @@ general_fc outputs the following metrics:
 
 Example output:
 ```text
-+-----------+------------+-------------------------------+----------+-------+---------+---------+
-| Model     | Dataset    | Metric                        | Subset   |   Num |   Score | Cat.0   |
-+===========+============+===============================+==========+=======+=========+=========+
-| qwen-plus | general_fc | count_finish_reason_tool_call | default  |    10 |  3      | default |
-+-----------+------------+-------------------------------+----------+-------+---------+---------+
-| qwen-plus | general_fc | count_successful_tool_call    | default  |    10 |  2      | default |
-+-----------+------------+-------------------------------+----------+-------+---------+---------+
-| qwen-plus | general_fc | schema_accuracy               | default  |    10 |  0.6667 | default |
-+-----------+------------+-------------------------------+----------+-------+---------+---------+
-| qwen-plus | general_fc | tool_call_f1                  | default  |    10 |  0.5    | default |
-+-----------+------------+-------------------------------+----------+-------+---------+---------+
++-----------+------------+-------------------------------+---------+-----+--------+---------+
+| Model     | Dataset    | Metric                        | Subset  | Num | Score  | Cat.0   |
++===========+============+===============================+=========+=====+========+=========+
+| qwen-plus | general_fc | count_finish_reason_tool_call | default | 10  | 3      | default |
++-----------+------------+-------------------------------+---------+-----+--------+---------+
+| qwen-plus | general_fc | count_successful_tool_call    | default | 10  | 2      | default |
++-----------+------------+-------------------------------+---------+-----+--------+---------+
+| qwen-plus | general_fc | schema_accuracy               | default | 10  | 0.6667 | default |
++-----------+------------+-------------------------------+---------+-----+--------+---------+
+| qwen-plus | general_fc | tool_call_f1                  | default | 10  | 0.5    | default |
++-----------+------------+-------------------------------+---------+-----+--------+---------+
 ```

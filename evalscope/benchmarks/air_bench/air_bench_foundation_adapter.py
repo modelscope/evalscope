@@ -44,6 +44,7 @@ VALID_LETTERS = ('A', 'B', 'C', 'D')
         name='air_bench_foundation',
         pretty_name='AIR-Bench-Foundation',
         dataset_id=HF_REPO_ID,
+        hf_dataset_id='qyang1021/AIR-Bench-Dataset',
         paper_url='https://aclanthology.org/2024.acl-long.109/',
         tags=[Tags.AUDIO, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""
@@ -85,6 +86,7 @@ D. {choice_d}
 - Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).
 - Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.
 - Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         subset_list=list(FOUNDATION_SUBSET_TO_CATEGORY.keys()),
         eval_split='test',
@@ -128,8 +130,11 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
         track_root = download_air_bench(
             track='Foundation',
             dataset_id=self.dataset_id,
+            data_source=self.dataset_hub,
             cache_dir=self.dataset_dir,
             subset_dirs=requested_subsets,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
         )
         self._track_root = track_root
         self._audio_cache_dir = os.path.join(self.dataset_dir, 'air_bench_converted_audio')

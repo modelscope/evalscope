@@ -3,6 +3,7 @@
 import copy
 import json
 import os
+import tempfile
 from argparse import Namespace
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
@@ -84,6 +85,8 @@ DEFAULT_API_EVAL_BATCH_SIZE = 8
 REMOTE_API_EVAL_TYPES = frozenset(
     {
         EvalType.OPENAI_API,
+        EvalType.SYSTEMONE_API,
+        EvalType.AUTOTRUST_API,
         EvalType.OPENAI_RESPONSES_API,
         EvalType.ANTHROPIC_API,
         EvalType.LITELLM,
@@ -310,6 +313,9 @@ class TaskConfig(BaseArgument):
 
     debug: bool = False
     """Enable debug mode for detailed logging and error reporting."""
+
+    dry_run: bool = False
+    """Parse and print the task config, then return without executing inference."""
 
     seed: Optional[int] = 42
     """Random seed for reproducible results."""
@@ -753,16 +759,28 @@ class TaskConfig(BaseArgument):
             kwargs['mode'] = mode
         return self.agent_config.model_dump(**kwargs)
 
-    def dump_yaml(self, output_dir: str, generated_metadata: Optional[Dict[str, Any]] = None) -> None:
-        """Dump the task configuration and optional generated runtime metadata to YAML."""
+    def dump_yaml(
+        self,
+        output_dir: str,
+        generated_metadata: Optional[Dict[str, Any]] = None,
+        *,
+        strict: bool = False,
+    ) -> None:
+        """Atomically publish the configuration; strict writes propagate persistence errors."""
         task_cfg_file = os.path.join(output_dir, 'task_config.yaml')
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
             payload = self.to_dict()
             if generated_metadata:
                 payload.update(generated_metadata)
-            dict_to_yaml(payload, task_cfg_file)
+            os.makedirs(output_dir, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='.task-config-', dir=output_dir) as temporary_dir:
+                temporary_file = os.path.join(temporary_dir, 'task_config.yaml')
+                dict_to_yaml(payload, temporary_file)
+                os.replace(temporary_file, task_cfg_file)
         except Exception as e:
+            if strict:
+                raise
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self) -> dict:

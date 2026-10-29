@@ -18,6 +18,8 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='hellaswag',
+        supports_choice=True,
+        choice_instructions='Which ending is the most plausible continuation of `question`?',
         pretty_name='HellaSwag',
         tags=[Tags.COMMONSENSE, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""
@@ -49,6 +51,7 @@ HellaSwag is a benchmark for evaluating commonsense natural language inference, 
 - Activity labels available in metadata for analysis
 """,
         dataset_id='evalscope/hellaswag',
+        hf_dataset_id='Rowan/hellaswag',
         metric_list=['acc'],
         subset_list=['default'],
         few_shot_num=0,

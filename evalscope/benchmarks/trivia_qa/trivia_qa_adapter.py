@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) EleutherAI Inc, and its affiliates.
 
+import re
+import string
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -12,6 +14,16 @@ from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+# Characters the official evaluation (triviaqa_evaluation.py) turns into spaces.
+_PUNCTUATION = set(string.punctuation + '‘’´`')
+
+
+def normalize_answer(text: str) -> str:
+    """Normalize an answer as the official TriviaQA evaluation does; ``normalized_aliases`` are in this form."""
+    text = ''.join(' ' if ch in _PUNCTUATION else ch for ch in text.replace('_', ' ').lower())
+    return ' '.join(re.sub(r'\b(a|an|the)\b', ' ', text).split())
+
 
 PROMPT_TEMPLATE = """
 Read the content and answer the following question.
@@ -27,8 +39,10 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 @register_benchmark(
     BenchmarkMeta(
         name='trivia_qa',
+        evaluation_version='v1.2',
         pretty_name='TriviaQA',
         dataset_id='evalscope/trivia_qa',
+        hf_dataset_id='mandarjoshi/trivia_qa',
         tags=[Tags.QA, Tags.READING_COMPREHENSION],
         description="""
 ## Overview
@@ -83,9 +97,7 @@ class TriviaQaAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState):
         # use regex to extract the answer from the prediction
-        import re
+        from evalscope.utils.multi_choices import extract_answer_line
 
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip()
-        return prediction.strip()
+        answer = extract_answer_line(prediction)
+        return normalize_answer(answer if answer is not None else prediction)

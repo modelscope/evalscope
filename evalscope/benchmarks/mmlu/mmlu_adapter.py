@@ -73,6 +73,7 @@ SUBJECT_MAPPING = {
 @register_benchmark(
     BenchmarkMeta(
         name='mmlu',
+        supports_choice=True,
         pretty_name='MMLU',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description="""
@@ -102,6 +103,7 @@ MMLU (Massive Multitask Language Understanding) is a comprehensive evaluation be
 - Use `subset_list` parameter to evaluate specific subjects
 """,
         dataset_id='cais/mmlu',
+        hf_dataset_id='cais/mmlu',
         metric_list=['acc'],
         subset_list=list(SUBJECT_MAPPING.keys()),
         default_subset='all',

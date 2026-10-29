@@ -1,35 +1,47 @@
 import { useLocale } from '@/contexts/LocaleContext'
-import { useQueryParams } from '@/hooks/useQueryParams'
+import type { ReactNode } from 'react'
+import { connectionPayload, type ModelConnection, type EvalDraft, type FieldErrors } from './taskConfig'
 import EvalConfigForm from '@/components/eval/EvalConfigForm'
-import TaskRunnerShell from '@/components/tasks/TaskRunnerShell'
-import { submitEvalTask, stopEvalTask, getEvalProgress, getEvalLog, getEvalReportUrl } from '@/api/eval'
+import TaskRunnerShell, { type TaskSelectionProps } from '@/components/tasks/TaskRunnerShell'
+import { submitEvalTask, stopEvalTask, getEvalLog } from '@/api/eval'
 
-export default function EvalTaskPanel() {
+interface Props extends TaskSelectionProps {
+  connection: ModelConnection
+  draft: EvalDraft
+  onChange: (draft: EvalDraft) => void
+  toolbar: ReactNode
+  onValidateConnection: () => FieldErrors
+}
+
+export default function EvalTaskPanel({
+  connection,
+  draft,
+  onChange,
+  toolbar,
+  onValidateConnection,
+  ...selection
+}: Props) {
   const { t } = useLocale()
-  const queryParams = useQueryParams()
-  const initialDataset = queryParams.get('dataset')
-  // Lets the dashboard hand over a past run's model and datasets so it can be repeated. Secrets are
-  // never carried this way -- the API key stays a field the user fills in.
-  const initialModel = queryParams.get('model')
 
   return (
     <TaskRunnerShell
+      {...selection}
       idPrefix="eval"
       title={t('eval.title')}
       configTitle={t('eval.config')}
       statusTitle={t('eval.status')}
       readyLabel={t('eval.ready')}
-      submitTask={submitEvalTask}
+      submitTask={(payload, id) => submitEvalTask({ ...payload, ...connectionPayload(connection, 'eval') }, id)}
       stopTask={stopEvalTask}
-      getProgress={getEvalProgress}
       getLog={getEvalLog}
-      getReportUrl={getEvalReportUrl}
       renderForm={({ onSubmit, disabled }) => (
         <EvalConfigForm
           onSubmit={onSubmit}
-          disabled={disabled}
-          initialDataset={initialDataset}
-          initialModel={initialModel}
+          disabled={disabled || connection.api === 'local'}
+          draft={draft}
+          onChange={onChange}
+          toolbar={toolbar}
+          onValidateConnection={onValidateConnection}
         />
       )}
     />

@@ -2,6 +2,7 @@ import inspect
 import math
 import re
 from collections import defaultdict
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -185,13 +186,21 @@ def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gp
     return pd.Series(elo_scores, index=models.index).sort_values(ascending=False)
 
 
-def get_bootstrap_result(battles, func_compute_elo, num_round, baseline_model='gpt-4-0314'):
+def get_bootstrap_result(
+    battles: pd.DataFrame,
+    func_compute_elo: Callable[..., Optional[pd.Series]],
+    num_round: int,
+    baseline_model: str = 'gpt-4-0314',
+    seed: Optional[int] = 42,
+) -> pd.DataFrame:
+    """Bootstrap ELO ratings with an isolated RNG; None uses fresh entropy."""
+    rng = np.random.default_rng(seed)
     rows = []
     kwargs = {}
     if 'baseline_model' in inspect.signature(func_compute_elo).parameters:
         kwargs['baseline_model'] = baseline_model
     for _ in tqdm(range(num_round), desc='bootstrap'):
-        res = func_compute_elo(battles.sample(frac=1.0, replace=True), **kwargs)
+        res = func_compute_elo(battles.sample(frac=1.0, replace=True, random_state=rng), **kwargs)
         if res is not None:
             rows.append(res)
     df = pd.DataFrame(rows)

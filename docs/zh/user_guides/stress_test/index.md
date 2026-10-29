@@ -11,5 +11,6 @@ multi_turn.md
 sla_auto_tune.md
 speed_benchmark.md
 vs_vllm_bench.md
+agentx.md
 custom.md
 :::

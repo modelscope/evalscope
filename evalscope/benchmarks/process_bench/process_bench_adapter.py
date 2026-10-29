@@ -67,6 +67,7 @@ ProcessBench is a benchmark for evaluating AI models on mathematical reasoning p
 - Aggregation method: **F1** score
 """,  # noqa: E501
         dataset_id='Qwen/ProcessBench',
+        hf_dataset_id='Qwen/ProcessBench',
         subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
         metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],
         primary_metric='simple_f1_score',

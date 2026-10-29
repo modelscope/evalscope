@@ -34,3 +34,21 @@ def test_anls_below_threshold_is_zeroed() -> None:
     assert ANLS().apply(['ab'], ['abcd']) == [0.5]
     # dist 3 over length 4 -> similarity 0.25 < 0.5 threshold -> 0.
     assert ANLS().apply(['a'], ['abcd']) == [0.0]
+
+
+@pytest.mark.parametrize('reference', ['42', '3.14', 'true', 'null', '{"value": 42}'])
+def test_anls_scores_json_scalar_and_object_reference_text(reference: str) -> None:
+    """A literal answer must not be rejected just because it is also valid JSON."""
+    assert ANLS()(reference, reference) == 1.0
+
+
+def test_anls_compares_numeric_reference_text() -> None:
+    """Numeric reference text still receives the normal edit-distance penalty."""
+    assert ANLS()('43', '42') == 0.5
+
+
+def test_anls_preserves_serialized_answer_alternatives() -> None:
+    """Serialized answer lists continue to select the best matching alternative."""
+    assert ANLS()('42', '["forty two", "42"]') == 1.0
+    assert ANLS()('42', '"42"') == 1.0
+    assert ANLS()('42', '[]') == 0.0

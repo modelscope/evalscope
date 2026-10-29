@@ -61,6 +61,7 @@ Most-used `NativeAgentConfig` fields:
 | `environment_extra` | Agent environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before the agent loop starts |
+| `validate_tool_arguments` | Reject tool calls whose arguments violate the JSON schema advertised to the model; the model sees the violation as a `parsing` tool error and can retry | `False` (default); enable when the run should measure whether the model produces schema-valid calls |
 | `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
 
 Available `strategy` values:
@@ -144,6 +145,28 @@ run_task(task_config)
 ```
 
 Once configured, the model sees both built-in tools and every tool advertised by the MCP servers, picking them by name. If an MCP tool call fails, the error is fed back to the model so it can retry — the evaluation loop keeps running.
+
+### Web search without an API key
+
+`evalscope[mcp]` already bundles `mcp-server-fetch`, so no-key HTTP fetching works out of the box. To add web search
+without signing up for a provider, point `MCPServerConfigHTTP` at a hosted search MCP server. For example,
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) exposes `web_search` and `web_fetch`
+anonymously, with rate limits on anonymous access:
+
+```python
+agent_config=NativeAgentConfig(
+    mcp_servers=[
+        MCPServerConfigHTTP(
+            name='parallel_search',
+            url='https://search.parallel.ai/mcp',
+            tools=['web_search', 'web_fetch'],  # anonymous, no API key
+        ),
+    ],
+)
+```
+
+Any Streamable HTTP search MCP server works the same way: swap `url` and `tools`, and add `headers` when the server
+requires a token.
 
 ### Connection methods
 

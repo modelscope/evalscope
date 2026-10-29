@@ -49,3 +49,26 @@ def test_live_code_bench_standard_input_without_posix_alarm(monkeypatch: pytest.
     )
 
     assert results == [True]
+
+
+class _SlowChildStart:
+    """Unpickles in the spawned child as a 3 s sleep, standing in for a slow interpreter and import start."""
+
+    def __reduce__(self) -> tuple:
+        import time
+
+        return time.sleep, (3,)
+
+
+def test_humaneval_time_limit_starts_when_the_child_starts() -> None:
+    problem = {
+        'task_id': 'HumanEval/0',
+        'prompt': 'def add(a, b):\n',
+        'test': 'def check(candidate):\n    assert candidate(1, 2) == 3\n',
+        'entry_point': 'add',
+        'slow_start': _SlowChildStart(),
+    }
+
+    result = humaneval_utils.check_correctness(problem, '    return a + b\n', timeout=1)
+
+    assert result['result'] == 'passed'

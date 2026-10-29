@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Literal
 from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.judge import (
     CaseVerdict,
     JudgeCase,
@@ -21,7 +21,6 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, ScoringPolicy, Tags
-from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -60,12 +59,9 @@ START QUESTION
 END QUESTION
 """
 
-# New constants for auto-download
-DOWNLOAD_URL: str = (
-    'https://modelscope.cn/datasets/evalscope/AA-LCR/resolve/master/extracted_text/AA-LCR_extracted-text.zip'
-)
-DEFAULT_CACHE_SUBDIR: str = 'aa_lcr'
-DEFAULT_ZIP_NAME: str = 'AA-LCR_extracted-text.zip'
+DEFAULT_CACHE_SUBDIR = 'aa_lcr'
+DOCUMENT_ARCHIVE_PATH = 'extracted_text/AA-LCR_extracted-text.zip'
+DEFAULT_ZIP_NAME = 'AA-LCR_extracted-text.zip'
 DEFAULT_EXTRACTED_DIR_NAME: str = 'lcr'
 
 
@@ -103,6 +99,7 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
 - Judge prompt compares candidate answer against reference
 """,  # noqa: E501
         dataset_id='evalscope/AA-LCR',
+        hf_dataset_id='ArtificialAnalysis/AA-LCR',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
@@ -152,8 +149,15 @@ class AALCRAdapter(DefaultDataAdapter):
         zip_path = cache_root / DEFAULT_ZIP_NAME
 
         try:
-            logger.info(f'Downloading AA-LCR documents from {DOWNLOAD_URL} to {zip_path}...')
-            download_url(DOWNLOAD_URL, str(zip_path))
+            archive = DatasetHub(
+                data_id_or_path=self.dataset_id,
+                data_source=self.dataset_hub,
+                revision=self.dataset_revision,
+                force_redownload=self.force_redownload,
+                cache_dir=self.dataset_dir,
+            ).download_file(DOCUMENT_ARCHIVE_PATH)
+            logger.info(f'Copying AA-LCR documents from {archive} to {zip_path}...')
+            zip_path.write_bytes(Path(archive).read_bytes())
 
             logger.info(f'Extracting {zip_path} to {cache_root}...')
             with zipfile.ZipFile(zip_path, 'r') as zf:
@@ -220,7 +224,6 @@ class AALCRAdapter(DefaultDataAdapter):
         )
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
-
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             prompt = (
                 JUDGE_PROMPT.format(

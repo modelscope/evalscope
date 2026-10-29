@@ -160,6 +160,9 @@ Percentile results:
 | TTFT (ms) | Average time from sending a request to receiving the first response token | Total first chunk latency / Successful requests |
 | TPOT (ms) | Average time required to generate each output token (excluding first token) | Total time per output token / Successful requests |
 | ITL (ms) | Average time interval between generating each output token | Total inter-token latency / Successful requests |
+| Steady ITL (ms) | Optional metric shown only with `--enable-pd-metrics`; average inter-output chunk interval after excluding each request's first interval | Total inter-output chunk latency after the first interval / Number of post-handoff intervals |
+| PD Handoff Latency (ms) | Optional metric shown only with `--enable-pd-metrics`; first interval after the first streamed output chunk, used as a P-D handoff latency proxy in PD-disaggregated serving | First inter-output chunk latency |
+| PD Handoff Overhead (ms) | Optional metric shown only with `--enable-pd-metrics`; estimated extra P-D handoff cost after subtracting steady decode latency | max(0, first inter-output chunk latency - median(subsequent inter-output chunk latencies)) |
 | Avg Input Tokens | Average number of input tokens per request | Total input tokens / Successful requests |
 | Avg Output Tokens | Average number of output tokens per request | Total output tokens / Successful requests |
 | Output Throughput (tok/s) | Average number of output tokens processed per second | Total output tokens / Test Duration |
@@ -195,6 +198,9 @@ The following metrics are only shown in speculative decoding scenarios.
 | Latency (s) | The time from sending a request to receiving a complete response (in seconds): TTFT + TPOT * Output tokens. |
 | TTFT (ms) | The time from sending a request to generating the first token (in milliseconds), assessing the initial packet delay. |
 | ITL (ms) | The time interval between generating each output token (in milliseconds), assessing the smoothness of output. |
+| Steady ITL (ms) | Optional `--enable-pd-metrics` metric. It excludes the first inter-output chunk interval from each request and reports percentiles over the remaining intervals. |
+| PD Handoff Latency (ms) | Optional `--enable-pd-metrics` metric. It uses the first inter-output chunk interval as a proxy for P-D handoff latency. |
+| PD Handoff Overhead (ms) | Optional `--enable-pd-metrics` metric. It subtracts the median of later inter-output chunk intervals from the first interval and clamps negative values to 0. |
 | TPOT (ms) | The time required to generate each output token (excluding the first token, in milliseconds), assessing decoding speed. |
 | Input tokens | The number of tokens input in the request. |
 | Output tokens | The number of tokens generated in the response. |

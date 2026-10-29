@@ -1,5 +1,109 @@
 {
   "$defs": {
+    "ActiveTaskInfo": {
+      "additionalProperties": false,
+      "description": "Display identity of a task whose subprocess is currently registered.",
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskConfigSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "html_report_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "report_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "started_at": {
+          "default": "",
+          "type": "string"
+        },
+        "status": {
+          "default": "running",
+          "enum": [
+            "preparing",
+            "running",
+            "finalizing",
+            "completed",
+            "stopped",
+            "error",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "kind"
+      ],
+      "type": "object"
+    },
     "AgentTrace": {
       "additionalProperties": false,
       "properties": {
@@ -20,10 +124,43 @@
           },
           "type": "array"
         },
+        "framework": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "max_steps": {
           "type": "integer"
         },
         "strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trial_id": {
           "anyOf": [
             {
               "type": "string"
@@ -452,10 +589,14 @@
       "properties": {
         "outputs_root": {
           "type": "string"
+        },
+        "version": {
+          "type": "string"
         }
       },
       "required": [
-        "outputs_root"
+        "outputs_root",
+        "version"
       ],
       "type": "object"
     },
@@ -879,6 +1020,25 @@
       },
       "type": "object"
     },
+    "ListActiveTasksResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/ActiveTaskInfo"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tasks",
+        "total"
+      ],
+      "type": "object"
+    },
     "ListPerfRunsResponse": {
       "additionalProperties": false,
       "properties": {
@@ -901,6 +1061,37 @@
       "required": [
         "runs",
         "total"
+      ],
+      "type": "object"
+    },
+    "ListReportsGroupedResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/ReportFilters"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "page_size": {
+          "type": "integer"
+        },
+        "reports": {
+          "items": {
+            "$ref": "#/$defs/ReportGroup"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reports",
+        "total",
+        "page",
+        "page_size",
+        "filters"
       ],
       "type": "object"
     },
@@ -1204,6 +1395,17 @@
     "PerfDetailResponse": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_type": {
           "type": "string"
         },
@@ -1218,6 +1420,20 @@
             "type": "string"
           },
           "type": "object"
+        },
+        "configuration": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "dataset": {
           "type": "string"
@@ -1435,6 +1651,9 @@
                 },
                 {
                   "type": "number"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
@@ -1481,6 +1700,17 @@
     "PerfRunSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_host": {
           "anyOf": [
             {
@@ -1660,7 +1890,14 @@
         },
         "values": {
           "additionalProperties": {
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "type": "object"
         }
@@ -1731,7 +1968,17 @@
           "type": "string"
         },
         "Gold": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
         },
         "Index": {
           "type": "string"
@@ -1990,6 +2237,17 @@
         "num": {
           "type": "integer"
         },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "score": {
           "type": "number"
         },
@@ -2134,6 +2392,53 @@
       ],
       "type": "object"
     },
+    "ReportGroup": {
+      "additionalProperties": false,
+      "description": "One row per model in a `group_by=model` listing - display-only rollup, never a merged report.",
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/$defs/ReportSummary"
+          },
+          "type": "array"
+        },
+        "dataset_count": {
+          "type": "integer"
+        },
+        "dataset_name": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "num_samples": {
+          "type": "integer"
+        },
+        "refs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "report_count": {
+          "type": "integer"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_name",
+        "dataset_name",
+        "timestamp",
+        "report_count",
+        "dataset_count",
+        "num_samples",
+        "refs",
+        "children"
+      ],
+      "type": "object"
+    },
     "ReportMetric": {
       "additionalProperties": false,
       "properties": {
@@ -2164,6 +2469,17 @@
         "num": {
           "type": "integer"
         },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "score": {
           "type": "number"
         },
@@ -2187,11 +2503,34 @@
           "default": false,
           "type": "boolean"
         },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "name": {
           "type": "string"
         },
         "num": {
           "type": "integer"
+        },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "score": {
           "type": "number"
@@ -2207,6 +2546,28 @@
     "ReportSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "dataset_name": {
           "type": "string"
         },
@@ -2302,6 +2663,215 @@
       ],
       "type": "string"
     },
+    "TaskConfigSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "api": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dataset": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "datasets": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "eval_batch_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_prompt_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_prompt_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "number": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parallel": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "repeats": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "top_p": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
     "TaskStatusResponse": {
       "additionalProperties": false,
       "properties": {
@@ -2355,6 +2925,58 @@
       "required": [
         "message"
       ],
+      "type": "object"
+    },
+    "TraceUsage": {
+      "additionalProperties": false,
+      "description": "Mirrors `evalscope.api.model.model_output.ModelUsage`'s shape for the response contract.",
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "input_tokens_cache_read": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_tokens_cache_write": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_tokens": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
       "type": "object"
     },
     "UsageSummary": {
@@ -2429,6 +3051,9 @@
   },
   "description": "Schema-only root that keeps every public Web API type reachable for code generation.",
   "properties": {
+    "active_task_info": {
+      "$ref": "#/$defs/ActiveTaskInfo"
+    },
     "analysis_response": {
       "$ref": "#/$defs/AnalysisResponse"
     },
@@ -2468,8 +3093,14 @@
     "judge_summary": {
       "$ref": "#/$defs/JudgeSummary"
     },
+    "list_active_tasks_response": {
+      "$ref": "#/$defs/ListActiveTasksResponse"
+    },
     "list_perf_runs_response": {
       "$ref": "#/$defs/ListPerfRunsResponse"
+    },
+    "list_reports_grouped_response": {
+      "$ref": "#/$defs/ListReportsGroupedResponse"
     },
     "list_reports_response": {
       "$ref": "#/$defs/ListReportsResponse"
@@ -2525,6 +3156,9 @@
     "report_data": {
       "$ref": "#/$defs/ReportData"
     },
+    "report_group": {
+      "$ref": "#/$defs/ReportGroup"
+    },
     "report_metric": {
       "$ref": "#/$defs/ReportMetric"
     },
@@ -2553,6 +3187,8 @@
     "report_data",
     "report_summary",
     "list_reports_response",
+    "report_group",
+    "list_reports_grouped_response",
     "load_report_response",
     "percentile_stats",
     "perf_metrics",
@@ -2573,6 +3209,8 @@
     "perf_runs_list_response",
     "perf_requests_response",
     "delete_perf_run_response",
+    "active_task_info",
+    "list_active_tasks_response",
     "metric_identity",
     "metric_display_kind",
     "metric_semantics",

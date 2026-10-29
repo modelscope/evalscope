@@ -54,9 +54,11 @@ ANSWER_FORMAT_SUFFIX = (
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='measure_bench',
         pretty_name='MeasureBench',
         dataset_id='evalscope/MeasureBench',
+        hf_dataset_id='FlagEval/MeasureBench',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2510.26865',

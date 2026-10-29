@@ -3,16 +3,18 @@ from collections import defaultdict
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from overrides import override
+from typing_extensions import override
 
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
+from evalscope.api.dataset.loader import dataset_loading_session
 from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model.decision import DECISION_EVAL_TYPES
 from evalscope.api.registry import get_aggregation, get_metric
-from evalscope.constants import HubType, JudgeStrategy
+from evalscope.constants import DataCollection, HubType, JudgeStrategy, ScoreStatus
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
 
@@ -61,8 +63,31 @@ class DefaultDataAdapter(DataAdapter):
             DatasetDict: A dictionary containing the loaded and processed datasets,
                         organized by subset names.
         """
+        if self.aggregation == 'bayes_at_n':
+            if isinstance(self.repeats, bool) or not isinstance(self.repeats, int) or self.repeats < 1:
+                raise ValueError('Bayes@N requires a positive integer repeats count.')
+            metric_names = [
+                metric if isinstance(metric, str) else next(iter(metric), '') for metric in self.metric_list
+            ]
+            if self.name != DataCollection.NAME and (
+                not metric_names or any(name not in {'accuracy', 'acc', 'exact_match', 'em'} for name in metric_names)
+            ):
+                raise ValueError('Bayes@N supports only binary accuracy and exact_match metrics.')
+            if self.name == DataCollection.NAME or len(self.subset_list) != 1:
+                raise ValueError('Bayes@N supports one selected subset and does not support dataset collections.')
+            if self.eval_type in DECISION_EVAL_TYPES:
+                raise ValueError(
+                    'Bayes@N requires binary generation scores rather than decision-service probabilities.'
+                )
+            self.aggregate_empty_scores = True
+
         # Load the dataset
+        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
+            self.validate_choice_config()
         self.test_dataset, self.fewshot_dataset = self.load()
+
+        if self.aggregation == 'bayes_at_n' and len(self.test_dataset) != 1:
+            raise ValueError('Bayes@N requires exactly one loaded subset.')
 
         # Process each sample's input by applying prompt templates and few-shot formatting
         self._post_process_samples()
@@ -83,18 +108,15 @@ class DefaultDataAdapter(DataAdapter):
             # Load dataset from remote source (e.g., ModelScope, Huggingface)
             return self.load_from_remote()
 
-    def load_from_remote(self):
+    def load_from_remote(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
         """Load dataset from remote source and prepare few-shot examples if needed."""
-        test_dataset = None
-        fewshot_dataset = None
-        # Load dataset from remote source
-        test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
-        test_dataset = self.load_subsets(test_load_func)
-
-        # Load few-shot examples if few-shot prompting is enabled
-        if self._should_load_fewshot():
-            fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
-            fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
+        with dataset_loading_session():
+            test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
+            test_dataset = self.load_subsets(test_load_func)
+            fewshot_dataset = None
+            if self._should_load_fewshot():
+                fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
+                fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
         return test_dataset, fewshot_dataset
 
     def load_from_disk(self, use_local_loader: bool = False):
@@ -122,8 +144,8 @@ class DefaultDataAdapter(DataAdapter):
             return self.load_from_remote()
 
     def _should_load_fewshot(self) -> bool:
-        """Check if few-shot dataset should be loaded."""
-        return self.few_shot_num > 0 and self.train_split is not None
+        """Check whether auto few-shot examples should be loaded from a split."""
+        return self.few_shot_mode == 'auto' and self.few_shot_num > 0
 
     def _post_process_samples(self):
         """Process all sample inputs with prompt formatting."""
@@ -582,10 +604,15 @@ class DefaultDataAdapter(DataAdapter):
         return any(name in d for d in (self.metric_list or []))
 
     def get_metric_args(self, name: str) -> Dict[str, Any]:
+        """Return the configured args for a metric.
+
+        The returned dict is a copy, so callers may freely adjust per-call
+        entries (e.g. a per-sample option) without mutating ``metric_list``.
+        """
         for d in self.metric_list or []:
             if isinstance(d, dict) and name in d:
                 cfg = d.get(name, {})
-                return cfg if isinstance(cfg, dict) else {}
+                return dict(cfg) if isinstance(cfg, dict) else {}
         return {}
 
     def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
@@ -651,25 +678,33 @@ class DefaultDataAdapter(DataAdapter):
         )
 
         # Calculate scores for each configured metric
+        metric_failed = False
         for metric in self.metric_list:
             try:
                 if isinstance(metric, str):
                     metric_name = metric
-                    metric_scorer = get_metric(metric)  # Get metric implementation from registry
-                    metric_func = metric_scorer()  # Instantiate the metric scorer
+                    metric_args = {}
                 elif isinstance(metric, dict):
                     metric_name = list(metric.keys())[0]
-                    metric_cls = get_metric(metric_name)
-                    metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
+                    metric_args = metric[metric_name]
+                if score.main_score_name is None:
+                    score.main_score_name = metric_name
+                metric_cls = get_metric(metric_name)
+                metric_func = metric_cls(**metric_args)
                 metric_score = metric_func(
                     prediction=filtered_prediction,
-                    reference=reference,
+                    reference=metric_func.prepare_reference(task_state.target_reference),
                 )
                 score.value[metric_name] = metric_score
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                score.value[metric_name] = 0
+                metric_failed = True
                 score.metadata[metric_name] = f'error: {str(e)}'
+                if isinstance(e, MetricUnavailableError):
+                    score.metadata['metric_unavailable'] = True
+
+        if metric_failed:
+            score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
 
         return score
 
@@ -699,58 +734,76 @@ class DefaultDataAdapter(DataAdapter):
         else:
             prediction = task_state.output.completion
 
-        # Apply filtering and answer extraction
-        filtered_prediction = self.filter_prediction(prediction, task_state)
+        filtered_prediction = ''
+        try:
+            # Apply filtering and answer extraction
+            filtered_prediction = self.filter_prediction(prediction, task_state)
 
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            # Step 1: Calculate standard metric scores (rule-based)
-            rule_based_score = self.match_score(
-                original_prediction=prediction,
-                filtered_prediction=filtered_prediction,
-                reference=task_state.target,
-                task_state=task_state,
-            )
-
-            if float(rule_based_score.main_value or 0.0) > 0.99:
-                final_score = rule_based_score
-            else:
-                # A valid judge may raise the rule score; an unavailable judge preserves it.
-                judge_score = self.score_with_judge_contracts(
+            if self.judge_strategy == JudgeStrategy.LLM_RECALL:
+                # Step 1: Calculate standard metric scores (rule-based)
+                rule_based_score = self.match_score(
                     original_prediction=prediction,
                     filtered_prediction=filtered_prediction,
                     reference=task_state.target,
                     task_state=task_state,
                 )
-                final_score = self._merge_scores(rule_based_score, judge_score)
-        else:
-            if self.use_llm_judge:
-                # Judge-default benchmarks retain their usable rule score when the judge fails.
-                judge_score = self.score_with_judge_contracts(
-                    original_prediction=prediction,
-                    filtered_prediction=filtered_prediction,
-                    reference=task_state.target,
-                    task_state=task_state,
+
+                rule_main_available = rule_based_score.status.is_usable and (
+                    rule_based_score.main_score_name is None
+                    or rule_based_score.main_score_name in rule_based_score.value
                 )
-                if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
-                    final_score = self.fallback_to_rule_score(
-                        self.match_score(
-                            original_prediction=prediction,
-                            filtered_prediction=filtered_prediction,
-                            reference=task_state.target,
-                            task_state=task_state,
-                        ),
-                        judge_score,
-                    )
+                if rule_based_score.metadata.get('metric_unavailable'):
+                    # Invalid inputs and failed execution remain excluded before judge I/O.
+                    final_score = rule_based_score
+                elif rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
+                    final_score = rule_based_score
                 else:
-                    final_score = judge_score
+                    # A valid judge may raise the rule score; an unavailable judge preserves it.
+                    judge_score = self.score_with_judge_contracts(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+                    final_score = self._merge_scores(rule_based_score, judge_score)
             else:
-                # Use standard match score calculation without LLM judge
-                final_score = self.match_score(
-                    original_prediction=prediction,
-                    filtered_prediction=filtered_prediction,
-                    reference=task_state.target,
-                    task_state=task_state,
-                )
+                if self.use_llm_judge:
+                    # Judge-default benchmarks retain their usable rule score when the judge fails.
+                    judge_score = self.score_with_judge_contracts(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+                    if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
+                        final_score = self.fallback_to_rule_score(
+                            self.match_score(
+                                original_prediction=prediction,
+                                filtered_prediction=filtered_prediction,
+                                reference=task_state.target,
+                                task_state=task_state,
+                            ),
+                            judge_score,
+                        )
+                    else:
+                        final_score = judge_score
+                else:
+                    # Use standard match score calculation without LLM judge
+                    final_score = self.match_score(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+        except MetricUnavailableError as exc:
+            logger.error(f'Scoring unavailable for sample {task_state.sample_id}: {exc}')
+            final_score = Score(
+                prediction=prediction,
+                extracted_prediction=filtered_prediction,
+                status=ScoreStatus.EXCLUDED,
+                explanation=str(exc),
+                metadata={'metric_unavailable': True, 'error': str(exc)},
+            )
 
         # Package the results into a sample score object
         sample_score = SampleScore(
@@ -822,6 +875,27 @@ class DefaultDataAdapter(DataAdapter):
         return sample_scores
 
     @override
+    def aggregate_subset(self, subset: str, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Check the planned Bayes@N cohort before aggregating a subset."""
+        if self.aggregation == 'bayes_at_n' and self.test_dataset is not None:
+            dataset = self.test_dataset[subset]
+            expected = {sample.id: sample for sample in dataset}
+            if len(expected) != len(dataset):
+                raise ValueError('Bayes@N requires distinct sample IDs in the loaded question cohort.')
+            if len(sample_scores) != len(expected) or {score.sample_id for score in sample_scores} != set(expected):
+                raise ValueError('Bayes@N requires a correctness score for every planned sample ID.')
+            for score in sample_scores:
+                sample = expected[score.sample_id]
+                if score.group_id != sample.group_id or score.generation_index != sample.id % self.repeats:
+                    raise ValueError('Bayes@N score group/position does not match the loaded question cohort.')
+        result = self.aggregate_scores(sample_scores)
+        if self.aggregation == 'bayes_at_n' and (
+            not result or any(score.aggregation not in {'bayes_at_n', 'bayes_at_n_sd'} for score in result)
+        ):
+            raise ValueError('Bayes@N requires an adapter using the default configured aggregation.')
+        return result
+
+    @override
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Aggregate individual sample scores into summary statistics.
@@ -838,7 +912,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         # Get the configured aggregation implementation
         aggregate_cls = get_aggregation(self.aggregation)
-        aggregator = aggregate_cls()
+        aggregator = aggregate_cls(repeats=self.repeats) if self.aggregation == 'bayes_at_n' else aggregate_cls()
 
         # Compute aggregated scores
         agg_scores = aggregator(sample_scores)

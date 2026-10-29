@@ -160,6 +160,9 @@ Percentile results:
 | 平均首token时间 | TTFT (ms) | 从发送请求到接收到第一个响应标记的平均时间 | 总首chunk延迟 / 成功请求数 |
 | 平均每输出token时间 | TPOT (ms) | 生成每个输出标记所需的平均时间（不包含首token） | 总每输出token时间 / 成功请求数 |
 | 平均输出token间时延 | ITL (ms) | 生成每个输出token之间的平均间隔时间 | 总输出token间时延 / 成功请求数 |
+| 稳态输出token间时延 | Steady ITL (ms) | 仅在设置 `--enable-pd-metrics` 时输出；排除每个请求第一个输出chunk间隔后的平均输出间隔 | 第一个输出间隔之后的总输出chunk间隔 / post-handoff间隔数量 |
+| PD交接延迟 | PD Handoff Latency (ms) | 仅在设置 `--enable-pd-metrics` 时输出；首个流式输出chunk之后的第一个输出间隔，可作为PD分离场景下P-D交接延迟的近似指标 | 第一个输出chunk间隔 |
+| PD交接额外开销 | PD Handoff Overhead (ms) | 仅在设置 `--enable-pd-metrics` 时输出；扣除稳定decode阶段间隔后的近似P-D交接额外开销 | max(0, 第一个输出chunk间隔 - 后续输出chunk间隔中位数) |
 | 平均输入token数 | Avg Input Tokens | 每个请求的平均输入标记数 | 总输入token数 / 成功请求数 |
 | 平均输出token数 | Avg Output Tokens | 每个请求的平均输出标记数 | 总输出token数 / 成功请求数 |
 | 输出吞吐量 | Output Throughput (tok/s) | 每秒钟输出的平均token数 | 总输出token数 / 测试总时长 |
@@ -195,6 +198,9 @@ Percentile results:
 | 端到端延迟时间 | Latency (s) | 从发送请求到接收完整响应的时间（以秒为单位）：TTFT + TPOT * Output tokens |
 | 首次生成token时间 | TTFT (ms) | 从发送请求到生成第一个token的时间（以毫秒为单位），评估首包延时 |
 | 输出token间时延 | ITL (ms) | 生成每个输出token间隔时间（以毫秒为单位），评估输出是否平稳 |
+| 稳态输出token间时延 | Steady ITL (ms) | 可选 `--enable-pd-metrics` 指标，排除每个请求的第一个输出chunk间隔，只统计后续输出chunk间隔的分位数 |
+| PD交接延迟 | PD Handoff Latency (ms) | 可选 `--enable-pd-metrics` 指标，使用第一个输出chunk间隔近似衡量P-D交接延迟 |
+| PD交接额外开销 | PD Handoff Overhead (ms) | 可选 `--enable-pd-metrics` 指标，用第一个输出chunk间隔减去后续输出chunk间隔中位数，负值按0处理 |
 | 每token延迟 | TPOT (ms) | 生成每个输出token所需的时间（不包含首token，以毫秒为单位），评估解码速度 |
 | 输入token数 | Input tokens | 请求中输入的token数量 |
 | 输出token数 | Output tokens | 响应中生成的token数量 |

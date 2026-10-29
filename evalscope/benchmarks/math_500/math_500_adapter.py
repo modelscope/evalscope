@@ -13,6 +13,7 @@ logger = get_logger()
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='math_500',
         pretty_name='MATH-500',
         tags=[Tags.MATH, Tags.REASONING],
@@ -45,6 +46,7 @@ MATH-500 is a curated subset of 500 problems from the MATH benchmark, designed t
 - Commonly used for math reasoning benchmarking due to manageable size
 """,
         dataset_id='AI-ModelScope/MATH-500',
+        hf_dataset_id='HuggingFaceH4/MATH-500',
         subset_list=['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
         metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,

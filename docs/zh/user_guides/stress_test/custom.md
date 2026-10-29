@@ -5,7 +5,6 @@
 
 ```python
 import base64
-import json
 import pickle
 import sqlite3
 
@@ -24,12 +23,13 @@ print(f'len(rows): {len(rows)}')
 
 for row in rows:
     row_dict = dict(zip(columns, row))
-    # 解码request
-    row_dict['request'] = pickle.loads(base64.b64decode(row_dict['request']))
+    # request 保存为 JSON 文本，只有 response_messages 需要解码。
     # 解码response_messages
     row_dict['response_messages'] = pickle.loads(base64.b64decode(row_dict['response_messages']))
+    response = row_dict['response_messages'][0] if row_dict['response_messages'] else None
+    response_id = response.get('id') if isinstance(response, dict) else None
     print(
-        f"request_id: {json.loads(row_dict['response_messages'][0])['id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"  # noqa: E501
+        f"request_id: {response_id or row_dict['request_id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"
     )
     # 如果只想看一个可以break
     # break
@@ -46,6 +46,9 @@ for row in rows:
 
 - process_request(...) -> BenchmarkData  
   发送请求并收集响应与时延数据。若自定义 API 与 OpenAI 兼容（JSON + SSE），推荐继承 `DefaultApiPlugin` 直接复用其 HTTP 与流式处理逻辑，仅需实现 `build_request`、`parse_responses`。
+
+- set_request_max_tokens(request, max_tokens) -> None （可选）  
+  将每请求的输出上限写到你的协议所期望的位置。默认写顶层 `max_tokens`；若你的 API 将其嵌套或改名（如 DashScope 用 `parameters.max_tokens`、OpenAI Responses 用 `max_output_tokens`），则需覆写。多轮的逐轮上限经此钩子写入，覆写不正确会导致其被静默忽略。
 
 示例：继承 `DefaultApiPlugin` 最小实现（推荐）
 

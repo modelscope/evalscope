@@ -2,6 +2,11 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
+from typing import Any, Protocol
+
+
+class ArgumentParserWithSubParsers(Protocol):
+    def add_parser(self, name: str, **kwargs: Any) -> ArgumentParser: ...
 
 
 class CLICommand(ABC):
@@ -12,7 +17,7 @@ class CLICommand(ABC):
 
     @staticmethod
     @abstractmethod
-    def define_args(parsers: ArgumentParser):
+    def define_args(parsers: ArgumentParserWithSubParsers) -> None:
         raise NotImplementedError()
 
     @abstractmethod

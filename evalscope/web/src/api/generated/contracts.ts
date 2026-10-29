@@ -41,6 +41,7 @@ export type EventType =
  * Schema-only root that keeps every public Web API type reachable for code generation.
  */
 export interface WebApiContracts {
+  active_task_info: ActiveTaskInfo;
   analysis_response: AnalysisResponse;
   benchmark_entry: BenchmarkEntry;
   benchmarks_response: BenchmarksResponse;
@@ -54,7 +55,9 @@ export interface WebApiContracts {
   execution_summary: ExecutionSummary;
   judge_attempt: JudgeAttempt;
   judge_summary: JudgeSummary;
+  list_active_tasks_response: ListActiveTasksResponse;
   list_perf_runs_response: ListPerfRunsResponse;
+  list_reports_grouped_response: ListReportsGroupedResponse;
   list_reports_response: ListReportsResponse;
   load_report_response: LoadReportResponse;
   log_response: LogResponse;
@@ -73,12 +76,47 @@ export interface WebApiContracts {
   predictions_response: PredictionsResponse;
   progress_response: ProgressResponse;
   report_data: ReportData;
+  report_group: ReportGroup;
   report_metric: ReportMetric;
   report_summary: ReportSummary;
   task_status_response: TaskStatusResponse;
   tool_call: PredictionToolCall;
   value_range: ValueRange;
   [k: string]: any;
+}
+/**
+ * Display identity of a task whose subprocess is currently registered.
+ */
+export interface ActiveTaskInfo {
+  alias?: string | null;
+  config?: TaskConfigSummary | null;
+  endpoint?: string | null;
+  html_report_url?: string | null;
+  kind: string;
+  model?: string;
+  percent?: number | null;
+  report_url?: string | null;
+  started_at?: string;
+  status?: "preparing" | "running" | "finalizing" | "completed" | "stopped" | "error" | "unknown";
+  task_id: string;
+}
+export interface TaskConfigSummary {
+  api?: string | null;
+  dataset?: string | null;
+  datasets?: string[] | null;
+  eval_batch_size?: number | null;
+  limit?: number | null;
+  max_prompt_length?: number | null;
+  max_tokens?: number | number[] | null;
+  min_prompt_length?: number | null;
+  min_tokens?: number | null;
+  number?: number | number[] | null;
+  parallel?: number | number[] | null;
+  rate?: number | number[] | null;
+  repeats?: number | null;
+  temperature?: number | null;
+  top_k?: number | null;
+  top_p?: number | null;
 }
 export interface AnalysisResponse {
   analysis: string;
@@ -165,6 +203,7 @@ export interface PredictionToolCall {
 }
 export interface ConfigResponse {
   outputs_root: string;
+  version: string;
 }
 export interface DataFrameResponse {
   columns: string[];
@@ -256,6 +295,10 @@ export interface JudgeSummary {
   valid_observations?: number;
   [k: string]: any;
 }
+export interface ListActiveTasksResponse {
+  tasks: ActiveTaskInfo[];
+  total: number;
+}
 export interface ListPerfRunsResponse {
   metric_semantics?: {
     [k: string]: MetricSemantics;
@@ -281,6 +324,7 @@ export interface ValueRange {
   min: number;
 }
 export interface PerfRunSummary {
+  alias?: string | null;
   api_host?: string | null;
   api_type: string;
   avg_input_tokens?: number | null;
@@ -300,18 +344,33 @@ export interface PerfRunSummary {
   timestamp: string;
   total_requests: number;
 }
-export interface ListReportsResponse {
+export interface ListReportsGroupedResponse {
   filters: ReportFilters;
   page: number;
   page_size: number;
-  reports: ReportSummary[];
+  reports: ReportGroup[];
   total: number;
 }
 export interface ReportFilters {
   available_datasets: string[];
   available_models: string[];
 }
+/**
+ * One row per model in a `group_by=model` listing - display-only rollup, never a merged report.
+ */
+export interface ReportGroup {
+  children: ReportSummary[];
+  dataset_count: number;
+  dataset_name: string;
+  model_name: string;
+  num_samples: number;
+  refs: string[];
+  report_count: number;
+  timestamp: string;
+}
 export interface ReportSummary {
+  alias?: string | null;
+  api_host?: string | null;
   dataset_name: string;
   dataset_pretty_name?: string;
   model_id: string;
@@ -334,6 +393,13 @@ export interface MetricIdentity {
     [k: string]: string | number | boolean;
   };
   name: string;
+}
+export interface ListReportsResponse {
+  filters: ReportFilters;
+  page: number;
+  page_size: number;
+  reports: ReportSummary[];
+  total: number;
 }
 export interface LoadReportResponse {
   datasets: string[];
@@ -367,6 +433,7 @@ export interface ReportMetric {
   legacy_name?: string | null;
   macro_score?: number;
   num: number;
+  num_correct?: number | null;
   score: number;
   semantics: MetricSemantics;
 }
@@ -374,13 +441,18 @@ export interface ReportCategory {
   macro_score?: number;
   name: string[];
   num: number;
+  num_correct?: number | null;
   score: number;
   subsets: ReportSubset[];
 }
 export interface ReportSubset {
   is_aggregate?: boolean;
+  metadata?: {
+    [k: string]: any;
+  } | null;
   name: string;
   num: number;
+  num_correct?: number | null;
   score: number;
 }
 export interface PerfMetrics {
@@ -432,6 +504,7 @@ export interface LogResponse {
   total_lines: number;
 }
 export interface PerfDetailResponse {
+  alias?: string | null;
   api_type: string;
   basic_info: {
     [k: string]: string;
@@ -439,6 +512,9 @@ export interface PerfDetailResponse {
   best_config: {
     [k: string]: string;
   };
+  configuration?: {
+    [k: string]: string;
+  } | null;
   dataset: string;
   generated_at: string;
   has_html: boolean;
@@ -461,7 +537,7 @@ export interface PerfSummaryRow {
     [k: string]: number;
   };
   values: {
-    [k: string]: number;
+    [k: string]: number | null;
   };
 }
 export interface PerfRequestsResponse {
@@ -482,7 +558,7 @@ export interface PerfRunItem {
   number: number;
   parallel: number;
   percentile_columns: string[];
-  percentile_rows: (string | number)[][];
+  percentile_rows: (string | number | null)[][];
   rate: number | null;
   succeed_requests: number;
   success_rate: number;
@@ -495,7 +571,7 @@ export interface PerfRunsListResponse {
 export interface PredictionRow {
   AgentTrace?: AgentTrace | null;
   Generated: string;
-  Gold: string;
+  Gold: string | string[];
   Index: string;
   Input: string;
   Messages?: ChatMessage[] | null;
@@ -509,8 +585,11 @@ export interface PredictionRow {
 export interface AgentTrace {
   environment?: string | null;
   events: AgentTraceEvent[];
+  framework?: string | null;
   max_steps: number;
   strategy?: string | null;
+  total_usage?: TraceUsage | null;
+  trial_id?: string | null;
 }
 export interface AgentTraceEvent {
   latency_ms?: number | null;
@@ -524,6 +603,17 @@ export interface AgentTraceEvent {
     [k: string]: number;
   } | null;
   type: EventType;
+}
+/**
+ * Mirrors `evalscope.api.model.model_output.ModelUsage`'s shape for the response contract.
+ */
+export interface TraceUsage {
+  input_tokens?: number;
+  input_tokens_cache_read?: number | null;
+  input_tokens_cache_write?: number | null;
+  output_tokens?: number;
+  reasoning_tokens?: number | null;
+  total_tokens?: number;
 }
 /**
  * Score fields rendered by the Web UI; metadata remains benchmark-defined.

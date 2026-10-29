@@ -33,9 +33,11 @@ The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abst
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='bc4chemd',
         pretty_name='BC4CHEMD',
         dataset_id='extraordinarylab/bc4chemd',
+        hf_dataset_id='extraordinarylab/bc4chemd',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

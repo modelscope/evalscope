@@ -1,5 +1,5 @@
 import json
-from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import aiohttp
 

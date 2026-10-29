@@ -33,9 +33,11 @@ The CoNLL++ dataset is a corrected and cleaner version of the test set from the 
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='conllpp',
         pretty_name='CoNLL++',
         dataset_id='extraordinarylab/conllpp',
+        hf_dataset_id='extraordinarylab/conllpp',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

@@ -4,10 +4,50 @@
 
 import itertools
 import math
+from collections import defaultdict
 from typing import Dict, List, Union
 
 import editdistance
 import numpy as np
+
+
+def ece(pairs: list[tuple[float, float]], bins: int = 10) -> float:
+    """计算等宽分箱的预期校准误差，空分箱不贡献误差。"""
+    groups = defaultdict(list)
+    for probability, outcome in pairs:
+        groups[min(int(probability * bins), bins - 1)].append((probability, outcome))
+    return sum(abs(sum(p - y for p, y in values)) for values in groups.values()) / len(pairs)
+
+
+def average_ranks(values: list[float]) -> list[float]:
+    """计算从 1 开始的平均秩，保留并列值，用于 AUROC 和 Spearman 相关系数。"""
+    by_value = defaultdict(list)
+    for index, value in enumerate(values):
+        by_value[value].append(index)
+    result = [0.0] * len(values)
+    seen = 0
+    for value in sorted(by_value):
+        indices = by_value[value]
+        rank = seen + (len(indices) + 1) / 2
+        for index in indices:
+            result[index] = rank
+        seen += len(indices)
+    return result
+
+
+def auroc(scores: list[float], labels: list[int]) -> float:
+    """使用并列平均秩计算二元 ROC AUC（Mann-Whitney U），1 表示正类。"""
+    if len(scores) != len(labels) or not scores:
+        raise ValueError('AUROC requires equally sized, non-empty scores and labels.')
+    if any(label not in (0, 1) for label in labels) or not all(math.isfinite(score) for score in scores):
+        raise ValueError('AUROC requires binary labels and finite scores.')
+    positives = sum(labels)
+    if not 0 < positives < len(labels):
+        raise ValueError('AUROC requires both label classes.')
+    ranks = average_ranks(scores)
+    return (sum(rank for rank, label in zip(ranks, labels) if label) - positives * (positives + 1) / 2) / (
+        positives * (len(labels) - positives)
+    )
 
 
 def normalize_text(text: str) -> str:

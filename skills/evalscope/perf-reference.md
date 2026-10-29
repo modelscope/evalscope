@@ -7,7 +7,7 @@ Complete parameter reference for `evalscope perf`. All parameters can also be di
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `--model` | str | (required) | Model name or path |
-| `--api` | str | `openai` | API protocol: `openai`, `local`, `local_vllm`, `dashscope`, `embedding`, `rerank`, `custom` |
+| `--api` | str | `openai` | API protocol: `openai`, `openai_responses` / `responses`, `openai_embedding` / `embedding`, `openai_rerank` / `rerank`, `local`, or `local_vllm` |
 | `--url` | str | `http://127.0.0.1:8877/v1/chat/completions` | API endpoint URL |
 | `--port` | int | 8877 | Port for local inference server |
 | `--api-key` | str | None | API authentication key |
@@ -18,13 +18,11 @@ Complete parameter reference for `evalscope perf`. All parameters can also be di
 
 | Value | Use Case |
 |-------|----------|
-| `openai` | OpenAI-compatible API endpoints (default) |
-| `local` | Auto-start local inference server using the model |
-| `local_vllm` | Auto-start local vLLM inference server |
-| `dashscope` | Alibaba Cloud DashScope API |
-| `embedding` | OpenAI-compatible embedding API |
-| `rerank` | OpenAI-compatible reranking API |
-| `custom` | Custom API implementation |
+| `openai` | OpenAI-compatible chat-completions endpoint (default) |
+| `openai_responses` / `responses` | OpenAI Responses API endpoint |
+| `openai_embedding` / `embedding` | OpenAI-compatible embedding endpoint |
+| `openai_rerank` / `rerank` | OpenAI-compatible reranking endpoint |
+| `local` / `local_vllm` | Auto-started local inference server |
 
 ## Connection Settings
 
@@ -42,7 +40,7 @@ Complete parameter reference for `evalscope perf`. All parameters can also be di
 |-----------|------|---------|-------------|
 | `--parallel` | int (multiple) | 1 | Number of concurrent requests. Supports multiple values for gradient tests |
 | `-n, --number` | int (multiple) | 1000 | Total number of requests. Must match `--parallel` count |
-| `--rate` | float | -1 | Requests per second limit (-1 = unlimited) |
+| `--rate` | float | -1 | Requests-per-second limit (`-1` keeps the default closed-loop pacing without a rate cap) |
 | `--sleep-interval` | int | 5 | Sleep seconds between consecutive perf runs |
 
 **Important**: When providing multiple values for `--parallel` and `--number`, they are paired positionally:

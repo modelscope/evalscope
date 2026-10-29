@@ -201,9 +201,10 @@ class GenerateConfig(BaseModel):
         Returns:
            Merged configuration.
         """
-        config_keys = [field for field in self.__class__.model_fields.keys()]
         config = deepcopy(self)
-        for key in config_keys:
+        # Only fields the caller actually set: a per-call config's defaults (e.g. retries=5) must not
+        # overwrite the user's generation_config.
+        for key in other.model_fields_set & set(self.__class__.model_fields):
             value = getattr(other, key, None)
             if value is not None:
                 setattr(config, key, value)

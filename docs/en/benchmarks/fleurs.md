@@ -27,6 +27,7 @@ FLEURS (Few-shot Learning Evaluation of Universal Representations of Speech) is 
 - Default subsets: `cmn_hans_cn` (Mandarin), `en_us` (English), `yue_hant_hk` (Cantonese)
 - Language-specific text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 
 
 ## Properties

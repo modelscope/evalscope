@@ -9,9 +9,13 @@ These are policy gates, not behaviour tests. They fail in CI so the gap is visib
 added, and they deliberately do not change runtime behaviour: an undeclared metric still degrades to
 ``diagnostic.unspecified`` rather than aborting a run.
 """
+import ast
 import re
+import sys
+import warnings
+from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 import pytest
 
@@ -19,8 +23,10 @@ import evalscope  # noqa: F401  # imported for its registration side effects
 from evalscope.api.benchmark.adapters.text2image_adapter import T2I_REPORT_METRIC_NAMES
 from evalscope.api.metric.semantics import KNOWN_AGGREGATIONS, MetricIdentity
 from evalscope.api.registry import BENCHMARK_REGISTRY, METRIC_REGISTRY
+from evalscope.metrics.semantics.aliases import AliasScope, aliases_in_scope
 from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS, METRIC_NAME_TABLE_LOCATION
-from evalscope.metrics.semantics.identity import canonicalize_producer_identity, migrate_legacy_identity
+from evalscope.metrics.semantics.legacy_identity import migrate_legacy_identity
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.semantics.resolver import get_semantics_resolver
 
 
@@ -103,19 +109,34 @@ class TestAggregationAxisVocabulary:
 
     def test_aggregation_literals_in_shipped_code_are_known(self) -> None:
         """Every ``AggScore(..., aggregation='x')`` literal in the package must be declared."""
-        package_root = Path(evalscope.__file__).parent
         emitted: Dict[str, List[str]] = {}
-        for path in sorted(package_root.rglob('*.py')):
-            text = path.read_text(encoding='utf-8')
-            for block in re.finditer(r'AggScore\((?:[^()]|\([^()]*\))*?\)', text, re.S):
-                literal = re.search(r"aggregation\s*=\s*'([^']*)'", block.group(0))
-                if literal:
-                    emitted.setdefault(literal.group(1), []).append(path.name)
+        for path in sorted(Path(evalscope.__file__).parent.rglob('*.py')):
+            for value in _agg_score_aggregations(path)[0]:
+                emitted.setdefault(value, []).append(path.name)
         assert emitted, 'expected to find at least one explicit aggregation literal'
         undeclared = {name: sorted(set(files)) for name, files in emitted.items() if name not in KNOWN_AGGREGATIONS}
         assert undeclared == {}, (
             f'adapters emit undeclared aggregation names: {undeclared}; add them to '
             f'KNOWN_AGGREGATIONS in evalscope/api/metric/semantics.py'
+        )
+
+    def test_benchmarks_forwarding_their_declared_aggregation_emit_a_known_name(self) -> None:
+        """``BenchmarkMeta.aggregation`` is a free-form aggregator label, so forwarding it into an
+        ``AggScore`` turns it into an identity axis that must be declared."""
+        broken: Dict[str, str] = {}
+        for benchmark_name in sorted(BENCHMARK_REGISTRY):
+            meta = BENCHMARK_REGISTRY[benchmark_name]
+            adapter = getattr(meta, 'data_adapter', None)
+            module = sys.modules.get(getattr(adapter, '__module__', ''))
+            source = getattr(module, '__file__', None)
+            if source is None or not _agg_score_aggregations(Path(source))[1]:
+                continue
+            if meta.aggregation not in KNOWN_AGGREGATIONS:
+                broken[benchmark_name] = meta.aggregation
+        assert broken == {}, (
+            f'these benchmarks pass self.aggregation into an AggScore while declaring a name that is '
+            f'not an identity aggregation: {broken}; declare a KNOWN_AGGREGATIONS name or pass an '
+            f'explicit literal'
         )
 
     def test_every_benchmark_aggregation_is_dispatchable_or_self_computed(self) -> None:
@@ -205,13 +226,43 @@ class TestMetricListNormalization:
         )
 
 
+@lru_cache(maxsize=None)
+def _agg_score_aggregations(path: Path) -> Tuple[Tuple[str, ...], bool]:
+    """Read how every ``AggScore(...)`` call in ``path`` supplies its aggregation.
+
+    Parsed rather than matched with a regex: a regex over the call text cannot see a name passed
+    through a variable, so it reports a file as clean while an undeclared name still reaches an
+    identity.
+
+    Args:
+        path: Python source file to inspect.
+
+    Returns:
+        The string literals passed as ``aggregation``, and whether any call forwards an
+        ``*.aggregation`` attribute instead of a literal.
+    """
+    literals: List[str] = []
+    forwards_declared = False
+    with warnings.catch_warnings():
+        # Parsing the whole package surfaces pre-existing invalid escape sequences as warnings.
+        warnings.simplefilter('ignore', SyntaxWarning)
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        callee = node.func.id if isinstance(node.func, ast.Name) else getattr(node.func, 'attr', None)
+        if callee != 'AggScore':
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != 'aggregation':
+                continue
+            if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                literals.append(keyword.value.value)
+            elif isinstance(keyword.value, ast.Attribute) and keyword.value.attr == 'aggregation':
+                forwards_declared = True
+    return tuple(literals), forwards_declared
+
+
 def _declared_metric_list_aliases() -> Set[str]:
-    """The alias set ``_normalize_metric_list`` rewrites, read off the implementation."""
-    import inspect
-
-    from evalscope.api.benchmark.meta import BenchmarkMeta
-
-    source = inspect.getsource(BenchmarkMeta._normalize_metric_list)
-    literal = re.search(r'aliases\s*=\s*\{([^}]*)\}', source)
-    assert literal, 'could not locate the alias set literal'
-    return set(re.findall(r"'([^']+)'", literal.group(1)))
+    """The alias set ``_normalize_metric_list`` rewrites, read off its single declaration."""
+    return set(aliases_in_scope(AliasScope.METRIC_LIST))

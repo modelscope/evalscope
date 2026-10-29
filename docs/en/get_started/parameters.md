@@ -109,7 +109,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `shuffle` | `bool` | Whether to shuffle the data |
 | `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only) |
 | `metric_list` | `list[str\|dict]` | Metric list. Use canonical names such as `accuracy`; legacy aliases such as `acc` are normalized for compatibility. |
-| `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`).<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`) |
+| `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`), `bayes_at_n`.<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`)<br>• `bayes_at_n`: Posterior mean and posterior SD of mean correctness over a fixed question set with `repeats=N`; binary `accuracy`/`exact_match` only, one subset (see [FAQ](./faq.md)) |
 | `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
 | `force_redownload` | `bool` | Whether to force re-download the dataset |
 | `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md), specify `{<param_name>:<value>}` as needed, where the type (`type`) and choices (`choices`) of `value` depend on the specific parameter. For SWE-bench agentic and similar benchmarks, see [Agent Evaluation](../user_guides/agent/native.md#swe-bench-agentic-benchmarks) |
@@ -151,7 +151,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible Chat Completions API service<br>• `openai_responses_api`: OpenAI official Responses API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `litellm`: LiteLLM multi-provider routing (supports 100+ LLM providers)<br>• `text2image`: Text-to-image model (local diffusers or an OpenAI-compatible Images API service)<br>• `text2speech`: Text-to-speech model service<br>• `image_editing`: Image editing model<br>• `mock_llm`: Simulated inference (for verification)<br>• `custom`: Custom evaluation type | `None` (auto-detect) |
+| `--eval-type` | `str` | Evaluation type<br>• `llm_ckpt`: Local model inference (transformers)<br>• `openai_api`: OpenAI-compatible Chat Completions API service<br>• `systemone_api`: System One text Choice decision models<br>• `openai_responses_api`: OpenAI official Responses API service<br>• `anthropic_api`: Anthropic Claude API service<br>• `litellm`: LiteLLM multi-provider routing (supports 100+ LLM providers)<br>• `text2image`: Text-to-image model (local diffusers or an OpenAI-compatible Images API service)<br>• `text2speech`: Text-to-speech model service<br>• `image_editing`: Image editing model<br>• `mock_llm`: Simulated inference (for verification)<br>• `custom`: Custom evaluation type | `None` (auto-detect) |
 | `--eval-batch-size` | `int` | Evaluation batch size, applies to the following stages:<br>• Inference: concurrent requests (remote API modes) or batch size (`llm_ckpt` mode)<br>• LLM-judge review: number of concurrent threads<br>• `batch_calculate_metrics`: number of samples per batch window | `1` (`8` for remote API modes: `openai_api`, `openai_responses_api`, `anthropic_api`, `litellm`) |
 | `--eval-backend` | `str` | Evaluation backend<br>• `Native`: Default backend<br>• `OpenCompass`: LLM evaluation<br>• `VLMEvalKit`: Multimodal model evaluation<br>• `RAGEval`: RAG/Embedding/Reranker/CLIP evaluation<br>• `ThirdParty`: Special task evaluation | `Native` |
 | `--eval-config` | `str` | Configuration file path for non-Native backends | - |
@@ -214,6 +214,10 @@ LLM verdict. Native evaluations require an exact cached evaluation identity matc
 reviews. With `rerun_review=True`, predictions are reused and the review cache is atomically replaced after
 success; it is the explicit override for an identity mismatch, and the generated config records the prediction
 source under the current evaluation version.
+
+If a review rerun fails or is interrupted, keep `use_cache` pointed at the original evaluation output directory
+and set `rerun_review=True` to resume. Saved model responses are reused and scored again. Old review results
+cannot be reused directly for a benchmark until its review rerun completes.
 
 `judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
 removed `judge_worker_num` and `score_pattern` are rejected.

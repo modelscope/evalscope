@@ -1,11 +1,14 @@
 import json
 import os
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from evalscope.api.metric import Metric, SingletonMetric
 from evalscope.api.registry import register_metric
 from evalscope.metrics.utils.functions import normalize_text
 from evalscope.utils.import_utils import check_import
+
+if TYPE_CHECKING:
+    from evalscope.api.evaluator import Target
 
 # ##################
 # NLP Metrics ######
@@ -23,28 +26,36 @@ class ExactMatch(Metric):
 
 @register_metric(name=['accuracy', 'acc'])
 class Accuracy(ExactMatch):
-    def __init__(self, allow_inclusion: bool = False, numeric: bool = False):
+    """Score exact answers, optionally accepting any normalized reference alternative."""
+
+    def __init__(self, allow_inclusion: bool = False, numeric: bool = False) -> None:
         self.allow_inclusion = allow_inclusion
         self.numeric = numeric
 
-    def apply(self, predictions, references):
+    def prepare_reference(self, target: 'Target') -> str | list[str]:
+        """Preserve alternatives only when inclusion scoring is enabled."""
+        if self.allow_inclusion:
+            return list(target.values)
+        return super().prepare_reference(target)
+
+    def apply(self, predictions: list[str], references: list[str | list[str]]) -> list[float]:
+        """Match complete answers; inclusion treats a string reference as one alternative."""
         if self.allow_inclusion:
             results = []
             for prediction, reference in zip(predictions, references):
-                if prediction and prediction in reference:
-                    results.append(1.0)
-                else:
-                    results.append(0.0)
+                prediction = normalize_text(prediction)
+                alternatives = [reference] if isinstance(reference, str) else reference
+                results.append(
+                    float(bool(prediction) and any(prediction == normalize_text(answer) for answer in alternatives))
+                )
             return results
         elif self.numeric:
-            from evalscope.metrics.math.parser import math_equal, strip_answer_string
+            from evalscope.metrics.math.parser import compare_answers
 
-            results = []
-            for prediction, reference in zip(predictions, references):
-                ref_answer = strip_answer_string(reference)
-                results.append(float(math_equal(prediction, ref_answer)))
-
-            return results
+            return [
+                float(compare_answers(prediction, reference).matched)
+                for prediction, reference in zip(predictions, references)
+            ]
         else:
             return super().apply(predictions, references)
 
@@ -58,19 +69,20 @@ class NumericMatch(Metric):
 @register_metric(name='math_acc')
 class MathAcc(Metric):
     def apply(self, predictions, references):
-        from evalscope.metrics.math.parser import extract_answer, math_equal, strip_answer_string
+        from evalscope.metrics.math.parser import compare_answers
 
-        results = []
-        for prediction, reference in zip(predictions, references):
-            pred_answer = strip_answer_string(extract_answer(prediction))
-            ref_answer = strip_answer_string(reference)
-            results.append(float(math_equal(pred_answer, ref_answer)))
-
-        return results
+        return [
+            float(compare_answers(prediction, reference, prediction_mode='output').matched)
+            for prediction, reference in zip(predictions, references)
+        ]
 
 
 @register_metric(name='multi_choice_acc')
 class MultiChoiceAcc(Metric):
+    def prepare_reference(self, target: 'Target') -> str:
+        """Combine multiple choice labels into one answer set."""
+        return target.compact()
+
     def apply(self, predictions, references):
         """
         Calculate accuracy for multiple-choice questions.
@@ -120,6 +132,8 @@ class ANLS(Metric):
                 answer = json.loads(reference)
             except json.JSONDecodeError:
                 answer = reference
+            if not isinstance(answer, (str, list)):
+                answer = reference
             if isinstance(answer, str):
                 answer = [answer]
             assert isinstance(answer, list), 'The reference answer should be a list of answers.'
@@ -155,6 +169,7 @@ class BertScore(SingletonMetric):
         """
         check_import('torch', 'torch', raise_error=True, feature_name='BertScore Metric')
 
+        # Local import: pulls torch/transformers only when BertScore is actually used.
         from .bert_score.scorer import BERTScorer
 
         self.scorer = BERTScorer(model_id_or_path=model_id_or_path, batch_size=1024, **kwargs)

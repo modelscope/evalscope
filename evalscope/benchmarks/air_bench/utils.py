@@ -10,7 +10,7 @@ from copy import deepcopy
 from hashlib import sha1
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.dataset import MemoryDataset, Sample
+from evalscope.api.dataset import DatasetHub, MemoryDataset, Sample
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -108,68 +108,31 @@ def _resolve_local_cache(
 
 def download_air_bench(
     track: str,
-    dataset_id: str = HF_REPO_ID,
+    dataset_id: str,
+    data_source: str,
     cache_dir: Optional[str] = None,
     subset_dirs: Optional[List[str]] = None,
+    revision: Optional[str] = None,
+    force_redownload: bool = False,
 ) -> str:
-    """Resolve the AIR-Bench dataset root, downloading from ModelScope if needed.
-
-    Args:
-        track: Either ``'Foundation'`` or ``'Chat'`` — used to scope the download.
-        dataset_id: Local path or ModelScope repository id. If a local path
-            exists it is returned as-is.
-        cache_dir: Optional local cache directory; falls back to the
-            ``modelscope`` default when ``None``.
-        subset_dirs: When provided, only these sub-directories under the chosen
-            track are downloaded (alongside the track-level meta JSON).
-
-    Returns:
-        Absolute path to the dataset root containing ``Foundation/`` and/or
-        ``Chat/`` sub-directories.
-    """
-    if os.path.isdir(dataset_id):
-        return dataset_id
-
-    # Fast path: return immediately when every requested subset is cached.
-    local_cached = _resolve_local_cache(dataset_id, track, cache_dir, subset_dirs)
-    if local_cached is not None:
-        logger.info(f'AIR-Bench {track} already present in local cache at `{local_cached}`. Skipping remote download.')
-        return local_cached
-
-    from modelscope import dataset_snapshot_download
-
-    # Determine which subsets still need to be fetched.
-    cache_root = cache_dir or os.path.join(os.path.expanduser('~'), '.cache', 'modelscope', 'hub', 'datasets')
-    local_cached = os.path.join(cache_root, *dataset_id.split('/'))
-    track_dir = os.path.join(local_cached, track)
-
-    if os.path.isdir(track_dir) and subset_dirs:
-        # Partial cache: only pull the absent subsets.
-        missing = [s for s in subset_dirs if not os.path.isdir(os.path.join(track_dir, s))]
-    else:
-        missing = subset_dirs or []
-
-    # Build allow-patterns: always include the meta JSON.
-    allow_patterns: List[str] = [f'{track}/{track}_meta.json']
-    if missing:
-        for sub in missing:
-            allow_patterns.append(f'{track}/{sub}/*')
-    elif subset_dirs:
-        for sub in subset_dirs:
-            allow_patterns.append(f'{track}/{sub}/*')
+    """Resolve the requested AIR-Bench track through the shared dataset hub."""
+    allow_patterns = [f'{track}/{track}_meta.json']
+    if subset_dirs:
+        allow_patterns.extend(f'{track}/{subset}/*' for subset in subset_dirs)
     else:
         allow_patterns.append(f'{track}/*')
 
     logger.info(
-        f'Downloading AIR-Bench {track} from ModelScope (`{dataset_id}`). '
+        f'Downloading AIR-Bench {track} from {data_source} (`{dataset_id}`). '
         f'Patterns: {allow_patterns}. This can be tens of GB on first run.'
     )
-    local_path = dataset_snapshot_download(
-        dataset_id,
+    return DatasetHub(
+        data_id_or_path=dataset_id,
+        data_source=data_source,
+        revision=revision,
+        force_redownload=force_redownload,
         cache_dir=cache_dir,
-        allow_file_pattern=allow_patterns,
-    )
-    return local_path
+    ).download_snapshot(allow_file_pattern=allow_patterns)
 
 
 def load_meta(track_root: str, track: str) -> List[Dict[str, Any]]:

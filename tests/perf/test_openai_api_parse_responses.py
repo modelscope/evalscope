@@ -220,3 +220,31 @@ def test_parse_responses_stream_tool_call_null_delta_content(plugin_with_tokeniz
         },
     ]
     assert plugin_with_tokenizer.parse_responses(responses, request='{}') == (0, 0)
+
+
+def test_parse_responses_stream_counts_reasoning_tokens(plugin_with_tokenizer):
+    """Without usage, the fallback counts reasoning text like the answer.
+
+    Reasoning deltas already count as output for TTFT/ITL, so leaving them out
+    of ``completion_tokens`` inflated TPOT.
+    """
+    responses = [
+        {'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'role': 'assistant'}}]},
+        {'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'reasoning_content': 'think'}}]},
+        {'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'reasoning': 'ing'}}]},
+        {'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': 'ok'}}]},
+    ]
+    # One token per character: 'think' + 'ing' + 'ok'.
+    assert plugin_with_tokenizer.parse_responses(responses, request='{}') == (0, 10)
+
+
+def test_parse_responses_non_stream_counts_reasoning_tokens(plugin_with_tokenizer):
+    responses = [{
+        'object': 'chat.completion',
+        'choices': [{
+            'index': 0,
+            'message': {'content': 'ok', 'reasoning_content': 'thinking'},
+            'finish_reason': 'stop',
+        }],
+    }]
+    assert plugin_with_tokenizer.parse_responses(responses, request='{}') == (0, 10)

@@ -11,6 +11,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+from evalscope.utils.yes_no import extract_verdict
 
 logger = get_logger()
 
@@ -51,6 +52,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
 - Aggregation at subcategory, category, and overall levels
 """,  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
+        hf_dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
         primary_metric=MetricSelector(
             name='accuracy',
@@ -60,6 +62,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
         aggregation='mean',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
+        evaluation_version='v1.2',
     )
 )
 class HallusionBenchAdapter(VisionLanguageAdapter):
@@ -90,14 +93,16 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             },
         )
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        verdict = extract_verdict(filtered_prediction, allow_lowercase_exact=True)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
-        score.value = {'acc': result}
+        # Credit only an exact whole-word verdict match; both verdicts or neither scores 0
+        score.value = {'acc': 1 if verdict == reference.strip().upper() else 0}
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -114,13 +119,22 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             groups = defaultdict(list)
             for ss in scores:
                 md = ss.sample_metadata
+                category = md.get('category')
                 subcategory = md.get('subcategory')
                 set_id = md.get('set_id')
-                group_id = md.get('figure_id') if group_type == 'figure' else md.get('question_id')
-                if subcategory is None or set_id is None or group_id is None:
+                figure_id = md.get('figure_id')
+                group_id = figure_id if group_type == 'figure' else md.get('question_id')
+                if category is None or subcategory is None or set_id is None or group_id is None:
                     # Skip incomplete records for this grouping
                     continue
-                key = f'{subcategory}_{set_id}_{group_id}'
+                # Official HallusionBench excludes VS "no-figure" records (figure_id == 0)
+                # from figure-level accuracy: they carry no figure to attribute a group to.
+                if group_type == 'figure' and str(category) == 'VS' and str(figure_id) == '0':
+                    continue
+                # The grouping key must include category. VD and VS reuse the same
+                # subcategory/set_id/figure_id/question_id numbering, so dropping category
+                # merges distinct figures/questions across categories and corrupts the metric.
+                key = f'{category}_{subcategory}_{set_id}_{group_id}'
                 groups[key].append(ss.score.main_value)
             if not groups:
                 return 0.0, 0

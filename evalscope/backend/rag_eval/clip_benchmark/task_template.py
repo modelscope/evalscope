@@ -43,8 +43,8 @@ def evaluate(args: ClipBenchmarkEvalConfig):
         # Skip evaluation if the result already exists and skip_existing is True
         if os.path.exists(output_file) and skip_existing:
             if verbose:
-                logger.info(f'Skip {output_dir}, exists already.')
-            return
+                logger.info(f'Skip {output_file}, exists already.')
+            continue
 
         # Determine device (CPU or GPU)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'

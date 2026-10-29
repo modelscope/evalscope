@@ -149,7 +149,7 @@ def format_example(
         str: Formatted example string.
     """
     choices_text = answer_options(choices)
-    return f'{question}\n{choices_text}\nANSWER: {answer.text}'
+    return f'{question}\n{choices_text}\nANSWER: {answer.compact()}'
 
 
 # The answer marker itself.  Locating markers separately from the label keeps a greedy label
@@ -162,14 +162,29 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
 # such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
-_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,/、]*)')
-_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，]*)')
+# Math typesetting a model may wrap the label in: '$B$', '\\(B\\)', '\\boxed{B}', '$\\boxed{\\text{B}}$'.
+_LATEX_LABEL_PREFIX_RE = re.compile(r'(?:(?:\$+|\\\(|\\(?:boxed|fbox|text|textbf|mathbf|mathrm)\s*\{)\s*)*')
+
+_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,，/、]*)')
+_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9 ,，/、]*)')
 
 _LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
 
 # Words a model may place between two labels when listing several of them ('A and B').
 _LABEL_CONNECTORS = {'and', 'or'}
 _LABEL_CONNECTOR_RE = re.compile(r'\s+(?:and|or)\s+', re.IGNORECASE)
+
+
+def extract_answer_line(text: str) -> Optional[str]:
+    """Text after the last 'ANSWER:' marker, up to the end of its line, without bold markers.
+
+    The marker is matched like the multiple-choice parser does, in any case and inside or around
+    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Returns None without a marker.
+    """
+    markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
+    if not markers:
+        return None
+    return text[markers[-1].end() :].split('\n', 1)[0].strip().strip('*').strip()
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
@@ -226,6 +241,7 @@ def _last_labelled_answer(
     """
     for marker in reversed(list(marker_re.finditer(text))):
         tail = text[marker.end() :]
+        tail = tail[_LATEX_LABEL_PREFIX_RE.match(tail).end() :]
         for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
             label = label_re.match(tail)
             if label is None:
@@ -326,8 +342,12 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
     matched = matched.strip().rstrip('。.')
 
     if multiple_correct:
-        # Handle comma-separated or continuous letters
-        matched = matched.replace(' 和 ', '').replace(' ', '').replace('，', ',')
+        # Handle comma-separated or continuous letters. Mirror the English path: an ideographic
+        # comma or a slash between labels is a separator, so normalize them to a plain comma
+        # before splitting. Without this, a multi-select answer such as '答案：A、C' or '答案：A/C'
+        # kept only its first label and was scored as wrong.
+        matched = matched.replace(' 和 ', '').replace(' ', '')
+        matched = matched.replace('，', ',').replace('、', ',').replace('/', ',')
         answers = set(matched.split(',')) if ',' in matched else set(matched)
         return answers if answers.issubset(allowed_options) else set()
     else:

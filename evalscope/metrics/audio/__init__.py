@@ -1,1 +1,1 @@
-from .metrics import CER, MER, WER, AudioWER
+from .metrics import CER, MER, PER, WER, AudioWER

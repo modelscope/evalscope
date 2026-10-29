@@ -1,7 +1,9 @@
 from typing import Any, Dict, List
 
-import litellm
+import pytest
 from openai.types.chat import ChatCompletion
+
+litellm = pytest.importorskip('litellm')
 
 from evalscope.api.messages import (
     ChatMessage,

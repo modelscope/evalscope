@@ -3,16 +3,16 @@
 EQ-Bench Benchmark Adapter for EvalScope
 
 This adapter implements the EQ-Bench benchmark for evaluating language models
-on emotional intelligence tasks. It uses the official EQ-Bench scoring algorithm
-from the reference implementation to ensure 100% consistency.
+on emotional intelligence tasks. It uses the official EQ-Bench v2 per-question
+scoring formula with the default English, non-revision dataset.
 
 The scoring functions are imported from answer_validation.py, which is based on
-the official EQ-Bench reference implementation located in reference/EQ-bench/.
+the official EQ-Bench reference implementation.
 
 References:
 - Paper: https://arxiv.org/abs/2312.06281
 - Homepage: https://eqbench.com/
-- Official Implementation: reference/EQ-bench/answer_validation.py
+- Official Implementation: https://github.com/EQ-bench/EQ-Bench/blob/main_v2_4/lib/scoring.py
 """
 
 import ast
@@ -25,7 +25,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoreStatus, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -37,6 +37,7 @@ PROMPT_TEMPLATE = """{question}"""
     BenchmarkMeta(
         name='eq_bench',
         pretty_name='EQ-Bench',
+        evaluation_version='v1.1',
         tags=[Tags.INSTRUCTION_FOLLOWING],
         description="""
 ## Overview
@@ -61,12 +62,16 @@ EQ-Bench is a benchmark for evaluating language models on emotional intelligence
 ## Evaluation Notes
 
 - Default evaluation uses the **validation** split
-- Primary metric: **EQ-Bench Score** (0-100 scale, reported as 0-1)
+- Primary metric: **EQ-Bench Score**, stored as the official score divided by 100 and displayed on the official scale
+- Valid per-question scores can be negative (stored range: -1.9908 to 1); they are not clamped before averaging
+- Unparseable or invalid answers and samples missing v2 full-scale references are excluded from the score average; the metric count is the number of scored samples
 - Uses zero-shot evaluation (no few-shot examples)
-- Responses must include emotion ratings in specific JSON-like format
+- Responses must include four emotion ratings in `Emotion: score` format
+- This adapter does not reproduce the official runner's format-failure resampling or optional revision mode
 - Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
 """,
         dataset_id='evalscope/EQ-Bench',  # ModelScope dataset ID, falls back to local if not found
+        hf_dataset_id='pbevan11/EQ-Bench',
         metric_list=['eq_bench_score'],  # Official v2 full-scale scoring
         few_shot_num=0,
         train_split=None,
@@ -149,12 +154,12 @@ class EQBenchAdapter(DefaultDataAdapter):
         Uses sigmoid scaling for small differences (≤5) and linear scaling for large differences (>5),
         with an adjustment constant (0.7477) that makes random answers score 0.
 
-        Returns a score in range 0-100 (internally 0-10 scaled by 10).
+        Returns the official score divided by 100, preserving negative scores.
+        Invalid answers or missing v2 references are excluded from aggregation.
         """
         # Import official EQ-Bench evaluation functions from bundled implementation
         # The answer_validation.py module is bundled with this package to ensure
         # it's available both in development (pip install -e .) and production (pip install .) installations.
-        # This ensures 100% consistency with official EQ-Bench scoring algorithm.
         from evalscope.benchmarks.eq_bench.answer_validation import (
             calculate_score_fullscale,
             parse_answers,
@@ -164,20 +169,18 @@ class EQBenchAdapter(DefaultDataAdapter):
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
+            main_score_name='eq_bench_score',
+            status=ScoreStatus.EXCLUDED,
+            metadata={'metric_unavailable': True},
         )
 
         try:
-            # Get reference answer from metadata - prefer fullscale (v2) over standard (v1)
-            ref_answer = task_state.metadata.get('reference_answer', {})
-            ref_fullscale = task_state.metadata.get('reference_answer_fullscale', {})
-            # Use fullscale if available (recommended v2 scoring), otherwise fall back to v1
-            reference_to_use = ref_fullscale if ref_fullscale else ref_answer
+            # A v1 reference cannot be scored with the v2 full-scale formula.
+            reference_to_use = task_state.metadata.get('reference_answer_fullscale', {})
 
             if not reference_to_use:
-                logger.warning('No reference answer found in metadata')
-                score.value = {'eq_bench_score': 0.0}
-                score.main_score_name = 'eq_bench_score'
-                score.explanation = 'No reference answer available'
+                logger.warning('No v2 full-scale reference answer found in metadata')
+                score.explanation = 'No v2 full-scale reference answer available'
                 return score
 
             # Parse the prediction using official parser
@@ -186,8 +189,6 @@ class EQBenchAdapter(DefaultDataAdapter):
 
             if not first_pass_answers:
                 logger.warning('Failed to parse any emotion scores from prediction')
-                score.value = {'eq_bench_score': 0.0}
-                score.main_score_name = 'eq_bench_score'
                 score.explanation = 'Failed to parse prediction'
                 return score
 
@@ -201,8 +202,6 @@ class EQBenchAdapter(DefaultDataAdapter):
                 logger.warning(f'Invalid answer format: {error_msg}')
                 logger.debug(f'Parsed answers: {first_pass_answers}')
                 logger.debug(f'Expected emotions: {reference_emotions}')
-                score.value = {'eq_bench_score': 0.0}
-                score.main_score_name = 'eq_bench_score'
                 score.explanation = f'Invalid format: {error_msg}'
                 return score
 
@@ -211,19 +210,16 @@ class EQBenchAdapter(DefaultDataAdapter):
 
             if eq_score is None:
                 logger.warning('calculate_score_fullscale returned None')
-                score.value = {'eq_bench_score': 0.0}
-                score.main_score_name = 'eq_bench_score'
                 score.explanation = 'Scoring failed'
                 return score
 
-            # Scale from 0-10 to 0-1 for reporting
+            # Divide the raw score by 10 for storage. Keep negative scores: the official
+            # benchmark averages them, which is what makes random answers score 0.
             normalized_score = eq_score / 10.0
 
-            # Clamp to valid range [0, 1]
-            normalized_score = max(0.0, min(1.0, normalized_score))
-
             score.value = {'eq_bench_score': normalized_score}
-            score.main_score_name = 'eq_bench_score'
+            score.status = ScoreStatus.SUCCESS
+            score.metadata.pop('metric_unavailable')
             score.explanation = f'EQ-Bench Score: {normalized_score:.2f} (raw: {eq_score:.3f}/10)'
 
             logger.debug(f'Prediction: {first_pass_answers}')
@@ -235,8 +231,6 @@ class EQBenchAdapter(DefaultDataAdapter):
             import traceback
 
             logger.debug(traceback.format_exc())
-            score.value = {'eq_bench_score': 0.0}
-            score.main_score_name = 'eq_bench_score'
             score.explanation = f'Evaluation error: {str(e)}'
 
         return score

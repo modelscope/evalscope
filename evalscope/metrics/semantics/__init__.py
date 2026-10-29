@@ -19,13 +19,14 @@ stays importable on its own and no ``report`` <-> ``metrics.semantics`` import c
 Nothing in this package imports ``evalscope.report`` at module level.
 
 Inside the package the dependency order is one-way: ``api.metric.semantics`` (contract) <-
-``baselines`` <- ``entry`` <- ``catalog`` / ``perf`` (data) <- ``resolver`` <- ``migration``.
-The legacy alias manifest is shared by identity and catalog migration without importing either.
+``baselines`` / ``aliases`` <- ``entry`` / ``naming`` <- ``catalog`` / ``perf`` / ``legacy_identity``
+(data) <- ``resolver`` / ``primary`` <- ``migration``. The alias manifest is the single source both
+naming paths read, and it imports neither of them.
 
 The surface is exactly what production imports. Everything else -- the catalog tables, the
-baseline table, the resolver internals and private formatting helpers -- stays in its owning
-module, so tests import those directly from ``catalog.py`` / ``baselines.py`` / ``resolver.py`` /
-``formatting.py``.
+baseline table, the alias manifest, the resolver internals and private formatting helpers -- stays
+in its owning module, so tests import those directly from ``catalog.py`` / ``baselines.py`` /
+``aliases.py`` / ``resolver.py`` / ``formatting.py``.
 """
 
 from evalscope.metrics.semantics.formatting import (

@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -9,6 +8,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 logger = get_logger()
 
@@ -27,6 +27,7 @@ OPEN_PROMPT = (
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='real_world_qa',
         pretty_name='RealWorldQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -59,6 +60,7 @@ RealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI
 - Tests models on practical, real-world scenarios
 """,
         dataset_id='lmms-lab/RealWorldQA',
+        hf_dataset_id='lmms-lab/RealWorldQA',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',
@@ -82,7 +84,5 @@ class RealWorldQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip().lower()
-        return ''
+        answer = extract_answer_line(prediction)
+        return answer.lower() if answer is not None else prediction.strip().lower()

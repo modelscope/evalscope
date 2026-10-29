@@ -1,5 +1,4 @@
 import json
-import sys
 from typing import Any, Dict, Iterator, List, Union
 
 from evalscope.perf.arguments import Arguments

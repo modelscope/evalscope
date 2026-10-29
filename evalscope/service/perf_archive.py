@@ -19,7 +19,6 @@ import shutil
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Dict, List, Optional
-from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
 from evalscope.perf.utils.perf_constants import Metrics
@@ -27,10 +26,12 @@ from evalscope.perf.utils.report.summary import (
     build_basic_info,
     build_best_config,
     build_recommendations,
+    build_run_config,
     build_summary_table,
     is_embedding,
 )
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 logger = get_logger()
 
@@ -202,15 +203,13 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     if isinstance(protocol, str) and protocol.strip():
         metadata['protocol'] = protocol.strip()
 
-    raw_url = args_dict.get('url')
-    if isinstance(raw_url, str) and raw_url.strip():
-        candidate = raw_url.strip()
-        try:
-            parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
-        except ValueError:
-            parsed = None
-        if parsed and parsed.hostname:
-            metadata['api_host'] = parsed.hostname.lower()
+    alias = args_dict.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        metadata['alias'] = alias.strip()
+
+    endpoint = sanitize_endpoint(args_dict.get('url'))
+    if endpoint:
+        metadata['api_host'] = endpoint
 
     return metadata
 
@@ -335,10 +334,11 @@ def build_run_detail(root: str, rel_path: str) -> dict:
     identity = _build_identity_metadata(first_args)
     api_type = first_args.get('api', '')
     is_emb = is_embedding(api_type)
+    input_only = Metrics.is_input_only(api_type)
     request_counts = [RunLoader.count_request_samples(os.path.join(run_dir, run.dir_name)) for run in runs]
-    summary_columns, summary_rows = build_summary_table(runs, is_emb, request_counts)
+    summary_columns, summary_rows = build_summary_table(runs, input_only, request_counts)
 
-    basic_info = dict(build_basic_info(first_args, runs, is_emb))
+    basic_info = dict(build_basic_info(first_args, runs, input_only))
     if identity.get('provider'):
         basic_info['Provider'] = identity['provider']
     if identity.get('protocol'):
@@ -351,8 +351,10 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'model': first_args.get('model', first_args.get('model_id', 'N/A')),
         'api_type': api_type,
         'dataset': first_args.get('dataset', 'N/A'),
+        'alias': identity.get('alias'),
         'generated_at': extract_timestamp(rel_path, run_dir),
         'basic_info': basic_info,
+        'configuration': build_run_config(first_args, runs),
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
         'total_requests': sum(run.summary.total_requests for run in runs),
@@ -495,12 +497,14 @@ def render_chart(root: str, rel_path: str, chart_type: str, run_name: Optional[s
     runs = _load_runs(run_dir, with_requests=False)
     if not runs:
         raise PerfArchiveError(f'No perf runs found under: {rel_path}', 404)
-    is_emb = is_embedding((runs[0].args or {}).get('api', ''))
+    input_only = Metrics.is_input_only((runs[0].args or {}).get('api', ''))
+    if input_only and chart_type in ('ttft', 'tpot', 'req_ttft_tpot', 'percentile_token'):
+        raise PerfArchiveError('Token-generation timings are not applicable to input-only APIs', 404)
 
     if chart_type in SWEEP_CHARTS:
         builder_name, needs_emb = SWEEP_CHARTS[chart_type]
         builder = getattr(perf_charts, builder_name)
-        div = builder(runs, is_emb, theme=theme) if needs_emb else builder(runs, theme=theme)
+        div = builder(runs, input_only, theme=theme) if needs_emb else builder(runs, theme=theme)
     else:
         # Per-run charts require a specific run sub-directory.
         if not run_name:
@@ -509,7 +513,7 @@ def render_chart(root: str, rel_path: str, chart_type: str, run_name: Optional[s
         if run is None:
             raise PerfArchiveError(f'Run not found: {run_name}', 404)
         if chart_type in PERCENTILE_CHARTS:
-            charts = perf_charts.build_percentile_chart(run, is_emb, theme=theme)
+            charts = perf_charts.build_percentile_chart(run, input_only, theme=theme)
             div = charts[PERCENTILE_CHARTS[chart_type]]
         else:
             # Per-request charts need the DB rows for just this one run.
@@ -517,7 +521,7 @@ def render_chart(root: str, rel_path: str, chart_type: str, run_name: Optional[s
             if full is None:
                 raise PerfArchiveError(f'Run not found: {run_name}', 404)
             label = REQUEST_CHARTS[chart_type]
-            tabs = perf_charts.build_request_detail_tabs(full, is_emb, theme=theme)
+            tabs = perf_charts.build_request_detail_tabs(full, input_only, theme=theme)
             div = next((t['chart'] for t in tabs if t['label'] == label), '')
         if not div:
             raise PerfArchiveError('Chart not available for this run', 404)
@@ -533,7 +537,7 @@ def render_compare_chart(root: str, rel_paths: List[str], chart_type: str, theme
     from evalscope.perf.utils.report import perf_charts
 
     series = []
-    emb_modes = set()
+    input_modes = set()
     for rel in rel_paths:
         run_dir = resolve_run_dir(root, rel)
         if run_dir is None:
@@ -542,18 +546,23 @@ def render_compare_chart(root: str, rel_paths: List[str], chart_type: str, theme
         if not runs:
             continue
         first_args = runs[0].args or {}
-        emb_modes.add(is_embedding(first_args.get('api', '')))
+        input_modes.add(Metrics.is_input_only(first_args.get('api', '')))
         model = first_args.get('model', first_args.get('model_id', rel))
         ts = extract_timestamp(rel, run_dir)
-        label = f'{model} · {ts}' if ts else model
+        identity = _build_identity_metadata(first_args)
+        label = ' · '.join(
+            str(value) for value in (identity.get('alias') or model, identity.get('api_host'), ts) if value
+        )
         series.append((label, runs))
     if not series:
         raise PerfArchiveError('No perf runs found for the given paths', 404)
-    if len(emb_modes) > 1:
-        raise PerfArchiveError('Cannot compare embedding and LLM runs in the same chart', 400)
-    is_emb = emb_modes.pop()
+    if len(input_modes) > 1:
+        raise PerfArchiveError('Cannot compare input-only and token-generation runs in the same chart', 400)
+    input_only = input_modes.pop()
+    if input_only and chart_type in ('ttft', 'tpot'):
+        raise PerfArchiveError('Token-generation timings are not applicable to input-only APIs', 404)
 
-    div = perf_charts.build_compare_chart(series, chart_type, is_embedding=is_emb, theme=theme)
+    div = perf_charts.build_compare_chart(series, chart_type, is_embedding=input_only, theme=theme)
     return wrap_chart_html(div)
 
 
@@ -569,13 +578,15 @@ def ensure_history_report(root: str, rel_path: str) -> str:
         raise PerfArchiveError('Invalid path', 400)
 
     report_file = os.path.join(run_dir, 'perf_report.html')
-    if os.path.isfile(report_file):
-        return report_file
+    from evalscope.perf.utils.report.generate_report import gen_perf_html_report, is_current_perf_report
 
-    from evalscope.perf.utils.report.generate_report import gen_perf_html_report
+    if is_current_perf_report(report_file):
+        return report_file
 
     runs = _load_runs(run_dir, with_requests=False)
     if not runs:
+        if os.path.isfile(report_file):
+            return report_file
         raise PerfArchiveError(f'No perf runs found under: {rel_path}', 404)
 
     api_type = (runs[0].args or {}).get('api', '')

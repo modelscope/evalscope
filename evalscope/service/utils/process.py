@@ -1,25 +1,39 @@
 import contextlib
-import io
 import multiprocessing
 import queue
 import sys
+import tempfile
 import threading
 import traceback
+from dataclasses import dataclass
+from datetime import datetime
+from multiprocessing.connection import wait
+from typing import Iterator, List, Optional, TextIO
 
 from evalscope.config import TaskConfig
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.run import run_task
+from evalscope.service.api_models.common import ActiveTaskInfo
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+@dataclass
+class ActiveTask:
+    """A running task's subprocess plus the identity shown in the Web dashboard."""
+
+    proc: multiprocessing.Process
+    info: ActiveTaskInfo
+
 
 # ---------------------------------------------------------------------------
 # Active process registry – allows external stop by task_id
 # ---------------------------------------------------------------------------
 
-_active_processes: dict[str, multiprocessing.Process] = {}
-"""Maps task_id → the subprocess currently running that task."""
+_active_processes: dict[str, ActiveTask] = {}
+"""Maps task_id → the task record whose subprocess is currently running."""
 
 _active_lock = threading.Lock()
 
@@ -44,10 +58,11 @@ class TaskStoppedError(Exception):
         super().__init__(f'Task {task_id} was stopped by the user.')
 
 
-def register_process(task_id: str, proc: multiprocessing.Process) -> None:
-    """Register a running subprocess so it can be stopped later."""
+def register_process(task_id: str, proc: multiprocessing.Process, meta: Optional[ActiveTaskInfo] = None) -> None:
+    info = meta or ActiveTaskInfo(task_id=task_id, kind='', started_at=datetime.now().isoformat())
+    info = info.model_copy(update={'status': 'running'})
     with _active_lock:
-        _active_processes[task_id] = proc
+        _active_processes[task_id] = ActiveTask(proc=proc, info=info)
 
 
 def unregister_process(task_id: str) -> None:
@@ -62,16 +77,24 @@ def active_task_ids() -> set[str]:
         return set(_active_processes.keys())
 
 
+def list_active_tasks() -> List[dict]:
+    """Return display metadata for every registered task (without process handles)."""
+    with _active_lock:
+        records = list(_active_processes.items())
+    return [record.info.model_dump(mode='json') for _, record in records]
+
+
 def stop_process(task_id: str) -> bool:
     """Terminate the subprocess associated with *task_id*.
 
     Returns True if a process was found and terminated, False otherwise.
     """
     with _active_lock:
-        proc = _active_processes.pop(task_id, None)
-    if proc is None:
+        record = _active_processes.pop(task_id, None)
+    if record is None:
         return False
-    if not proc.is_alive():
+    proc = record.proc
+    if wait([proc.sentinel], timeout=0):
         # Process already exited on its own; do NOT mark as user-stopped, or a
         # pending success result would be masked as TaskStoppedError. Treat the
         # stop request as a no-op.
@@ -82,10 +105,15 @@ def stop_process(task_id: str) -> bool:
     # the death first and misreport it as a crash.
     _user_stopped_tasks.add(task_id)
     proc.terminate()
-    proc.join(timeout=3)
-    if proc.is_alive():
+    # Only run_in_subprocess reaps the child. Concurrent join/is_alive calls
+    # can race in waitpid and misclassify a process that has already exited.
+    if not wait([proc.sentinel], timeout=3):
         proc.kill()
-        proc.join(timeout=2)
+    if not wait([proc.sentinel], timeout=2):
+        _user_stopped_tasks.discard(task_id)
+        with _active_lock:
+            _active_processes[task_id] = record
+        return False
     logger.info(f'Task {task_id} stopped by user.')
     return True
 
@@ -96,19 +124,20 @@ def stop_process(task_id: str) -> bool:
 
 
 @contextlib.contextmanager
-def _capture_stderr():
-    """Context manager that redirects sys.stderr to a StringIO buffer.
+def _capture_stderr() -> Iterator[TextIO]:
+    """Redirect stderr to a temporary text file usable by nested subprocesses.
 
-    Yields the buffer so the caller can read captured output after the block.
-    Always restores the original sys.stderr on exit.
+    The file stays open for the worker's entire task, including libraries
+    that bind sys.stderr when lazily imported. Read it before leaving the
+    context; exit restores sys.stderr and closes the temporary file.
     """
-    buf = io.StringIO()
-    original = sys.stderr
-    sys.stderr = buf
-    try:
-        yield buf
-    finally:
-        sys.stderr = original
+    with tempfile.TemporaryFile(mode='w+', encoding='utf-8', errors='replace', buffering=1) as buf:
+        original = sys.stderr
+        sys.stderr = buf
+        try:
+            yield buf
+        finally:
+            sys.stderr = original
 
 
 def _process_worker(func, result_queue, *args, **kwargs):
@@ -122,23 +151,30 @@ def _process_worker(func, result_queue, *args, **kwargs):
             result = func(*args, **kwargs)
             result_queue.put({'status': 'success', 'result': result})
         except BaseException as e:
+            # Task log handlers live in the child; the parent's logger only reaches the service console.
+            # Exception messages may contain credentials echoed by an upstream provider.
+            logger.error(f'Task failed ({type(e).__name__}). See the service console for exception details.')
+            stderr_buf.flush()
+            stderr_buf.seek(0)
             result_queue.put(
                 {
                     'status': 'error',
                     'error': str(e),
                     'traceback': traceback.format_exc(),
-                    'stderr': stderr_buf.getvalue(),
+                    'stderr': stderr_buf.read(),
                 }
             )
 
 
-def run_in_subprocess(func, *args, task_id=None, **kwargs):
+def run_in_subprocess(func, *args, task_id=None, task_meta=None, **kwargs):
     """Run *func* in a child process and return its result (blocks caller).
 
     Returns the function's return value on success; raises on error.
 
     If *task_id* is provided the child process is registered in the active
-    process registry so it can be terminated via :func:`stop_process`.
+    process registry so it can be terminated via :func:`stop_process` and
+    listed via :func:`list_active_tasks`. *task_meta* carries the display
+    identity (kind / model / endpoint / alias) stored alongside the handle.
 
     Design note — why polling instead of p.join() then queue.get():
     ``multiprocessing.Queue`` is backed by an OS pipe whose buffer is typically
@@ -156,7 +192,7 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
     p.start()
 
     if task_id:
-        register_process(task_id, p)
+        register_process(task_id, p, meta=task_meta)
 
     res = None
     # Poll for the result while the child is alive so we continuously drain

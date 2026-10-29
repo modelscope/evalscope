@@ -13,7 +13,7 @@ from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
 from evalscope.api.registry import get_metric
 from evalscope.constants import EvalType, FileConstants
 from evalscope.metrics.semantics import get_semantics_resolver
-from evalscope.metrics.semantics.identity import canonicalize_producer_identity
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
 

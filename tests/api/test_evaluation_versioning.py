@@ -6,6 +6,7 @@ import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config
+from evalscope.constants import HubType
 from evalscope.evaluation_versioning import (
     BenchmarkEvaluationIdentity,
     EvaluationIdentity,
@@ -112,6 +113,125 @@ def test_identity_changes_only_for_evaluation_semantics() -> None:
     assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', agent_config).fingerprint
 
 
+def test_identity_ignores_eval_batch_size() -> None:
+    config = _task_config(eval_batch_size=1)
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # eval_batch_size is concurrency; TaskConfig mirrors it into generation_config.batch_size.
+    more_concurrent = _task_config(eval_batch_size=8)
+    assert more_concurrent.generation_config.batch_size == 8
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', more_concurrent).fingerprint
+
+    hotter = _task_config(eval_batch_size=1, generation_config={'temperature': 0.7})
+    assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', hotter).fingerprint
+
+
+def test_identity_ignores_transport_only_generation_settings() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # Timeout/stream/retries steer the request, not the model outputs; the deprecated
+    # top-level `timeout` is mirrored into generation_config just like eval_batch_size.
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(timeout=30)).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'timeout': 30})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'stream': True})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'retries': 3})).fingerprint
+
+
+def test_identity_ignores_information_free_generation_values() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # Restating a declared default, an explicit None, or an empty mapping/list adds no information.
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'retries': 5})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(
+        spec, 'v1.0', _task_config(generation_config={'anthropic_cache_strategy': 'evaluation'})
+    ).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'temperature': None})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'extra_body': {}})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'stop_seqs': []})).fingerprint
+
+
+def test_identity_equates_deprecated_n_with_repeats() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    via_n = _task_config(generation_config={'n': 4})
+    assert via_n.repeats == 4  # deprecated n migrates to repeats, leaving an n=1 residue behind
+    via_repeats = _task_config(repeats=4)
+    assert (
+        build_benchmark_identity(spec, 'v1.0', via_n).fingerprint
+        == build_benchmark_identity(spec, 'v1.0', via_repeats).fingerprint
+    )
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'n': 1})).fingerprint
+
+
+def test_identity_still_tracks_output_shaping_generation_settings() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    output_shaping = [
+        {'temperature': 0.7},
+        {'max_tokens': 16},
+        {'seed': 7},
+        {'anthropic_cache_strategy': 'recent_messages'},
+        {'extra_body': {'top_k': 5}},
+    ]
+    for override in output_shaping:
+        assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', _task_config(generation_config=override)).fingerprint
+
+
+def test_resolved_spec_and_fingerprint_use_effective_hub_source() -> None:
+    meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/demo-data',
+        hf_dataset_revision='hf-revision-1',
+    )
+    hf_config = _task_config(dataset_hub=HubType.HUGGINGFACE)
+
+    hf_spec = ResolvedBenchmarkSpec.from_meta(meta, hf_config)
+    first = build_benchmark_identity(hf_spec, 'v1.0', hf_config)
+
+    assert hf_spec.dataset_id == 'hf/demo-data'
+    assert hf_spec.dataset_revision == 'hf-revision-1'
+
+    meta.hf_dataset_revision = 'hf-revision-2'
+    changed_spec = ResolvedBenchmarkSpec.from_meta(meta, hf_config)
+    changed = build_benchmark_identity(changed_spec, 'v1.0', hf_config)
+
+    assert changed_spec.dataset_revision == 'hf-revision-2'
+    assert first.fingerprint != changed.fingerprint
+
+
+def test_modelscope_identity_ignores_alternate_hf_declaration() -> None:
+    config = _task_config(dataset_hub=HubType.MODELSCOPE)
+    first_meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/first',
+        hf_dataset_revision='hf-revision-1',
+    )
+    second_meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/second',
+        hf_dataset_revision='hf-revision-2',
+    )
+
+    first_spec = ResolvedBenchmarkSpec.from_meta(first_meta, config)
+    second_spec = ResolvedBenchmarkSpec.from_meta(second_meta, config)
+
+    assert first_spec.dataset_id == 'demo/data'
+    assert first_spec.dataset_revision == 'ms-revision'
+    assert first_spec == second_spec
+    assert build_benchmark_identity(first_spec, 'v1.0', config) == build_benchmark_identity(
+        second_spec, 'v1.0', config
+    )
+
+
 def test_cache_identity_requires_match_unless_rerun_review_is_explicit() -> None:
     current = BenchmarkEvaluationIdentity(evaluation_version='v1.1', fingerprint='sha256:current')
     previous = BenchmarkEvaluationIdentity(evaluation_version='v1.0', fingerprint='sha256:previous')
@@ -203,8 +323,8 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     run_task(TaskConfig(**base))
 
     snapshot_path = tmp_path / 'configs' / 'task_config.yaml'
-    previous_fingerprint = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq'][
-        'fingerprint']
+    previous_identity = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq']
+    previous_fingerprint = previous_identity['fingerprint']
     prediction_path = tmp_path / 'predictions' / 'mock-model' / 'general_mcq_example.jsonl'
     previous_prediction = prediction_path.read_text()
 
@@ -220,7 +340,7 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     identity = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq']
     assert identity['fingerprint'] != previous_fingerprint
     assert identity['cache_source'] == {
-        'evaluation_version': 'v1.0',
+        'evaluation_version': previous_identity['evaluation_version'],
         'fingerprint': previous_fingerprint,
         'inferred_legacy': False,
         'prediction_reused': True,
@@ -229,7 +349,7 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     assert prediction_path.read_text() == previous_prediction
 
 
-def test_legacy_full_meta_snapshot_infers_v1_identity() -> None:
+def test_legacy_full_meta_snapshot_preserves_pre_fix_identity() -> None:
     config = _task_config()
     spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
     previous_config = config.to_dict()
@@ -239,8 +359,29 @@ def test_legacy_full_meta_snapshot_infers_v1_identity() -> None:
 
     assert identity is not None
     assert identity.evaluation_version == 'v1.0'
-    assert identity.fingerprint == build_benchmark_identity(spec, 'v1.0', config).fingerprint
+    assert identity.fingerprint != build_benchmark_identity(spec, 'v1.0', config).fingerprint
     assert validate_cached_evaluation_identity(previous_config, _identity({'demo': identity}), rerun_review=False) == {}
+
+
+@pytest.mark.parametrize('legacy_snapshot', [False, True])
+def test_shared_scoring_fix_requires_review_rerun_for_old_cache(legacy_snapshot: bool) -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    previous_config = config.to_dict()
+    previous_config['dataset_args'] = {'demo': spec.model_dump(mode='json')}
+    previous = legacy_identity_from_config(previous_config, 'demo')
+    assert previous is not None
+    if not legacy_snapshot:
+        previous_config['evaluation_identity'] = _identity({'demo': previous}).model_dump(mode='json')
+    current = build_benchmark_identity(spec, 'v1.0', config)
+
+    with pytest.raises(ValueError, match='rerun_review=True'):
+        validate_cached_evaluation_identity(previous_config, _identity({'demo': current}), rerun_review=False)
+
+    sources = validate_cached_evaluation_identity(previous_config, _identity({'demo': current}), rerun_review=True)
+    assert sources['demo'].fingerprint == previous.fingerprint
+    assert sources['demo'].prediction_reused is True
+    assert sources['demo'].inferred_legacy is legacy_snapshot
 
 
 def test_analysis_uses_compact_context_without_full_meta_or_perf(monkeypatch) -> None:

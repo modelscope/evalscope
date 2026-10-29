@@ -40,6 +40,7 @@ PIQA (Physical Interaction QA) is a benchmark for evaluating AI models' understa
         tags=[Tags.REASONING, Tags.COMMONSENSE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/piqa',
+        hf_dataset_id='extraordinarylab/piqa',
         metric_list=['acc'],
         few_shot_num=0,
         train_split='train',

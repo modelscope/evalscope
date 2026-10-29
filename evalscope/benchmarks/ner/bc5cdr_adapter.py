@@ -33,9 +33,11 @@ The BC5CDR corpus is a manually annotated resource of 1,500 PubMed articles deve
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='bc5cdr',
         pretty_name='BC5CDR',
         dataset_id='extraordinarylab/bc5cdr',
+        hf_dataset_id='extraordinarylab/bc5cdr',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

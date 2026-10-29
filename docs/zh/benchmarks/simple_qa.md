@@ -3,20 +3,20 @@
 
 ## 概述
 
-SimpleQA 是由 OpenAI 设计的一个基准测试，用于评估语言模型准确回答简短事实性问题的能力。该基准专注于衡量事实准确性，并为正确、错误和未作答的答案提供了清晰的评分标准。
+SimpleQA 是由 OpenAI 设计的一个基准测试，用于评估语言模型准确回答简短、事实性问题的能力。该基准专注于衡量事实准确性，并为正确、错误和未作答的答案提供了明确的评分标准。
 
 ## 任务描述
 
-- **任务类型**：事实型问答（Factual Question Answering）
+- **任务类型**：事实性问答（Factual Question Answering）
 - **输入**：简短的事实性问题
 - **输出**：简洁的事实性答案
 - **评分标准**：CORRECT（正确）、INCORRECT（错误）或 NOT_ATTEMPTED（未作答）
 
 ## 主要特点
 
-- 问题简短、以事实为导向，且答案明确无歧义
+- 问题简短、以寻求事实为目的，且答案明确无歧义
 - 提供清晰的评分标准用于准确性评估
-- 能区分错误回答与主动放弃回答（abstention）
+- 区分错误答案与主动放弃作答（abstention）
 - 使用 LLM-as-judge 进行语义层面的答案比对
 - 测试模型的事实知识掌握程度及其校准能力（calibration）
 
@@ -24,9 +24,9 @@ SimpleQA 是由 OpenAI 设计的一个基准测试，用于评估语言模型准
 
 - 默认配置采用 **0-shot** 评估方式
 - 使用 LLM 作为裁判进行答案评分（基于语义匹配）
-- 采用三分类判断：is_correct（正确）、is_incorrect（错误）、is_not_attempted（未作答）
-- 若答案中包含正确信息，即使带有模糊表述（hedging）也可视为正确
-- 测试模型在不确定时是否能恰当地承认不确定性
+- 采用三分类判断：`is_correct`、`is_incorrect`、`is_not_attempted`
+- 若答案包含正确信息，允许一定程度的模糊表达（hedging）
+- 测试模型在不确定时能否恰当地承认不确定性
 
 ## 属性
 
@@ -51,7 +51,7 @@ SimpleQA 是由 OpenAI 设计的一个基准测试，用于评估语言模型准
 
 ## 样例示例
 
-**子集**：`default`
+**子集**: `default`
 
 ```json
 {
@@ -88,7 +88,7 @@ Answer the question:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -96,6 +96,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets simple_qa \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -110,6 +111,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['simple_qa'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 

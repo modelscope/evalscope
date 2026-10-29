@@ -58,6 +58,10 @@
 
 具体可[参考](https://github.com/modelscope/evalscope/pull/964) 里面的例子。除此之外，还支持`mean_and_vote_at_k`, `mean_and_pass_hat_k`聚合方法。
 
+**Q: 如何为重复采样的正确率报告后验不确定性（Bayes@N）？**
+
+**A:** 在`TaskConfig`中设置`repeats=N`，并在`dataset_args`中设置`'<dataset_name>': {'aggregation': 'bayes_at_n'}`。每道题使用独立的均匀 Beta(1,1) 先验；报告中`bayes_at_n`为平均正确率的后验均值（作为分数展示），`bayes_at_n_sd`为后验标准差（诊断量），两者均带维度`n=N`。限制：仅支持二元`accuracy`/`exact_match`分数、恰好一个 subset、不支持数据集合集（collection），且每个计划采样都必须有可用分数——缺失或重复会导致运行报错。该 SD 只刻画固定题集上的采样不确定性，不包含换一批题目的不确定性。详见 [Bayes@N 论文](https://arxiv.org/abs/2510.04265)。
+
 **Q: 如何移除模型输出中的“思考过程”（如 `<think>...</think>`）？**
 
 **A:** 对于`evalscope >= v1.0 `版本，会自动剥离**成对出现**的 `<think>...</think>`。
@@ -109,6 +113,10 @@ task_config = TaskConfig(
 1.  **检查模型接口**：确认模型服务或本地模型能正常生成回复。
 2.  **查看预测文件**：检查 `outputs/<timestamp>/predictions/` 目录下的 JSONL 文件，确认模型输出是否符合预期。
 3.  **可视化分析**：使用 `evalscope service` 启动可视化界面，直观地查看和分析评测结果。
+
+**Q: 为什么 OpenAI 兼容接口的响应会出现 `stop_reason="unknown"`？**
+
+**A:** 服务商可能返回 OpenAI 标准值以外的结束原因，例如 MiMo 的 `repetition_truncation`。EvalScope 会保留回答，将无法识别的原因映射为 `unknown`，而不是视为正常结束或达到 token 上限。预测 JSONL 文件中的 `model_output.metadata.finish_reasons` 会按原始 choice 索引保存这些字符串，例如 `{"0": "repetition_truncation"}`。流式和非流式响应均适用。
 
 **Q: 评测结果不稳定，两次运行结果不一致怎么办？**
 

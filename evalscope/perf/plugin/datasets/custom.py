@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Iterator, List
+from typing import Dict, Iterator, List
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn

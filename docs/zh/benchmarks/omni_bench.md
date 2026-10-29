@@ -2,29 +2,30 @@
 
 ## 概述
 
-OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估多模态大语言模型（MLLMs）在视觉、听觉和文本输入上同时进行识别、理解和推理的能力。
+OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估MLLMs在同时识别、解释和推理视觉、听觉和文本输入方面的能力。
 
 ## 任务描述
 
 - **任务类型**：通用多模态理解（图像 + 音频 + 文本）
-- **输入**：图像、音频和带选项的文本问题
-- **输出**：正确答案选项
+- **输入**：图像、音频和带有选项的文本问题
+- **输出**：正确的答案选项
 - **模态**：视觉、听觉和文本
 
-## 核心特性
+## 主要特点
 
 - 三模态评估（图像、音频、文本）
 - 测试跨模态推理能力
-- 多选题格式
-- 可配置模态使用方式
-- 支持思维链（Chain-of-thought）提示
+- 多项选择题格式
+- 可配置的模态使用
+- 链式思维提示
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 使用简单准确率（accuracy）作为指标
-- 额外参数：`use_image`（布尔值）、`use_audio`（布尔值）
-- 支持为图像/音频提供文本替代内容
+- 简单准确率指标
+- 额外参数：use_image (bool), use_audio (bool)
+- 支持图像/音频的文本替代
+- 需要支持 `input_audio` 内容部分的OpenAI兼容服务器以处理音频输入。
 
 ## 属性
 
@@ -36,7 +37,7 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估�
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `train` |
+| **评估分割** | `train` |
 
 ## 数据统计
 
@@ -46,26 +47,26 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估�
 | 提示词长度（平均） | 477.61 字符 |
 | 提示词长度（最小/最大） | 310 / 1280 字符 |
 
-**图像统计信息：**
+**图像统计：**
 
 | 指标 | 值 |
 |--------|-------|
-| 图像总数 | 1,142 |
-| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 总图像数 | 1,142 |
+| 每个样本的图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 361x203 - 5184x3456 |
 | 格式 | jpeg, png |
 
-**音频统计信息：**
+**音频统计：**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 1,142 |
-| 每样本音频数 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 1,142 |
+| 每个样本的音频数 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | mp3 |
 
 ## 样例示例
 
-**子集**：`default`
+**子集**: `default`
 
 ```json
 {
@@ -106,11 +107,11 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估�
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注意：部分内容为了显示被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Answer the following multiple choice question based on the image and audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
@@ -123,12 +124,12 @@ Answer the following multiple choice question based on the image and audio conte
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `use_image` | `bool` | `True` | 是否提供原始图像。设为 False 时使用文本替代内容。 |
-| `use_audio` | `bool` | `True` | 是否提供原始音频。设为 False 时使用文本替代内容。 |
+| `use_image` | `bool` | `True` | 是否提供原始图像。如果为False，则使用文本替代。 |
+| `use_audio` | `bool` | `True` | 是否提供原始音频。如果为False，则使用文本替代。 |
 
 ## 使用方法
 
-### 使用 CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -136,10 +137,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets omni_bench \
-    --limit 10  # 正式评估时请移除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task
@@ -152,10 +153,10 @@ task_cfg = TaskConfig(
     datasets=['omni_bench'],
     dataset_args={
         'omni_bench': {
-            # extra_params: {}  # 使用默认额外参数
+            # extra_params: {}  # uses default extra parameters
         }
     },
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

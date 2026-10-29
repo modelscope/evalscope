@@ -4,11 +4,11 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
-from evalscope.api.evaluator import TaskState
+from evalscope.api.evaluator import ReviewResult, TaskState
 from evalscope.api.judge import (
     JudgeCase,
     JudgeContext,
@@ -20,7 +20,7 @@ from evalscope.api.judge import (
     Placement,
     ReducedVerdict,
 )
-from evalscope.api.messages.chat_message import ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser, messages_to_markdown
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
@@ -48,6 +48,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
 @register_benchmark(
     BenchmarkMeta(
         name='general_arena',
+        evaluation_version='v1.2',
         pretty_name='GeneralArena',
         tags=[Tags.CUSTOM, Tags.ARENA],
         description="""
@@ -196,7 +197,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         overall_datasets = set.intersection(*[model['datasets'] for model in self.models if 'datasets' in model])
         self.overall_datasets = overall_datasets
 
-    def _load_common_datasets(self):
+    def _load_common_datasets(self) -> Dict[tuple[str, str], Dict[str, List[Dict[str, Any]]]]:
         """Load common datasets from the local path."""
         from evalscope.utils import OutputsStructure
         from evalscope.utils.io_utils import jsonl_to_list
@@ -211,16 +212,77 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                         f'Dataset {dataset_name} with subset {subset_name} not found in model {model["name"]}.'
                     )
                 dataset = jsonl_to_list(dataset_file_path)
-                # sort by index
-                dataset.sort(key=lambda x: x.get('index'))
                 dataset_dict[(dataset_name, subset_name)][model['name']] = dataset
 
         return dataset_dict
 
-    def _build_pair_wise_data(self, dataset_dict):
-        """Build pairwise data for the models."""
-        from evalscope.api.evaluator import ReviewResult
+    def _index_reviews(
+        self, items: List[Dict[str, Any]], dataset_name: str, subset_name: str, model_name: str
+    ) -> Dict[int, tuple[ReviewResult, bool]]:
+        context = f'model {model_name!r}, dataset {dataset_name!r}, subset {subset_name!r}'
+        reviews = {}
+        duplicates = 0
+        for row, item in enumerate(items, start=1):
+            try:
+                # Legacy input migration mutates its argument; retain the loaded cache row.
+                review = ReviewResult.from_cache_item(dict(item))
+            except ValidationError as error:
+                raise ValueError(f'Invalid review for {context} at row {row}: {error}') from error
+            sample_id = review.sample_score.sample_id
+            if sample_id is not None and str(sample_id) != str(review.index):
+                raise ValueError(f'Conflicting review index {review.index} and sample_id {sample_id!r} for {context}.')
+            if review.index in reviews:
+                duplicates += 1
+            # Match CacheManager's resume policy: the last saved row is authoritative.
+            legacy_input = bool(item.get('input')) and not item.get('messages')
+            reviews[review.index] = (review, legacy_input)
 
+        if not reviews:
+            raise ValueError(f'No reviews for {context}; arena comparisons require matching non-empty review sets.')
+        if duplicates:
+            logger.warning(f'Dropped {duplicates} duplicate review rows for {context}; using the last row per index.')
+        return reviews
+
+    @staticmethod
+    def _review_input_messages(review: ReviewResult) -> List[ChatMessage]:
+        # Native caches include generated answers and agent trajectories after the input.
+        # Unmarked legacy input and assistant demonstrations must remain part of the prompt.
+        for position, message in enumerate(review.messages):
+            if message.source == 'generate':
+                return review.messages[:position]
+        return review.messages
+
+    @classmethod
+    def _review_input(cls, review: ReviewResult, *, legacy_input: bool) -> str | List[Dict[str, Any]]:
+        messages = cls._review_input_messages(review)
+        if legacy_input:
+            # Legacy caches retained only rendered text, without roles or typed content.
+            return messages_to_markdown(messages)
+
+        # Rename native tool IDs consistently so call/result relationships survive comparison.
+        # IDs inside arguments or opaque provider payloads remain part of the actual input.
+        tool_ids: Dict[str, int] = {}
+
+        def normalize_tool_id(tool_id: str) -> int:
+            return tool_ids.setdefault(tool_id, len(tool_ids))
+
+        inputs = []
+        for message in messages:
+            data = message.model_dump(exclude={'id', 'source', 'metadata', 'perf_metrics', 'model'})
+            for tool_call in data.get('tool_calls') or []:
+                tool_call['id'] = normalize_tool_id(tool_call['id'])
+            reference = data.get('tool_call_id')
+            if isinstance(reference, list):
+                data['tool_call_id'] = [normalize_tool_id(tool_id) for tool_id in reference]
+            elif isinstance(reference, str):
+                data['tool_call_id'] = normalize_tool_id(reference)
+            inputs.append(data)
+        return inputs
+
+    def _build_pair_wise_data(
+        self, dataset_dict: Dict[tuple[str, str], Dict[str, List[Dict[str, Any]]]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Build pairwise data for the models."""
         from .utils import process_review_item
 
         pairwise_data = defaultdict(list)
@@ -228,23 +290,58 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             if len(model_data) < 2:
                 logger.warning(f'Not enough models for dataset {dataset_name} with subset {subset_name}. Skipping.')
                 continue
-            # create pairwise data for each model against the baseline
-            model_names = list(model_data.keys())
-            for name in model_names:
+            reviews_by_model = {
+                name: self._index_reviews(items, dataset_name, subset_name, name) for name, items in model_data.items()
+            }
+            baseline_reviews = reviews_by_model[self.baseline]
+            baseline_indices = set(baseline_reviews)
+            # Create pairwise data only for matching observations, never a positional zip.
+            for name, model_reviews in reviews_by_model.items():
                 if name == self.baseline:
                     continue
+                context = (
+                    f'model {name!r} against baseline {self.baseline!r}, '
+                    f'dataset {dataset_name!r}, subset {subset_name!r}'
+                )
+                model_indices = set(model_reviews)
+                if model_indices != baseline_indices:
+                    missing = sorted(baseline_indices - model_indices)
+                    extra = sorted(model_indices - baseline_indices)
+                    raise ValueError(
+                        f'Mismatched review indices for {context}: '
+                        f'{len(missing)} missing (first indices: {missing[:5]}), '
+                        f'{len(extra)} extra (first indices: {extra[:5]}). '
+                        'Run all models on the same dataset with matching ordering, filters, limits, and repeats.'
+                    )
                 pairs = []
-                for model_item, baseline_item in zip(model_data[name], model_data[self.baseline]):
-                    # Convert to ReviewResult objects like in get_model_prediction
-                    model_review = ReviewResult.from_cache_item(model_item)
-                    baseline_review = ReviewResult.from_cache_item(baseline_item)
+                for index in sorted(baseline_indices):
+                    model_review, model_legacy = model_reviews[index]
+                    baseline_review, baseline_legacy = baseline_reviews[index]
+                    for field in ('group_id', 'generation_index'):
+                        model_value = getattr(model_review.sample_score, field)
+                        baseline_value = getattr(baseline_review.sample_score, field)
+                        if (
+                            model_value is not None
+                            and baseline_value is not None
+                            and str(model_value) != str(baseline_value)
+                        ):
+                            raise ValueError(f'Conflicting {field} at review index {index} for {context}.')
+                    legacy_input = model_legacy or baseline_legacy
+                    if self._review_input(model_review, legacy_input=legacy_input) != self._review_input(
+                        baseline_review, legacy_input=legacy_input
+                    ):
+                        raise ValueError(
+                            f'Mismatched input prompt at review index {index} for {context}. '
+                            'Review indices must refer to the same input in every model.'
+                        )
 
+                    question = messages_to_markdown(self._review_input_messages(model_review))
                     for model_choice, baseline_choice in zip(
                         process_review_item(model_review), process_review_item(baseline_review)
                     ):
                         pairs.append(
                             {
-                                'question': model_choice['Question'],
+                                'question': question,
                                 'answer_1': model_choice['Generated'],
                                 'answer_2': baseline_choice['Generated'],
                                 'model_1': name,
@@ -340,7 +437,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         bt_model_coef = compute_mle_elo(battles, baseline_model=self.baseline)
 
         bootstrap_model_coef = get_bootstrap_result(
-            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline
+            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline, seed=self.seed
         )
 
         stats = pd.DataFrame()

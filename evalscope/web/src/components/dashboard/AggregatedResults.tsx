@@ -11,6 +11,7 @@ import {
 import { scoreColor } from '@/utils/colorScale'
 import MetricTrend from '@/components/charts/MetricTrend'
 import Button from '@/components/ui/Button'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { cellKey } from '@/domain/report/runAggregation'
 import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
 
@@ -51,6 +52,17 @@ const DESCENDING_FIRST: Record<SortKey, boolean> = {
   lastRun: true,
 }
 
+/**
+ * Rows rendered up front, and added per click of "show more".
+ *
+ * A row here is one model x benchmark x metric combination, not a run, so a modest fleet of models
+ * and benchmarks already produces more rows than a browser should mount as table DOM on first paint.
+ * The cap keeps the initial render cheap without hiding data behind a second fetch -- everything is
+ * already in `rows`, this only staggers how much of it becomes DOM at once.
+ */
+const INITIAL_ROW_LIMIT = 100
+const ROW_LIMIT_STEP = 100
+
 /** Field columns stay on one line and clip within the responsive widths defined by the colgroup. */
 const FIELD_COLUMN = 'overflow-hidden whitespace-nowrap'
 
@@ -82,6 +94,8 @@ interface AggregatedResultsProps {
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
   sort?: SortState
   onSortChange?: (sort: SortState) => void
+  selectedReports?: string[]
+  onToggleReport?: (ref: string) => void
 }
 
 function lastRunAt(row: AggregatedRow): string {
@@ -132,6 +146,8 @@ export default function AggregatedResults({
   onOpenRun,
   sort: controlledSort,
   onSortChange,
+  selectedReports,
+  onToggleReport,
 }: AggregatedResultsProps) {
   const { t } = useLocale()
   // Time order by default: it is the one ordering the reader can confirm from the column itself.
@@ -140,6 +156,18 @@ export default function AggregatedResults({
   const sort = controlledSort ?? internalSort
 
   const sorted = [...rows].sort((a, b) => (sort.descending ? -1 : 1) * compareBy(sort.key, a, b))
+
+  // A fresh row set (new filter, search or root) starts back at the cap rather than carrying over
+  // however far a previous, unrelated result set had been expanded to. Reset during render rather
+  // than in an effect, so the first paint of a new `rows` identity never mounts the stale overflow.
+  const [rowLimit, setRowLimit] = useState(INITIAL_ROW_LIMIT)
+  const [rowsForLimit, setRowsForLimit] = useState(rows)
+  if (rows !== rowsForLimit) {
+    setRowsForLimit(rows)
+    setRowLimit(INITIAL_ROW_LIMIT)
+  }
+  const visible = sorted.slice(0, rowLimit)
+  const hiddenCount = sorted.length - visible.length
 
   const toggleSort = (key: SortKey) => {
     const next =
@@ -210,7 +238,7 @@ export default function AggregatedResults({
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
-          {sorted.map((row) => {
+          {visible.map((row) => {
             const key = cellKey(row.cell)
             const isOpen = expanded === key
             const { cell, stats } = row
@@ -303,7 +331,12 @@ export default function AggregatedResults({
                 {isOpen && (
                   <tr className="bg-[var(--bg-card2)]">
                     <td colSpan={9} className="px-4 pb-4 pt-1">
-                      <StatsPanel row={row} onOpenRun={onOpenRun} />
+                      <StatsPanel
+                        row={row}
+                        onOpenRun={onOpenRun}
+                        selectedReports={selectedReports}
+                        onToggleReport={onToggleReport}
+                      />
                     </td>
                   </tr>
                 )}
@@ -312,6 +345,18 @@ export default function AggregatedResults({
           })}
         </tbody>
       </table>
+
+      {hiddenCount > 0 && (
+        <div className="border-t border-[var(--border)] px-4 py-2.5 text-center">
+          <button
+            type="button"
+            onClick={() => setRowLimit((limit) => limit + ROW_LIMIT_STEP)}
+            className="type-body-xs font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-dark)]"
+          >
+            {t('dashboard.showMoreRows', { n: Math.min(hiddenCount, ROW_LIMIT_STEP), total: sorted.length })}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -329,9 +374,13 @@ const TREND_PANEL_WIDTH = 'lg:w-[48%]'
 function StatsPanel({
   row,
   onOpenRun,
+  selectedReports,
+  onToggleReport,
 }: {
   row: AggregatedRow
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
+  selectedReports?: string[]
+  onToggleReport?: (ref: string) => void
 }) {
   const { t } = useLocale()
   const { cell, stats } = row
@@ -372,6 +421,32 @@ function StatsPanel({
           <p className="py-3 type-body-xs text-[var(--text-muted)]">
             {t('dashboard.singleRunHint')}
           </p>
+        )}
+        {cell.kind === 'eval' && onToggleReport && (
+          <div
+            role="group"
+            aria-label={t('dashboard.selectRuns')}
+            className="mt-3 max-h-56 overflow-y-auto divide-y divide-[var(--border)]"
+          >
+            {[...cell.history].reverse().map((point) => (
+              <div key={point.runId} className="flex items-center gap-2 type-body-xs">
+                <SelectionCheckbox
+                  checked={selectedReports?.includes(point.runId) ?? false}
+                  label={t('dashboard.selectRun', { ref: point.runId })}
+                  onClick={() => onToggleReport(point.runId)}
+                />
+                <button
+                  type="button"
+                  onClick={() => onOpenRun(row, point)}
+                  title={point.runId}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2 text-[var(--text-muted)] hover:text-[var(--accent)]"
+                >
+                  <span className="truncate">{point.timestamp || point.runId}</span>
+                  <span className="font-mono tabular-nums">{value(point.score)}</span>
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

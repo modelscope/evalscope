@@ -66,7 +66,7 @@ evalscope perf \
 
 ### Random Dataset
 
-Randomly generate prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It is necessary to specify `tokenizer-path`. The number of tokens in the generated prompt is uniformly distributed between `prefix_length + min-prompt-length` and `prefix_length + max-prompt-length`. In a single test, all requests have the same prefix portion.
+Randomly generate prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`. It is necessary to specify `tokenizer-path`. The number of tokens in the generated prompt is uniformly distributed between `prefix_length + min-prompt-length` and `prefix_length + max-prompt-length`. By default, each run generates one shared raw token prefix (`--prefix-count 1`). Set `--prefix-count 7` to generate seven distinct prefixes of `--prefix-length` tokens; each request uses one prefix, assigned by `request_index % 7`. Each run in a parallel/rate sweep or SLA search creates its own pool.
 
 ```{note}
 Due to the influence of chat_template and tokenization algorithms, there may be some discrepancies in the number of tokens in the generated prompts, and it is not an exact specified token count.
@@ -82,6 +82,7 @@ evalscope perf \
   --min-tokens 128 \
   --max-tokens 128 \
   --prefix-length 64 \
+  --prefix-count 7 \
   --min-prompt-length 1024 \
   --max-prompt-length 2048 \
   --number 100 \
@@ -92,8 +93,14 @@ evalscope perf \
 ```{note}
 To ensure the server receives exactly the configured number of tokens, add `--tokenize-prompt`. This flag tokenizes the prompt into a token-ID list on the client side and sends it directly via the `prompt` field of `/v1/completions`, bypassing server-side re-tokenization.
 
-The server will receive exactly `prefix_length + inner_seq_length` tokens, which falls within `[min-prompt-length, max-prompt-length]`. Compatible with vLLM, SGLang, LMDeploy, and other frameworks that accept token-ID input; not supported for the `random_vl` dataset.
+The server will receive exactly `prefix_length + inner_seq_length` tokens, which falls within `[prefix_length + min-prompt-length, prefix_length + max-prompt-length]`. The min/max prompt length flags retain their existing meaning; changing the pool size does not change these bounds. Compatible with vLLM, SGLang, LMDeploy, and other frameworks that accept token-ID input; not supported for the `random_vl` dataset.
 ```
+
+The pool is configured through the top-level `--prefix-count` / Python `Arguments.prefix_count`, not `--dataset-args`. With 100 constructed requests and seven prefixes, two prefixes are used 15 times and five are used 14 times; with 98 requests each is used 14 times. Warmup and measured requests rotate continuously. Counts differ by at most one in any contiguous interval of constructed requests, including the measured interval. When there are fewer requests than prefixes, some prefixes remain unused. Filtering, failures, or early stopping can change the distribution of successful requests.
+
+The guarantee applies to **raw token IDs**. For text and chat messages, decoding, boundary merges during re-tokenization, and length repair can change the first `prefix_length` tokens, even within one group. Chat templates also prepend their own tokens. Different raw prefixes can decode to equivalent text. Use `--tokenize-prompt` with a compatible completions server and the matching tokenizer vocabulary when exact input token prefixes are needed.
+
+Seven prefixes do not imply a cache hit rate of 1/7. Actual prefix-cache hits depend on server implementation, cache capacity and eviction, and request timing. Closed-loop runs dispatch warmup and measured requests continuously, so warmup covering every prefix does not ensure those requests have completed before measured requests begin. Open-loop runs already wait for warmup requests to complete before dispatching measured requests; completion still does not guarantee that every prefix remains cached. This feature leaves both scheduling behaviors unchanged.
 
 ### Random Multimodal Dataset
 

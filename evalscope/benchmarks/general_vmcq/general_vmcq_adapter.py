@@ -53,6 +53,7 @@ It uses MMMU-style format with image/video/audio placeholders in text, supportin
         subset_list=['default'],
         metric_list=['acc'],
         few_shot_num=0,
+        few_shot_mode='disabled',
         train_split='dev',
         eval_split='val',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,

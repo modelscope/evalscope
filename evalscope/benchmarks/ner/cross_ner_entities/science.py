@@ -1,17 +1,17 @@
 def get_entity_mappings():
     entity_type_map = {
-        'ACADEMICJOURNAL': 'academic_journal',
-        'ASTRONOMICALOBJECT': 'astronomical_object',
+        'ACADEMIC_JOURNAL': 'academic_journal',
+        'ASTRONOMICAL_OBJECT': 'astronomical_object',
         'AWARD': 'award',
-        'CHEMICALCOMPOUND': 'chemical_compound',
-        'CHEMICALELEMENT': 'chemical_element',
+        'CHEMICAL_COMPOUND': 'chemical_compound',
+        'CHEMICAL_ELEMENT': 'chemical_element',
         'COUNTRY': 'country',
         'DISCIPLINE': 'discipline',
         'ENZYME': 'enzyme',
         'EVENT': 'event',
         'LOCATION': 'location',
         'MISC': 'misc',
-        'ORGANISATION': 'organisation',
+        'ORGANIZATION': 'organisation',
         'PERSON': 'person',
         'PROTEIN': 'protein',
         'SCIENTIST': 'scientist',
@@ -19,13 +19,13 @@ def get_entity_mappings():
         'UNIVERSITY': 'university',
     }
     entity_descriptions = {
-        'ACADEMICJOURNAL': ('A scientific journal or publication (e.g., "Nature", "Science", "The Lancet").'),
-        'ASTRONOMICALOBJECT': ('A natural object in space (e.g., "Mars", "Andromeda Galaxy", "Halley\'s Comet").'),
+        'ACADEMIC_JOURNAL': ('A scientific journal or publication (e.g., "Nature", "Science", "The Lancet").'),
+        'ASTRONOMICAL_OBJECT': ('A natural object in space (e.g., "Mars", "Andromeda Galaxy", "Halley\'s Comet").'),
         'AWARD': ('A scientific award or prize (e.g., "Nobel Prize in Physics", "Fields Medal").'),
-        'CHEMICALCOMPOUND': (
+        'CHEMICAL_COMPOUND': (
             'A chemical substance consisting of two or more elements (e.g., "H2O", "Carbon Dioxide").'
         ),
-        'CHEMICALELEMENT': ('An element from the periodic table (e.g., "Hydrogen", "Oxygen", "Gold").'),
+        'CHEMICAL_ELEMENT': ('An element from the periodic table (e.g., "Hydrogen", "Oxygen", "Gold").'),
         'COUNTRY': ('A country relevant to a scientific context (e.g., "Switzerland" for CERN).'),
         'DISCIPLINE': (
             'A branch of science or academic discipline (e.g., "Physics", "Molecular Biology", "Astronomy").'
@@ -38,7 +38,7 @@ def get_entity_mappings():
         'MISC': (
             'Miscellaneous scientific terms or concepts (e.g., "double helix", "black hole", "quantum mechanics").'
         ),
-        'ORGANISATION': ('A scientific organization or agency (e.g., "NASA", "Max Planck Society", "WHO").'),
+        'ORGANIZATION': ('A scientific organization or agency (e.g., "NASA", "Max Planck Society", "WHO").'),
         'PERSON': (
             'A person mentioned in a scientific context who is not a scientist (e.g., a patient, a benefactor).'
         ),

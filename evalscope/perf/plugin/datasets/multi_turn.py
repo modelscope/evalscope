@@ -31,7 +31,7 @@ Example (share_gpt_*_multi_turn):
 
 import json
 import os
-from typing import Any, Dict, Iterator, List
+from typing import Dict, Iterator, List
 
 import numpy as np
 
@@ -189,9 +189,7 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
     def build_messages(self) -> Iterator[Conversation]:
         """Yield full conversations as ``Conversation`` (one ``Turn`` per user turn)."""
         if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
-            self.query_parameters.dataset_path = self.download_hub_file(
-                dataset_id='swift/sharegpt', file_name=self.FILE_NAME
-            )
+            self.query_parameters.dataset_path = self.download_hub_file(file_name=self.FILE_NAME)
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

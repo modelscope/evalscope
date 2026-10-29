@@ -17,6 +17,7 @@ logger = get_logger()
         name='librispeech',
         pretty_name='LibriSpeech',
         dataset_id='lmms-lab/Librispeech-concat',
+        hf_dataset_id='lmms-lab/Librispeech-concat',
         tags=[Tags.AUDIO, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview
@@ -40,20 +41,24 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
 
 ## Evaluation Notes
 
-- Default configuration uses **test_clean** split
+- Supported evaluation splits: **test_clean** and **test_other**
 - Primary metric: **Word Error Rate (WER)**
 - Text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
 - Metadata includes audio ID and duration information
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
-        eval_split='test_clean',
+        subset_list=['test_clean', 'test_other'],
+        evaluation_version='v1.2',
         metric_list=['wer'],
+        aggregation='weighted_mean',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
 class LibriSpeechAdapter(AudioLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.split_as_subset = True
 
     def record_to_sample(self, record) -> Sample:
         content_list = [ContentText(text=self.prompt_template)]
@@ -70,7 +75,8 @@ class LibriSpeechAdapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, word_errors
 
         language = 'en'
 
@@ -81,6 +87,8 @@ class LibriSpeechAdapter(AudioLanguageAdapter):
             prediction=original_prediction,
         )
 
-        wer_score = wer([normalized_reference], [normalized_prediction], language)
-        score.value = {'wer': wer_score}
+        errors, ref_words = word_errors([normalized_reference], [normalized_prediction], language)
+        score.value = {'wer': errors / ref_words}
+        # weighted_mean pools errors over reference words: corpus WER, as lmms-eval and Qwen-Audio report it
+        score.metadata[METRIC_WEIGHTS_KEY] = {'wer': ref_words}
         return score

@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 
 from evalscope.constants import DEFAULT_BAR_WIDTH, PLOTLY_THEME, DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame
+from evalscope.report.data_frames import get_quality_metric_df
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -47,7 +48,6 @@ def plot_single_report_sunburst(report_list: List[Report]):
         df = get_data_frame(report_list=report_list, flatten_metrics=False)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
-    from evalscope.utils.data_utils import get_quality_metric_df
 
     df = get_quality_metric_df(report_list, df)
     logger.debug(f'df: \n{df}')

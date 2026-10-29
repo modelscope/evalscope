@@ -55,6 +55,7 @@ MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your fin
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='agieval',
         pretty_name='AGIEval',
         dataset_id='opencompass/agieval',
@@ -63,6 +64,7 @@ MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your fin
         subset_list=ALL_SUBSETS,
         metric_list=['acc'],
         few_shot_num=0,
+        few_shot_mode='disabled',
         train_split='dev',
         eval_split='test',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
@@ -163,9 +165,17 @@ class AGIEvalAdapter(MultiChoiceAdapter):
         subset = task_state.metadata.get('subset', '') if task_state.metadata else ''
 
         if is_cloze(subset):
-            from evalscope.metrics.math.parser import math_equal
+            from evalscope.constants import ScoreStatus
+            from evalscope.metrics.math.contracts import MathEvaluationError
+            from evalscope.metrics.math.parser import compare_answers
 
-            correct = 1.0 if math_equal(filtered_prediction, reference) else 0.0
+            try:
+                correct = float(compare_answers(filtered_prediction, reference).matched)
+            except MathEvaluationError as exc:
+                score.status = ScoreStatus.EXCLUDED
+                score.metadata['metric_unavailable'] = True
+                score.metadata['acc'] = f'error: {exc}'
+                return score
         else:
             # MCQ: exact match on extracted letters
             correct = 1.0 if filtered_prediction.upper() == reference.upper() else 0.0

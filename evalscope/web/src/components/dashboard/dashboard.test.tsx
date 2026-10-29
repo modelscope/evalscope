@@ -237,4 +237,32 @@ describe('AggregatedResults', () => {
     expect(screen.getByText(/Measured once/)).toBeInTheDocument()
     expect(screen.queryByText('New')).not.toBeInTheDocument()
   })
+
+  /** One report per distinct dataset, so aggregation produces one row per report. */
+  function manyRows(n: number) {
+    return aggregateRuns(
+      Array.from({ length: n }, (_, i) =>
+        report(`run-${i}`, `2026-08-07T08:${String(i % 60).padStart(2, '0')}:00`, 0.5, `bench-${i}`)),
+      [],
+    )
+  }
+
+  it('caps rendered rows on a large result set instead of mounting every one', () => {
+    renderWith(<AggregatedResults rows={manyRows(120)} onOpenRun={() => {}} />)
+
+    expect(bodyRows()).toHaveLength(100)
+    expect(screen.getByRole('button', { name: 'Show 20 more (of 120)' })).toBeInTheDocument()
+  })
+
+  it('reveals more rows on request, and never hides a small result set', () => {
+    renderWith(<AggregatedResults rows={manyRows(120)} onOpenRun={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Show 20 more (of 120)' }))
+
+    expect(bodyRows()).toHaveLength(120)
+    expect(screen.queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
+
+    cleanup()
+    renderWith(<AggregatedResults rows={rows()} onOpenRun={() => {}} />)
+    expect(screen.queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
+  })
 })

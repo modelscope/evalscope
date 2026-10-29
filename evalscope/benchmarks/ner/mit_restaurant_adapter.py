@@ -33,9 +33,11 @@ The MIT-Restaurant dataset is a collection of restaurant review text specificall
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='mit_restaurant',
         pretty_name='MIT-Restaurant',
         dataset_id='extraordinarylab/mit-restaurant',
+        hf_dataset_id='extraordinarylab/mit-restaurant',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

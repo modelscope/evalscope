@@ -14,9 +14,9 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 
 ## 主要特性
 
-- 涵盖单会话、多会话、时序推理、知识更新、偏好及弃权类问题
+- 覆盖单会话、多会话、时序推理、知识更新、偏好及弃答类问题
 - 支持完整历史记录的长上下文提示和官方检索日志提示
-- 使用 LongMemEval 的 LLM 评判提示来评估语义答案正确性
+- 使用 LongMemEval 的 LLM 评判提示来评估答案的语义正确性
 - 仅从 ModelScope 下载所选的 JSON 文件
 
 ## 评估说明
@@ -99,12 +99,12 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `eval_mode` | `str` | `long_context` | 评估模式：oracle_context、long_context 或 retrieval_log。可选项：['oracle_context', 'long_context', 'retrieval_log'] |
-| `retrieval_log_path` | `str | null` | `None` | eval_mode=retrieval_log 时使用的官方 LongMemEval 检索日志路径。 |
+| `retrieval_log_path` | `str | null` | `None` | 用于 eval_mode=retrieval_log 的官方 LongMemEval 检索日志路径。 |
 | `retriever_type` | `str` | `flat-session` | retrieval_log 模式下的检索提示格式。可选项：['flat-session', 'flat-turn'] |
 | `history_format` | `str` | `json` | 历史记录渲染格式。可选项：['json', 'nl'] |
 | `user_only` | `bool` | `False` | 是否仅保留历史记录中的用户发言。 |
 | `reading_method` | `str` | `con` | 提示阅读方法。`con` 要求模型先提取信息并推理后再作答。可选项：['direct', 'con'] |
-| `topk_context` | `int` | `1000` | 提示中包含的最大历史会话数或检索片段数。 |
+| `topk_context` | `int` | `1000` | 提示中包含的历史会话或检索片段的最大数量。 |
 
 ## 使用方法
 
@@ -116,6 +116,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets longmemeval \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -130,6 +131,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['longmemeval'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'longmemeval': {
             # extra_params: {}  # 使用默认额外参数

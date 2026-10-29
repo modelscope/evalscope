@@ -57,6 +57,10 @@ We recommend updating to the latest `main` branch code when encountering issues.
 
 For details, please [refer to](https://github.com/modelscope/evalscope/pull/964) the examples provided. Additionally, `mean_and_vote_at_k` and `mean_and_pass_hat_k` aggregation methods are also supported.
 
+**Q: How to report posterior uncertainty for repeated correctness scores (Bayes@N)?**
+
+**A:** Set `repeats=N` in `TaskConfig` and `'<dataset_name>': {'aggregation': 'bayes_at_n'}` in `dataset_args`. Each question gets an independent uniform Beta(1,1) prior; the report shows the posterior mean of mean correctness as the score (`bayes_at_n`) and the posterior SD as a diagnostic (`bayes_at_n_sd`), both with dimension `n=N`. Constraints: binary `accuracy`/`exact_match` scores only, exactly one subset, no dataset collections, and every planned generation must have a usable score—missing or duplicate generations fail the run. The SD quantifies sampling uncertainty over the fixed question set; it does not cover drawing a new question set. See the [Bayes@N paper](https://arxiv.org/abs/2510.04265).
+
 **Q: How to remove the "thinking process" (such as `<think>...</think>`) from model outputs?**
 
 **A:** For `evalscope >= v1.0` versions, **paired** `<think>...</think>` blocks are stripped automatically.
@@ -101,6 +105,10 @@ task_config = TaskConfig(
 **A:** `--stream` is a switch parameter, use it directly without appending `True`. Correct usage: `--stream`.
 
 ### Result Anomalies & Troubleshooting
+
+**Q: Why does an OpenAI-compatible response have `stop_reason="unknown"`?**
+
+**A:** Providers can return finish reasons outside OpenAI's standard values, such as MiMo's `repetition_truncation`. EvalScope retains the answer and maps unrecognized reasons to `unknown`, rather than treating them as a normal stop or token limit. Prediction JSONL files preserve these raw strings in `model_output.metadata.finish_reasons`, keyed by the original choice index (for example, `{"0": "repetition_truncation"}`). This applies to both streaming and non-streaming responses.
 
 **Q: How to troubleshoot obviously abnormal evaluation results (like extremely low accuracy)?**
 

@@ -33,9 +33,11 @@ Copious corpus is a gold standard corpus for biodiversity entity recognition, co
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='copious',
         pretty_name='Copious',
         dataset_id='extraordinarylab/copious',
+        hf_dataset_id='extraordinarylab/copious',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

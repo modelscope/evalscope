@@ -7,7 +7,6 @@ import { scoreColor } from '@/utils/colorScale'
 import {
   formatMetric,
   formatMetricLabel,
-  formatMetricLabels,
   getBoundedQualityRatio,
   getValuePosition,
 } from '@/domain/metric'
@@ -16,19 +15,23 @@ import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
-import type { PerfMetrics } from '@/api/types'
+import type { PerfMetrics, ReportData } from '@/api/types'
+import DecisionDiagnostics from './DecisionDiagnostics'
 
 interface Props {
   reportName: string
   datasetName: string
   rootPath: string
   perfMetrics?: PerfMetrics | null
+  report?: ReportData
   onSubsetClick?: (subset: string) => void
   overallScore?: number
   metricName?: string
   /** Backend semantics of the primary metric, and of each metric by its final report name. */
   semantics?: MetricSemantics | null
   semanticsByMetric?: Record<string, MetricSemantics | null | undefined>
+  /** Display label of each metric by its final report name, from `formatMetricLabels`. */
+  labelsByMetric?: Record<string, string>
 }
 
 /** Stable placeholder so an unresolved frame does not produce a new object each render. */
@@ -39,11 +42,13 @@ export default function DetailsTab({
   datasetName,
   rootPath,
   perfMetrics,
+  report,
   onSubsetClick,
   overallScore,
   metricName,
   semantics,
   semanticsByMetric = {},
+  labelsByMetric = {},
 }: Props) {
   const { t } = useLocale()
 
@@ -70,12 +75,6 @@ export default function DetailsTab({
 
   // Detect whether data has Metric column
   const hasMetricCol = subsetData.data.length > 0 && 'Metric' in subsetData.data[0]
-  const metricLabels = formatMetricLabels(
-    Object.entries(semanticsByMetric).map(([name, metricSemantics]) => ({
-      metricName: name,
-      semantics: metricSemantics,
-    })),
-  )
 
   const subsetColumns = [
     {
@@ -105,11 +104,11 @@ export default function DetailsTab({
       render: (row: Record<string, unknown>) => {
         const metricName = String(row.Metric ?? '')
         const rowSemantics = semanticsByMetric[metricName] ?? null
-        // The metric's display name and direction, the same label the header card and every other
-        // surface uses. The raw name stays reachable through the tooltip.
+        // The metric's display name, direction and dimensions, the same label the CLI table and the
+        // HTML report print. The raw name stays reachable through the tooltip.
         return (
-          <span className="text-xs text-[var(--text-muted)]" title={metricName}>
-            {metricLabels[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
+          <span className="text-xs break-words text-[var(--text-muted)]" title={metricName}>
+            {labelsByMetric[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
           </span>
         )
       },
@@ -141,6 +140,18 @@ export default function DetailsTab({
         <span className="text-[var(--text-muted)]">{Number(row.Num ?? 0).toLocaleString()}</span>
       ),
     },
+    // The backend emits this column only for binary, higher-is-better metrics; rows of other
+    // metrics in the same frame carry '-'.
+    ...(subsetData.columns.includes('Correct') ? [{
+      key: 'Correct',
+      label: t('reportDetail.correct'),
+      sortable: true,
+      render: (row: Record<string, unknown>) => (
+        <span className="text-[var(--text-muted)]">
+          {row.Correct === '-' ? '-' : Number(row.Correct ?? 0).toLocaleString()}
+        </span>
+      ),
+    }] : []),
   ]
 
   // The arc length is the value's own position in its range; the colour says how good it is. A
@@ -192,6 +203,8 @@ export default function DetailsTab({
           />
         </Card>
       )}
+
+      <DecisionDiagnostics report={report} />
 
       {/* AI Analysis */}
       <Card title={t('reportDetail.analysis')}>

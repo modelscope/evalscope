@@ -46,8 +46,8 @@ from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.models.mockllm import MockLLM
+from evalscope.report.data_frames import get_model_prediction
 from evalscope.run import run_task
-from evalscope.utils.data_utils import get_model_prediction
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -92,7 +92,7 @@ class TestAgentBenchmark(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'qwen3-max',
+            'model': 'qwen3.8-flash',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.OPENAI_API,
@@ -108,7 +108,7 @@ class TestAgentBenchmark(TestBenchmark):
                 'stream': True
             },
             'judge': {'strategy': JudgeStrategy.AUTO, 'models': {
-                'model_id': 'qwen3-max',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -567,8 +567,9 @@ class TestAgentBenchmark(TestBenchmark):
                 },
             }
 
-        def fake_manifest_loader(dataset_id, data_source, splits, force_redownload=False):
+        def fake_manifest_loader(dataset_id, data_source, splits, revision=None, force_redownload=False):
             self.assertEqual(dataset_id, 'claw-eval/Claw-Eval')
+            self.assertIsNone(revision)
             self.assertEqual(splits, ['general'])
             return [
                 {
@@ -639,7 +640,7 @@ class TestAgentBenchmark(TestBenchmark):
                 )
 
         self.assertEqual(len(run_calls), 3)
-        self.assertEqual(run_calls[0]['model_id'], 'qwen3-max')
+        self.assertEqual(run_calls[0]['model_id'], 'qwen3.8-flash')
         self.assertEqual(run_calls[0]['api_key'], 'local-key')
         self.assertEqual(run_calls[0]['base_url'], 'http://localhost:8000/v1')
         self.assertEqual([call['port_offset'] for call in run_calls], [0, 0, 0])
@@ -773,7 +774,7 @@ class TestAgentBenchmark(TestBenchmark):
             )
 
         self.assertEqual(len(run_calls), 2)
-        self.assertTrue(all(call['model_name'] == 'qwen3-max' for call in run_calls))
+        self.assertTrue(all(call['model_name'] == 'qwen3.8-flash' for call in run_calls))
         self.assertTrue(all(call['api'] == 'chat_completions' for call in run_calls))
         self.assertTrue(all(call['toolset'] == 'api' for call in run_calls))
         self.assertTrue(all(call['max_turns'] == 7 for call in run_calls))
@@ -977,7 +978,7 @@ class TestAgentBenchmark(TestBenchmark):
                     trace_root=trace_root,
                     config_path=config_path,
                     repo_root=root,
-                    model_id='qwen3-max',
+                    model_id='qwen3.8-flash',
                     api_key='local-key',
                     base_url='http://localhost:8000/v1',
                     port_offset=50,

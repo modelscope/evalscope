@@ -127,6 +127,7 @@ FLEURS_LANG_TO_ID = OrderedDict(
         name='fleurs',
         pretty_name='FLEURS',
         dataset_id='lmms-lab/fleurs',
+        hf_dataset_id='lmms-lab/fleurs',
         tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview
@@ -155,10 +156,13 @@ FLEURS (Few-shot Learning Evaluation of Universal Representations of Speech) is 
 - Default subsets: `cmn_hans_cn` (Mandarin), `en_us` (English), `yue_hant_hk` (Cantonese)
 - Language-specific text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         subset_list=['cmn_hans_cn', 'en_us', 'yue_hant_hk'],
         eval_split='test',
         metric_list=['wer'],
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -186,7 +190,8 @@ class FLEURSAdapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, word_errors
 
         language = task_state.metadata['lang_id']
 
@@ -197,6 +202,8 @@ class FLEURSAdapter(AudioLanguageAdapter):
             prediction=original_prediction,
         )
 
-        wer_score = wer([normalized_reference], [normalized_prediction], language)
-        score.value = {'wer': wer_score}
+        errors, ref_words = word_errors([normalized_reference], [normalized_prediction], language)
+        score.value = {'wer': errors / ref_words}
+        # weighted_mean pools errors over reference words: corpus WER, as lmms-eval and Qwen-Audio report it
+        score.metadata[METRIC_WEIGHTS_KEY] = {'wer': ref_words}
         return score

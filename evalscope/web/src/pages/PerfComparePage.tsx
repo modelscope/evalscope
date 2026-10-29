@@ -14,7 +14,7 @@ import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, perfRunMode } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { AlertTriangle, ArrowLeftRight, GitCompareArrows, Info } from 'lucide-react'
 
@@ -77,7 +77,7 @@ const VERDICT_VARIANT: Record<DeltaVerdict, 'success' | 'danger' | 'default' | '
 /** Short display label for a run: model, dataset and a compact timestamp. */
 function runLabel(run: PerfDetailResponse | undefined): string {
   if (!run) return ''
-  const parts = [run.model, run.dataset].filter(Boolean)
+  const parts = [run.alias || run.model, run.basic_info.Endpoint || run.basic_info['API Host'], run.dataset].filter(Boolean)
   const ts = formatTimestamp(run.generated_at, 'seconds')
   return ts ? `${parts.join(' · ')} · ${ts}` : parts.join(' · ')
 }
@@ -123,11 +123,11 @@ export default function PerfComparePage() {
     [details, baselineParam],
   )
 
-  // Embedding/rerank runs omit TTFT/TPOT charts (mirrors PerfReportDetailPage).
-  const isEmbedding = details?.[0]?.is_embedding ?? false
+  // Compare only timing measurements that apply to every selected run.
+  const inputOnly = details?.some((detail) => perfRunMode(detail) !== 'generation') ?? false
   const latencyCharts = useMemo(
-    () => (isEmbedding ? (['latency'] as const) : LATENCY_CHARTS),
-    [isEmbedding],
+    () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
+    [inputOnly],
   )
 
   if (paths.length < 2) {
@@ -188,13 +188,13 @@ export default function PerfComparePage() {
           <h1 className="type-title-md text-[var(--text)]">
             {t('perf.archive.comparing', { n: paths.length })}
           </h1>
-          <div
+          {paths.length > 2 && <div
             className="type-caption-mono text-[var(--text-muted)] break-words"
             title={paths.join('\n')}
             data-testid="compare-run-labels"
           >
             {details ? details.map((run) => runLabel(run)).join('  ·  ') : t('common.loading')}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -207,7 +207,7 @@ export default function PerfComparePage() {
           <>
             {/* Baseline / candidate selector with effective-baseline marker */}
             <div
-              className="flex flex-wrap items-stretch gap-3 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4"
+              className="flex flex-col items-stretch gap-3 sm:flex-row rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4"
               data-testid="baseline-selector"
             >
               <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -217,7 +217,7 @@ export default function PerfComparePage() {
                     {t('perf.archive.effectiveBaseline')}
                   </span>
                 </div>
-                <div className="type-body-sm text-[var(--text)] break-all" data-testid="baseline-label">
+                <div className="type-body-sm text-[var(--text)] break-words" data-testid="baseline-label">
                   {runLabel(baselineRun)}
                 </div>
                 <div className="type-body-xs text-[var(--text-muted)] tabular-nums">
@@ -240,7 +240,7 @@ export default function PerfComparePage() {
                 <div className="flex items-center gap-2 md:justify-end">
                   <Badge variant="success">{t('perf.archive.candidateBadge')}</Badge>
                 </div>
-                <div className="type-body-sm text-[var(--text)] break-all" data-testid="candidate-label">
+                <div className="type-body-sm text-[var(--text)] break-words" data-testid="candidate-label">
                   {runLabel(candidateRun)}
                 </div>
                 <div className="type-body-xs text-[var(--text-muted)] tabular-nums">

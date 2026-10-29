@@ -8,8 +8,25 @@ import aiohttp
 import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
-from evalscope.api.model import GenerateConfig
+from evalscope.agent.external.bridge.trace_recorder import BridgeTraceRecorder
+from evalscope.api.agent.trace import EventType
+from evalscope.api.model import GenerateConfig, ModelOutput
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
+
+
+def _fake_session(model: Any) -> SimpleNamespace:
+    """A stand-in for :class:`TrialSession` with a real recorder.
+
+    ``TrialSession`` types ``recorder`` as a ``BridgeTraceRecorder``, so the
+    handlers are entitled to use it on every path -- including the failure
+    paths these tests drive.
+    """
+    return SimpleNamespace(
+        model=model,
+        framework='test',
+        trial_id='test-trial',
+        recorder=BridgeTraceRecorder(trial_id='test-trial', framework='test'),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -184,12 +201,7 @@ def test_stream_disconnect_waits_for_generation_task(
     async def run() -> None:
         owner_loop = asyncio.get_running_loop()
         proxy = ModelProxyServer('127.0.0.1', None, owner_loop)
-        session = SimpleNamespace(
-            model=BlockingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(BlockingModel())
         body = {'model': 'test-model'}
         config = GenerateConfig()
 
@@ -245,12 +257,7 @@ def test_stream_disconnect_observes_already_failed_generation_task(
         loop = asyncio.get_running_loop()
         loop.set_exception_handler(lambda _loop, context: unhandled_contexts.append(context))
         proxy = ModelProxyServer('127.0.0.1', None, loop)
-        session = SimpleNamespace(
-            model=FailingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(FailingModel())
 
         body = {'model': 'test-model'}
         config = GenerateConfig()
@@ -339,12 +346,7 @@ def test_stream_write_disconnect_waits_for_generation_task(monkeypatch: pytest.M
 
     async def run() -> None:
         proxy = ModelProxyServer('127.0.0.1', None, asyncio.get_running_loop())
-        session = SimpleNamespace(
-            model=BlockingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(BlockingModel())
         await proxy._respond_streaming_openai(
             None,
             session,
@@ -356,8 +358,79 @@ def test_stream_write_disconnect_waits_for_generation_task(monkeypatch: pytest.M
             include_usage=False,
         )
         assert generation_finished.is_set()
+        assert not [event for event in session.recorder.snapshot().events if event.type == EventType.ERROR]
         current_task = asyncio.current_task()
         assert all(task is current_task or task.done() for task in asyncio.all_tasks())
+
+    monkeypatch.setattr(ModelProxyServer, '_prepare_sse_response', staticmethod(prepare_response))
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize('protocol', ['openai', 'anthropic', 'gemini'])
+def test_completed_stream_disconnect_does_not_record_upstream_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    protocol: str,
+) -> None:
+    class SuccessfulModel:
+
+        async def generate_async(self, **kwargs: Any) -> ModelOutput:
+            return ModelOutput.from_content(model='test-model', content='done')
+
+    class DisconnectedResponse:
+
+        async def write(self, chunk: bytes) -> None:
+            raise ConnectionResetError
+
+        async def write_eof(self) -> None:
+            return None
+
+    async def prepare_response(request: Any) -> DisconnectedResponse:
+        return DisconnectedResponse()
+
+    async def run() -> None:
+        proxy = ModelProxyServer('127.0.0.1', None, asyncio.get_running_loop())
+        session = _fake_session(SuccessfulModel())
+        if protocol == 'openai':
+            await proxy._respond_streaming_openai(
+                None, session, {'model': 'test-model'}, [], [], None, GenerateConfig(), include_usage=False
+            )
+        elif protocol == 'gemini':
+            await proxy._respond_streaming_gemini(None, session, {'model': 'test-model'}, [], [], None, GenerateConfig())
+        else:
+            await proxy._respond_streaming(None, session, {'model': 'test-model'}, [], [], GenerateConfig())
+        events = session.recorder.snapshot().events
+        assert not [event for event in events if event.type == EventType.ERROR]
+
+    monkeypatch.setattr(ModelProxyServer, '_prepare_sse_response', staticmethod(prepare_response))
+    asyncio.run(run())
+
+
+def test_responses_stream_disconnect_does_not_record_upstream_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    class SuccessfulModel:
+
+        async def generate_async(self, **kwargs: Any) -> ModelOutput:
+            return ModelOutput.from_content(model='test-model', content='done')
+
+    class DisconnectedResponse:
+
+        async def write(self, chunk: bytes) -> None:
+            raise ConnectionResetError
+
+        async def write_eof(self) -> None:
+            return None
+
+    async def prepare_response(request: Any) -> DisconnectedResponse:
+        return DisconnectedResponse()
+
+    async def run() -> None:
+        proxy = ModelProxyServer('127.0.0.1', None, asyncio.get_running_loop())
+        session = _fake_session(SuccessfulModel())
+        await proxy._respond_streaming_responses(
+            None, session, {'model': 'test-model'}, [], [], None, GenerateConfig()
+        )
+        events = session.recorder.snapshot().events
+        assert any(event.type == EventType.MODEL_GENERATE for event in events)
+        assert not [event for event in events if event.type == EventType.ERROR]
 
     monkeypatch.setattr(ModelProxyServer, '_prepare_sse_response', staticmethod(prepare_response))
     asyncio.run(run())

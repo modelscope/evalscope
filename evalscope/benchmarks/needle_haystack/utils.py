@@ -1,6 +1,12 @@
 import os
 import re
 import string
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from evalscope.report import Report
 
 
 def normalize_answer(s):
@@ -19,6 +25,45 @@ def normalize_answer(s):
         return text.lower()
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def collect_cell_scores(report: 'Report') -> 'pd.DataFrame':
+    """Collect the mean accuracy of every (context length, depth) cell in a report, per subset.
+
+    Cells are read from the ``context_length`` and ``depth_percent`` dimensions of each metric
+    identity, never from the display name. Reports written before the metric semantics contract
+    are migrated to the same dimensions when they are loaded.
+
+    Args:
+        report: Needle-in-a-Haystack report.
+
+    Returns:
+        One row per subset and cell, with ``Subset``, ``Context``, ``Depth`` and ``Score`` columns.
+    """
+    import pandas as pd
+
+    rows = []
+    for metric in report.metrics:
+        identity = metric.identity
+        if (
+            identity.name != 'accuracy'
+            or identity.aggregation != 'mean'
+            or not {'context_length', 'depth_percent'} <= identity.dimensions.keys()
+        ):
+            continue
+        for category in metric.categories:
+            for subset in category.subsets:
+                if subset.is_aggregate:
+                    continue
+                rows.append(
+                    {
+                        'Subset': subset.name,
+                        'Context': identity.dimensions['context_length'],
+                        'Depth': identity.dimensions['depth_percent'],
+                        'Score': subset.score,
+                    }
+                )
+    return pd.DataFrame(rows, columns=['Subset', 'Context', 'Depth', 'Score'])
 
 
 def draw_score_chat(pivot_table, outpath, show_score=False):

@@ -1,8 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .functions import (
+    auroc,
+    average_ranks,
     bleu_ngram_one_sample,
     calculate_pass_at_k,
     calculate_pass_hat_k,
+    ece,
     exact_match,
     levenshtein_distance,
     macro_mean,
@@ -13,6 +16,9 @@ from .functions import (
 )
 
 __all__ = [
+    'auroc',
+    'average_ranks',
+    'ece',
     'bleu_ngram_one_sample',
     'calculate_pass_at_k',
     'calculate_pass_hat_k',

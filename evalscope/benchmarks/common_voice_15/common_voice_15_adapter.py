@@ -25,6 +25,7 @@ LOCALE_TO_LANG = {
         name='common_voice_15',
         pretty_name='CommonVoice15',
         dataset_id='lmms-lab/common_voice_15',
+        hf_dataset_id='lmms-lab/common_voice_15',
         tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview
@@ -53,10 +54,13 @@ Common Voice 15 is a massively multilingual speech corpus collected by Mozilla, 
 - Default subsets: `en` (English), `zh-CN` (Mandarin Chinese), `fr` (French)
 - Language-specific text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
         subset_list=['en', 'zh-CN', 'fr'],
         eval_split='test',
         metric_list=['wer'],
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -83,7 +87,8 @@ class CommonVoice15Adapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, word_errors
 
         locale = task_state.metadata.get('locale', 'en')
         language = LOCALE_TO_LANG.get(locale, locale)
@@ -95,6 +100,8 @@ class CommonVoice15Adapter(AudioLanguageAdapter):
             prediction=original_prediction,
         )
 
-        wer_score = wer([normalized_reference], [normalized_prediction], language)
-        score.value = {'wer': wer_score}
+        errors, ref_words = word_errors([normalized_reference], [normalized_prediction], language)
+        score.value = {'wer': errors / ref_words}
+        # weighted_mean pools errors over reference words: corpus WER, as lmms-eval and Qwen-Audio report it
+        score.metadata[METRIC_WEIGHTS_KEY] = {'wer': ref_words}
         return score

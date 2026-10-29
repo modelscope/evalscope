@@ -18,8 +18,8 @@ import pytest
 from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricKind, MetricSelector
 from evalscope.metrics.semantics import format_metric_value
+from evalscope.report.data_frames import get_acc_report_df
 from evalscope.report.report import Report
-from evalscope.utils.data_utils import get_acc_report_df
 
 
 class _StubAdapter:

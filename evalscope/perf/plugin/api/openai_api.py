@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range
-from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
+from evalscope.perf.plugin.api.default_api import DefaultApiPlugin, _parse_chat_delta
 from evalscope.perf.plugin.datasets.utils import load_tokenizer, tokenize_chat_messages
 from evalscope.perf.plugin.registry import register_api
 from evalscope.utils.io_utils import base64_to_PIL
@@ -219,7 +219,8 @@ class OpenaiPlugin(DefaultApiPlugin):
             return
         if response['object'] == 'chat.completion':
             for choice in response['choices']:
-                delta_contents[choice['index']] = [choice['message'].get('content') or '']
+                # Reasoning is generated text too (it already counts for TTFT/ITL).
+                delta_contents[choice['index']] = [_parse_chat_delta(choice['message'])[0]]
         elif response['object'] == 'text_completion':
             for choice in response['choices']:
                 if 'text' in choice and 'index' in choice:
@@ -227,10 +228,7 @@ class OpenaiPlugin(DefaultApiPlugin):
         elif response['object'] == 'chat.completion.chunk':
             for choice in response['choices']:
                 if 'delta' in choice and 'index' in choice:
-                    delta = choice['delta']
-                    idx = choice['index']
-                    if 'content' in delta:
-                        delta_contents[idx].append(delta.get('content') or '')
+                    delta_contents[choice['index']].append(_parse_chat_delta(choice['delta'])[0])
 
     def __process_no_object(self, response, delta_contents):
         #  assume the response is a single choice
@@ -238,12 +236,9 @@ class OpenaiPlugin(DefaultApiPlugin):
             return
         for choice in response['choices']:
             if 'delta' in choice:
-                delta = choice['delta']
-                idx = choice['index']
-                if 'content' in delta:
-                    delta_contents[idx].append(delta.get('content') or '')
+                delta_contents[choice['index']].append(_parse_chat_delta(choice['delta'])[0])
             else:
-                delta_contents[choice['index']] = [choice['message'].get('content') or '']
+                delta_contents[choice['index']] = [_parse_chat_delta(choice['message'])[0]]
 
     def __calculate_tokens_from_content(self, request, content):
         input_tokens = output_tokens = 0

@@ -5,11 +5,14 @@ from evalscope.api.metric.semantics import MetricDisplayKind
 from evalscope.report.report import ExecutionSummary
 
 from .common import (
+    ActiveTaskInfo,
     ApiResponseModel,
     ConfigResponse,
     DataFrameResponse,
+    ListActiveTasksResponse,
     LogResponse,
     ProgressResponse,
+    TaskConfigSummary,
     TaskStatusResponse,
 )
 from .eval import BenchmarkEntry, BenchmarksResponse, EvalInvokeResponse
@@ -28,6 +31,7 @@ from .reports import (
     ContentBlock,
     DeleteReportResponse,
     JudgeAttempt,
+    ListReportsGroupedResponse,
     ListReportsResponse,
     LoadReportResponse,
     MetricIdentity,
@@ -39,6 +43,7 @@ from .reports import (
     PredictionsResponse,
     PredictionToolCall,
     ReportData,
+    ReportGroup,
     ReportMetric,
     ReportSummary,
     ValueRange,
@@ -59,6 +64,8 @@ class WebApiContracts(BaseModel):
     report_data: ReportData
     report_summary: ReportSummary
     list_reports_response: ListReportsResponse
+    report_group: ReportGroup
+    list_reports_grouped_response: ListReportsGroupedResponse
     load_report_response: LoadReportResponse
     percentile_stats: PercentileStats
     perf_metrics: PerfMetrics
@@ -79,6 +86,8 @@ class WebApiContracts(BaseModel):
     perf_runs_list_response: PerfRunsListResponse
     perf_requests_response: PerfRequestsResponse
     delete_perf_run_response: DeletePerfRunResponse
+    active_task_info: ActiveTaskInfo
+    list_active_tasks_response: ListActiveTasksResponse
     metric_identity: MetricIdentity
     metric_display_kind: MetricDisplayKind
     metric_semantics: MetricSemantics
@@ -88,6 +97,7 @@ class WebApiContracts(BaseModel):
 
 
 __all__ = [
+    'ActiveTaskInfo',
     'AnalysisResponse',
     'ApiResponseModel',
     'BenchmarkEntry',
@@ -97,7 +107,9 @@ __all__ = [
     'DeletePerfRunResponse',
     'DeleteReportResponse',
     'EvalInvokeResponse',
+    'ListActiveTasksResponse',
     'ListPerfRunsResponse',
+    'ListReportsGroupedResponse',
     'ListReportsResponse',
     'LoadReportResponse',
     'LogResponse',
@@ -107,5 +119,6 @@ __all__ = [
     'PredictionsResponse',
     'ProgressResponse',
     'TaskStatusResponse',
+    'TaskConfigSummary',
     'WebApiContracts',
 ]

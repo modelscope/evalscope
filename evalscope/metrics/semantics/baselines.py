@@ -105,7 +105,19 @@ def _plain_number(
 
 
 SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
+    'quality.loss.unbounded': _plain_number(
+        'quality.loss.unbounded',
+        'Loss',
+        display_precision=4,
+        direction=MetricDirection.LOWER_IS_BETTER,
+    ),
+    'quality.correlation.coefficient': _plain_number(
+        'quality.correlation.coefficient',
+        'Correlation',
+        display_precision=4,
+    ),
     # --- quality: bounded ratios, higher is better ---------------------------------------
+    'quality.posterior_mean.ratio': _percent('quality.posterior_mean.ratio', 'Bayes@N posterior mean'),
     'quality.accuracy.ratio': _percent('quality.accuracy.ratio', 'Accuracy'),
     'quality.f1.ratio': _percent('quality.f1.ratio', 'F1'),
     'quality.precision.ratio': _percent('quality.precision.ratio', 'Precision'),
@@ -127,6 +139,7 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
     'quality.wer.ratio': _percent('quality.wer.ratio', 'WER', MetricDirection.LOWER_IS_BETTER),
     'quality.cer.ratio': _percent('quality.cer.ratio', 'CER', MetricDirection.LOWER_IS_BETTER),
     'quality.mer.ratio': _percent('quality.mer.ratio', 'MER', MetricDirection.LOWER_IS_BETTER),
+    'quality.per.ratio': _percent('quality.per.ratio', 'PER', MetricDirection.LOWER_IS_BETTER),
     #: Share of failed or hallucinated outcomes: a graded result, unlike the diagnostic
     #: parse-status shares, so it keeps a direction.
     'quality.error_rate.ratio': _percent(
@@ -186,6 +199,13 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_unit='req/s',
     ),
     # --- diagnostic: never carries a direction nor a comparison group ----------------------
+    'diagnostic.posterior_sd.ratio': _plain_number(
+        'diagnostic.posterior_sd.ratio',
+        'Bayes@N posterior SD',
+        display_precision=4,
+        direction=MetricDirection.NONE,
+        kind=MetricKind.DIAGNOSTIC,
+    ),
     'diagnostic.count.items': _plain_number(
         'diagnostic.count.items',
         'Count',

@@ -1,11 +1,18 @@
-from typing import Any, Dict, List, Optional, Union
+import math
+from typing import Annotated, Any, Dict, List, Optional, Union
 
-from pydantic import Field
+from pydantic import AfterValidator, Field
 
 from .common import ApiResponseModel
 from .reports import MetricSemantics
 
-TableCell = Union[str, float]
+
+def _finite_or_none(value: Optional[float]) -> Optional[float]:
+    return value if value is not None and math.isfinite(value) else None
+
+
+MetricValue = Annotated[Optional[float], AfterValidator(_finite_or_none)]
+TableCell = Union[str, MetricValue]
 
 
 class PerfRunSummary(ApiResponseModel):
@@ -13,6 +20,7 @@ class PerfRunSummary(ApiResponseModel):
     model: str
     api_type: str
     dataset: str
+    alias: Optional[str] = None
     num_runs: int
     total_requests: int
     success_rate: float
@@ -42,7 +50,7 @@ class PerfSummaryColumn(ApiResponseModel):
 
 
 class PerfSummaryRow(ApiResponseModel):
-    values: Dict[str, float]
+    values: Dict[str, MetricValue]
     sample_counts: Dict[str, int]
 
 
@@ -51,8 +59,10 @@ class PerfDetailResponse(ApiResponseModel):
     model: str
     api_type: str
     dataset: str
+    alias: Optional[str] = None
     generated_at: str
     basic_info: Dict[str, str]
+    configuration: Optional[Dict[str, str]] = None
     summary_columns: List[PerfSummaryColumn]
     summary_rows: List[PerfSummaryRow]
     total_requests: int

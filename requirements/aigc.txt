@@ -1,7 +1,7 @@
 diffusers
 iopath
 lpips
-omegaconf
+omegaconf==2.4.0.dev15
 open_clip_torch
 opencv-python
 peft>=0.17

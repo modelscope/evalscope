@@ -99,26 +99,21 @@ Common generation parameters: `temperature`, `max_tokens`, `top_p`, `top_k`, `do
 |-----------|------|---------|-------------|
 | `--api-url` | str | None | API endpoint URL (setting this auto-selects `openai_api` eval type) |
 | `--api-key` | str | `EMPTY` | API authentication key |
-| `--timeout` | float | None | Request timeout in seconds |
-| `--stream` | flag | None | Enable streaming mode |
+
+Set request timeout and streaming behavior through `--generation-config`; the
+legacy `--timeout` and `--stream` flags are deprecated.
 
 ## Judge / LLM Review
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `--judge-strategy` | str | `auto` | Judge strategy: `auto`, `rule`, `llm`, `llm_recall` |
-| `--judge-model-args` | JSON str | `{}` | Judge model configuration (model, api_url, api_key, etc.) |
-| `--judge-worker-num` | int | 1 | Number of parallel judge workers |
+| `--judge` | JSON str | None | Typed judge configuration, including strategy and model connection details |
 | `--analysis-report` | flag | false | Generate analysis report using judge model |
 
 ### Judge Strategy
 
-| Strategy | Description |
-|----------|-------------|
-| `auto` | Automatically choose rule or LLM based on benchmark |
-| `rule` | Rule-based evaluation only (exact match, regex, etc.) |
-| `llm` | Use an LLM as judge for all evaluations |
-| `llm_recall` | Use LLM judge only for items that failed rule-based evaluation |
+Pass the strategy through `--judge`. The legacy `--judge-strategy` and
+`--judge-model-args` flags are deprecated.
 
 Example with LLM judge:
 ```bash
@@ -126,8 +121,7 @@ evalscope eval \
   --model qwen-plus \
   --datasets arena_hard \
   --api-url http://localhost:8000/v1/chat/completions \
-  --judge-strategy llm \
-  --judge-model-args '{"model": "gpt-4", "api_url": "https://api.openai.com/v1/chat/completions", "api_key": "sk-xxx"}'
+  --judge '{"strategy":"llm","models":{"model_id":"gpt-4","api_url":"https://api.openai.com/v1/chat/completions","api_key":"sk-xxx"}}'
 ```
 
 ## Cache and Output

@@ -34,6 +34,26 @@ describe('EvalResultPanel', () => {
     expect(screen.getByText('100%')).toHaveStyle({ color: 'var(--success)' })
   })
 
+  it('renders multiple accepted answers separately', () => {
+    return render(
+      <ThemeProvider>
+        <LocaleProvider>
+          <EvalResultPanel
+            pred="A"
+            gold={['A', 'B']}
+            nScore={1}
+            score={{ acc: 1 }}
+            metadata={{}}
+            threshold={0.99}
+            showPred
+          />
+        </LocaleProvider>
+      </ThemeProvider>,
+    )
+
+    expect(screen.getByText('B')).toBeInTheDocument()
+  })
+
   it('keeps verbose details collapsed and uses danger styling below the filter', () => {
     renderPanel(0.2)
 

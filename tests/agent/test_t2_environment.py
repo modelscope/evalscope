@@ -331,6 +331,77 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.timed_out
         assert result.returncode == -1
 
+    def test_exec_forwards_input_as_a_shell_pipe(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``input=`` used to be accepted and silently dropped inside a sandbox.
+
+        ms_enclave's shell_executor takes a command and no stdin, so a runner
+        that piped its prompt (``runners/mock.py``) had it vanish; only the
+        local environment honoured the argument.
+        """
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], input='piped payload'))
+
+        assert handle.payload is not None
+        assert handle.payload['command'][-1] == "printf %s 'piped payload' | ( cat )"
+
+    def test_input_pipe_survives_cwd_and_env_prefixes(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The subshell must keep the pipe attached to the command, not to ``cd``."""
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], input='payload', cwd='/w', env={'FOO': 'bar'}))
+
+        assert handle.payload['command'][-1] == "printf %s payload | ( export FOO=bar; cd /w && cat )"
+
+    @pytest.mark.parametrize('shell', ['bash', 'sh'])
+    def test_rendered_input_pipe_runs_in_a_real_shell(self, shell: str) -> None:
+        """Render as the sandbox would, then round-trip it through an actual shell.
+
+        ``sh`` is covered because the pipeline is POSIX syntax, not a bash
+        extension, and ``['sh', '-c']`` is a valid interpreter configuration.
+        On CI ``/bin/sh`` is dash, so this exercises a strict POSIX shell.
+        """
+        from evalscope.agent.environments.enclave import _render_command
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+
+        payload = 'multi\nline with $vars `cmd` \'quotes\' "dquotes" 100%'
+        rendered = _render_command(
+            ['/bin/bash', '-c', 'cat; echo "[$FOO]"'],
+            interpreter=[shell, '-c'],
+            cwd='/tmp',
+            env={'FOO': 'bar'},
+            stdin=payload,
+        )
+        result = self._run(LocalAgentEnvironment().exec([shell, '-c', rendered], timeout=10))
+
+        assert result.returncode == 0
+        assert result.stdout == f'{payload}[bar]\n'
+
+    @pytest.mark.parametrize('interpreter', [['sh', '-c'], ['/bin/sh', '-c'], ['dash', '-c'], ['zsh', '-c']])
+    def test_input_is_rendered_for_any_posix_shell_interpreter(
+        self, monkeypatch: pytest.MonkeyPatch, interpreter: List[str]
+    ) -> None:
+        """Non-bash POSIX shells are valid interpreters and must not be refused."""
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=interpreter)
+        self._run(env.exec(['cat'], input='piped payload'))
+
+        assert handle.payload['command'][:2] == interpreter
+        assert handle.payload['command'][-1] == "printf %s 'piped payload' | ( cat )"
+
+    def test_exec_without_input_is_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], cwd='/w'))
+
+        assert handle.payload['command'][-1] == 'cd /w && cat'
+
+    @pytest.mark.parametrize('interpreter', [['python3', '-c'], ['node', '-e']])
+    def test_input_is_rejected_for_a_non_shell_interpreter(
+        self, monkeypatch: pytest.MonkeyPatch, interpreter: List[str]
+    ) -> None:
+        """The pipe is shell syntax; refuse rather than drop the payload again."""
+        env, _ = self._env_with_fake_handle(monkeypatch, interpreter=interpreter)
+
+        with pytest.raises(NotImplementedError, match='cannot supply stdin'):
+            self._run(env.exec(['print(1)'], input='payload'))
+
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
@@ -524,6 +595,35 @@ class TestLocalEnvironmentExec:
         result = self._run(env.exec(['bash', '-c', 'echo err >&2; exit 1']))
         assert 'err' in result.stderr
         assert result.returncode != 0
+
+    def test_exec_does_not_inherit_the_evaluator_stdin(self):
+        """A sandboxed command must not be able to read the evaluator's stdin.
+
+        Without an explicit stdin the child inherits fd 0 from the evalscope
+        process. Attached to a terminal that means a model-generated command
+        which reads stdin blocks on the operator's keyboard until the tool
+        timeout, and can consume what they type; #1685 is that shape of
+        failure inside a sandbox.
+        """
+        read_fd, write_fd = os.pipe()
+        os.write(write_fd, b'EVALUATOR STDIN\n')
+        os.close(write_fd)
+        saved_stdin = os.dup(0)
+        try:
+            os.dup2(read_fd, 0)
+            result = self._run(self._env().exec(['bash', '-c', 'cat']))
+        finally:
+            os.dup2(saved_stdin, 0)
+            os.close(saved_stdin)
+            os.close(read_fd)
+
+        assert result.returncode == 0
+        assert result.stdout == '', f'the command read the evaluator stdin: {result.stdout!r}'
+
+    def test_exec_still_pipes_explicit_input(self):
+        env = self._env()
+        result = self._run(env.exec(['bash', '-c', 'cat'], input='piped payload'))
+        assert result.stdout == 'piped payload'
 
     def test_exec_timeout(self):
         env = self._env()

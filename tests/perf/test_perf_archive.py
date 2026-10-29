@@ -25,9 +25,16 @@ def _write_json(path: str, obj: object) -> None:
         json.dump(obj, f)
 
 
-def _make_run(run_dir: str, *, with_html: bool, with_tokens: bool = True) -> None:
+def _make_run(
+    run_dir: str,
+    *,
+    with_html: bool,
+    with_tokens: bool = True,
+    with_pd: bool = False,
+    sub_name: str = 'parallel_1_number_2',
+) -> None:
     """Create a minimal perf-run directory with one parallel_* sub-run."""
-    sub = os.path.join(run_dir, 'parallel_1_number_2')
+    sub = os.path.join(run_dir, sub_name)
     summary = {
         'Total Requests': 2,
         'Success Requests': 2,
@@ -36,6 +43,12 @@ def _make_run(run_dir: str, *, with_html: bool, with_tokens: bool = True) -> Non
         summary.update({
             'Avg Input Tokens': 10000.0,
             'Avg Output Tokens': 300.0,
+        })
+    if with_pd:
+        summary.update({
+            'Avg Steady ITL (ms)': 12.0,
+            'Avg PD Handoff Latency (ms)': 30.0,
+            'Avg PD Handoff Overhead (ms)': 5.0,
         })
     _write_json(os.path.join(sub, 'benchmark_summary.json'), summary)
     _write_json(os.path.join(sub, 'benchmark_percentile.json'), [])
@@ -76,6 +89,17 @@ def _make_db(sub_dir: str, *, n_success: int, n_failed: int) -> None:
         conn.close()
 
 
+# Avg and p99 columns of the optional generation metrics (PD handoff, steady ITL).
+_OPTIONAL_KEYS = (
+    'avg_pd_handoff_latency',
+    'p99_pd_handoff_latency',
+    'avg_pd_handoff_overhead',
+    'p99_pd_handoff_overhead',
+    'avg_steady_itl',
+    'p99_steady_itl',
+)
+
+
 class TestPerfArchive(unittest.TestCase):
 
     def setUp(self):
@@ -101,6 +125,16 @@ class TestPerfArchive(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _assert_optional_columns_pruned(self, body):
+        # The p99 siblings matter most: a missing percentile row reads back as 0.0,
+        # not None, so a p99 column left behind would look like a real measurement.
+        column_keys = {column['key'] for column in body['summary_columns']}
+        for key in _OPTIONAL_KEYS:
+            self.assertNotIn(key, column_keys)
+            for row in body['summary_rows']:
+                self.assertNotIn(key, row['values'])
+                self.assertNotIn(key, row['sample_counts'])
 
     def test_list_finds_both_layouts(self):
         res = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
@@ -131,11 +165,93 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(body['summary_rows'][0]['sample_counts']['avg_latency'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['p99_ttft'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['success_rate'], self.n_total)
+        # Row values mirror the pruned columns exactly and never carry None for
+        # metrics this non-PD run did not measure.
+        values = body['summary_rows'][0]['values']
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertEqual(set(values), column_keys)
+        self.assertNotIn(None, list(values.values()))
+        self._assert_optional_columns_pruned(body)
         self.assertEqual(body['total_requests'], 2)
         self.assertNotIn('summary_sample_counts', body)
         self.assertNotIn('metric_semantics', body)
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')
+
+    def test_decision_reports_use_input_metrics_without_generation_timings(self) -> None:
+        for api_type in ('systemone', 'autotrust'):
+            with self.subTest(api=api_type):
+                _write_json(
+                    os.path.join(self.tmp, self.cli_rel, 'parallel_1_number_2', 'benchmark_args.json'),
+                    {'model': 'my-model', 'api': api_type, 'dataset': 'line_by_line'},
+                )
+                query = {'root_path': self.tmp, 'path': self.cli_rel}
+                response = self.client.get('/api/v1/perf/detail', query_string=query)
+                self.assertEqual(response.status_code, 200)
+                body = response.get_json()
+                columns = {column['key'] for column in body['summary_columns']}
+                self.assertIn('input_token_throughput', columns)
+                self.assertIn('Total Input Tokens', body['basic_info'])
+                self.assertNotIn('Total Output Tokens', body['basic_info'])
+                self.assertNotIn('avg_ttft', columns)
+                self.assertNotIn('p99_tpot', columns)
+                self.assertNotIn('output_token_throughput', columns)
+                self.assertFalse(body['is_embedding'])
+                for chart_type in ('ttft', 'tpot', 'req_ttft_tpot', 'percentile_token'):
+                    chart = self.client.get('/api/v1/perf/chart', query_string={**query, 'chart_type': chart_type})
+                    self.assertEqual(chart.status_code, 404)
+
+    def test_decision_html_uses_the_same_metric_mode_as_the_web_archive(self) -> None:
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        from evalscope.perf.utils.report.generate_report import gen_perf_html_report
+
+        run_dir = os.path.join(self.tmp, self.cli_rel)
+        _write_json(
+            os.path.join(run_dir, 'parallel_1_number_2', 'benchmark_summary.json'),
+            {'Total Requests': 2, 'Success Requests': 2, 'Request Rate (req/s)': -1},
+        )
+        for api_type in ('systemone', 'autotrust'):
+            with self.subTest(api=api_type):
+                _write_json(
+                    os.path.join(run_dir, 'parallel_1_number_2', 'benchmark_args.json'),
+                    {'model': 'my-model', 'api': api_type, 'dataset': 'line_by_line'},
+                )
+                report = Path(gen_perf_html_report(run_dir, {}, SimpleNamespace(api=api_type))).read_text()
+                self.assertIn('Avg Inp.TPS', report)
+                self.assertNotIn('data-i18n="TTFT"', report)
+                self.assertNotIn('data-i18n="TPOT"', report)
+                self.assertNotIn('data-i18n="card.percentile_curves_token_lat"', report)
+
+    def test_detail_includes_pd_metrics_when_measured(self):
+        pd_rel = os.path.join('20260103_120000', 'pd-model')
+        _make_run(os.path.join(self.tmp, pd_rel), with_html=False, with_pd=True)
+        res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': pd_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertIn('avg_pd_handoff_latency', column_keys)
+        values = body['summary_rows'][0]['values']
+        self.assertEqual(values['avg_pd_handoff_latency'], 30.0)
+        self.assertNotIn(None, list(values.values()))
+
+    def test_detail_prunes_pd_column_when_partially_measured(self):
+        # Mixed sweep: one run measured PD handoff, another did not. The column is
+        # dropped for the whole table so no row leaks a None the float contract rejects.
+        mixed_rel = os.path.join('20260104_120000', 'mixed-model')
+        mixed_dir = os.path.join(self.tmp, mixed_rel)
+        _make_run(mixed_dir, with_html=False, with_pd=True, sub_name='parallel_1_number_2')
+        _make_run(mixed_dir, with_html=False, with_pd=False, sub_name='parallel_2_number_4')
+        res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': mixed_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertNotIn('avg_pd_handoff_latency', column_keys)
+        for row in body['summary_rows']:
+            self.assertEqual(set(row['values']), column_keys)
+            self.assertNotIn(None, list(row['values'].values()))
+        self._assert_optional_columns_pruned(body)
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})

@@ -12,7 +12,7 @@ from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
 from evalscope.report.generator import ReportGenerator
-from evalscope.report.report import Report
+from evalscope.report.report import Category, Metric, Report, Subset
 
 
 class _StubAdapter:
@@ -80,9 +80,14 @@ def test_collection_report_keeps_mixed_metrics_without_primary() -> None:
     assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
     assert report.primary_metric is None
     assert report.primary_metric_identity is None
+    assert report.score is None
+    assert report.primary_metric_unavailable_reason == (
+        'The collection contains multiple scored metrics, so no single primary metric is selected.'
+    )
+    assert Report.from_dict(report.to_dict()).primary_metric_unavailable_reason == report.primary_metric_unavailable_reason
 
 
-def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
+def test_report_score_comes_only_from_the_primary_metric() -> None:
     report = _report()
     assert report.score == 0.8
 
@@ -105,6 +110,25 @@ def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
     assert 'score' not in report.to_dict()
 
 
+def test_score_is_absent_rather_than_taken_from_a_diagnostic_metric() -> None:
+    """Falling back to the first metric would present a token count as the run's score."""
+    report = ReportGenerator.generate_report(
+        {
+            'test': [
+                AggScore(score=7.0, metric_name='no_answer_num', aggregation='mean', num=10),
+                AggScore(score=0.9, metric_name='yes_ratio', aggregation='mean', num=10),
+            ]
+        },
+        'model',
+        _StubAdapter('diagnostics_only'),
+    )
+
+    assert [metric.identity.name for metric in report.metrics] == ['no_answer_num', 'yes_ratio']
+    assert report.primary_metric is None
+    assert report.score is None
+    assert report.num == 10
+
+
 def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
     """A report whose primary metric cannot be resolved still reports its real sample count.
 
@@ -117,6 +141,65 @@ def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
     report.primary_metric_identity = None
     assert report.primary_metric is None
     assert report.num == 10
+
+
+@pytest.mark.parametrize(('primary', 'expected'), [(None, 13), ('f1', 13), ('recall', 23)])
+def test_num_counts_disjoint_subsets_without_recounting_shared_metrics(primary: Optional[str], expected: int) -> None:
+    report = _report()
+    report.metrics[0].identity = MetricIdentity(name='f1', aggregation='mean', dimensions={'subset': 'left'})
+    report.metrics[1] = Metric(
+        identity=MetricIdentity(name='precision', aggregation='mean', dimensions={'subset': 'right'}),
+        semantics=report.metrics[1].semantics,
+        categories=[Category(name='default', subsets=[
+            Subset(name='right', score=0.5, num=3),
+            Subset(name='OVERALL', score=0.5, num=3, is_aggregate=True),
+        ])],
+    )
+    report.metrics.append(Metric(
+        identity=MetricIdentity(name='recall', aggregation='mean', dimensions={'subset': 'left'}),
+        semantics=report.metrics[0].semantics,
+        categories=[Category(name='default', subsets=[Subset(name='left', score=0.5, num=20)])],
+    ))
+    report.primary_metric_identity = next((metric.identity for metric in report.metrics if metric.identity.name == primary), None)
+
+    assert report.num == expected
+    assert Report.from_dict(report.to_dict()).num == expected
+
+
+def test_num_does_not_add_derived_subsets_from_other_metrics() -> None:
+    report = _report()
+    report.metrics[1].categories = [Category(name='derived', subsets=[Subset(name='language', score=0.5, num=10)])]
+
+    assert report.num == 10
+    assert Report.from_dict(report.to_dict()).num == 10
+
+
+def test_num_keeps_boolean_and_numeric_cohorts_distinct() -> None:
+    report = _report()
+    report.metrics[0].identity = MetricIdentity(name='f1', aggregation='mean', dimensions={'subset': False})
+    report.metrics[1].identity = MetricIdentity(name='precision', aggregation='mean', dimensions={'subset': 0})
+    report.primary_metric_identity = None
+
+    assert report.num == 20
+    assert Report.from_dict(report.to_dict()).num == 20
+
+
+def test_explicit_metric_total_survives_category_rounding_and_round_trip() -> None:
+    report = _report()
+    original = report.metrics[0]
+    metric = Metric(
+        identity=original.identity,
+        semantics=original.semantics,
+        score=0.50004372540446,
+        categories=[Category(name='default', subsets=[Subset(name='test', score=0.5001, num=11435)])],
+    )
+    report.metrics[0] = metric
+
+    assert report.score == 0.5
+    assert metric.categories[0].score == 0.5001
+    assert Report.from_dict(report.to_dict()).score == 0.5
+    derived = Metric(identity=metric.identity, semantics=metric.semantics, categories=metric.categories)
+    assert derived.score == 0.5001
 
 
 def test_missing_declared_primary_is_reported_without_substituting_a_score() -> None:
@@ -143,6 +226,23 @@ def test_v2_serialization_contains_no_v1_metric_fields() -> None:
     for metric in data['metrics']:
         assert set(('name', 'semantic_id')).isdisjoint(metric)
         assert set(('identity', 'semantics')).issubset(metric)
+
+
+def test_subset_diagnostics_round_trip_with_standard_serialization() -> None:
+    report = _report()
+    subset = report.metrics[0].categories[0].subsets[0]
+
+    serialized = report.to_dict()['metrics'][0]['categories'][0]['subsets'][0]
+    assert serialized['metadata'] is None
+    assert serialized['is_aggregate'] is False
+
+    subset.metadata = {'risk_coverage': []}
+    subset.is_aggregate = True
+    serialized = report.to_dict()['metrics'][0]['categories'][0]['subsets'][0]
+    assert serialized['metadata'] == {'risk_coverage': []}
+    assert serialized['is_aggregate'] is True
+    restored = Report.from_dict(report.to_dict()).metrics[0].categories[0].subsets[0]
+    assert restored == subset
 
 
 def test_report_persists_first_class_judge_summary() -> None:
@@ -243,6 +343,34 @@ def test_transitional_v1_fields_migrate_to_current_report_shape() -> None:
     assert 'semantic_id' not in report.to_dict()['metrics'][0]
     assert 'metric_schema_version' not in report.to_dict()
     assert 'primary_metric_name' not in report.to_dict()
+
+
+@pytest.mark.parametrize('metric_name', ['accuracy', 'f1', 'precision', 'exact_match', 'pass_rate'])
+def test_v1_canonical_primary_is_resolved_before_validation(metric_name: str) -> None:
+    report = Report.from_dict({
+        'dataset_name': 'legacy_primary_probe',
+        'primary_metric_name': metric_name,
+        'metrics': [{'name': metric_name, 'score': 0.8, 'categories': []}],
+    })
+
+    assert report.score == 0.8
+    assert report.primary_metric_identity == MetricIdentity(name=metric_name, aggregation='identity')
+    assert report.metrics[0].semantics.kind is MetricKind.QUALITY
+    assert Report.from_dict(report.to_dict()) == report
+
+
+def test_v1_diagnostic_override_discards_the_legacy_primary() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'job_bench',
+        'primary_metric_name': 'total_score',
+        'metrics': [{'name': 'total_score', 'score': 7.0, 'categories': []}],
+    })
+
+    assert report.metrics[0].score == 7.0
+    assert report.metrics[0].semantics.kind is MetricKind.DIAGNOSTIC
+    assert report.primary_metric_identity is None
+    assert report.score is None
+    assert Report.from_dict(report.to_dict()) == report
 
 
 def test_v1_report_migrates_without_changing_values() -> None:
@@ -370,6 +498,18 @@ def test_unknown_valid_third_party_identity_can_be_written_as_diagnostic() -> No
 def test_multi_scored_report_without_selector_fails() -> None:
     with pytest.raises(ValueError, match='declare BenchmarkMeta.primary_metric'):
         ReportGenerator.generate_report(_scores(), 'model', _StubAdapter('conll2003'))
+
+
+def test_fresh_report_rejects_a_diagnostic_primary() -> None:
+    with pytest.raises(ValueError, match='matched diagnostic identity'):
+        ReportGenerator.generate_report(
+            {'test': [
+                AggScore(score=0.8, metric_name='accuracy', aggregation='mean', num=1),
+                AggScore(score=7.0, metric_name='no_answer_num', aggregation='mean', num=1),
+            ]},
+            'model',
+            _StubAdapter('benchmark', MetricSelector(name='no_answer_num')),
+        )
 
 
 def test_selector_must_match_exactly_one_identity() -> None:

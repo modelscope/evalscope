@@ -87,6 +87,7 @@ MMMU-PRO is an enhanced multimodal benchmark designed to rigorously assess the g
 - Rich metadata includes topic difficulty and subject information
 """,  # noqa: E501
         dataset_id='AI-ModelScope/MMMU_Pro',
+        hf_dataset_id='MMMU/MMMU_Pro',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

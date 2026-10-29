@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, List, Type, Union
+from typing import TYPE_CHECKING, List, Type, Union
 
 if TYPE_CHECKING:
     from .api import ApiPluginBase

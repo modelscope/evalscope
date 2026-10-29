@@ -13,6 +13,7 @@
 :::{toctree}
 :maxdepth: 1
 
+decision_evaluation.md
 general_fc.md
 index_collection.md
 qwen3_omni.md

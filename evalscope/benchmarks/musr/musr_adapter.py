@@ -11,6 +11,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 @register_benchmark(
     BenchmarkMeta(
         name='musr',
+        supports_choice=True,
         pretty_name='MuSR',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description="""
@@ -42,6 +43,7 @@ MuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning 
 - Challenging benchmark requiring careful reading
 """,
         dataset_id='AI-ModelScope/MuSR',
+        hf_dataset_id='TAUR-Lab/MuSR',
         metric_list=['acc'],
         subset_list=['murder_mysteries', 'object_placements', 'team_allocation'],
         few_shot_num=0,

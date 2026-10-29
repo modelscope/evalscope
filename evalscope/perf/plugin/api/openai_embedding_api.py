@@ -4,7 +4,7 @@ import json
 import sys
 import time
 import traceback
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
@@ -169,11 +169,6 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
 
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
-                timestamp = time.perf_counter()
-                output.completed_time = timestamp
-                output.query_latency = timestamp - st
-                output.first_chunk_latency = output.query_latency
-
                 if response.status == 200:
                     try:
                         payload = await response.json()
@@ -197,7 +192,15 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
                     else:
                         output.generated_text = str(payload)
 
-                    output.success = True
+                    # A server that fails after sending HTTP 200 (vLLM, SGLang) reports the
+                    # error in-band as `{"error": {...}}` or `{"object": "error", ...}`.
+                    # The chat plugin already guards this (see #1906/#1918); the embedding
+                    # path must not unconditionally count such a body as success.
+                    if isinstance(payload, dict) and (
+                        payload.get('error') is not None or payload.get('object') == 'error'
+                    ):
+                        output.error = json.dumps(payload, ensure_ascii=False)
+                    output.success = output.error is None
                 else:
                     output.status_code = response.status
                     try:
@@ -209,6 +212,11 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
                         except Exception:
                             output.error = response.reason or ''
                     output.success = False
+
+                timestamp = time.perf_counter()
+                output.completed_time = timestamp
+                output.query_latency = timestamp - st
+                output.first_chunk_latency = output.query_latency
 
         except Exception:
             output.success = False

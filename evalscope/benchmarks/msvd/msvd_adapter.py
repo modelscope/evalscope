@@ -6,9 +6,14 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
-from evalscope.api.metric import SampleScore, Score
+from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_METRICS, compute_caption_scores
+from evalscope.benchmarks.caption.metrics import (
+    CAPTION_MAIN_SCORE,
+    CAPTION_METRICS,
+    aggregate_caption_scores,
+    compute_caption_scores,
+)
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.media_utils import guess_video_format
@@ -45,10 +50,12 @@ The native adapter treats each video as one evaluation sample and uses all avail
 """,
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
         dataset_id='evalscope/MSVD',
+        hf_dataset_id='VLM2Vec/MSVD',
         paper_url='https://aclanthology.org/P11-1020/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
         primary_metric='cider',
+        evaluation_version='v1.1',
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
@@ -68,26 +75,16 @@ The native adapter treats each video as one evaluation sample and uses all avail
 class MSVDAdapter(VisionLanguageAdapter):
     """Adapter for MSVD video captioning."""
 
-    SOURCE_DATASET_IDS = {
-        HubType.MODELSCOPE: 'evalscope/MSVD',
-        HubType.HUGGINGFACE: 'VLM2Vec/MSVD',
-    }
-
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.use_batch_scoring = True
 
     @property
-    def source_dataset_id(self) -> str:
-        if self.dataset_id != self.name and self.dataset_id not in self.SOURCE_DATASET_IDS.values():
-            return self.dataset_id
-        return self.SOURCE_DATASET_IDS.get(self.dataset_hub, self.dataset_id)
-
-    @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
-            data_id_or_path=self.source_dataset_id,
+            data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
         )
 
@@ -100,7 +97,7 @@ class MSVDAdapter(VisionLanguageAdapter):
                     records=records,
                     sample_fields=self.record_to_sample,
                     name=self.name,
-                    location=self.source_dataset_id,
+                    location=self.dataset_id,
                     limit=self.limit,
                     repeats=self.repeats,
                     shuffle=self.shuffle,
@@ -127,7 +124,7 @@ class MSVDAdapter(VisionLanguageAdapter):
             metadata={
                 'references': references,
                 'subset': self.current_subset_name,
-                'dataset_id': self.source_dataset_id,
+                'dataset_id': self.dataset_id,
                 'dataset_hub': self.dataset_hub,
                 'video': video,
                 'video_id': record.get('video_id'),
@@ -154,8 +151,11 @@ class MSVDAdapter(VisionLanguageAdapter):
             sample_score.score.main_score_name = CAPTION_MAIN_SCORE
         return sample_scores
 
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        return aggregate_caption_scores(sample_scores)
+
     def _load_records(self) -> List[Dict[str, Any]]:
-        logger.info(f'Loading MSVD from {self.dataset_hub}: {self.source_dataset_id}, split={self.eval_split}.')
+        logger.info(f'Loading MSVD from {self.dataset_hub}: {self.dataset_id}, split={self.eval_split}.')
         dataset = self.source_dataset.load(split=self.eval_split, subset='default')
         return list(dataset)
 

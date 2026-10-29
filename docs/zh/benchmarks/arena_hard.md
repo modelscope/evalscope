@@ -1,8 +1,9 @@
 # ArenaHard
 
+
 ## 概述
 
-ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较来评估语言模型。模型在需要推理、理解和生成能力的困难任务上与 GPT-4 基线进行对比评判。
+ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较来评估语言模型。模型将在需要推理、理解和生成能力的困难任务上与 GPT-4 基线进行对比评判。
 
 ## 任务描述
 
@@ -11,10 +12,10 @@ ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较�
 - **输出**：模型响应，与 GPT-4-0314 基线进行比较
 - **评分方式**：基于 Elo 评分的成对对战结果
 
-## 主要特性
+## 主要特点
 
 - 包含 500 个具有挑战性的用户提示
-- 采用两局对战系统（A vs B 和 B vs A）
+- 采用双局对战系统（A vs B 和 B vs A）
 - 使用 Elo 评分计算模型排名
 - 测试推理能力、指令遵循能力和文本生成能力
 - 与 Chatbot Arena 排名高度相关
@@ -24,8 +25,9 @@ ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较�
 - 默认配置使用 **0-shot** 评估
 - 使用 LLM 作为裁判（默认：gpt-4-1106-preview）
 - 基线模型：gpt-4-0314 的输出
-- 报告胜率和基于 Elo 的得分
+- 报告胜率和基于 Elo 的评分
 - 注意：目前不支持风格控制的胜率计算
+
 
 ## 属性
 
@@ -39,6 +41,7 @@ ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较�
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `elo` |
+
 
 ## 数据统计
 
@@ -71,7 +74,7 @@ ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较�
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 {question}
 ```
@@ -86,6 +89,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets arena_hard \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -100,6 +104,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['arena_hard'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 

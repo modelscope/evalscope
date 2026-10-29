@@ -1,5 +1,5 @@
 """End-to-end: codex exec → bridge (Responses API) → bridge translation
-→ DashScope qwen3-max chat completions.
+→ DashScope qwen3.8-flash chat completions.
 
 Skipped by default — opt-in with ``EVALSCOPE_REAL_QWEN=1`` plus a valid
 ``DASHSCOPE_API_KEY`` and a locally installed ``codex`` CLI so CI never
@@ -12,9 +12,8 @@ chat-completions endpoint, then synthesizes a Responses SSE stream back
 to codex. Verifies model output reaches the answer file and the trace
 records ``framework='codex'`` with ≥1 MODEL_GENERATE event.
 
-Note: qwen3-max does not return ``reasoning_content`` by default, so
-this test does not verify reasoning end-to-end. The mock suite already
-covers reasoning translation.
+This test does not assert reasoning output end-to-end. The mock suite
+already covers reasoning translation.
 """
 
 import os
@@ -45,7 +44,7 @@ DASHSCOPE_BASE_URL = os.environ.get(
     'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 )
 DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
-TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3-max')
+TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3.8-flash')
 
 
 def _has_codex_cli() -> bool:
@@ -75,8 +74,8 @@ def _build_qwen_model() -> Model:
 
 @_REQUIRES_REAL
 @pytest.mark.skipif(not _has_codex_cli(), reason='codex CLI not installed')
-def test_codex_exec_through_bridge_responses_to_qwen3_max():
-    """End-to-end: codex exec → bridge /openai/v1/responses → qwen3-max."""
+def test_codex_exec_through_bridge_responses_to_qwen3_8_flash():
+    """End-to-end: codex exec → bridge /openai/v1/responses → qwen3.8-flash."""
     model = _build_qwen_model()
     sample = Sample(input='What is 6 * 7? Reply with just the number.', target='42', id=1)
     config = ExternalAgentConfig(

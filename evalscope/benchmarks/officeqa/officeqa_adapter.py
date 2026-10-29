@@ -79,6 +79,7 @@ _CONTAINER_CORPUS_DIR = '/corpus'
         name='officeqa',
         pretty_name='OfficeQA',
         dataset_id='evalscope/officeqa',
+        hf_dataset_id='databricks/officeqa',
         tags=[Tags.AGENT, Tags.QA, Tags.KNOWLEDGE],
         description=DESCRIPTION,
         subset_list=['officeqa_pro'],

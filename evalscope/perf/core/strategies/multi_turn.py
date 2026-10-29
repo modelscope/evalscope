@@ -1,12 +1,12 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
-from evalscope.perf.plugin.datasets.base import Conversation, Message, Turn
+from evalscope.perf.plugin.datasets.base import Conversation, Message
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -119,6 +119,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
             prev_prompt_tokens: int = 0
             prev_completion_tokens: int = 0
             total_turns = len(conversation)
+            rid = conversation[0].rid
 
             for turn_idx, turn in enumerate(conversation):
                 # turn: Turn – delta messages plus optional per-turn overrides.
@@ -158,7 +159,9 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     )
                     break
                 if turn.max_tokens is not None:
-                    request['max_tokens'] = turn.max_tokens
+                    self.api_plugin.set_request_max_tokens(request, turn.max_tokens)
+                if rid:
+                    request.setdefault('rid', f'{rid}_t{turn_idx + 1}')
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.

@@ -277,6 +277,38 @@
       "display_unit": "%",
       "display_precision": 1
     },
+    "score": {
+      "semantic_id": "quality.score.ratio",
+      "metric_name": "Score",
+      "display_name": null,
+      "kind": "quality",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1
+    },
+    "pass_hat_k": {
+      "semantic_id": "quality.pass_at_k.ratio",
+      "metric_name": "Pass^k",
+      "display_name": null,
+      "kind": "quality",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1
+    },
     "legacy_diagnostic": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Weird.Metric",
@@ -512,7 +544,22 @@
       "value": 0.5,
       "expected_primary": "50%",
       "expected_raw": "0.5",
-      "expected_label": "Accuracy ↑ · 0.5"
+      "expected_label": "Accuracy ↑ · Threshold 0.5"
+    },
+    {
+      "id": "label-pass-hat-k",
+      "semantics_ref": "pass_hat_k",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "pass_hat_k",
+        "dimensions": {
+          "k": 2
+        }
+      },
+      "value": 0.25,
+      "expected_primary": "25%",
+      "expected_raw": "0.25",
+      "expected_label": "Pass^k ↑ · k 2"
     },
     {
       "id": "label-dimension-order",
@@ -560,6 +607,71 @@
       "expected_primary": "77%",
       "expected_raw": "0.77",
       "expected_label": "Similarity ↑ · Table TEDS"
+    },
+    {
+      "id": "label-named-dimensions",
+      "semantics_ref": "accuracy",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "mean",
+        "dimensions": {
+          "context_length": 1000,
+          "depth_percent": 0
+        }
+      },
+      "value": 0.9,
+      "expected_primary": "90%",
+      "expected_raw": "0.9",
+      "expected_label": "Accuracy ↑ · Context 1000 · Depth 0"
+    },
+    {
+      "id": "label-token-range-dimensions",
+      "semantics_ref": "score",
+      "identity": {
+        "name": "mrcr_score",
+        "aggregation": "mean",
+        "dimensions": {
+          "max_tokens": 8192,
+          "min_tokens": 4096
+        }
+      },
+      "value": 0.25,
+      "expected_primary": "25%",
+      "expected_raw": "0.25",
+      "expected_label": "Score ↑ · Min tokens 4096 · Max tokens 8192"
+    },
+    {
+      "id": "label-named-and-word-dimensions",
+      "semantics_ref": "f1",
+      "identity": {
+        "name": "f1",
+        "aggregation": "max",
+        "dimensions": {
+          "k": 4,
+          "scope": "all",
+          "target": "row"
+        }
+      },
+      "value": 0.5,
+      "expected_primary": "50%",
+      "expected_raw": "0.5",
+      "expected_label": "F1 ↑ · Row · All · k 4"
+    },
+    {
+      "id": "label-ngram-dimension",
+      "semantics_ref": "rouge",
+      "identity": {
+        "name": "rouge",
+        "aggregation": "mean",
+        "dimensions": {
+          "ngram": 1,
+          "statistic": "recall"
+        }
+      },
+      "value": 0.694,
+      "expected_primary": "69.4%",
+      "expected_raw": "0.694",
+      "expected_label": "ROUGE ↑ · n-gram 1 · Recall"
     },
     {
       "id": "label-diagnostic-keeps-legacy-name",

@@ -20,7 +20,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from evalscope.constants import DataCollection
 from evalscope.report import ReportRef
-from evalscope.utils.data_utils import report_model_dir
+from evalscope.report.data_frames import report_model_dir
 
 # Per-path identity: relative path, mtime (ns), ctime (ns), and size.
 Fingerprint = Tuple[Tuple[str, int, int, int], ...]
@@ -56,6 +56,14 @@ def report_ref_fingerprint(root: str, ref: ReportRef) -> Fingerprint:
         entries.append(('@run', run_stat.st_mtime_ns, run_stat.st_ctime_ns, run_stat.st_size))
     except OSError:
         pass
+
+    manifest_path = os.path.join(run_dir, 'task_info.json')
+    try:
+        st = os.stat(manifest_path)
+        entries.append(('@task_info', st.st_mtime_ns, st.st_ctime_ns, st.st_size))
+        entries.append(('@task_info_inode', st.st_ino, 0, 0))
+    except OSError:
+        entries.append(('@task_info', 0, 0, 0))
 
     for file_path in glob.glob(os.path.join(model_dir, '**', '*.json'), recursive=True):
         if os.path.basename(file_path) == DataCollection.REPORT_NAME:

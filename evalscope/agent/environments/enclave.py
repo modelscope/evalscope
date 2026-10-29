@@ -46,6 +46,7 @@ _DEFAULT_WORKDIR = '/workspace'
 _DEFAULT_TOOLS: List[str] = ['shell_executor', 'python_executor']
 _DEFAULT_INTERPRETER: List[str] = ['bash', '-c']
 _ENV_KEY_PATTERN = r'[A-Za-z_][A-Za-z0-9_]*'
+_POSIX_SHELL_EXECUTABLES = frozenset({'ash', 'bash', 'dash', 'ksh', 'sh', 'zsh'})
 
 
 def _unwrap_bash_c(cmd: Any) -> Optional[str]:
@@ -59,8 +60,23 @@ def _unwrap_bash_c(cmd: Any) -> Optional[str]:
 
 
 def _interpreter_is_bash(interpreter: Sequence[str]) -> bool:
-    executable = interpreter[0]
-    return executable == 'bash' or executable.endswith('/bash')
+    return _interpreter_basename(interpreter) == 'bash'
+
+
+def _interpreter_basename(interpreter: Sequence[str]) -> str:
+    """Executable name of the interpreter, with any container path stripped."""
+    return interpreter[0].rsplit('/', 1)[-1]
+
+
+def _interpreter_is_posix_shell(interpreter: Sequence[str]) -> bool:
+    """Whether the interpreter speaks POSIX shell command language.
+
+    Gates the ``printf ... | ( ... )`` rendering used to supply stdin, which
+    is plain POSIX syntax rather than a bash extension. Verified against
+    bash, sh, dash, ksh and zsh; ``ash`` is included as the busybox sh that
+    slim container images ship.
+    """
+    return _interpreter_basename(interpreter) in _POSIX_SHELL_EXECUTABLES
 
 
 def _render_env_exports(env: Dict[str, str]) -> str:
@@ -79,6 +95,7 @@ def _render_command(
     interpreter: Sequence[str],
     cwd: Optional[str],
     env: Optional[Dict[str, str]],
+    stdin: Optional[str] = None,
 ) -> str:
     unwrapped_command = _unwrap_bash_c(cmd) if _interpreter_is_bash(interpreter) else None
     if unwrapped_command is not None:
@@ -92,6 +109,19 @@ def _render_command(
     if env:
         prefix = _render_env_exports(env)
         command = f'{prefix} {command}' if prefix else command
+    if stdin is not None:
+        if not _interpreter_is_posix_shell(interpreter):
+            raise NotImplementedError(
+                f'EnclaveAgentEnvironment cannot supply stdin through interpreter {list(interpreter)!r}; '
+                f'it is rendered as a shell pipeline, which needs one of '
+                f'{sorted(_POSIX_SHELL_EXECUTABLES)}. Use a shell interpreter or pass the payload '
+                'inside the command instead.'
+            )
+        # ms_enclave's shell_executor takes a command and no stdin, so the
+        # payload is piped in by the shell instead. The subshell keeps the
+        # pipe attached to the whole command: without it a rendered
+        # ``cd /w && foo`` would feed ``cd`` rather than ``foo``.
+        command = f'printf %s {shlex.quote(stdin)} | ( {command} )'
     return command
 
 
@@ -232,7 +262,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
-        command = _render_command(cmd, interpreter=self._interpreter, cwd=cwd, env=env)
+        command = _render_command(cmd, interpreter=self._interpreter, cwd=cwd, env=env, stdin=input)
 
         # ms_enclave's shell_executor splits a bare string with no shell
         # wrapping; use an explicit interpreter so cd/&&/env-prefix/quoting

@@ -23,14 +23,15 @@ This plugin supports two data-source modes:
 
 import json
 import multiprocessing
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _get_range_upper
-from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn
+from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Messages, Turn
 from evalscope.perf.plugin.datasets.dataset_args import MultiTurnDatasetArgs
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages, truncate_text_to_token_len
 from evalscope.perf.plugin.registry import register_dataset
@@ -39,8 +40,6 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-# Default ModelScope dataset used for live construction
-_DEFAULT_DATASET_NAME = 'SWE-bench/SWE-smith-trajectories'
 _DEFAULT_SPLIT = 'tool'
 
 # ---------------------------------------------------------------------------
@@ -225,7 +224,10 @@ def _to_turns(conversation: List[Dict]) -> Optional[Conversation]:
     messages_per_turn: List[Messages] = [turn.get('messages', []) for turn in conversation]
     if not messages_per_turn:
         return None
-    return [Turn(messages=m, is_final=(i == len(messages_per_turn) - 1)) for i, m in enumerate(messages_per_turn)]
+    rid = conversation[0].get('rid')
+    return [
+        Turn(messages=m, is_final=(i == len(messages_per_turn) - 1), rid=rid) for i, m in enumerate(messages_per_turn)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +276,10 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     """
 
     args_schema = MultiTurnDatasetArgs
+    dataset_source = DatasetSource(
+        dataset_id='SWE-bench/SWE-smith-trajectories',
+        hf_dataset_id='SWE-bench/SWE-smith-trajectories',
+    )
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -360,7 +366,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             f'target_count={target_count}, min_chars={min_chars}'
         )
 
-        dataset = self.load_hub_dataset(dataset_id=_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
+        dataset = self.load_hub_dataset(split=_DEFAULT_SPLIT)
 
         candidates = []
         skipped_short = 0

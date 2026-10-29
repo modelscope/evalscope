@@ -52,9 +52,11 @@ diverse task categories requiring spatial, compositional, and multi-step visual 
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='tir_bench',
         pretty_name='TIR-Bench',
         dataset_id='evalscope/TIR-Bench',
+        hf_dataset_id='Agents-X/TIR-Bench',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2511.01833',
@@ -213,6 +215,9 @@ class TIRBenchAdapter(VisionLanguageAdapter):
         - everything else    : MCQ letter / integer / float judge based on
                                ``classify_string(reference)``
         """
+        from evalscope.constants import ScoreStatus
+        from evalscope.metrics.math.contracts import MathEvaluationError
+
         from .utils import (
             classify_string,
             compare,
@@ -280,6 +285,14 @@ class TIRBenchAdapter(VisionLanguageAdapter):
                 elif string_type == 3:
                     correctness = judge_float(filtered_prediction, answer)
 
+        except MathEvaluationError as exc:
+            return Score(
+                extracted_prediction=filtered_prediction,
+                prediction=original_prediction,
+                status=ScoreStatus.EXCLUDED,
+                metadata={'acc': f'error: {exc}', 'metric_unavailable': True},
+                main_score_name='acc',
+            )
         except Exception as exc:
             logger.warning(f'[TIR-Bench] Scoring error for task={task!r}: {exc}')
 

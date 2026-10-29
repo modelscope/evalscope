@@ -33,9 +33,11 @@ The AnatEM corpus is an extensive resource for anatomical entity recognition, cr
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='anat_em',
         pretty_name='AnatEM',
         dataset_id='extraordinarylab/anat-em',
+        hf_dataset_id='extraordinarylab/anat-em',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

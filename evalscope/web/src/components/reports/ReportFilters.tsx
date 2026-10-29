@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { ArrowUpDown, ChevronDown } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import SearchInput from '@/components/ui/SearchInput'
@@ -12,6 +12,12 @@ export interface ReportFilters {
   datasets: string[]
   sortBy: 'model' | 'dataset' | 'time'
   sortOrder: 'asc' | 'desc'
+  /**
+   * Roll same-model reports into one expandable row each. Display-only - no
+   * report is read, written, or merged; every child report keeps its own
+   * identity and its own honestly-attributed score underneath.
+   */
+  groupByModel: boolean
 }
 
 interface ReportFiltersProps {
@@ -148,6 +154,18 @@ export default function ReportFiltersBar({
           selected={filters.datasets}
           onChange={(datasets) => update({ datasets })}
         />
+
+        <Button
+          variant={filters.groupByModel ? 'outline' : 'ghost'}
+          size="sm"
+          onClick={() => update({ groupByModel: !filters.groupByModel })}
+          className={cn('gap-1.5', filters.groupByModel && 'border-[var(--accent-dim)]')}
+          title={t('reports.filters.groupByModelHint')}
+          aria-pressed={filters.groupByModel}
+        >
+          <Layers size={14} />
+          {t('reports.filters.groupByModel')}
+        </Button>
 
         {/* Sort */}
         <div className="flex items-center gap-1 ml-auto">

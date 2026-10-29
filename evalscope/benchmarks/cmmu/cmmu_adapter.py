@@ -46,9 +46,11 @@ FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='cmmu',
         pretty_name='CMMU',
         dataset_id='evalscope/CMMU',
+        hf_dataset_id='BAAI/CMMU',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview
@@ -135,7 +137,21 @@ class CMMUAdapter(VisionLanguageAdapter):
             multi_answer = ''.join(sorted(list(answers)))
             return multi_answer
         else:
-            return prediction.strip()
+            from evalscope.metrics.math.parser import extract_answer
+
+            return extract_answer(prediction)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Preserve exact categorical scoring on the rule path as well as the judge path."""
+        if task_state.metadata['type'] in (MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE):
+            return Score(
+                prediction=original_prediction,
+                extracted_prediction=filtered_prediction,
+                value={'accuracy': float(bool(filtered_prediction) and filtered_prediction == reference)},
+            )
+        return super().match_score(original_prediction, filtered_prediction, reference, task_state)
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         if context.task_state.metadata['type'] in (MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE):

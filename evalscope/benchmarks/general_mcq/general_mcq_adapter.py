@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from typing import Any
+
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
@@ -15,6 +17,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='general_mcq',
+        supports_choice=True,
         pretty_name='General-MCQ',
         description="""
 ## Overview
@@ -47,6 +50,7 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 """,
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
         dataset_id='general_mcq',
+        evaluation_version='v1.1',
         subset_list=['default'],
         metric_list=['acc'],
         few_shot_num=0,
@@ -78,14 +82,21 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
         self.use_cot = self.extra_params.get('use_cot', False)
 
-        if self.multiple_correct and self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
-        elif self.multiple_correct:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
-        elif self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
-        else:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
+        # Only swap the default template; a prompt_template supplied via dataset_args wins.
+        if self.prompt_template == MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE:
+            if self.multiple_correct and self.use_cot:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+            elif self.multiple_correct:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
+            elif self.use_cot:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+
+    @property
+    def metric_list(self) -> list[str | dict[str, Any]]:
+        """Use set-based scoring for multiple-correct questions."""
+        if self.multiple_correct:
+            return ['multi_choice_acc']
+        return super().metric_list
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)

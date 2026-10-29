@@ -177,7 +177,7 @@ If using `ollama pull` to fetch a model, you can skip the following steps for cr
 
 **Create Model Configuration File `Modelfile`**
 
-[Supported Model Formats](https://github.com/ollama/ollama/blob/main/docs/import.md)
+[Supported Model Formats](https://github.com/ollama/ollama/blob/main/docs/import.mdx)
 ```text
 # Model path
 FROM models/Meta-Llama-3-8B-Instruct

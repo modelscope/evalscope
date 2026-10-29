@@ -65,15 +65,7 @@ Then consider if the assistant's answers are helpful, relevant, and concise. Hel
 
 Then consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.
 
-After providing your explanation, you must output only one of the following choices as your final verdict with a label:
-
-1. Assistant A is significantly better: [[A>>B]]
-2. Assistant A is slightly better: [[A>B]]
-3. Tie, relatively the same: [[A=B]]
-4. Assistant B is slightly better: [[B>A]]
-5. Assistant B is significantly better: [[B>>A]]
-
-Example output: "My final verdict is tie: [[A=B]]".
+After providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better).
 ```
 
 **Prompt Template:**
@@ -107,6 +99,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets general_arena \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -121,6 +114,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['general_arena'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'general_arena': {
             # extra_params: {}  # uses default extra parameters

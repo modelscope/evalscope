@@ -6,6 +6,10 @@ Arena mode allows you to configure multiple candidate models and specify a basel
 
 To support arena mode, **all candidate models need to run inference on the same dataset**. The dataset can be a general QA dataset or a domain-specific one. Below is an example using a custom `general_qa` dataset. See the [documentation](../advanced_guides/custom_dataset/llm.md#question-answering-format-qa) for details on using this dataset.
 
+Use matching dataset ordering, filters, limits, and repeats for every model. Within each shared dataset/subset, arena imports require the same non-empty set of review indices and matching input prompts. Missing or extra observations, conflicting repeat identities, or different inputs at the same index raise an error before judging. Complete the missing inference/review work or rerun the models with matching settings; arena does not silently discard unmatched observations.
+
+Review files may be in any row order. Repeated generations retain their individual indices. As with cache resume, if an index occurs more than once, the last saved row is used and a warning is logged. For message-based caches, input comparison preserves roles and structured content, ignoring per-run message IDs and metrics. Tool-call IDs are normalized consistently across calls and results; function arguments, provider payloads, and which result refers to which call must still match. Both input comparison and the judge's question stop before the first message marked `source="generate"`, preserving input demonstrations while excluding model-generated responses and tool trajectories. The compared answers appear only in their answer fields. Without that marker, all saved messages are treated as input. Legacy `input` caches remain supported through comparison of rendered input text; those caches cannot establish equality of message roles or structured content that was not saved.
+
 The JSONL file for the `general_qa` dataset should be in the following format. Only the `query` field is required; no additional fields are necessary. Below are two example files:
 
 - Example content of the `arena.jsonl` file:
@@ -70,87 +74,87 @@ run_task(task_cfg=task_list)
 
 Since the `arena` subset does not have reference answers, no evaluation metrics are available for this subset. The `example` subset has reference answers, so evaluation metrics will be output.
 ```text
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| Model                 | Dataset    | Metric          | Subset   |   Num |   Score | Cat.0   |
-+=======================+============+=================+==========+=======+=========+=========+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 1 · Recall    | example | 12 | 86.1% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 1 · Precision | example | 12 | 13.4% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 1 · F1        | example | 12 | 19.8% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 2 · Recall    | example | 12 | 55%   | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 2 · Precision | example | 12 | 4%    | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · 2 · F1        | example | 12 | 7.2%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · Recall    | example | 12 | 86.1% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · Precision | example | 12 | 11.9% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · F1        | example | 12 | 17.5% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · 1              | example | 12 | 11.9% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · 2              | example | 12 | 4%    | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · 3              | example | 12 | 1.4%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · 4              | example | 12 | 0.8%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 1 · Recall    | example | 12 | 97.2% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 1 · Precision | example | 12 | 11.5% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 1 · F1        | example | 12 | 16.1% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 2 · Recall    | example | 12 | 68.3% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 2 · Precision | example | 12 | 8.1%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · 2 · F1        | example | 12 | 10.3% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · Recall    | example | 12 | 97.2% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · Precision | example | 12 | 10.1% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · F1        | example | 12 | 13.6% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · 1              | example | 12 | 10.1% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · 2              | example | 12 | 8.1%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · 3              | example | 12 | 6.3%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · 4              | example | 12 | 5.6%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 1 · Recall    | example | 12 | 97.2% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 1 · Precision | example | 12 | 10.4% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 1 · F1        | example | 12 | 14.2% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 2 · Recall    | example | 12 | 70%   | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 2 · Precision | example | 12 | 7.8%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · 2 · F1        | example | 12 | 9.6%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · Recall    | example | 12 | 97.2% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · Precision | example | 12 | 9.4%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · F1        | example | 12 | 12.4% | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · 1              | example | 12 | 9.4%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · 2              | example | 12 | 7.8%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · 3              | example | 12 | 6.3%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
-| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · 4              | example | 12 | 5.6%  | default |
-+-----------------------+------------+-----------------+----------+-------+---------+---------+
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| Model                 | Dataset    | Metric                         | Subset  | Num | Score | Cat.0   |
++=======================+============+================================+=========+=====+=======+=========+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 1 · Recall    | example | 12  | 86.1% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 1 · Precision | example | 12  | 13.4% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 1 · F1        | example | 12  | 19.8% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 2 · Recall    | example | 12  | 55%   | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 2 · Precision | example | 12  | 4%    | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · n-gram 2 · F1        | example | 12  | 7.2%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · Recall           | example | 12  | 86.1% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · Precision        | example | 12  | 11.9% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | ROUGE ↑ · L · F1               | example | 12  | 17.5% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · n-gram 1              | example | 12  | 11.9% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · n-gram 2              | example | 12  | 4%    | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · n-gram 3              | example | 12  | 1.4%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-0.5b-instruct | General-QA | BLEU ↑ · n-gram 4              | example | 12  | 0.8%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 1 · Recall    | example | 12  | 97.2% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 1 · Precision | example | 12  | 11.5% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 1 · F1        | example | 12  | 16.1% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 2 · Recall    | example | 12  | 68.3% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 2 · Precision | example | 12  | 8.1%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · n-gram 2 · F1        | example | 12  | 10.3% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · Recall           | example | 12  | 97.2% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · Precision        | example | 12  | 10.1% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | ROUGE ↑ · L · F1               | example | 12  | 13.6% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · n-gram 1              | example | 12  | 10.1% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · n-gram 2              | example | 12  | 8.1%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · n-gram 3              | example | 12  | 6.3%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-72b-instruct  | General-QA | BLEU ↑ · n-gram 4              | example | 12  | 5.6%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 1 · Recall    | example | 12  | 97.2% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 1 · Precision | example | 12  | 10.4% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 1 · F1        | example | 12  | 14.2% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 2 · Recall    | example | 12  | 70%   | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 2 · Precision | example | 12  | 7.8%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · n-gram 2 · F1        | example | 12  | 9.6%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · Recall           | example | 12  | 97.2% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · Precision        | example | 12  | 9.4%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | ROUGE ↑ · L · F1               | example | 12  | 12.4% | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · n-gram 1              | example | 12  | 9.4%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · n-gram 2              | example | 12  | 7.8%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · n-gram 3              | example | 12  | 6.3%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
+| qwen2.5-7b-instruct   | General-QA | BLEU ↑ · n-gram 4              | example | 12  | 5.6%  | default |
++-----------------------+------------+--------------------------------+---------+-----+-------+---------+
 ```
 </details>
 
@@ -213,39 +217,39 @@ run_task(task_cfg=task_cfg)
 <details><summary>Click to view evaluation results</summary>
 
 ```text
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Model   | Dataset       | Metric        | Subset                                     |   Num |   Score | Cat.0   |
-+=========+===============+===============+============================================+=======+=========+=========+
-| Arena   | general_arena | winrate       | general_qa&example@qwen2.5-0.5b&qwen2.5-7b |    12 |  0.0185 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate       | general_qa&example@qwen2.5-72b&qwen2.5-7b  |    12 |  0.5469 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate       | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   |    10 |  0.075  | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate       | general_qa&arena@qwen2.5-72b&qwen2.5-7b    |    10 |  0.8382 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate       | OVERALL                                    |    44 |  0.3617 | -       |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_lower | general_qa&example@qwen2.5-0.5b&qwen2.5-7b |    12 |  0.0185 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_lower | general_qa&example@qwen2.5-72b&qwen2.5-7b  |    12 |  0.3906 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_lower | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   |    10 |  0.025  | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_lower | general_qa&arena@qwen2.5-72b&qwen2.5-7b    |    10 |  0.7276 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_lower | OVERALL                                    |    44 |  0.2826 | -       |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_upper | general_qa&example@qwen2.5-0.5b&qwen2.5-7b |    12 |  0.0909 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_upper | general_qa&example@qwen2.5-72b&qwen2.5-7b  |    12 |  0.6875 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_upper | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   |    10 |  0.0909 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_upper | general_qa&arena@qwen2.5-72b&qwen2.5-7b    |    10 |  0.9412 | default |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+
-| Arena   | general_arena | winrate_upper | OVERALL                                    |    44 |  0.4469 | -       |
-+---------+---------------+---------------+--------------------------------------------+-------+---------+---------+ 
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Model | Dataset       | Metric        | Subset                                     | Num | Score  | Cat.0   |
++=======+===============+===============+============================================+=====+========+=========+
+| Arena | general_arena | winrate       | general_qa&example@qwen2.5-0.5b&qwen2.5-7b | 12  | 0.0185 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate       | general_qa&example@qwen2.5-72b&qwen2.5-7b  | 12  | 0.5469 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate       | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   | 10  | 0.075  | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate       | general_qa&arena@qwen2.5-72b&qwen2.5-7b    | 10  | 0.8382 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate       | OVERALL                                    | 44  | 0.3617 | -       |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_lower | general_qa&example@qwen2.5-0.5b&qwen2.5-7b | 12  | 0.0185 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_lower | general_qa&example@qwen2.5-72b&qwen2.5-7b  | 12  | 0.3906 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_lower | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   | 10  | 0.025  | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_lower | general_qa&arena@qwen2.5-72b&qwen2.5-7b    | 10  | 0.7276 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_lower | OVERALL                                    | 44  | 0.2826 | -       |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_upper | general_qa&example@qwen2.5-0.5b&qwen2.5-7b | 12  | 0.0909 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_upper | general_qa&example@qwen2.5-72b&qwen2.5-7b  | 12  | 0.6875 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_upper | general_qa&arena@qwen2.5-0.5b&qwen2.5-7b   | 10  | 0.0909 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_upper | general_qa&arena@qwen2.5-72b&qwen2.5-7b    | 10  | 0.9412 | default |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
+| Arena | general_arena | winrate_upper | OVERALL                                    | 44  | 0.4469 | -       |
++-------+---------------+---------------+--------------------------------------------+-----+--------+---------+
 ```
 </details>
 

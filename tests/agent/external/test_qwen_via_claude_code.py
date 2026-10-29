@@ -1,5 +1,5 @@
 """End-to-end: claude-code → bridge (Anthropic) → bridge OpenAI translation
-→ DashScope qwen3-max chat completions.
+→ DashScope qwen3.8-flash chat completions.
 
 Skipped by default — opt-in with ``EVALSCOPE_REAL_QWEN=1`` plus a valid
 ``DASHSCOPE_API_KEY`` so CI never depends on the network.
@@ -11,9 +11,8 @@ chat-completions endpoint). PR1 doesn't change this path but adds the
 inverse OpenAI route — running this test as part of PR1 verification
 confirms the existing path still works alongside the new code.
 
-Note: qwen3-max does not return ``reasoning_content`` by default, so this
-test does not verify reasoning end-to-end. The translate/sse mocks already
-cover the reasoning translation.
+This test does not assert reasoning output end-to-end. The translate/sse
+mocks already cover reasoning translation.
 """
 
 import os
@@ -44,7 +43,7 @@ DASHSCOPE_BASE_URL = os.environ.get(
     'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 )
 DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
-TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3-max')
+TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3.8-flash')
 
 
 def _has_claude_cli() -> bool:
@@ -73,7 +72,7 @@ def _build_qwen_model() -> Model:
 
 
 @_REQUIRES_REAL
-def test_evalscope_direct_to_qwen3_max():
+def test_evalscope_direct_to_qwen3_8_flash():
     """Sanity: ``OpenAICompatibleAPI`` can talk to DashScope directly."""
     model = _build_qwen_model()
     output = model.generate(input='Reply with exactly: PONG')
@@ -84,8 +83,8 @@ def test_evalscope_direct_to_qwen3_max():
 
 @_REQUIRES_REAL
 @pytest.mark.skipif(not _has_claude_cli(), reason='claude CLI not installed')
-def test_claude_code_through_bridge_to_qwen3_max():
-    """End-to-end: claude --print → bridge → qwen3-max via DashScope."""
+def test_claude_code_through_bridge_to_qwen3_8_flash():
+    """End-to-end: claude --print → bridge → qwen3.8-flash via DashScope."""
     model = _build_qwen_model()
     sample = Sample(input='What is 6 * 7? Reply with just the number.', target='42', id=1)
     config = ExternalAgentConfig(

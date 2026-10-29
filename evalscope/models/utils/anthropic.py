@@ -13,9 +13,11 @@ from anthropic.types import (
     Message,
     MessageParam,
     RedactedThinkingBlock,
+    RedactedThinkingBlockParam,
     TextBlock,
     TextBlockParam,
     ThinkingBlock,
+    ThinkingBlockParam,
     ToolChoiceAnyParam,
     ToolChoiceAutoParam,
     ToolChoiceNoneParam,
@@ -122,8 +124,11 @@ def anthropic_chat_tool_choice(tool_choice: ToolChoice) -> ToolChoiceParam:
 
 def anthropic_image_block_param(image: str) -> ImageBlockParam:
     """Convert image path/URL to Anthropic ImageBlockParam."""
+    if is_http_url(image):
+        return ImageBlockParam(type='image', source=dict(type='url', url=image))
+
     # Resolve to data URI if needed
-    if not is_http_url(image) and not image.startswith('data:'):
+    if not image.startswith('data:'):
         image = file_as_data_uri(image)
 
     # Get media type and base64 content
@@ -147,7 +152,11 @@ def anthropic_content_block_param(content: Content) -> List[ContentBlockParam]:
         _preserve_cache_control(cast(Dict[str, Any], block), content.internal)
         return [block]
     elif content.type == 'reasoning':
-        # For reasoning content, we convert to text with think tags
+        if content.redacted:
+            return [RedactedThinkingBlockParam(type='redacted_thinking', data=content.reasoning)]
+        if content.signature is not None:
+            return [ThinkingBlockParam(type='thinking', thinking=content.reasoning, signature=content.signature)]
+        # Reasoning from other providers has no Anthropic signature.
         reasoning_text = f'<think>\n{content.reasoning}\n</think>'
         return [TextBlockParam(type='text', text=reasoning_text)]
     else:
@@ -187,7 +196,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
             is_error=tool_message.error is not None,
         )
         _preserve_cache_control(cast(Dict[str, Any], tool_result_block), tool_message.internal)
-        return MessageParam(role='user', content=[tool_result_block])
+        return {'role': 'user', 'content': [tool_result_block]}
 
     elif message.role == 'assistant':
         assistant_message = cast(ChatMessageAssistant, message)
@@ -215,7 +224,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
                 _preserve_cache_control(cast(Dict[str, Any], tool_use_block), tool_call.internal)
                 block_params.append(tool_use_block)
 
-        return MessageParam(role='assistant', content=block_params or [TextBlockParam(type='text', text=NO_CONTENT)])
+        return {'role': 'assistant', 'content': block_params or [TextBlockParam(type='text', text=NO_CONTENT)]}
 
     else:  # user message
         user_message = cast(ChatMessageUser, message)
@@ -232,7 +241,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
             if not content:
                 content = [TextBlockParam(type='text', text=NO_CONTENT)]
 
-        return MessageParam(role='user', content=content)
+        return {'role': 'user', 'content': content}
 
 
 def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -461,13 +470,13 @@ def _combine_messages(a: MessageParam, b: MessageParam) -> MessageParam:
     b_content = b['content']
 
     if isinstance(a_content, str) and isinstance(b_content, str):
-        return MessageParam(role=role, content=f'{a_content}\n{b_content}')
+        return {'role': role, 'content': f'{a_content}\n{b_content}'}
     elif isinstance(a_content, list) and isinstance(b_content, list):
-        return MessageParam(role=role, content=a_content + b_content)
+        return {'role': role, 'content': a_content + b_content}
     elif isinstance(a_content, str) and isinstance(b_content, list):
-        return MessageParam(role=role, content=[TextBlockParam(type='text', text=a_content)] + b_content)
+        return {'role': role, 'content': [TextBlockParam(type='text', text=a_content)] + b_content}
     elif isinstance(a_content, list) and isinstance(b_content, str):
-        return MessageParam(role=role, content=a_content + [TextBlockParam(type='text', text=b_content)])
+        return {'role': role, 'content': a_content + [TextBlockParam(type='text', text=b_content)]}
     else:
         raise ValueError(f'Unexpected content types for messages: {a}, {b}')
 
@@ -717,6 +726,7 @@ def collect_stream_response(
     current_tool_input: str = ''
     current_tool_id: str = ''
     current_tool_name: str = ''
+    current_thinking: Optional[Union[ThinkingBlock, RedactedThinkingBlock]] = None
 
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
@@ -737,7 +747,12 @@ def collect_stream_response(
             # Save previous block if exists
             if current_block_index >= 0:
                 _append_content_block(
-                    content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input
+                    content_blocks,
+                    current_text,
+                    current_tool_id,
+                    current_tool_name,
+                    current_tool_input,
+                    current_thinking,
                 )
 
             current_block_index = event.index
@@ -745,8 +760,13 @@ def collect_stream_response(
             current_tool_input = ''
             current_tool_id = ''
             current_tool_name = ''
+            current_thinking = None
 
-            if hasattr(event.content_block, 'text'):
+            if isinstance(event.content_block, (ThinkingBlock, RedactedThinkingBlock)):
+                current_thinking = event.content_block.model_copy()
+                if ttft is None and (isinstance(current_thinking, RedactedThinkingBlock) or current_thinking.thinking):
+                    ttft = time.monotonic() - t_start
+            elif hasattr(event.content_block, 'text'):
                 current_text = event.content_block.text or ''
             elif hasattr(event.content_block, 'id'):
                 current_tool_id = event.content_block.id
@@ -755,15 +775,21 @@ def collect_stream_response(
         elif isinstance(event, ContentBlockDeltaEvent):
             delta_text = ''
             delta_tool = ''
+            delta_thinking = ''
             if hasattr(event.delta, 'text'):
                 delta_text = event.delta.text or ''
                 current_text += delta_text
+            elif isinstance(current_thinking, ThinkingBlock) and hasattr(event.delta, 'thinking'):
+                delta_thinking = event.delta.thinking or ''
+                current_thinking.thinking += delta_thinking
+            elif isinstance(current_thinking, ThinkingBlock) and hasattr(event.delta, 'signature'):
+                current_thinking.signature = event.delta.signature or ''
             elif hasattr(event.delta, 'partial_json'):
                 delta_tool = event.delta.partial_json or ''
                 current_tool_input += delta_tool
 
             # Record TTFT on the first chunk with actual content
-            if ttft is None and (delta_text or delta_tool):
+            if ttft is None and (delta_text or delta_tool or delta_thinking):
                 ttft = time.monotonic() - t_start
 
         elif isinstance(event, MessageDeltaEvent):
@@ -783,7 +809,9 @@ def collect_stream_response(
 
     # Append the last block
     if current_block_index >= 0:
-        _append_content_block(content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input)
+        _append_content_block(
+            content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input, current_thinking
+        )
 
     return Message(
         id=message_id,
@@ -832,9 +860,12 @@ def _append_content_block(
     tool_id: str,
     tool_name: str,
     tool_input: str,
+    thinking: Optional[Union[ThinkingBlock, RedactedThinkingBlock]] = None,
 ) -> None:
     """Helper to append a content block to the list."""
-    if tool_id:
+    if thinking is not None:
+        content_blocks.append(thinking)
+    elif tool_id:
         # Tool use block
         try:
             input_data = json.loads(tool_input) if tool_input else {}
@@ -887,6 +918,7 @@ async def async_collect_stream_response(
     current_tool_input: str = ''
     current_tool_id: str = ''
     current_tool_name: str = ''
+    current_thinking: Optional[Union[ThinkingBlock, RedactedThinkingBlock]] = None
 
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
@@ -905,7 +937,12 @@ async def async_collect_stream_response(
         elif isinstance(event, ContentBlockStartEvent):
             if current_block_index >= 0:
                 _append_content_block(
-                    content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input
+                    content_blocks,
+                    current_text,
+                    current_tool_id,
+                    current_tool_name,
+                    current_tool_input,
+                    current_thinking,
                 )
 
             current_block_index = event.index
@@ -913,8 +950,13 @@ async def async_collect_stream_response(
             current_tool_input = ''
             current_tool_id = ''
             current_tool_name = ''
+            current_thinking = None
 
-            if hasattr(event.content_block, 'text'):
+            if isinstance(event.content_block, (ThinkingBlock, RedactedThinkingBlock)):
+                current_thinking = event.content_block.model_copy()
+                if ttft is None and (isinstance(current_thinking, RedactedThinkingBlock) or current_thinking.thinking):
+                    ttft = time.monotonic() - t_start
+            elif hasattr(event.content_block, 'text'):
                 current_text = event.content_block.text or ''
             elif hasattr(event.content_block, 'id'):
                 current_tool_id = event.content_block.id
@@ -923,14 +965,20 @@ async def async_collect_stream_response(
         elif isinstance(event, ContentBlockDeltaEvent):
             delta_text = ''
             delta_tool = ''
+            delta_thinking = ''
             if hasattr(event.delta, 'text'):
                 delta_text = event.delta.text or ''
                 current_text += delta_text
+            elif isinstance(current_thinking, ThinkingBlock) and hasattr(event.delta, 'thinking'):
+                delta_thinking = event.delta.thinking or ''
+                current_thinking.thinking += delta_thinking
+            elif isinstance(current_thinking, ThinkingBlock) and hasattr(event.delta, 'signature'):
+                current_thinking.signature = event.delta.signature or ''
             elif hasattr(event.delta, 'partial_json'):
                 delta_tool = event.delta.partial_json or ''
                 current_tool_input += delta_tool
 
-            if ttft is None and (delta_text or delta_tool):
+            if ttft is None and (delta_text or delta_tool or delta_thinking):
                 ttft = time.monotonic() - t_start
 
         elif isinstance(event, MessageDeltaEvent):
@@ -950,7 +998,9 @@ async def async_collect_stream_response(
 
     # Append the last block
     if current_block_index >= 0:
-        _append_content_block(content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input)
+        _append_content_block(
+            content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input, current_thinking
+        )
 
     return Message(
         id=message_id,

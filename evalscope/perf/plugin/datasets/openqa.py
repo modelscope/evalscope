@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Any, Dict, Iterator, List
+from typing import Dict, Iterator, List
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
@@ -15,15 +16,17 @@ class OpenqaDatasetPlugin(DatasetPluginBase):
     """
 
     args_schema = TextDatasetArgs
+    dataset_source = DatasetSource(
+        dataset_id='AI-ModelScope/HC3-Chinese',
+        hf_dataset_id='Hello-SimpleAI/HC3-Chinese',
+    )
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
 
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
-            self.query_parameters.dataset_path = self.download_hub_file(
-                dataset_id='AI-ModelScope/HC3-Chinese', file_name='open_qa.jsonl'
-            )
+            self.query_parameters.dataset_path = self.download_hub_file(file_name='open_qa.jsonl')
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

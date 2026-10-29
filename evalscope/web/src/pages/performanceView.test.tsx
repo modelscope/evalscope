@@ -139,6 +139,31 @@ async function renderDetail(detail: PerfDetailResponse = detailFixture) {
 }
 
 describe('PerfReportDetailPage', () => {
+  it('does not describe an embedding run as a decision service', async () => {
+    await renderDetail({ ...detailFixture, is_embedding: true, api_type: 'openai_embedding' })
+    expect(screen.queryByText(/Input-only decisions:/)).not.toBeInTheDocument()
+    const chartTypes = vi.mocked(perfApi.getPerfChartUrl).mock.calls.map((call) => call[2])
+    expect(chartTypes).not.toContain('percentile_token')
+    expect(chartTypes).not.toContain('req_ttft_tpot')
+  })
+
+  it.each(['systemone', 'autotrust'])('hides generation timings for %s decisions', async (apiType) => {
+    vi.mocked(perfApi.getPerfRequests).mockResolvedValue({
+      ...EMPTY_REQUESTS,
+      columns: ['#', 'Latency(s)', 'TTFT(ms)', 'TPOT(ms)', 'Success'],
+      rows: [{ '#': 1, 'Latency(s)': 0.1, 'TTFT(ms)': 0, 'TPOT(ms)': 0, Success: 'OK' }],
+      total: 1,
+    })
+    await renderDetail({ ...detailFixture, api_type: apiType, basic_info: { ...detailFixture.basic_info, Protocol: '' } })
+    expect(labelledValue('Protocol')).toBe(apiType === 'systemone' ? 'System One' : 'AutoTrust /decide')
+    expect(screen.getByText(/TTFT, TPOT and ITL are not applicable/)).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: /TTFT|TPOT/ })).not.toBeInTheDocument()
+    const chartTypes = vi.mocked(perfApi.getPerfChartUrl).mock.calls.map((call) => call[2])
+    expect(chartTypes).not.toContain('percentile_token')
+    expect(chartTypes).not.toContain('req_ttft_tpot')
+    expect(chartTypes).toContain('req_latency')
+  })
+
   it('renders Provider and Protocol as two independent labelled fields', async () => {
     await renderDetail()
 
@@ -159,7 +184,13 @@ describe('PerfReportDetailPage', () => {
     })
 
     expect(labelledValue('Provider')).toBe('DashScope')
-    expect(screen.queryByText('dashscope.aliyuncs.com')).not.toBeInTheDocument()
+    // The sanitized host is surfaced as the labelled Endpoint field.
+    expect(labelledValue('Endpoint')).toBe('dashscope.aliyuncs.com')
+  })
+
+  it('prefers the run alias as the heading when set', async () => {
+    await renderDetail({ ...detailFixture, alias: 'server-A' })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('server-A')
   })
 
   it('uses the model alias as the primary identity, not the path/timestamp', async () => {
@@ -229,7 +260,7 @@ describe('PerfReportDetailPage', () => {
 async function renderRunsTab() {
   render(
     <LocaleProvider>
-      <PerfRunsTab rootPath="./outputs" path={RUN_PATH} isEmbedding={false} />
+      <PerfRunsTab rootPath="./outputs" path={RUN_PATH} mode="generation" />
     </LocaleProvider>,
   )
   await settle()
@@ -286,19 +317,57 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
-    expect(screen.getByText('DashScope · OpenAI-compatible')).toBeInTheDocument()
-    expect(screen.getAllByText('C 10 · Req 100 · Runs 1').length).toBeGreaterThan(0)
+    expect(screen.getByText('dashscope.aliyuncs.com')).toBeInTheDocument()
+    expect(screen.getByText('5.43')).toBeInTheDocument()
+    expect(screen.getByText('1.842')).toBeInTheDocument()
+    expect(screen.getByText('Success')).toBeInTheDocument()
   })
 
   it('searches provider and protocol independently from the API type', async () => {
     await renderReports()
-    const search = screen.getByPlaceholderText('Search model / api / dataset...')
+    const search = screen.getByPlaceholderText('Search run name / model / endpoint / dataset...')
 
     fireEvent.change(search, { target: { value: 'DashScope' } })
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
 
     fireEvent.change(search, { target: { value: 'OpenAI-compatible' } })
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
+  })
+
+  it('shows alias and endpoint host so same-model runs stay distinguishable', async () => {
+    vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
+      runs: [
+        { ...RUN_SUMMARY, path: 'perf/run-a', alias: 'server-A', api_host: '10.0.0.2:8000' },
+        { ...RUN_SUMMARY, path: 'perf/run-b', alias: 'server-B', api_host: '10.0.0.3:8000', timestamp: '2024-01-02T00:00:00' },
+      ],
+      total: 2,
+    })
+    await renderReports()
+
+    expect(screen.getByText('server-A')).toBeInTheDocument()
+    expect(screen.getByText('server-B')).toBeInTheDocument()
+    // With an alias, the secondary line keeps the model and endpoint.
+    expect(screen.getByText('10.0.0.2:8000')).toBeInTheDocument()
+  })
+
+  it('searches runs by alias and endpoint host', async () => {
+    vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
+      runs: [
+        { ...RUN_SUMMARY, path: 'perf/run-a', alias: 'server-A', api_host: '10.0.0.2:8000' },
+        { ...RUN_SUMMARY, path: 'perf/run-b', alias: 'server-B', api_host: '10.0.0.3:8000', timestamp: '2024-01-02T00:00:00' },
+      ],
+      total: 2,
+    })
+    await renderReports()
+    const search = screen.getByPlaceholderText('Search run name / model / endpoint / dataset...')
+
+    fireEvent.change(search, { target: { value: '10.0.0.3' } })
+    expect(screen.queryByText('server-A')).not.toBeInTheDocument()
+    expect(screen.getByText('server-B')).toBeInTheDocument()
+
+    fireEvent.change(search, { target: { value: 'server-a' } })
+    expect(screen.getByText('server-A')).toBeInTheDocument()
+    expect(screen.queryByText('server-B')).not.toBeInTheDocument()
   })
 
   it('shows the shared selection tray and opens the selected HTML report', async () => {
@@ -358,4 +427,14 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Performance response did not match its schema')
   })
+})
+
+it('renders an unmeasured summary metric as missing instead of zero', async () => {
+  await renderDetail({
+    ...detailFixture,
+    summary_columns: [{ key: 'p99_tpot', label: 'P99 TPOT', semantics: null }],
+    summary_rows: [{ values: { p99_tpot: null }, sample_counts: { p99_tpot: 0 } }],
+  })
+  fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))
+  expect(screen.getByRole('cell', { name: '—' })).toBeInTheDocument()
 })

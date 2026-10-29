@@ -1,28 +1,126 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+"""Benchmark plugin discovery.
+
+Adapter modules are still discovered by globbing ``*/**/*_adapter.py``, but discovery
+is separated from loading: ``_index.json`` maps every registered benchmark name to the
+module that registers it, so resolving one benchmark imports one module instead of all
+of them.
+
+``_index.json`` is generated, never hand-written: ``evalscope benchmark-info
+--update-index`` writes it and ``make docs-update`` / ``make docs-pipeline`` run that
+step. A name missing from the index still resolves, by falling back to loading every
+adapter module, so a stale or absent index can only cost time, never correctness.
+"""
+
 import glob
 import importlib
+import json
 import os
-import time
+from typing import Dict, List
 
+from evalscope.api.registry import BENCHMARK_REGISTRY
 from evalscope.utils import get_logger
 
 logger = get_logger()
 
-# Using glob to find all files matching the pattern
-pattern = os.path.join(os.path.dirname(__file__), '*', '**', '*_adapter.py')
-files = glob.glob(pattern, recursive=True)
+_BENCHMARK_DIR = os.path.dirname(__file__)
+_INDEX_PATH = os.path.join(_BENCHMARK_DIR, '_index.json')
+_ADAPTER_PATTERN = os.path.join(_BENCHMARK_DIR, '*', '**', '*_adapter.py')
 
-import_times = []
+_loaded_all = False
+_loading_all = False
 
-for file_path in files:
-    if file_path.endswith('.py') and not os.path.basename(file_path).startswith('_'):
-        # Convert file path to a module path
-        relative_path = os.path.relpath(file_path, os.path.dirname(__file__))
-        module_path = relative_path[:-3].replace(os.path.sep, '.')  # strip '.py' and convert to module path
-        full_path = f'evalscope.benchmarks.{module_path}'
 
-        start_time = time.perf_counter()
-        importlib.import_module(full_path)
-        end_time = time.perf_counter()
+def adapter_modules() -> List[str]:
+    """Dotted paths of every adapter module the glob contract discovers."""
+    modules = []
+    for file_path in sorted(glob.glob(_ADAPTER_PATTERN, recursive=True)):
+        if os.path.basename(file_path).startswith('_'):
+            continue
+        relative_path = os.path.relpath(file_path, _BENCHMARK_DIR)
+        modules.append(f'evalscope.benchmarks.{relative_path[:-3].replace(os.path.sep, ".")}')
+    return modules
 
-        import_times.append((full_path, end_time - start_time))
+
+def _read_index() -> Dict[str, str]:
+    """Read the generated name -> module index, tolerating a missing or bad file."""
+    try:
+        with open(_INDEX_PATH, encoding='utf-8') as f:
+            index = json.load(f)
+        if not isinstance(index, dict) or not all(
+            isinstance(name, str) and isinstance(module, str) for name, module in index.items()
+        ):
+            raise ValueError('expected a JSON object with string benchmark names and module paths')
+        return index
+    except FileNotFoundError:
+        logger.debug('Benchmark index %s not found; every lookup will load all adapters.', _INDEX_PATH)
+    except (OSError, ValueError) as e:
+        logger.warning('Ignoring unreadable benchmark index %s: %s', _INDEX_PATH, e)
+    return {}
+
+
+_INDEX: Dict[str, str] = _read_index()
+
+
+def load_benchmark(name: str) -> bool:
+    """Import only the module that registers ``name``.
+
+    Returns:
+        True only when the indexed module exists and actually registers ``name``.
+        A missing, renamed, or mismatched index entry returns False, so the registry
+        falls back to :func:`load_all` rather than reporting a valid benchmark missing.
+    """
+    module = _INDEX.get(name)
+    if module is None:
+        return False
+    try:
+        importlib.import_module(module)
+    except ModuleNotFoundError as e:
+        if e.name != module:
+            raise
+        logger.warning('Benchmark index maps %s to missing module %s; falling back to full discovery.', name, module)
+        return False
+    return BENCHMARK_REGISTRY.is_materialized(name)
+
+
+def load_all() -> None:
+    """Import every adapter module, matching the historical eager behaviour."""
+    global _loaded_all, _loading_all
+    with BENCHMARK_REGISTRY.allow_indexed_registrations():
+        if _loaded_all or _loading_all:
+            return
+        _loading_all = True
+        try:
+            for module in adapter_modules():
+                importlib.import_module(module)
+            _loaded_all = True
+        finally:
+            _loading_all = False
+
+
+def build_index() -> Dict[str, str]:
+    """Map every registered benchmark name to the module that registers it.
+
+    Names are not derivable from module paths: one module may register several names
+    and a name may differ from its module leaf, which is why the mapping is read from
+    the registry rather than guessed.
+    """
+    load_all()
+    return {
+        name: meta.data_adapter.__module__
+        for name, meta in sorted(BENCHMARK_REGISTRY.items())
+        if meta.data_adapter is not None
+    }
+
+
+def write_index() -> Dict[str, str]:
+    """Regenerate ``_index.json`` from the registry and return the written mapping."""
+    index = build_index()
+    with open(_INDEX_PATH, 'w', encoding='utf-8') as f:
+        json.dump(index, f, indent=1, ensure_ascii=False, sort_keys=True)
+        f.write('\n')
+    logger.info('Wrote %d benchmark index entries to %s', len(index), _INDEX_PATH)
+    return index
+
+
+BENCHMARK_REGISTRY.set_resolvers(load_benchmark, load_all, _INDEX.get)

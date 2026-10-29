@@ -180,6 +180,16 @@ afterEach(() => {
 })
 
 describe('PerfComparePage', () => {
+  it('omits generation timing charts when a compared run is a decision API', async () => {
+    mockDetails({
+      'run-a': makePerfDetail({ path: 'run-a', api_type: 'systemone' }),
+      'run-b': makePerfDetail({ path: 'run-b', api_type: 'autotrust' }),
+    })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+    expect(screen.queryByText('TTFT (ms)')).not.toBeInTheDocument()
+    expect(screen.queryByText('TPOT (ms)')).not.toBeInTheDocument()
+  })
+
   describe('baseline swap persistence', () => {
     it('persists the swapped baseline to the URL and updates the effective-baseline marker', async () => {
       const older = makePerfDetail({ path: 'run-a', model: 'model-a', generated_at: '2026-06-01T00:00:00Z' })
@@ -191,9 +201,7 @@ describe('PerfComparePage', () => {
       // Default baseline is the oldest run (model-a); candidate is the newest (model-b).
       expect(screen.getByTestId('baseline-label')).toHaveTextContent('model-a')
       expect(screen.getByTestId('candidate-label')).toHaveTextContent('model-b')
-      expect(screen.getByTestId('compare-run-labels')).toHaveTextContent('model-a · openqa')
-      expect(screen.getByTestId('compare-run-labels')).not.toHaveTextContent('run-a')
-      expect(screen.getByTestId('compare-run-labels')).toHaveAttribute('title', 'run-a\nrun-b')
+      expect(screen.queryByTestId('compare-run-labels')).not.toBeInTheDocument()
       expect(currentLocation()).not.toContain('baseline=')
 
       // Swap the baseline.

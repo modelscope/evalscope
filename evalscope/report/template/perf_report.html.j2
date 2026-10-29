@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+{{ render_marker }}
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performance Report — {{ model }}</title>
+  <title>Performance Report — {{ model | e }}</title>
   <script>
 {% include 'js/theme_init.js' %}
   </script>
@@ -57,8 +58,8 @@
           <tbody>
             {% for key, value in basic_info.items() %}
             <tr>
-              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key }}</td>
-              <td>{{ value }}</td>
+              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key | e }}</td>
+              <td>{{ value | e }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -76,15 +77,24 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>{% for col in summary_columns %}<th>{{ col }}</th>{% endfor %}</tr>
+            <tr>{% for col in summary_columns %}<th>{{ col | e }}</th>{% endfor %}</tr>
           </thead>
           <tbody>
             {% for row in summary_rows %}
-            <tr>{% for val in row %}<td class="num-cell">{{ val }}</td>{% endfor %}</tr>
+            <tr>{% for val in row %}<td class="num-cell">{{ val | e }}</td>{% endfor %}</tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+    </div>
+    {% endif %}
+
+    {% if configuration %}
+    <div class="card">
+      <div class="card-header"><span class="card-title" data-i18n="card.run_config">Run Configuration</span></div>
+      <div class="table-wrap"><table><tbody>
+        {% for key, value in configuration.items() %}<tr><td>{{ key | e }}</td><td>{{ value | e }}</td></tr>{% endfor %}
+      </tbody></table></div>
     </div>
     {% endif %}
 
@@ -98,8 +108,8 @@
           <tbody>
             {% for key, value in best_config.items() %}
             <tr>
-              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key }}</td>
-              <td style="color:var(--green);">{{ value }}</td>
+              <td style="font-weight:600; color:var(--accent); width:35%;">{{ key | e }}</td>
+              <td style="color:var(--green);">{{ value | e }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -117,7 +127,7 @@
         {% for rec in recommendations %}
         <div style="display:flex; align-items:flex-start; gap:0.5rem; margin-bottom:0.5rem; color:var(--yellow); font-size:0.875rem;">
           <span style="flex-shrink:0;">&#8226;</span>
-          <span>{{ rec }}</span>
+          <span>{{ rec | e }}</span>
         </div>
         {% endfor %}
       </div>
@@ -144,7 +154,7 @@
           {% for tab in latency_tabs %}
           <button class="tab-btn {% if loop.first %}active{% endif %}"
                   data-tab="latency-tab-{{ loop.index0 }}"
-                  data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+                  data-i18n="{{ tab.label | e }}">{{ tab.label | e }}</button>
           {% endfor %}
         </div>
         {% for tab in latency_tabs %}
@@ -176,7 +186,7 @@
           {% for tab in throughput_tabs %}
           <button class="tab-btn {% if loop.first %}active{% endif %}"
                   data-tab="throughput-tab-{{ loop.index0 }}"
-                  data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+                  data-i18n="{{ tab.label | e }}">{{ tab.label | e }}</button>
           {% endfor %}
         </div>
         {% for tab in throughput_tabs %}
@@ -212,7 +222,7 @@
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </span>
-          <span class="ds-name">{{ run.name }}</span>
+          <span class="ds-name">{{ run.name | e }}</span>
         </div>
         <div class="ds-summary-right">
           <span class="card-badge">{{ run.total_requests }} <span data-i18n="badge.requests">requests</span></span>
@@ -228,8 +238,8 @@
           <div class="stat-grid">
             {% for item in run.summary_items %}
             <div class="stat-item">
-              <span class="stat-key">{{ item.key }}</span>
-              <span class="stat-val">{{ item.value }}</span>
+              <span class="stat-key">{{ item.key | e }}</span>
+              <span class="stat-val">{{ item.value | e }}</span>
             </div>
             {% endfor %}
           </div>
@@ -245,11 +255,11 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr>{% for col in run.percentile_columns %}<th>{{ col }}</th>{% endfor %}</tr>
+                <tr>{% for col in run.percentile_columns %}<th>{{ col | e }}</th>{% endfor %}</tr>
               </thead>
               <tbody>
                 {% for row in run.percentile_rows %}
-                <tr>{% for val in row %}<td class="num-cell">{{ val }}</td>{% endfor %}</tr>
+                <tr>{% for val in row %}<td class="num-cell">{{ val | e }}</td>{% endfor %}</tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -281,7 +291,7 @@
               {% for tab in run.request_detail_tabs %}
               <button class="tab-btn {% if loop.first %}active{% endif %}"
                       data-tab="req-{{ run_idx }}-tab-{{ loop.index0 }}"
-                      data-i18n="{{ tab.label }}">{{ tab.label }}</button>
+                      data-i18n="{{ tab.label | e }}">{{ tab.label | e }}</button>
               {% endfor %}
             </div>
             {% for tab in run.request_detail_tabs %}
@@ -308,7 +318,7 @@
 (function () {
   'use strict';
 
-var DEFAULT_LANG = '{{ default_lang }}';
+var DEFAULT_LANG = {{ default_lang | default('en', true) | tojson }};
 
 {% include 'js/i18n_perf.js' %}
 {% include 'js/shared.js' %}

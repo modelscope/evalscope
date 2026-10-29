@@ -133,7 +133,10 @@ class DataCollectionAdapter(DefaultDataAdapter):
             # Initialize dataset adapter
             if dataset_name not in self.dataset_adapters:
                 config = copy.deepcopy(self._task_config)
-                self.dataset_adapters[dataset_name] = get_benchmark(dataset_name, config=config)
+                adapter = get_benchmark(dataset_name, config=config)
+                if adapter.aggregation == 'bayes_at_n':
+                    raise ValueError('Bayes@N does not support dataset collections; evaluate one subset directly.')
+                self.dataset_adapters[dataset_name] = adapter
 
     def _get_adapter(self, metadata: Dict[str, Any]) -> DataAdapter:
         collection_info = metadata.get(DataCollection.INFO, {})
@@ -271,7 +274,8 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
             # Hierarchical macro: average of child group micro means (e.g., subsets under a dataset)
             if macro_child and (macro_child in g.columns) and (macro_child not in group_cols):
-                child_groups = g.groupby(macro_child)
+                # A member is a (dataset, subset) pair: many datasets name their only subset 'default'.
+                child_groups = g.groupby(['dataset_name', macro_child])
                 child_micros = [float(cg['score'].mean()) for _, cg in child_groups]
                 macro = float(pd.Series(child_micros).mean()) if child_micros else micro
             else:

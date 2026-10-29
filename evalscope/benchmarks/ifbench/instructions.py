@@ -34,6 +34,11 @@ def _word_tokens_without_punctuation(text):
     return [token for token in instructions_util.nltk.word_tokenize(text) if any(ch.isalnum() for ch in token)]
 
 
+def _split_words(text: str) -> list[str]:
+    """Lowercase, remove punctuation, and split into whitespace-delimited words."""
+    return text.lower().translate(str.maketrans('', '', string.punctuation)).split()
+
+
 # The number of keywords.
 _NUM_KEYWORDS = 2
 
@@ -199,6 +204,8 @@ class StopWordPercentageChecker(Instruction):
     def check_following(self, value):
         """Checks if the response contains the expected percentage of stop words."""
         num_words = instructions_util.count_words(value)
+        if num_words == 0:
+            return False
         num_stopwords = instructions_util.count_stopwords(value)
         stopword_percentage = (num_stopwords / num_words) * 100
         return stopword_percentage <= self._percentage
@@ -389,7 +396,10 @@ class PersonNameCountChecker(Instruction):
         # Extract the named entities
         person_names = []
         for name in person_name_list:
-            if name in value:
+            # Match on word boundaries so substrings do not produce false positives
+            # (e.g. "Mia" inside "Miami" or "Leo" inside "Leonardo").
+            pattern = r'\b{}\b'.format(re.escape(name))
+            if re.search(pattern, value):
                 person_names.append(name)
         unique_person_names = set(person_names)
 
@@ -431,8 +441,10 @@ class NGramOverlapChecker(Instruction):
     def check_following(self, value):
         """Checks if the response maintains a trigram overlap with the reference text within 2% of {percent}."""
         n = 3
-        ngrams = set(nltk.ngrams(value, n))
-        ref_ngrams = set(nltk.ngrams(self._reference_text, n))
+        ngrams = set(nltk.ngrams(nltk.word_tokenize(value), n))
+        ref_ngrams = set(nltk.ngrams(nltk.word_tokenize(self._reference_text), n))
+        if not ngrams:
+            return False
         overlap = len(ngrams.intersection(ref_ngrams)) / len(ngrams)
         return self._percentage - 2 <= overlap * 100 <= self._percentage + 2
 
@@ -932,7 +944,7 @@ class CharacterCountUniqueWordsChecker(Instruction):
         for sentence in sentences:
             if len(sentence.strip()) != char_count:
                 return False
-        words = [word.casefold() for word in _word_tokens_without_punctuation(value)]
+        words = _split_words(' '.join(sentences))
         return bool(words) and len(words) == len(set(words))
 
 
@@ -1049,7 +1061,7 @@ class LimitedWordRepeatChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the response repeats any word more than {small_n} times."""
-        words = value.lower().translate(str.maketrans('', '', string.punctuation)).split()
+        words = _split_words(value)
         word_count = Counter(words)
         for word, count in word_count.items():
             if count > self._max_repeats:
@@ -1324,7 +1336,7 @@ class NoConsecutiveFirstLetterChecker(Instruction):
 
     def check_following(self, value):
         """Checks if no two consecutive words in the response share the same first letter."""
-        words = value.lower().translate(str.maketrans('', '', string.punctuation)).split()
+        words = _split_words(value)
         while '' in words:
             words.remove('')
         for i in range(len(words) - 1):
@@ -1725,7 +1737,8 @@ class SentenceAlphabetChecker(Instruction):
         if len(sentences) != 26:
             return False
         for i, sentence in enumerate(sentences):
-            if sentence.lstrip().split()[0].lower()[0] != chr(97 + i):
+            stripped = sentence.lstrip(string.punctuation + string.whitespace)
+            if not stripped or stripped[0].lower() != chr(97 + i):
                 return False
         return True
 
@@ -2008,7 +2021,10 @@ class KeywordsMultipleChecker(Instruction):
         for keyword, count in zip(
             [self._keyword1, self._keyword2, self._keyword3, self._keyword4, self._keyword5], [1, 2, 3, 5, 7]
         ):
-            if value.lower().count(keyword.lower()) != count:
+            # Count whole-word occurrences (case-insensitive). Use a word-boundary regex
+            # instead of str.count to avoid counting substrings (e.g. "art" inside "start").
+            pattern = r'\b{}\b'.format(re.escape(keyword))
+            if len(re.findall(pattern, value, flags=re.IGNORECASE)) != count:
                 return False
         return True
 
@@ -2113,13 +2129,10 @@ class WordsPositionChecker(Instruction):
           True if the second word and the second to last word are the same;
           otherwise, False.
         """
-        words = instructions_util.nltk.word_tokenize(value)
+        words = _word_tokens_without_punctuation(value)
         if len(words) < 2:
             return False
-        if words[1] == words[-2] == self._keyword:
-            return True
-        else:
-            return False
+        return words[1].lower() == words[-2].lower() == self._keyword.lower()
 
 
 class RepeatChangeChecker(Instruction):
@@ -2197,14 +2210,14 @@ class RepeatSimpleChecker(Instruction):
 
 
 class RepeatSpanChecker(Instruction):
-    "Copy the span of words that lies between (and including) index {n_start} and {n_end}, the indices are character indices!"
+    "Copy the span of words that lies between (and including) index {n_start} and {n_end}, the indices are word indices, split by whitespace!"
 
     def build_description(self, prompt_to_repeat=None, n_start=None, n_end=None):
         """Build the instruction description.
 
         Args:
-        n_start: An integer representing the inclusive start character index of the span.
-        n_end: An integer representing the inclusive end character index of the span.
+        n_start: An integer representing the inclusive start word index of the span.
+        n_end: An integer representing the inclusive end word index of the span.
 
         Returns:
         A string representing the instruction description.
@@ -2213,15 +2226,16 @@ class RepeatSpanChecker(Instruction):
             raise ValueError('prompt_to_repeat must be set.')
         else:
             self._prompt_to_repeat = prompt_to_repeat
+        num_words = len(self._prompt_to_repeat.split())
         if n_start is None:
-            self._n_start = random.randint(0, len(self._prompt_to_repeat) - 2)
+            self._n_start = random.randint(0, num_words - 2)
         else:
             self._n_start = n_start
         if n_end is None:
-            self._n_end = random.randint(self._n_start + 1, len(self._prompt_to_repeat) - 1)
+            self._n_end = random.randint(self._n_start + 1, num_words - 1)
         else:
             self._n_end = n_end
-        self._description_pattern = 'Copy the span of words that lies between (and including) index {n_start} and {n_end}, the indices are character indices!'
+        self._description_pattern = 'Copy the span of words that lies between (and including) index {n_start} and {n_end}, the indices are word indices, split by whitespace!'
         return self._description_pattern.format(
             n_start=self._n_start, n_end=self._n_end, prompt_to_repeat=self._prompt_to_repeat
         )
@@ -2235,11 +2249,10 @@ class RepeatSpanChecker(Instruction):
         return ['n_start', 'n_end', 'prompt_to_repeat']
 
     def check_following(self, value):
-        """Checks if the response contains the expected number of phrases with the correct modifications."""
-        expected_span = self._prompt_to_repeat[self._n_start : self._n_end + 1]
-        if value.strip().lower() == expected_span.strip().lower():
-            return True
-        return False
+        """Checks if the response contains the requested inclusive word span."""
+        words = self._prompt_to_repeat.split()
+        expected_span = ' '.join(words[self._n_start : self._n_end + 1])
+        return value.strip().lower() == expected_span.strip().lower()
 
 
 class TitleCaseChecker(Instruction):

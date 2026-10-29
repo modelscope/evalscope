@@ -22,7 +22,7 @@ vi.mock('@/api/eval', async (importOriginal) => {
   return { ...actual, listBenchmarks: vi.fn(() => new Promise(() => {})) }
 })
 
-import EvalConfigForm from './EvalConfigForm'
+import { EvalFormHarness as EvalConfigForm } from '@/test/TaskFormHarness'
 
 afterEach(cleanup)
 
@@ -39,6 +39,7 @@ function renderForm(onSubmit = vi.fn()) {
 function fillRequiredAndExpand() {
   fireEvent.change(screen.getByLabelText(/Model Name/), { target: { value: 'qwen-plus' } })
   fireEvent.change(screen.getByLabelText(/^Datasets/), { target: { value: 'gsm8k' } })
+  fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: 'http://localhost:8000/v1' } })
   fireEvent.click(screen.getByRole('button', { name: /More Parameters/i }))
 }
 
@@ -74,7 +75,6 @@ describe('EvalConfigForm sandbox payload', () => {
     const onSubmit = renderForm()
     fillRequiredAndExpand()
     fireEvent.click(screen.getByLabelText(/Enable Sandbox/))
-    fireEvent.change(screen.getByLabelText('Engine'), { target: { value: 'volcengine' } })
     fireEvent.change(screen.getByLabelText('Manager URL'), { target: { value: 'https://sandbox.example.com' } })
     fireEvent.change(screen.getByLabelText('Docker Image'), { target: { value: 'my-image:latest' } })
     fireEvent.change(screen.getByLabelText('Pool Size'), { target: { value: '3' } })
@@ -85,7 +85,7 @@ describe('EvalConfigForm sandbox payload', () => {
     const config = onSubmit.mock.calls[0][0]
     expect(config.sandbox).toEqual({
       enabled: true,
-      engine: 'volcengine',
+      engine: 'docker',
       manager_config: { base_url: 'https://sandbox.example.com' },
       default_config: { image: 'my-image:latest' },
       pool_size: 3,

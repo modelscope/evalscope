@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
@@ -46,14 +47,20 @@ SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, de
 - Supports both local image building and remote image pulling
 """,
         dataset_id='princeton-nlp/SWE-bench_Verified',
+        hf_dataset_id='princeton-nlp/SWE-bench_Verified',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
         extra_params={
             'inference_dataset_id': {
                 'type': 'str',
-                'description': 'Oracle dataset ID used to fetch inference context.',
+                'description': 'Oracle dataset ID used to fetch inference context from the selected dataset hub.',
                 'value': 'princeton-nlp/SWE-bench_oracle',
+            },
+            'inference_dataset_revision': {
+                'type': 'str | null',
+                'description': 'Optional revision of the oracle inference dataset.',
+                'value': None,
             },
             'build_docker_images': {
                 'type': 'bool',
@@ -88,6 +95,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
         self.inference_dataset_id: str = self.extra_params.get('inference_dataset_id', 'princeton-nlp/SWE-bench_oracle')
+        self.inference_dataset_revision: Optional[str] = self.extra_params.get('inference_dataset_revision')
         self.force_arch: str = self.extra_params.get('force_arch', '')
         self.dockerhub_username: str = self.extra_params.get('dockerhub_username') or 'swebench'
 
@@ -102,6 +110,8 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         loader = RemoteDataLoader(
             data_id_or_path=self.inference_dataset_id,
             split='test',
+            data_source=self.dataset_hub,
+            version=self.inference_dataset_revision,
             sample_fields=FieldSpec(
                 input='problem_statement',
                 metadata=[
@@ -237,6 +247,7 @@ SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50
 - Good for rapid prototyping and initial model assessment
 """,
         dataset_id='evalscope/swe-bench-verified-mini',
+        hf_dataset_id='MariusHobbhahn/swe-bench-verified-mini',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
@@ -253,8 +264,13 @@ SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50
             },
             'inference_dataset_id': {
                 'type': 'str',
-                'description': 'Oracle dataset ID used to fetch inference context.',
+                'description': 'Oracle dataset ID used to fetch inference context from the selected dataset hub.',
                 'value': 'princeton-nlp/SWE-bench_oracle',
+            },
+            'inference_dataset_revision': {
+                'type': 'str | null',
+                'description': 'Optional revision of the oracle inference dataset.',
+                'value': None,
             },
             'force_arch': {
                 'type': 'str',
@@ -306,6 +322,7 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
 - Popular benchmark variant for initial model comparison
 """,
         dataset_id='princeton-nlp/SWE-bench_Lite',
+        hf_dataset_id='princeton-nlp/SWE-bench_Lite',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
@@ -322,8 +339,13 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
             },
             'inference_dataset_id': {
                 'type': 'str',
-                'description': 'Oracle dataset ID used to fetch inference context.',
+                'description': 'Oracle dataset ID used to fetch inference context from the selected dataset hub.',
                 'value': 'princeton-nlp/SWE-bench_oracle',
+            },
+            'inference_dataset_revision': {
+                'type': 'str | null',
+                'description': 'Optional revision of the oracle inference dataset.',
+                'value': None,
             },
             'force_arch': {
                 'type': 'str',

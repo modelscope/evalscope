@@ -33,9 +33,11 @@ The MIT-Movie-Trivia dataset, originally created for slot filling in movie domai
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='mit_movie_trivia',
         pretty_name='MIT-Movie-Trivia',
         dataset_id='extraordinarylab/mit-movie-trivia',
+        hf_dataset_id='extraordinarylab/mit-movie-trivia',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

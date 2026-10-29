@@ -137,6 +137,12 @@ def wer(refs: list[str], hyps: list[str], language: str) -> float:
     """Compute WER on already-normalized inputs.
     Inputs must be pre-normalized with normalize_inputs/normalize_text.
     """
+    distance, ref_length = word_errors(refs, hyps, language)
+    return distance / ref_length
+
+
+def word_errors(refs: list[str], hyps: list[str], language: str) -> tuple[int, int]:
+    """Return (edit distance, reference length) in WER tokens, so callers can pool errors into a corpus WER."""
     distance = 0
     ref_length = 0
     tokenizer = EvaluationTokenizer(
@@ -156,4 +162,4 @@ def wer(refs: list[str], hyps: list[str], language: str) -> float:
             pred_items = [x for x in ''.join(pred_items)]
         distance += editdistance.eval(ref_items, pred_items)
         ref_length += len(ref_items)
-    return distance / ref_length
+    return distance, ref_length

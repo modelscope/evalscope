@@ -19,7 +19,7 @@ from evalscope.benchmarks.gdpval.utils import (
     relative_deliverable_path,
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
-from evalscope.constants import HubType, JudgeStrategy
+from evalscope.constants import HubType
 
 
 def make_adapter(
@@ -248,9 +248,9 @@ def test_match_score_marks_submission_ready_with_deliverable() -> None:
     assert score.metadata['deliverable_count'] == 1
 
 
-def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
+def test_calculate_metrics_scores_by_rule_and_defers_official_grading() -> None:
+    """GDPval must not invent a score of its own: official grading happens outside EvalScope."""
     adapter = make_adapter()
-    adapter._task_config.judge.strategy = JudgeStrategy.LLM
     sample = Sample(
         input='Task prompt',
         target='',
@@ -265,10 +265,10 @@ def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
 
     sample_score = adapter.calculate_metrics(state)
 
-    assert sample_score.score.value['submission_ready'] == 1.0
-    assert 'acc' not in sample_score.score.value
+    assert sample_score.score.value == {'submission_ready': 1.0}
     assert sample_score.score.main_score_name == 'submission_ready'
-    assert 'OpenAI' in sample_score.score.metadata['judge_strategy_note']
+    assert sample_score.score.metadata['official_gdpval_score'] is None
+    assert 'OpenAI' in sample_score.score.metadata['official_gdpval_score_note']
 
 
 def test_ensure_docker_image_builds_missing_default_image(monkeypatch: Any) -> None:

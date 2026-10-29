@@ -52,8 +52,10 @@ OmniBench is a pioneering universal multimodal benchmark designed to rigorously 
 - Simple accuracy metric
 - Extra params: use_image (bool), use_audio (bool)
 - Supports textual alternatives for image/audio
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         dataset_id='m-a-p/OmniBench',
+        hf_dataset_id='m-a-p/OmniBench',
         metric_list=['acc'],
         eval_split='train',
         prompt_template=MULT_CHOICE_PROMPT,

@@ -58,7 +58,11 @@ export default function ScoreMatrixTab({
     isBaseline: boolean,
   ): ReactNode => {
     if (score == null || !Number.isFinite(score)) {
-      return <span className="text-[var(--text-dim)]">—</span>
+      return (
+        <div className="flex min-h-12 flex-col items-center justify-center px-3 py-1 font-mono">
+          <span className="text-[var(--text-dim)]">—</span>
+        </div>
+      )
     }
     const hasBaseline = baselineScore != null && Number.isFinite(baselineScore)
     const delta = hasBaseline ? score - baselineScore : null
@@ -170,7 +174,9 @@ export default function ScoreMatrixTab({
             <table className="w-full table-fixed border-collapse text-sm">
               <colgroup>
                 <col style={{ width: 'clamp(280px, 34%, 420px)' }} />
-                {dataRows.map((row) => <col key={String(row.dataset_id)} />)}
+                {dataRows.map((row) => (
+                  <col key={String(row.dataset_id)} style={{ minWidth: 120 }} />
+                ))}
               </colgroup>
               <thead className="bg-[var(--bg-card2)]">
                 <tr className="border-b border-[var(--border-strong)]">
@@ -215,7 +221,10 @@ export default function ScoreMatrixTab({
                             {rkIdx + 1}
                           </span>
                         )}
-                        <span className="min-w-0 break-words leading-5 text-[var(--text)]" title={modelLabel}>
+                        <span
+                          className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-5 text-[var(--text)]"
+                          title={modelLabel}
+                        >
                           {modelLabel}
                         </span>
                         {isBaseline && (

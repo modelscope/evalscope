@@ -1,14 +1,14 @@
 import ast
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content
+from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, extract_answer_line, parse_answers, prompt
 
 SUBSET_LIST = [
     'Accounting',
@@ -92,11 +92,13 @@ MMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benc
 - Evaluates on validation split (test set requires submission)
 """,
         dataset_id='AI-ModelScope/MMMU',
+        hf_dataset_id='MMMU/MMMU',
+        hf_dataset_revision='21d1d90a93c7450d30bddb579d7b510c00b8a9ab',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='validation',
         prompt_template=OPEN_PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class MMMUAdapter(VisionLanguageAdapter):
@@ -164,12 +166,20 @@ class MMMUAdapter(VisionLanguageAdapter):
             answers = parse_answers(task_state, completion=prediction)
             return ''.join(sorted(list(answers)))
         elif question_type == OPEN_TYPE:
-            matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-            if matches:
-                return matches[-1].strip()
-            return prediction.strip()
+            answer = extract_answer_line(prediction)
+            return answer if answer is not None else prediction.strip()
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
+
+    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
+        score = super().match_score(original_prediction, filtered_prediction, reference, task_state)
+        if task_state.metadata['question_type'] == OPEN_TYPE and score.main_score_name in score.value:
+            from .utils import eval_open, parse_open_response
+
+            # Official MMMU open-question scoring; a list-valued answer is stored as its string repr.
+            gold = ast.literal_eval(reference) if reference.startswith('[') else reference
+            score.value[score.main_score_name] = float(eval_open(gold, parse_open_response(filtered_prediction)))
+        return score
 
     def create_content_and_answers_list(self, record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """

@@ -1,8 +1,10 @@
 import argparse
 import json
+import math
 import os
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 
@@ -11,10 +13,14 @@ from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs
 from evalscope.utils import BaseArgument, get_secret_value, secretize_auth_headers
 from evalscope.utils.logger import get_logger
 
+from .scenarios.agentx import AgentXScenario, parse_agentx_scenario, validate_agentx_arguments
+
 logger = get_logger()
 
 _OPENAI_API_ENDPOINT_MAP = {
     'openai': 'chat/completions',
+    'systemone': 'systemone',
+    'autotrust': 'decide',
     'openai_responses': 'responses',
     'openai_response': 'responses',
     'responses': 'responses',
@@ -25,7 +31,16 @@ _OPENAI_API_ENDPOINT_MAP = {
 }
 
 _OPENAI_RESPONSES_APIS = ('openai_responses', 'openai_response', 'responses')
-_KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks', 'rerank')
+_KNOWN_OPENAI_ENDPOINTS = (
+    'chat/completions',
+    'completions',
+    'responses',
+    'embeddings',
+    'reranks',
+    'rerank',
+    'systemone',
+    'decide',
+)
 
 
 def _as_list_if_scalar(value: Any) -> Any:
@@ -85,6 +100,9 @@ class Arguments(BaseArgument):
     no_test_connection: bool = False
     """Skip the connection test before starting the benchmark."""
 
+    scenario: Optional[AgentXScenario] = None
+    """Optional external Perf scenario. Currently supports AgentX."""
+
     # Performance and parallelism
     number: Union[int, List[int]] = 1000
     """Number of requests to be made."""
@@ -107,6 +125,15 @@ class Arguments(BaseArgument):
     Warmup requests go through the same concurrency slots as the measured ones
     and are only excluded from the reported metrics; the closed-loop dispatcher
     never drains in between, so use at least ``--parallel`` there.
+    """
+
+    enable_pd_metrics: bool = False
+    """Enable PD-disaggregation handoff metrics in perf summaries.
+
+    When enabled for streaming generation, EvalScope reports the first inter-output
+    chunk interval as a P-D handoff latency proxy and estimates the extra handoff
+    overhead against steady decode intervals. Disabled by default so standard
+    non-PD benchmarks keep the usual TTFT/TPOT/ITL metric set.
     """
 
     @property
@@ -173,7 +200,7 @@ class Arguments(BaseArgument):
     """Variable to tune: 'parallel' or 'rate'."""
 
     sla_params: Optional[List[Dict[str, Any]]] = None
-    """SLA constraints in JSON format."""
+    """SLA constraints in JSON format; use 's' or 'ms' for latency, or the report unit if bare."""
 
     sla_num_runs: int = 3
     """Number of runs to average for each configuration in SLA auto-tuning."""
@@ -240,6 +267,10 @@ class Arguments(BaseArgument):
     name: Optional[str] = None
     """Name for the run."""
 
+    alias: Optional[str] = None
+    """Human-readable run alias shown in the Web dashboard and reports to distinguish runs
+    of the same model (e.g. different servers). Purely a display label; never affects metrics."""
+
     # Output settings
     outputs_dir: str = DEFAULT_WORK_DIR
     """Output directory."""
@@ -256,6 +287,9 @@ class Arguments(BaseArgument):
 
     prefix_length: int = 0
     """Length of the prefix, only for random dataset."""
+
+    prefix_count: int = Field(default=1, strict=True, ge=1)
+    """Number of distinct raw token prefixes, assigned round-robin for the random dataset."""
 
     prompt: Optional[str] = None
     """The prompt text."""
@@ -492,10 +526,25 @@ class Arguments(BaseArgument):
             raise ValueError('--num-workers must be >= 0')
         return v
 
+    @field_validator('scenario', mode='before')
+    @classmethod
+    def _parse_scenario(cls, value: Any) -> Optional[AgentXScenario]:
+        if value is None:
+            return None
+        return parse_agentx_scenario(value)
+
     # --- Model validator (cross-field logic) ---
 
     @model_validator(mode='after')
     def _post_init(self) -> 'Arguments':
+        if self.prefix_count > 1:
+            if self.prompt:
+                raise ValueError('--prefix-count > 1 conflicts with --prompt, which bypasses dataset generation.')
+            if self.dataset != 'random':
+                raise ValueError('--prefix-count > 1 is supported only with --dataset random.')
+            if self.prefix_length <= 0:
+                raise ValueError('--prefix-count > 1 requires --prefix-length > 0.')
+
         # Set the default headers
         self.headers = self.headers or {}
         api_key = get_secret_value(self.api_key)
@@ -517,12 +566,13 @@ class Arguments(BaseArgument):
 
         # Resolve apply_chat_template before tokenize_prompt redirects chat/completions to completions.
         if self.apply_chat_template is None:
-            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+            self.apply_chat_template = urlsplit(self.url).path.rstrip('/').endswith('chat/completions')
 
         self._resolve_tokenize_prompt_url()
 
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
+        self._validate_sla_settings()
 
         # Fold deprecated --multi-turn-args into --dataset-args (pure dict merge).
         # NOTE: dataset_args is kept as a raw dict here; validation against the
@@ -552,6 +602,25 @@ class Arguments(BaseArgument):
                 self.num_workers = coerced
 
         return self
+
+    def _validate_sla_settings(self) -> None:
+        """Reject SLA settings that cannot describe a meaningful search."""
+        if not self.sla_auto_tune:
+            return
+        if self.sla_variable not in ('parallel', 'rate'):
+            raise ValueError('--sla-variable must be parallel or rate')
+        if not self.sla_params:
+            raise ValueError('--sla-params requires at least one non-empty criterion group')
+        if self.sla_num_runs < 1:
+            raise ValueError('--sla-num-runs must be >= 1')
+        if self.sla_lower_bound < 1 or self.sla_upper_bound < self.sla_lower_bound:
+            raise ValueError('--sla-lower-bound and --sla-upper-bound must satisfy 1 <= lower <= upper')
+        if self.sla_fixed_parallel is not None and self.sla_fixed_parallel < 1:
+            raise ValueError('--sla-fixed-parallel must be >= 1')
+        if self.sla_number_multiplier is not None and (
+            not math.isfinite(self.sla_number_multiplier) or self.sla_number_multiplier <= 0
+        ):
+            raise ValueError('--sla-number-multiplier must be finite and > 0')
 
     def _normalize_legacy_dataset_args(self) -> None:
         """Fold the deprecated ``--multi-turn-args`` into ``--dataset-args``.
@@ -604,21 +673,22 @@ class Arguments(BaseArgument):
 
     def _resolve_openai_compatible_url(self) -> None:
         if self.api in _OPENAI_API_ENDPOINT_MAP:
-            stripped_url = self.url.rstrip('/')
+            parsed = urlsplit(self.url)
+            stripped_url = parsed.path.rstrip('/')
             expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
             if self._redirect_responses_url(stripped_url):
                 return
             if not any(stripped_url.endswith('/' + endpoint) for endpoint in _KNOWN_OPENAI_ENDPOINTS):
-                self.url = stripped_url + '/' + expected_suffix
+                self.url = parsed._replace(path=stripped_url + '/' + expected_suffix).geturl()
                 logger.warning(
-                    f'URL "{stripped_url}" has no endpoint path, auto-appended "/{expected_suffix}". '
+                    f'URL has no endpoint path, auto-appended "/{expected_suffix}". '
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
     def _redirect_responses_url(self, stripped_url: str) -> bool:
         if self.api in _OPENAI_RESPONSES_APIS and stripped_url.endswith('/chat/completions'):
-            self.url = stripped_url[: -len('chat/completions')] + 'responses'
-            logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
+            self.url = urlsplit(self.url)._replace(path=stripped_url[: -len('chat/completions')] + 'responses').geturl()
+            logger.warning('OpenAI Responses API selected: URL auto-adjusted to responses endpoint')
             return True
         return False
 
@@ -629,15 +699,17 @@ class Arguments(BaseArgument):
             raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
         if not self.tokenizer_path:
             raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
-        stripped_url = self.url.rstrip('/')
+        parsed = urlsplit(self.url)
+        stripped_url = parsed.path.rstrip('/')
         if stripped_url.endswith('chat/completions'):
-            self.url = stripped_url[: -len('chat/completions')] + 'completions'
-            logger.warning(
-                f'--tokenize-prompt is set: URL auto-adjusted from chat/completions to completions endpoint: {self.url}'
-            )
+            self.url = parsed._replace(path=stripped_url[: -len('chat/completions')] + 'completions').geturl()
+            logger.warning('--tokenize-prompt is set: URL auto-adjusted to completions endpoint')
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
+        if self.scenario is not None:
+            validate_agentx_arguments(self)
+            return
         if self.multi_turn and self.open_loop:
             raise ValueError(
                 '--multi-turn is not supported in open-loop mode: turn N cannot be dispatched before the '
@@ -740,6 +812,12 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        '--scenario',
+        type=str,
+        default=None,
+        help='External performance scenario: "agentx" or an AgentX JSON object.',
+    )
     parser.add_argument('-n', '--number', type=int, default=None, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
@@ -749,6 +827,12 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
                         help='Number or ratio of warmup requests. '
                              '>=1: absolute count. 0<value<1: ratio of --number. '
                              '0: disabled. Default: 0')
+    parser.add_argument(
+        '--enable-pd-metrics',
+        action='store_true',
+        default=False,
+        help='Enable PD-disaggregation handoff metrics based on streaming inter-output chunk latencies.',
+    )
     parser.add_argument('--open-loop', action='store_true', default=False,
                         help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
                              'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501
@@ -766,7 +850,12 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
 def _add_sla_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--sla-auto-tune', action='store_true', default=False, help='Enable SLA auto-tuning')
     parser.add_argument('--sla-variable', type=str, default='parallel', choices=['parallel', 'rate'], help='The variable to tune, can be parallel or rate')  # noqa: E501
-    parser.add_argument('--sla-params', type=json.loads, default=None, help='SLA constraints in JSON format')
+    parser.add_argument(
+        '--sla-params',
+        type=json.loads,
+        default=None,
+        help="SLA constraints in JSON format; use 's' or 'ms' for latency (bare values use report units)",
+    )
     parser.add_argument('--sla-num-runs', type=int, default=3, help='Number of runs to average for each configuration in SLA auto-tuning')  # noqa: E501
     parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Upper bound of the tuned SLA variable search range')  # noqa: E501
     parser.add_argument('--sla-lower-bound', type=int, default=1, help='Lower bound of the tuned SLA variable search range')  # noqa: E501
@@ -802,6 +891,11 @@ def _add_logging_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help='SwanLab host URL for self-hosted deployments (also reads SWANLAB_HOST env var)')
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
+    parser.add_argument(
+        '--alias',
+        type=str,
+        default=None,
+        help='Human-readable run alias shown in the Web dashboard and reports (display label only)')
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
 
@@ -809,6 +903,12 @@ def _add_prompt_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--max-prompt-length', type=int, default=131072, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
     parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
+    parser.add_argument(
+        '--prefix-count',
+        type=int,
+        default=1,
+        help='Number of distinct shared raw token prefixes per random run, assigned round-robin. Default: 1',
+    )
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
     parser.add_argument(

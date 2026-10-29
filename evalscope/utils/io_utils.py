@@ -9,7 +9,7 @@ import string
 import unicodedata
 from datetime import datetime
 from io import BytesIO
-from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import filetype
 import jsonlines as jsonl
@@ -151,7 +151,9 @@ def undecode_media(
     dataset: 'Dataset',
     media_type: List[Literal['image', 'audio', 'video']],
     batch_size: Optional[int] = None,
+    cache_file_name_factory: Optional[Callable[[], str]] = None,
 ) -> 'Dataset':
+    """Disable media decoding, optionally using caller-owned temporary conversion storage."""
     from datasets.features import Audio, Image, Sequence, Video
 
     if not isinstance(dataset, Dataset):
@@ -183,7 +185,11 @@ def undecode_media(
         return dataset
 
     # if there are updates, do casting
-    dataset = dataset.cast(features, batch_size=batch_size or DATASET_TRANSFORM_BATCH_SIZE)
+    dataset = dataset.cast(
+        features,
+        batch_size=batch_size or DATASET_TRANSFORM_BATCH_SIZE,
+        cache_file_name=cache_file_name_factory() if cache_file_name_factory is not None else None,
+    )
     return dataset
 
 
@@ -215,7 +221,10 @@ def jsonl_to_list(jsonl_file: str, skip_invalid: bool = False) -> List[Dict[str,
         logs a warning when the file contains no valid records.
     """
     res_list: List[Dict[str, Any]] = []
-    with open(jsonl_file, 'r', encoding='utf-8') as f:
+    # `utf-8-sig` reads plain UTF-8 unchanged but also drops the BOM that Windows
+    # tools (Excel, PowerShell 5.1 `Out-File -Encoding utf8`) prepend; without it
+    # the first row's JSON does not parse.
+    with open(jsonl_file, 'r', encoding='utf-8-sig') as f:
         for line_number, line in enumerate(f, start=1):
             stripped = line.strip()
             if not stripped:
@@ -343,6 +352,9 @@ def dump_jsonl_data(
 def jsonl_to_csv(jsonl_file: str, csv_file: str) -> None:
     """Convert a JSONL file to CSV format.
 
+    Columns follow the order in which keys first appear across all records.
+    Missing fields are written as empty cells.
+
     Args:
         jsonl_file (str): Source ``.jsonl`` file path.
         csv_file (str): Destination ``.csv`` file path.  Parent directories
@@ -353,12 +365,12 @@ def jsonl_to_csv(jsonl_file: str, csv_file: str) -> None:
         logger.warning(f'No data found in {jsonl_file}.')
         return
 
+    fieldnames = list(dict.fromkeys(key for item in data for key in item))
     _ensure_dir(os.path.dirname(csv_file))
     with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(data[0].keys())
-        for item in data:
-            writer.writerow(item.values())
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
 
 
 def csv_to_list(csv_file: str) -> List[Dict[str, str]]:
@@ -375,7 +387,8 @@ def csv_to_list(csv_file: str) -> List[Dict[str, str]]:
     """
     try:
         res_list: List[Dict[str, str]] = []
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        # Drop a UTF-8 BOM (Excel "CSV UTF-8") so the first header keeps its name.
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 res_list.append(dict(row))
@@ -398,7 +411,7 @@ def tsv_to_list(tsv_file: str) -> List[Dict[str, str]]:
     """
     try:
         res_list: List[Dict[str, str]] = []
-        with open(tsv_file, 'r', encoding='utf-8') as f:
+        with open(tsv_file, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f, delimiter='\t')
             for row in reader:
                 res_list.append(dict(row))

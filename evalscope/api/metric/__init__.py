@@ -1,4 +1,4 @@
-from .metric import Metric, SingletonMetric, T2IMetric
+from .metric import Metric, MetricUnavailableError, SingletonMetric, T2IMetric
 from .scorer import Aggregator, AggScore, JudgeSummary, SampleScore, Score, Value
 from .semantics import (
     MetricDirection,

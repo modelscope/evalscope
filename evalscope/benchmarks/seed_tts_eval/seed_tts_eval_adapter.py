@@ -30,6 +30,7 @@ PROMPT_TEMPLATE = (
 @register_benchmark(
     BenchmarkMeta(
         name='seed_tts_eval',
+        evaluation_version='v1.3',
         pretty_name='Seed-TTS-Eval',
         dataset_id='evalscope/Seed-TTS-Eval',
         tags=[Tags.AUDIO, Tags.TEXT_TO_SPEECH],
@@ -56,6 +57,7 @@ Seed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice c
 - Configure the ASR endpoint via `metric_list`, or set `SEED_TTS_EVAL_ASR_API_BASE`, `SEED_TTS_EVAL_ASR_API_KEY`, `SEED_TTS_EVAL_ASR_MODEL`, and `SEED_TTS_EVAL_ASR_API_PROTOCOL`
 - For Volcengine Ark audio-understanding models, set `api_protocol="responses"` and use a model that supports audio input, such as `doubao-seed-2-0-lite-260428`
 - Speaker similarity is part of the official benchmark, but it requires a separate speaker verification backend and is not enabled by default
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         paper_url='https://arxiv.org/abs/2406.02430',
         subset_list=['en', 'zh'],
@@ -135,7 +137,9 @@ class SeedTTSEvalAdapter(DefaultDataAdapter):
                     score.metadata['transcription'] = transcriptions[0]
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                score.value[metric_name] = 0
+                # Error rates are lower-is-better: audio that could not be transcribed counts as an empty
+                # transcript (every reference word missed), never as a perfect 0.
+                score.value[metric_name] = 1.0
                 score.metadata[metric_name] = f'error: {str(e)}'
 
         return score

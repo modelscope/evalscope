@@ -83,7 +83,30 @@ _DIRECTION_ARROWS = {
     MetricDirection.LOWER_IS_BETTER: '↓',
 }
 
-_DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2, 'ngram': 3, 'variant': 3, 'statistic': 4}
+#: Position of a dimension in a label. Unlisted keys sit at 3 and ties sort by key, so ``max_tokens``
+#: is moved after ``min_tokens`` to read a token range lower bound first.
+_DIMENSION_DISPLAY_ORDER = {
+    'target': 0,
+    'level': 1,
+    'scope': 2,
+    'min_tokens': 3,
+    'ngram': 3,
+    'variant': 3,
+    'max_tokens': 4,
+    'statistic': 4,
+}
+
+#: Axis names for dimensions whose value does not say what it measures, rendered as ``Context 1000``.
+#: Word-valued dimensions such as ``scope``, ``target`` or ``level`` read on their own and stay bare.
+_DIMENSION_LABELS = {
+    'context_length': 'Context',
+    'depth_percent': 'Depth',
+    'min_tokens': 'Min tokens',
+    'max_tokens': 'Max tokens',
+    'threshold': 'Threshold',
+    'ngram': 'n-gram',
+    'k': 'k',
+}
 
 #: First word character of each word, matching the frontend's ``/\b\w/`` label rule.
 _WORD_START = re.compile(r'\b\w')
@@ -139,16 +162,19 @@ def _join_unit(text: str, unit: Optional[str], separator: str) -> str:
     return f'{text}{separator}{unit}'
 
 
-def _format_dimension(value: Union[str, int, float, bool]) -> str:
-    r"""Render one dimension value for a metric label.
+def _format_dimension(key: str, value: Union[str, int, float, bool]) -> str:
+    r"""Render one dimension for a metric label, after its axis name when ``_DIMENSION_LABELS`` has one.
 
     Only the first letter of each word is raised. ``str.title()`` would also lower the rest, which
     turns an acronym such as ``table_TEDS`` into ``Table Teds`` and makes this diverge from the
     frontend ``formatMetricIdentityLabel``, whose ``/\b\w/`` replacement leaves the tail alone.
     """
     if isinstance(value, bool):
-        return 'Yes' if value else 'No'
-    return _WORD_START.sub(lambda match: match.group(0).upper(), str(value).replace('_', ' '))
+        text = 'Yes' if value else 'No'
+    else:
+        text = _WORD_START.sub(lambda match: match.group(0).upper(), str(value).replace('_', ' '))
+    axis = _DIMENSION_LABELS.get(key)
+    return f'{axis} {text}' if axis else text
 
 
 def format_metric_label(
@@ -167,7 +193,8 @@ def format_metric_label(
         legacy_name: Original v1 spelling for a diagnostic migration fallback.
 
     Returns:
-        A label such as ``'Accuracy ↑'``, ``'WER ↓'`` or the unchanged final metric name.
+        A label such as ``'Accuracy ↑'``, ``'WER ↓'``, ``'Accuracy ↑ · Context 1000 · Depth 0'`` or
+        the unchanged final metric name.
     """
     if isinstance(identity, str):
         raw_name = identity
@@ -183,7 +210,7 @@ def format_metric_label(
     label = f'{semantics.metric_name} {arrow}'.strip()
     if dimensions:
         ordered = sorted(dimensions.items(), key=lambda item: (_DIMENSION_DISPLAY_ORDER.get(item[0], 3), item[0]))
-        details = ' · '.join(_format_dimension(value) for _, value in ordered)
+        details = ' · '.join(_format_dimension(key, value) for key, value in ordered)
         label = f'{label} · {details}'
     return label
 

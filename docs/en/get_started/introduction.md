@@ -17,7 +17,7 @@ EvalScope is not merely an evaluation tool; it is a valuable ally in your model 
 - 🚀 Seamlessly integrates with the [ms-swift](https://github.com/modelscope/ms-swift) training framework, enabling one-click evaluations and providing end-to-end support from training to assessment for your model development.
 
 ## Overall Architecture
-![EvalScope Architecture Diagram](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
+![EvalScope Architecture Diagram](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/structure.png)
 *EvalScope Architecture Diagram.*
 
 The architecture includes the following modules:

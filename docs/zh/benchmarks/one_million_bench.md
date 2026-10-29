@@ -3,7 +3,7 @@
 
 ## 概述
 
-$OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在完成具有经济价值的专家级专业工作方面的表现。公开版本包含由金融、医疗、工业、法律和自然科学等领域的专家编写并审核的400个双语任务。
+$OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在完成具有经济价值的专家级专业工作方面的表现。公开版本包含 400 个双语任务，均由金融、医疗、工业、法律和自然科学等领域的专家编写并审核。
 
 ## 任务描述
 
@@ -14,19 +14,19 @@ $OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在�
 
 ## 核心特性
 
-- 包含400个零样本任务，在中文和全球两条语言赛道及五个专业领域之间均衡分布（每个语言-领域子集包含40个任务）
-- 每个任务包含11至37条由专家编写的评分标准，涵盖事实信息、分析推理、指令遵循以及结构与格式等方面
+- 包含 400 个零样本任务，在中文和全球两条语言赛道及五个专业领域之间均衡分布（每个语言-领域子集包含 40 个任务）
+- 每个任务包含 11–37 条由专家撰写的评分标准，涵盖事实信息、分析推理、指令遵循以及结构与格式等方面
 - 每个任务同时包含正向评分项和负向扣分项，在公开版本中评分权重范围为 -20 到 12
-- 样本以十个语言-领域子集的形式提供，以便在 EvalScope 报告中清晰展示论文中的语言赛道和领域划分
+- 数据以十个语言-领域子集的形式提供，以便在 EvalScope 报告中同时体现论文中的语言赛道和领域划分
 
-## 评估说明
+## 评测说明
 
-- 需要使用 LLM 作为评判器。请配置 `judge.strategy='llm'`（或 `'auto'`）及 `judge.models`；官方评测框架当前推荐使用 Gemini 3.1 Pro Preview，但评判器的选择会影响绝对得分，此处未硬编码指定
-- 对单个回答的所有评分标准将在一次请求中统一评判，并采用官方提供的二元命中/未命中（hit/miss）判断指令
-- `expert_score` 是命中评分项的加权总和除以所有正向权重之和，结果裁剪至 `[0, 1]` 区间；当 `expert_score >= 0.7` 时，`pass_rate` 为 1，否则为 0
-- 评判器回复必须包含每条评分标准恰好一次。格式错误的回复和传输失败将被排除，而非静默转换为零分
-- 官方研究分别比较了基础模型、支持搜索的模型和深度研究型智能体。本原生适配器执行的是基准测试中的单轮生成路径；只有当外部工具调用型智能体的最终回答在相同评判器配置下进行评估时，其结果才具有可比性
-- 任务通常要求生成长篇、带引用的报告。请配置足够大的生成和评判 `max_tokens` 值；使用一个评判器和一次重复运行时，完整评测将执行400次生成调用和400次评判调用
+- 需要使用 LLM 作为裁判。请配置 `judge.strategy='llm'`（或 `'auto'`）及 `judge.models`；官方评测框架当前推荐使用 Gemini 3.1 Pro Preview，但裁判模型的选择会影响绝对分数，此处未硬编码指定
+- 对单次响应的所有评分标准将在一次请求中统一评判，并采用官方提供的二元命中/未命中（hit/miss）指令
+- `expert_score` 是命中的评分项加权总和除以所有正向权重之和，结果裁剪至 `[0, 1]` 区间；当 `expert_score >= 0.7` 时，`pass_rate` 为 1，否则为 0
+- 裁判回复必须包含每条评分标准且仅出现一次。格式错误的回复和传输失败将被排除，而非静默转换为零分
+- 官方研究分别对比了基础模型、支持搜索的模型和深度研究智能体。本原生适配器执行的是基准测试中的单轮生成路径；外部工具调用型智能体的结果仅在其最终响应使用相同裁判配置进行评估时才具备可比性
+- 任务通常要求生成长篇、带引用的报告。请配置足够大的生成和裁判 `max_tokens` 值；在使用一个裁判模型和一次重复的情况下，完整运行将发起 400 次生成调用和 400 次裁判调用
 
 资源链接：[论文](https://arxiv.org/abs/2603.07980) |
 [GitHub](https://github.com/humanlaya/OneMillion-Bench) |
@@ -38,12 +38,12 @@ $OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `one_million_bench` |
-| **数据集ID** | [evalscope/OneMillion-Bench](https://modelscope.cn/datasets/evalscope/OneMillion-Bench/summary) |
+| **数据集 ID** | [evalscope/OneMillion-Bench](https://modelscope.cn/datasets/evalscope/OneMillion-Bench/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2603.07980) |
 | **标签** | `Agent`, `Knowledge`, `MultiLingual`, `QA`, `Reasoning` |
 | **指标** | `expert_score`, `pass_rate` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
+| **评测分割** | `test` |
 
 
 ## 数据统计
@@ -105,18 +105,15 @@ $OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在�
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
-**提示模板：**
-```text
-{question}
-```
+*未定义提示模板。*
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -124,7 +121,8 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets one_million_bench \
-    --limit 10  # 正式评估时请删除此行
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
+    --limit 10  # 正式评测时请删除此行
 ```
 
 ### 使用 Python
@@ -138,12 +136,13 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['one_million_bench'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'one_million_bench': {
-            # subset_list: ['global_economics_and_finance', 'global_healthcare_and_medicine', 'global_industry']  # 可选，用于评估特定子集
+            # subset_list: ['global_economics_and_finance', 'global_healthcare_and_medicine', 'global_industry']  # 可选，用于评测特定子集
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评测时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

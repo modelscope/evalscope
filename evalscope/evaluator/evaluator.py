@@ -170,11 +170,17 @@ class DefaultEvaluator(Evaluator):
         """
         try:
             logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
-            dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
+            loaded_datasets = self.benchmark.load_dataset()
+            dataset_dict = {k: v for k, v in loaded_datasets.items() if len(v) > 0}
 
             if not dataset_dict:
                 logger.warning(f'No samples found in any subset of {self.benchmark_name}. Skipping.')
                 return {}
+
+            # Empty subsets must not retain scores from before this benchmark's review rerun.
+            if self.use_cache and self.task_config.rerun_review:
+                for subset in loaded_datasets.keys() - dataset_dict.keys():
+                    self.cache_manager.delete_review_cache(subset)
 
             subset_list = list(dataset_dict.keys())
 
@@ -491,13 +497,15 @@ class DefaultEvaluator(Evaluator):
                 new_scores = [sc for _, sc in pool_results if sc is not None]
                 all_scores = cached_scores + new_scores
 
-            if not all_scores:
+            if not all_scores and not self.benchmark.aggregate_empty_scores:
                 logger.info(f'No valid scores generated for subset: {subset}, skipping.')
                 continue
 
             logger.info(f'Aggregating scores for subset: {subset}')
             self._sample_scores_by_subset[subset] = all_scores
-            agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
+            aggregated = self.benchmark.aggregate_subset(subset, sample_scores=all_scores)
+            if aggregated:
+                agg_score_dict[subset] = aggregated
 
         return agg_score_dict
 

@@ -11,6 +11,7 @@ logger = get_logger()
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='minerva_math',
         pretty_name='Minerva-Math',
         tags=[Tags.MATH, Tags.REASONING],
@@ -43,6 +44,7 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 - Designed to test the upper limits of model reasoning capabilities
 """,
         dataset_id='knoveleng/Minerva-Math',
+        hf_dataset_id='knoveleng/Minerva-Math',
         subset_list=['default'],
         metric_list=[{'acc': {'numeric': True}}],
         eval_split='train',

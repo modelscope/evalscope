@@ -240,12 +240,18 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
                         content_parts.append(f'![image]({image_base64_or_url})')
                 elif isinstance(content_item, ContentAudio):
                     audio_base64_or_url = content_item.audio
-                    if max_length and len(audio_base64_or_url) > max_length:
+                    if os.path.isfile(audio_base64_or_url):
+                        # Local file: absolutise it as the image branch does; never truncate a real path.
+                        audio_base64_or_url = os.path.abspath(audio_base64_or_url)
+                    elif max_length and len(audio_base64_or_url) > max_length:
                         audio_base64_or_url = audio_base64_or_url[:max_length]
                     content_parts.append(f"<audio controls src='{audio_base64_or_url}'></audio>")
                 elif isinstance(content_item, ContentVideo):
                     video_base64_or_url = content_item.video
-                    if max_length and len(video_base64_or_url) > max_length:
+                    if os.path.isfile(video_base64_or_url):
+                        # Local file: absolutise it as the image branch does; never truncate a real path.
+                        video_base64_or_url = os.path.abspath(video_base64_or_url)
+                    elif max_length and len(video_base64_or_url) > max_length:
                         video_base64_or_url = video_base64_or_url[:max_length]
                     content_parts.append(f"<video controls src='{video_base64_or_url}'></video>")
                 elif isinstance(content_item, ContentReasoning):

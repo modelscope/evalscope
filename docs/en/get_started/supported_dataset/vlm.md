@@ -39,6 +39,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
+| `mm_safetybench_plus_plus` | [MM-SafetyBench++](../../benchmarks/mm_safetybench_plus_plus.md) | `MultiModal`, `QA` |
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmau` | [MMAU](../../benchmarks/mmau.md) | `Audio`, `MCQ` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -66,11 +67,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `slake` | [SLAKE](../../benchmarks/slake.md) | `Medical`, `MultiModal`, `QA` |
 | `surds` | [SURDS](../../benchmarks/surds.md) | `Grounding`, `MultiModal`, `QA`, `Reasoning` |
+| `thchs30` | [THCHS-30](../../benchmarks/thchs30.md) | `Audio`, `Chinese`, `SpeechRecognition` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
 | `visfactor` | [VisFactor](../../benchmarks/visfactor.md) | `MultiModal`, `QA`, `Reasoning` |
+| `visualoverload` | [VisualOverload](../../benchmarks/visualoverload.md) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vlms_are_biased` | [VLMs Are Biased](../../benchmarks/vlms_are_biased.md) | `MultiModal`, `QA`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
@@ -119,6 +122,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
+../../benchmarks/mm_safetybench_plus_plus.md
 ../../benchmarks/mm_star.md
 ../../benchmarks/mmau.md
 ../../benchmarks/mmmu.md
@@ -146,11 +150,13 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/slake.md
 ../../benchmarks/surds.md
+../../benchmarks/thchs30.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
 ../../benchmarks/visfactor.md
+../../benchmarks/visualoverload.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vlms_are_biased.md
 ../../benchmarks/vqav2.md

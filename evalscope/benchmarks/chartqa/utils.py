@@ -19,7 +19,7 @@ def relaxed_correctness(prediction: str, target: str, max_relative_change: float
       Whether the prediction was correct given the specified tolerance.
     """  # noqa: E501
 
-    def _to_float(text: str):
+    def _to_float(text: str) -> float | None:
         try:
             if text.endswith('%'):
                 # Convert percentages to floats.
@@ -31,7 +31,9 @@ def relaxed_correctness(prediction: str, target: str, max_relative_change: float
 
     prediction_float = _to_float(prediction)
     target_float = _to_float(target)
-    if prediction_float is not None and target_float:
+    if prediction_float is not None and target_float is not None:
+        if target_float == 0:
+            return prediction_float == 0
         relative_change = abs(prediction_float - target_float) / abs(target_float)
         return relative_change <= max_relative_change
     else:

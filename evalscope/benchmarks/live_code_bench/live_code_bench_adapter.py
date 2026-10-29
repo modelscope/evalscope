@@ -53,6 +53,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 - Supports `pass@k` metric calculation
 """,
         dataset_id='evalscope/livecodebench_code_generation_lite_parquet',
+        hf_dataset_id='marianna13/livecodebench_code_generation_lite_parquet',
         subset_list=[
             'release_latest',
             'release_v1',

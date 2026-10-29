@@ -59,7 +59,12 @@ class LocalAgentEnvironment(AgentEnvironment):
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=asyncio.subprocess.PIPE if input is not None else None,
+            # Without an explicit stdin the child inherits the evaluator's own,
+            # so a model-generated command that reads stdin blocks on the
+            # operator's terminal (and can swallow their keystrokes) until the
+            # tool timeout fires. Nothing in a sandbox should be able to read
+            # from there; DEVNULL makes such a command see EOF and fail fast.
+            stdin=asyncio.subprocess.PIPE if input is not None else asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=effective_cwd,

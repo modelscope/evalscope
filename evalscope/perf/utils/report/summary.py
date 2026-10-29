@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value, resolve_perf_semantics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 _CONFIG_COLUMNS = [
     ('concurrency', 'Conc.', None),
@@ -35,9 +36,22 @@ _GENERATION_METRIC_COLUMNS = [
     ('p99_ttft', 'P99 TTFT(ms)', PercentileMetrics.TTFT),
     ('avg_tpot', 'Avg TPOT(ms)', Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN),
     ('p99_tpot', 'P99 TPOT(ms)', PercentileMetrics.TPOT),
+    ('avg_steady_itl', 'Avg Steady ITL(ms)', Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY),
+    ('p99_steady_itl', 'P99 Steady ITL(ms)', PercentileMetrics.STEADY_ITL),
+    ('avg_pd_handoff_latency', 'Avg PD Handoff(ms)', Metrics.AVERAGE_PD_HANDOFF_LATENCY),
+    ('p99_pd_handoff_latency', 'P99 PD Handoff(ms)', PercentileMetrics.PD_HANDOFF_LATENCY),
+    ('avg_pd_handoff_overhead', 'Avg PD Overhead(ms)', Metrics.AVERAGE_PD_HANDOFF_OVERHEAD),
+    ('p99_pd_handoff_overhead', 'P99 PD Overhead(ms)', PercentileMetrics.PD_HANDOFF_OVERHEAD),
     ('output_token_throughput', 'Gen. tok/s', Metrics.OUTPUT_TOKEN_THROUGHPUT),
 ]
 _SUCCESS_COLUMN = ('success_rate', 'Success Rate', 'success_rate')
+# Optional generation metrics a run reports only when measured: summary attribute
+# -> the (avg, p99) column keys it owns.
+_OPTIONAL_SUMMARY_COLUMNS = {
+    'avg_pd_handoff_latency': ('avg_pd_handoff_latency', 'p99_pd_handoff_latency'),
+    'avg_pd_handoff_overhead': ('avg_pd_handoff_overhead', 'p99_pd_handoff_overhead'),
+    'avg_steady_itl': ('avg_steady_itl', 'p99_steady_itl'),
+}
 
 
 def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
@@ -47,8 +61,7 @@ def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
 
 def is_embedding(api_type: str) -> bool:
     """Return True when *api_type* indicates an embedding / rerank model."""
-    lower = (api_type or '').lower()
-    return 'embedding' in lower or 'rerank' in lower or 'embed' in lower
+    return Metrics.is_embedding_or_rerank(api_type)
 
 
 def build_basic_info(
@@ -59,8 +72,14 @@ def build_basic_info(
     """Produce the key/value pairs shown in the Overview › Basic Information card."""
     info: OrderedDict = OrderedDict()
     info['Model'] = args_dict.get('model', args_dict.get('model_id', 'N/A'))
+    alias = args_dict.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        info['Alias'] = alias.strip()
     info['API Type'] = args_dict.get('api', 'N/A')
     info['Dataset'] = args_dict.get('dataset', 'N/A')
+    endpoint = sanitize_endpoint(args_dict.get('url'))
+    if endpoint:
+        info['Endpoint'] = endpoint
 
     total_req = sum(r.summary.total_requests for r in runs)
     succeed = sum(r.summary.succeed_requests for r in runs)
@@ -78,6 +97,26 @@ def build_basic_info(
         info['Total Output Tokens'] = f'{total_output:,.0f}'
 
     return info
+
+
+def build_run_config(args_dict: dict, runs: list | None = None) -> dict[str, str]:
+    fields = (
+        'api',
+        'dataset',
+        'parallel',
+        'number',
+        'rate',
+        'max_tokens',
+        'min_tokens',
+        'max_prompt_length',
+        'min_prompt_length',
+    )
+    configuration = {key: str(args_dict[key]) for key in fields if args_dict.get(key) is not None}
+    if runs and len(runs) > 1:
+        configuration['parallel'] = ', '.join(str(run.parallel) for run in runs)
+        configuration['number'] = ', '.join(str(run.number) for run in runs)
+        configuration['rate'] = ', '.join(str(run.summary.request_rate) for run in runs)
+    return configuration
 
 
 def _summary_specs(is_embedding_flag: bool) -> list:
@@ -114,6 +153,12 @@ def _summary_values(run: Any, is_embedding_flag: bool) -> Dict[str, float]:
                 'p99_ttft': run.get_p99('ttft'),
                 'avg_tpot': summary.avg_tpot,
                 'p99_tpot': run.get_p99('tpot'),
+                'avg_steady_itl': summary.avg_steady_itl,
+                'p99_steady_itl': run.get_p99('steady_itl'),
+                'avg_pd_handoff_latency': summary.avg_pd_handoff_latency,
+                'p99_pd_handoff_latency': run.get_p99('pd_handoff_latency'),
+                'avg_pd_handoff_overhead': summary.avg_pd_handoff_overhead,
+                'p99_pd_handoff_overhead': run.get_p99('pd_handoff_overhead'),
                 'output_token_throughput': summary.output_token_throughput,
             }
         )
@@ -142,6 +187,12 @@ def _summary_sample_counts(run: Any, request_counts: Optional[Dict[str, int]] = 
         'p99_ttft': generation_successful,
         'avg_tpot': generation_successful,
         'p99_tpot': generation_successful,
+        'avg_steady_itl': generation_successful,
+        'p99_steady_itl': generation_successful,
+        'avg_pd_handoff_latency': generation_successful,
+        'p99_pd_handoff_latency': generation_successful,
+        'avg_pd_handoff_overhead': generation_successful,
+        'p99_pd_handoff_overhead': generation_successful,
         'output_token_throughput': successful,
         'success_rate': total,
     }
@@ -154,6 +205,10 @@ def build_summary_table(
 ) -> tuple:
     """Build a structured, unformatted cross-run summary table."""
     specs = _summary_specs(is_embedding_flag)
+    if not is_embedding_flag:
+        for attr, keys in _OPTIONAL_SUMMARY_COLUMNS.items():
+            if not all(getattr(r.summary, attr) is not None for r in runs):
+                specs = [spec for spec in specs if spec[0] not in keys]
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
     columns: List[Dict[str, Any]] = [
@@ -164,13 +219,19 @@ def build_summary_table(
         }
         for key, label, field_key in specs
     ]
-    rows = [
-        {
-            'values': _summary_values(run, is_embedding_flag),
-            'sample_counts': _summary_sample_counts(run, request_counts[index] if request_counts else None),
-        }
-        for index, run in enumerate(runs)
-    ]
+    # Columns are the single source of truth: project each row onto the surviving
+    # keys so row keys match columns and no unmeasured metric leaks a None value.
+    kept_keys = {key for key, _, _ in specs}
+    rows = []
+    for index, run in enumerate(runs):
+        values = _summary_values(run, is_embedding_flag)
+        counts = _summary_sample_counts(run, request_counts[index] if request_counts else None)
+        rows.append(
+            {
+                'values': {key: value for key, value in values.items() if key in kept_keys},
+                'sample_counts': {key: count for key, count in counts.items() if key in kept_keys},
+            }
+        )
     return columns, rows
 
 
@@ -194,6 +255,8 @@ def format_summary_rows(columns: list, rows: list) -> List[List[str]]:
                 formatted_row.append('INF')
             elif key == 'concurrency':
                 formatted_row.append(str(int(value)))
+            elif key == 'request_rate':
+                formatted_row.append(f'{value:g}')
             else:
                 formatted_row.append(_cell(field_keys[key], value, include_unit=key == 'success_rate'))
         formatted_rows.append(formatted_row)
@@ -297,6 +360,26 @@ def build_summary_items(
             ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
             ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
             ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),
+            *(
+                [('Avg Steady ITL (ms)', _cell(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, s.avg_steady_itl))]
+                if s.avg_steady_itl is not None
+                else []
+            ),
+            *(
+                [('Avg PD Handoff Latency (ms)', _cell(Metrics.AVERAGE_PD_HANDOFF_LATENCY, s.avg_pd_handoff_latency))]
+                if s.avg_pd_handoff_latency is not None
+                else []
+            ),
+            *(
+                [
+                    (
+                        'Avg PD Handoff Overhead (ms)',
+                        _cell(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, s.avg_pd_handoff_overhead),
+                    )
+                ]
+                if s.avg_pd_handoff_overhead is not None
+                else []
+            ),
             ('Avg Input Tokens', _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens)),
             ('Avg Output Tokens', _cell(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, s.avg_output_tokens)),
         ]

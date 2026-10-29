@@ -109,10 +109,12 @@ class ArxivRollBenchBaseAdapter(MultiChoiceAdapter):
             task_type = 'p'
             target = str(label).strip().upper()
         else:
-            question = (
-                'Select the option that correctly completes the sequencing '
-                f'or cloze task.\n\n{record.get("shuffled_text", "")}'
-            )
+            # Cloze rows carry a masked paragraph and its candidate sentences instead of a shuffled text.
+            if 'text_with_holes' in record:
+                text = f'{record["text_with_holes"]}\n\n{record.get("text_candidates", "")}'
+            else:
+                text = record.get('shuffled_text', '')
+            question = f'Select the option that correctly completes the sequencing or cloze task.\n\n{text}'
             task_type = 's/c'
             target = _selection_to_letter(label)
 
@@ -141,6 +143,7 @@ class ArxivRollBenchBaseAdapter(MultiChoiceAdapter):
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         paper_url='https://ojs.aaai.org/index.php/AAAI/article/view/41098',
+        evaluation_version='v1.1',
     )
 )
 class ArxivRollBenchAdapter(ArxivRollBenchBaseAdapter):
@@ -161,6 +164,7 @@ class ArxivRollBenchAdapter(ArxivRollBenchBaseAdapter):
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         paper_url='https://ojs.aaai.org/index.php/AAAI/article/view/41098',
+        evaluation_version='v1.1',
     )
 )
 class ArxivRollBenchFullAdapter(ArxivRollBenchBaseAdapter):

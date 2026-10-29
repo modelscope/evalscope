@@ -5,26 +5,25 @@ axes such as ``k``, scope, threshold and category remain structured dimensions a
 not expand the registry. Historical semantic anchors are consulted only while migrating old
 reports. Unknown third-party metrics degrade to diagnostics without changing their values.
 
-Primary selection is intentionally separate and happens once per report through
-``select_primary_identity``. The resolver never reads a data adapter.
+Primary selection is a separate concern and lives in ``evalscope.metrics.semantics.primary``. The
+resolver never reads a data adapter.
 """
 
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric.semantics import (
     DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
     MetricIdentity,
-    MetricKind,
-    MetricSelector,
     MetricSemantics,
 )
 from evalscope.metrics.semantics.catalog import (
     AGGREGATION_SEMANTICS,
     BENCHMARK_METRIC_OVERRIDES,
+    LEGACY_METRIC_MIGRATIONS,
     METRIC_DEFINITIONS,
     METRIC_NAME_TABLE_LOCATION,
 )
@@ -46,7 +45,6 @@ __all__ = [
     'SemanticsResolver',
     'SemanticsSource',
     'attach_perf_semantics',
-    'select_primary_identity',
     'catalog_entry_location',
     'diagnostic_fallback',
     'get_semantics_resolver',
@@ -59,6 +57,12 @@ class SemanticsSource(str, Enum):
 
     BENCHMARK_OVERRIDE = 'benchmark_override'
     """A ``(benchmark, metric)`` collision override in the catalog."""
+
+    LEGACY_MANIFEST = 'legacy_manifest'
+    """The stored v1 spelling is declared in the read-old manifest."""
+
+    AGGREGATION_OVERRIDE = 'aggregation_override'
+    """The ``(metric, aggregation)`` pair changes what the metric measures."""
 
     METRIC_NAME = 'metric_name'
     """The final report metric name is declared in the metric name table."""
@@ -135,47 +139,6 @@ def _undeclared_perf_field_message(field_key: str) -> str:
     )
 
 
-def select_primary_identity(
-    identities: Sequence[MetricIdentity],
-    semantics_by_identity: Mapping[str, MetricSemantics],
-    selector: Optional[MetricSelector],
-) -> Optional[MetricIdentity]:
-    """Select exactly one report-level primary identity.
-
-    An explicit selector may match no emitted identity when the current sample selection cannot
-    compute that metric. Without a selector, implicit primary selection is allowed only when
-    exactly one non-diagnostic identity exists.
-    """
-    if selector is not None:
-        matches = [identity for identity in identities if selector.matches(identity)]
-        if not matches:
-            logger.warning(
-                f'{AUDIT_MESSAGE_PREFIX} primary metric selector {selector.model_dump()} did not match an emitted '
-                'identity; the report has no primary score for this run'
-            )
-            return None
-        if len(matches) != 1:
-            raise ValueError(
-                f'primary metric selector {selector.model_dump()} matched {len(matches)} identities; expected exactly one'
-            )
-        primary = matches[0]
-        if semantics_by_identity[primary.key].kind is MetricKind.DIAGNOSTIC:
-            raise ValueError(f'primary metric selector matched diagnostic identity {primary.key}')
-    else:
-        graded = [
-            identity for identity in identities if semantics_by_identity[identity.key].kind is not MetricKind.DIAGNOSTIC
-        ]
-        if not graded:
-            return None
-        if len(graded) != 1:
-            raise ValueError(
-                f'benchmark emitted {len(graded)} non-diagnostic metric identities; declare BenchmarkMeta.primary_metric'
-            )
-        primary = graded[0]
-
-    return primary
-
-
 class SemanticsResolver:
     """Resolve canonical metric identities into base ``MetricSemantics`` from the shipped tables."""
 
@@ -183,12 +146,19 @@ class SemanticsResolver:
         self,
         benchmark_name: str,
         identity: MetricIdentity,
+        legacy_name: Optional[str] = None,
     ) -> ResolvedSemantics:
         """Resolve one identity without selecting the report-level primary.
+
+        This is the only place the priority order is expressed. Reading a v1 report differs from
+        resolving a fresh result by one extra step, selected by passing the stored spelling, so the
+        two paths cannot assign different semantics to the same identity.
 
         Args:
             benchmark_name: Benchmark (dataset) the metric belongs to.
             identity: Canonical identity emitted by an aggregator.
+            legacy_name: Spelling stored by a v1 report, when migrating one. Its read-old semantics
+                lose to a benchmark override, which exists precisely to reject an ambiguous name.
         Returns:
             The resolution, never ``None`` and never raising. An undeclared name degrades to the
             diagnostic fallback and carries the audit messages naming where to declare it.
@@ -198,18 +168,24 @@ class SemanticsResolver:
         # 1. Benchmark level collision override.
         entry = BENCHMARK_METRIC_OVERRIDES.get((benchmark_name, metric_name))
         if entry is not None:
-            semantics = entry.resolve(metric_name)
-            return ResolvedSemantics(semantics=semantics, source=SemanticsSource.BENCHMARK_OVERRIDE)
+            return ResolvedSemantics(semantics=entry.resolve(metric_name), source=SemanticsSource.BENCHMARK_OVERRIDE)
 
-        # 2. Aggregation-specific override, then the canonical name table.
-        entry = AGGREGATION_SEMANTICS.get((metric_name, identity.aggregation))
-        if entry is None:
-            entry = METRIC_DEFINITIONS.get(metric_name)
+        # 2. Read-old semantics of the spelling this report was written with.
+        entry = LEGACY_METRIC_MIGRATIONS.get(legacy_name) if legacy_name else None
         if entry is not None:
-            semantics = entry.resolve(metric_name)
-            return ResolvedSemantics(semantics=semantics, source=SemanticsSource.METRIC_NAME)
+            return ResolvedSemantics(semantics=entry.resolve(metric_name), source=SemanticsSource.LEGACY_MANIFEST)
 
-        # 3. Diagnostic fallback: the value is shown as stored and the gap is logged.
+        # 3. Aggregation-specific override.
+        entry = AGGREGATION_SEMANTICS.get((metric_name, identity.aggregation))
+        if entry is not None:
+            return ResolvedSemantics(semantics=entry.resolve(metric_name), source=SemanticsSource.AGGREGATION_OVERRIDE)
+
+        # 4. Canonical name table.
+        entry = METRIC_DEFINITIONS.get(metric_name)
+        if entry is not None:
+            return ResolvedSemantics(semantics=entry.resolve(metric_name), source=SemanticsSource.METRIC_NAME)
+
+        # 5. Diagnostic fallback: the value is shown as stored and the gap is logged.
         return ResolvedSemantics(
             semantics=diagnostic_fallback(metric_name),
             source=SemanticsSource.DIAGNOSTIC_FALLBACK,

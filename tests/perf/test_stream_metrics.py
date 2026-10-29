@@ -9,9 +9,11 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from evalscope.perf.utils.benchmark_util import BenchmarkData, MetricsAccumulator, is_stream_body
 from evalscope.perf.utils.db_util import create_result_table, get_percentile_results, insert_benchmark_data
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 
 def _make(**kwargs):
@@ -58,6 +60,43 @@ class TestAccumulatorBucketing(unittest.TestCase):
     def setUp(self):
         self.plugin = _DummyPlugin(10, 50)
 
+    def test_interval_averages_weight_by_interval_count(self) -> None:
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        intervals = []
+        steady_intervals = []
+        for values in ([], [0.30, 0.10, 0.20], [0.60], [0.50, 0.40]):
+            acc.update(_make(itl=values), self.plugin)
+            intervals.extend(values)
+            steady_intervals.extend(values[1:])
+            result = acc.to_result()
+            self.assertAlmostEqual(result.avg_inter_token_latency, sum(intervals) / len(intervals) if intervals else 0.0)
+            self.assertAlmostEqual(
+                result.avg_steady_inter_token_latency,
+                sum(steady_intervals) / len(steady_intervals) if steady_intervals else -1,
+            )
+
+        expected = acc.to_result()
+        warmup = _make(itl=[100.0, 100.0])
+        warmup.is_warmup = True
+        acc.update(warmup, self.plugin)
+        acc.update(_make(itl=[100.0, 100.0], success=False), self.plugin)
+        result = acc.to_result()
+        self.assertEqual(result.avg_inter_token_latency, expected.avg_inter_token_latency)
+        self.assertEqual(result.avg_steady_inter_token_latency, expected.avg_steady_inter_token_latency)
+
+    def test_snapshots_do_not_resum_latency_history(self) -> None:
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        for _ in range(10):
+            acc.update(_make(itl=[0.01] * 1000), self.plugin)
+        expected = acc.to_result()
+        with patch(
+            'evalscope.perf.utils.benchmark_util.sum',
+            side_effect=AssertionError('Metric snapshots must not sum past intervals'),
+            create=True,
+        ):
+            self.assertEqual(acc.to_result(), expected)
+            self.assertEqual(acc.to_result(), expected)
+
     def test_stream_only_metrics_excludes_nonstream(self):
         acc = MetricsAccumulator()
         s1 = _make(fcl=0.3, latency=1.0, itl=[0.02] * 49, is_stream=True)
@@ -76,6 +115,20 @@ class TestAccumulatorBucketing(unittest.TestCase):
 
         # Generic latency averaged over all success (n=4)
         self.assertAlmostEqual(result.avg_latency, (1.0 + 1.0 + 1.5 + 1.6) / 4)
+
+    def test_one_token_replies_do_not_lower_avg_tpot(self):
+        # A one-token reply has no decode phase, so its TPOT stays 0 and must not
+        # count toward the streamed TPOT average.
+        acc = MetricsAccumulator()
+        for d in (
+            _make(fcl=0.3, latency=1.0, is_stream=True),
+            _make(fcl=0.3, latency=1.0, is_stream=True),
+            _make(fcl=0.3, latency=0.3, completion_tokens=1, itl=[], is_stream=True),
+        ):
+            acc.update(d, self.plugin)
+        result = acc.to_result()
+
+        self.assertAlmostEqual(result.avg_time_per_output_token, (1.0 - 0.3) / 49)
 
     def test_counts_include_failures(self):
         acc = MetricsAccumulator()
@@ -119,6 +172,124 @@ class TestAccumulatorBucketing(unittest.TestCase):
         # finalize derives TPOT = (latency - fcl) / (completion_tokens - 1)
         self.assertAlmostEqual(result.avg_time_per_output_token, (2.0 - 1.5) / 49)
         self.assertEqual(result.avg_inter_token_latency, 0.0)
+
+
+class TestPdMetrics(unittest.TestCase):
+
+    def setUp(self):
+        self.plugin = _DummyPlugin(10, 4)
+
+    def _make_db(self, items):
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        for item in items:
+            insert_benchmark_data(cur, item)
+        con.commit()
+        con.close()
+        return db
+
+    def test_multi_interval_stream_summary_and_percentiles(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        first = _make(itl=[0.30, 0.10, 0.20], completion_tokens=4)
+        second = _make(itl=[0.50, 0.20, 0.40], completion_tokens=4)
+        for data in (first, second):
+            acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertAlmostEqual(result.avg_steady_inter_token_latency, 0.225)
+        self.assertAlmostEqual(result.avg_pd_handoff_latency, 0.4)
+        self.assertAlmostEqual(result.avg_pd_handoff_overhead, 0.175)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertEqual(message[Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY], 225.0)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_LATENCY], 400.0)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_OVERHEAD], 175.0)
+
+        db = self._make_db((first, second))
+        try:
+            rows = get_percentile_results(db, api_type='openai', enable_pd_metrics=True).to_list()
+            p50 = next(row for row in rows if row['Percentiles'] == '50%')
+            p99 = next(row for row in rows if row['Percentiles'] == '99%')
+            self.assertEqual(p50[PercentileMetrics.STEADY_ITL], 200.0)
+            self.assertEqual(p99[PercentileMetrics.STEADY_ITL], 400.0)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_LATENCY], 300.0)
+            self.assertEqual(p99[PercentileMetrics.PD_HANDOFF_LATENCY], 500.0)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_OVERHEAD], 150.0)
+            self.assertEqual(p99[PercentileMetrics.PD_HANDOFF_OVERHEAD], 200.0)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
+
+    def test_single_interval_stream_only_has_handoff_latency(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        data = _make(itl=[0.30], completion_tokens=2)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertEqual(result.avg_steady_inter_token_latency, -1)
+        self.assertAlmostEqual(result.avg_pd_handoff_latency, 0.30)
+        self.assertEqual(result.avg_pd_handoff_overhead, -1)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_LATENCY], 300.0)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+
+        db = self._make_db((data,))
+        try:
+            p50 = next(
+                row for row in get_percentile_results(db, api_type='openai', enable_pd_metrics=True).to_list()
+                if row['Percentiles'] == '50%'
+            )
+            self.assertNotIn(PercentileMetrics.STEADY_ITL, p50)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_LATENCY], 300.0)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_OVERHEAD, p50)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
+
+    def test_non_stream_or_empty_interval_requests_have_no_pd_metrics(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        data = _make(itl=[], is_stream=False, completion_tokens=4)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertEqual(result.avg_steady_inter_token_latency, -1)
+        self.assertEqual(result.avg_pd_handoff_latency, -1)
+        self.assertEqual(result.avg_pd_handoff_overhead, -1)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+
+    def test_disabled_mode_preserves_summary_and_percentile_contract(self):
+        acc = MetricsAccumulator()
+        data = _make(itl=[0.30, 0.10, 0.20], completion_tokens=4)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        message = result.create_message(api_type='openai')
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+        self.assertIsNone(data.pd_handoff_latency)
+        self.assertIsNone(data.pd_handoff_overhead)
+
+        db = self._make_db((data,))
+        try:
+            p50 = next(
+                row for row in get_percentile_results(db, api_type='openai').to_list()
+                if row['Percentiles'] == '50%'
+            )
+            self.assertNotIn(PercentileMetrics.STEADY_ITL, p50)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_LATENCY, p50)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_OVERHEAD, p50)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
 
 
 class TestPercentileBucketing(unittest.TestCase):
@@ -173,6 +344,48 @@ class TestPercentileBucketing(unittest.TestCase):
         # min must not exceed the corresponding max for the same metric.
         max_row = next(r for r in rows if r['Percentiles'] == 'max')
         self.assertLessEqual(min_row['TPOT (ms)'], max_row['TPOT (ms)'])
+
+    def test_decode_throughput_percentiles_skip_replies_without_decode(self):
+        # A one-token reply has TPOT 0 and no decode speed; it used to enter the
+        # Decode (tok/s) column as NaN, which sort() can't order.
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        tpots = [0.02, 0.0, 0.01, 0.04, 0.03, 0.025]
+        for tpot in tpots:
+            bd = _make(tpot=tpot, completion_tokens=1 if tpot == 0.0 else 50, is_stream=True)
+            insert_benchmark_data(cur, bd)
+        con.commit()
+        con.close()
+        try:
+            rows = get_percentile_results(db, api_type='openai').to_list()
+            decode = {r['Percentiles']: r[PercentileMetrics.DECODE_THROUGHPUT] for r in rows}
+            # Decode speeds of the five replies that have one: 25, 33.33, 40, 50 and 100 tok/s.
+            self.assertEqual(decode['min'], 25.0)
+            self.assertEqual(decode['50%'], 40.0)
+            self.assertEqual(decode['max'], 100.0)
+        finally:
+            os.unlink(db)
+
+    def test_tpot_percentiles_skip_replies_without_decode(self):
+        # Same rows as Decode (tok/s): a one-token reply has no TPOT, not a TPOT of 0.
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        for tpot in [0.02, 0.0, 0.01, 0.04, 0.03, 0.025]:
+            bd = _make(tpot=tpot, completion_tokens=1 if tpot == 0.0 else 50, is_stream=True)
+            insert_benchmark_data(cur, bd)
+        con.commit()
+        con.close()
+        try:
+            rows = get_percentile_results(db, api_type='openai').to_list()
+            tpot = {r['Percentiles']: r['TPOT (ms)'] for r in rows}
+            self.assertEqual(tpot['min'], 10.0)
+            self.assertEqual(tpot['max'], 40.0)
+        finally:
+            os.unlink(db)
 
     def test_pure_non_stream_percentiles_fall_back_to_all_rows(self):
         # Pure non-stream run: no stream rows, so streaming metrics fall back to

@@ -14,7 +14,7 @@ import LabelledField from '@/components/ui/LabelledField'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import PerfRunsTab from '@/components/perf/PerfRunsTab'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, perfRunMode } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { formatMetric } from '@/domain/metric'
@@ -35,7 +35,8 @@ function omitKeys(info: Record<string, string>, keys: string[]): Record<string, 
 type SummaryColumn = PerfDetailResponse['summary_columns'][number]
 type SummaryRow = PerfDetailResponse['summary_rows'][number]
 
-function formatSummaryCell(column: SummaryColumn, cell: number, t: (key: string) => string): string {
+function formatSummaryCell(column: SummaryColumn, cell: number | null, t: (key: string) => string): string {
+  if (cell === null) return '—'
   if (column.key === 'request_rate' && cell === -1) {
     return t('perf.archive.closedLoop')
   }
@@ -111,16 +112,21 @@ export default function PerfReportDetailPage() {
   // metadata → known-host → Custom fallback priority.
   const identity = useMemo(() => resolveProvider(data ?? {}), [data])
 
+  // The sanitized endpoint host[:port] distinguishes same-model runs.
+  const endpoint = data?.basic_info?.['Endpoint']?.trim() || data?.basic_info?.['API Host']?.trim() || null
+
   // Front-load the per-run (DB) views for single-run reports, while still letting
   // the user switch tabs; the pick is scoped to the report it was made on.
   const tabScope = `${rootPath}\0${path}\0${data?.num_runs ?? ''}`
   const [pickedTab, setActiveTab] = useScopedState<TabKey | null>(tabScope, null)
   const activeTab: TabKey = pickedTab ?? (singleRun && data ? 'runs' : 'overview')
 
-  // Charts available for this run mode (embedding runs have no TTFT/TPOT).
+  const runMode = perfRunMode(data)
+  const inputOnly = runMode !== 'generation'
+  // Input-only runs have no token-generation latency measurements.
   const latencyCharts = useMemo(
-    () => (data?.is_embedding ? (['latency'] as const) : LATENCY_CHARTS),
-    [data],
+    () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
+    [inputOnly],
   )
 
   const htmlUrl = useMemo(
@@ -184,13 +190,20 @@ export default function PerfReportDetailPage() {
       <KpiStrip
         layout="inline"
         items={Object.entries(
-          omitKeys(data.basic_info, ['Provider', 'Protocol', 'API URL', 'API Host']),
+          omitKeys(data.basic_info, ['Provider', 'Protocol', 'API URL', 'API Host', 'Endpoint', 'URL', 'Alias', 'Model', 'API Type', 'Dataset'])
         ).map(([label, value]) => ({ label, value }))}
       />
       <Card title={singleRun ? t('perf.archive.runSummary') : t('perf.archive.summaryTable')}>
         <SummaryTable columns={data.summary_columns} rows={data.summary_rows} t={t} />
       </Card>
-      {Object.keys(data.best_config).length > 0 && (
+      {data.configuration && Object.keys(data.configuration).length > 0 && (
+        <Card title={t('perf.archive.runConfig')}>
+          <dl className="space-y-2 text-sm">{Object.entries(data.configuration).map(([key, value]) => (
+            <div key={key} className="flex flex-wrap justify-between gap-2"><dt>{key}</dt><dd className="break-all">{value}</dd></div>
+          ))}</dl>
+        </Card>
+      )}
+      {Object.keys(data.best_config).length > 0 && (!singleRun || !data.configuration) && (
         <Card title={singleRun ? t('perf.archive.runConfig') : t('perf.archive.bestConfig')}>
           <div className="flex flex-col gap-2">
             {Object.entries(data.best_config).map(([k, v]) => (
@@ -239,7 +252,7 @@ export default function PerfReportDetailPage() {
       <Breadcrumb
         items={[
           { label: t('nav.performance'), href: `/performance?root_path=${encodeURIComponent(rootPath)}` },
-          { label: data.model },
+          { label: data.alias || data.model },
         ]}
       />
 
@@ -252,11 +265,13 @@ export default function PerfReportDetailPage() {
         <div className="flex flex-col gap-1.5 min-w-0">
           {/* Model alias is the primary identity; fall back to dataset, never
               the raw path/timestamp, when the alias is absent. */}
-          <h1 className="type-title-md text-[var(--text)] break-words">{data.model || data.dataset || '—'}</h1>
+          <h1 className="type-title-md text-[var(--text)] break-words">{data.alias || data.model || data.dataset || '—'}</h1>
           {/* Provider and Protocol as two independent, individually-labelled fields. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <LabelledField label={t('eval.modelName')} value={data.model} />
             <LabelledField label={t('perf.archive.provider')} value={identity.provider} />
             <LabelledField label={t('perf.archive.protocol')} value={identity.protocol} />
+            {endpoint && <LabelledField label={t('perf.archive.endpoint')} value={endpoint} />}
           </div>
           <div className="type-caption-mono text-[var(--text-muted)]">
             {data.dataset} · {data.num_runs}{' '}
@@ -282,7 +297,7 @@ export default function PerfReportDetailPage() {
         panels={{
           'perf-overview-panel': overviewPanel,
           ...(!singleRun ? { 'perf-charts-panel': chartsPanel } : {}),
-          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} isEmbedding={data.is_embedding} />,
+          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} mode={runMode} />,
         }}
       />
     </div>

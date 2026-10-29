@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import datetime
 from contextlib import AsyncExitStack
-from typing import Any, Dict, List, Optional
+from types import TracebackType
+from typing import Any, Dict, List, Optional, Type
 
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -100,21 +101,26 @@ class MCPServer:
             await self._session.initialize()
             logger.info(f'MCPServer[{self.name}]: initialised')
             return self
-        except Exception:
-            # Make sure we don't leak any process / socket on partial init failure.
-            await self._stack.aclose()
-            self._stack = None
-            self._session = None
+        except BaseException as exc:
+            # MCP transport failures cancel the initializing task. Exit their
+            # task groups in this same task to surface the underlying error.
+            await self.__aexit__(type(exc), exc, exc.__traceback__)
             raise
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> bool:
         if self._stack is not None:
             try:
-                await self._stack.aclose()
+                return await self._stack.__aexit__(exc_type, exc_val, exc_tb)
             finally:
                 self._stack = None
                 self._session = None
                 logger.debug(f'MCPServer[{self.name}]: closed')
+        return False
 
     async def list_tools(self) -> List[Any]:
         """Return the raw ``mcp.types.Tool`` list from the server."""

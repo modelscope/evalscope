@@ -13,17 +13,40 @@ import * as reportsApi from '@/api/reports'
 import { apiValidated } from '@/api/client'
 
 /**
- * Report-scoped application state, split into three independent contexts.
- *
- * The three concerns below change at unrelated times, so they are published
- * separately: a compare-selection toggle on the reports list must not re-render
- * the dashboard, and a report landing in the cache must not re-render the
- * scan-path bar. `ReportsProvider` composes all three so callers still mount a
- * single provider.
+ * Application and report state are split into contexts with unrelated update
+ * times. `ReportsProvider` composes them so callers still mount a single
+ * provider while consumers subscribe only to the state they need.
  */
 
 const INITIAL_ROOT = './outputs' // fallback; will be overridden by /api/v1/config
 const REPORT_CACHE_LIMIT = 32 // bound the in-memory cache so long sessions don't grow unbounded
+
+// ------------------------------------------------------------------ //
+// Application configuration: backend metadata shared across the shell   //
+// ------------------------------------------------------------------ //
+
+interface AppConfigCtx {
+  config: ConfigResponse | null
+}
+
+const AppConfigContext = createContext<AppConfigCtx>({ config: null })
+
+function AppConfigProvider({ children }: { children: ReactNode }) {
+  const [config, setConfig] = useState<ConfigResponse | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    apiValidated<ConfigResponse>('/api/v1/config')
+      .then((response) => {
+        if (!cancelled) setConfig(response)
+      })
+      .catch(() => {/* retain the empty config when the service is unavailable */})
+    return () => { cancelled = true }
+  }, [])
+
+  const value = useMemo(() => ({ config }), [config])
+  return <AppConfigContext.Provider value={value}>{children}</AppConfigContext.Provider>
+}
 
 // ------------------------------------------------------------------ //
 // Scan scope: which directory is being read, and when to re-read it   //
@@ -61,7 +84,7 @@ interface ReportCacheCtx {
   reportCache: Record<string, LoadReportResponse>
   /** True while at least one load is in flight. */
   loading: boolean
-  loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
+  loadMultiReports: (names: string[], rootPath: string, scanToken: number, signal?: AbortSignal) => Promise<ReportData[]>
 }
 
 const ReportCacheContext = createContext<ReportCacheCtx>(null!)
@@ -96,6 +119,7 @@ function withCacheLimit(
 }
 
 function ScanProvider({ children }: { children: ReactNode }) {
+  const { config } = useAppConfig()
   const [rootPath, setRootPathState] = useState(INITIAL_ROOT)
   const [scanToken, setScanToken] = useState(0)
 
@@ -104,20 +128,12 @@ function ScanProvider({ children }: { children: ReactNode }) {
   const rootRef = useRef(rootPath)
   useEffect(() => { rootRef.current = rootPath }, [rootPath])
 
-  // Fetch the server-side default outputs_root from /api/v1/config on mount.
-  // Only apply it when the user has not already changed the root away from the
-  // initial default (checked at resolve time via the ref).
+  // Apply the server-side default unless the user has already changed the root.
   useEffect(() => {
-    let cancelled = false
-    apiValidated<ConfigResponse>('/api/v1/config')
-      .then((cfg) => {
-        if (!cancelled && cfg.outputs_root && rootRef.current === INITIAL_ROOT) {
-          setRootPathState(cfg.outputs_root)
-        }
-      })
-      .catch(() => {/* ignore; keep default */})
-    return () => { cancelled = true }
-  }, [])
+    if (config?.outputs_root && rootRef.current === INITIAL_ROOT) {
+      setRootPathState(config.outputs_root)
+    }
+  }, [config?.outputs_root])
 
   const setRootPath = useCallback((path: string) => setRootPathState(path), [])
 
@@ -162,25 +178,25 @@ function ReportCacheProvider({ children }: { children: ReactNode }) {
   // Read the cache through a ref so `loadMultiReports` keeps a stable identity:
   // callers put it in effect dependency arrays, and a new identity per cache
   // write would re-fire those effects in a loop.
-  const cacheRef = useRef(reportCache)
-  useEffect(() => { cacheRef.current = reportCache }, [reportCache])
-  const scopeRef = useRef({ scope, rootPath })
-  useEffect(() => { scopeRef.current = { scope, rootPath } }, [scope, rootPath])
+  const cacheRef = useRef(cached)
+  useEffect(() => { cacheRef.current = cached }, [cached])
+  const scopeRef = useRef(scope)
+  useEffect(() => { scopeRef.current = scope }, [scope])
 
-  const loadMultiReports = useCallback(async (names: string[], signal?: AbortSignal) => {
+  const loadMultiReports = useCallback(async (names: string[], rootPath: string, scanToken: number, signal?: AbortSignal) => {
     setInFlight((n) => n + 1)
     try {
       // Load via a cache-aware path so repeat loads in compare view don't refetch.
       // Per-report tagging preserves source mapping when reports share model_name.
-      const { scope: readScope, rootPath: root } = scopeRef.current
+      const readScope = `${rootPath}\0${scanToken}`
       const results = await Promise.all(
         names.map(async (name) => {
-          const cached = cacheRef.current[name]
-          if (cached) return cached
-          const data = await reportsApi.loadReport(root, name, signal)
+          const cachedReport = cacheRef.current.scope === readScope ? cacheRef.current.entries[name] : undefined
+          if (cachedReport) return cachedReport
+          const data = await reportsApi.loadReport(rootPath, name, signal)
           setCached((prev) => {
             // A read that started before a rescan must not repopulate the new scope.
-            if (scopeRef.current.scope !== readScope) return prev
+            if (scopeRef.current !== readScope) return prev
             const base = prev.scope === readScope ? prev.entries : {}
             return { scope: readScope, entries: withCacheLimit({ ...base, [name]: data }, name) }
           })
@@ -205,15 +221,22 @@ function ReportCacheProvider({ children }: { children: ReactNode }) {
 
 export function ReportsProvider({ children }: { children: ReactNode }) {
   return (
-    <ScanProvider>
-      <CompareSelectionProvider>
-        <ReportCacheProvider>{children}</ReportCacheProvider>
-      </CompareSelectionProvider>
-    </ScanProvider>
+    <AppConfigProvider>
+      <ScanProvider>
+        <CompareSelectionProvider>
+          <ReportCacheProvider>{children}</ReportCacheProvider>
+        </CompareSelectionProvider>
+      </ScanProvider>
+    </AppConfigProvider>
   )
 }
 
 /* eslint-disable react-refresh/only-export-components */
+
+/** Backend configuration shared by the application shell and scan controls. */
+export function useAppConfig(): AppConfigCtx {
+  return useContext(AppConfigContext)
+}
 
 /** Which output directory is being read, and the token that fans out a rescan. */
 export function useScan(): ScanCtx {

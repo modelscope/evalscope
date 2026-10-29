@@ -61,6 +61,7 @@ EvalScope 自动给模型注入 `python_exec` 工具定义，在 Docker 容器�
 | `environment_extra` | Agent 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `max_steps` | 单样本最大轮数 | 数学/QA `5-10`，代码修复 `100+` |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在 agent loop 开始前让 skills 可用 |
+| `validate_tool_arguments` | 拒绝参数不符合下发 JSON schema 的工具调用；模型会收到 `parsing` 类型的工具错误并可重试 | `False`（默认）；需要衡量模型能否产出合规参数时开启 |
 | `kwargs` | 策略参数 | 最常用 `{'system_prompt': '...'}` 引导模型行为 |
 
 可选的 `strategy` 值：
@@ -143,6 +144,27 @@ run_task(task_config)
 ```
 
 配置好后，agent loop 里模型会同时看到内置工具和所有 MCP 服务器声明的工具，按名称选用。MCP 工具调用如果失败，错误信息会返回给模型让它重试，不会中断整个评测。
+
+### 无需 API key 的网页搜索
+
+`evalscope[mcp]` 已自带 `mcp-server-fetch`，开箱即可做无需 key 的 HTTP 抓取。如果还想加上网页搜索，又不想先去注册服务商账号，
+可以让 `MCPServerConfigHTTP` 指向一个托管的搜索 MCP 服务器。例如
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) 以匿名方式提供 `web_search` 和 `web_fetch`，
+匿名访问有速率限制：
+
+```python
+agent_config=NativeAgentConfig(
+    mcp_servers=[
+        MCPServerConfigHTTP(
+            name='parallel_search',
+            url='https://search.parallel.ai/mcp',
+            tools=['web_search', 'web_fetch'],  # 匿名访问，无需 API key
+        ),
+    ],
+)
+```
+
+任何 Streamable HTTP 的搜索 MCP 服务器都可以这样接入：换掉 `url` 和 `tools` 即可，服务器需要鉴权时再补上 `headers`。
 
 ### 接入方式
 

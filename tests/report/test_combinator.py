@@ -4,7 +4,7 @@ from typing import List, Optional
 from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.metrics.semantics import get_semantics_resolver
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.legacy_identity import migrate_legacy_identity
 from evalscope.report import gen_table, get_display_data_frame, get_report_list
 from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Category, Metric, Report, Subset

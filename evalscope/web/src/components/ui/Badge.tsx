@@ -1,12 +1,11 @@
-import type { ReactNode } from 'react'
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger'
 
-interface BadgeProps {
+interface BadgeProps extends ComponentPropsWithoutRef<'span'> {
   children: ReactNode
   variant?: BadgeVariant
-  className?: string
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -16,7 +15,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   danger: 'bg-[var(--danger-bg)] text-[var(--danger)]',
 }
 
-export default function Badge({ children, variant = 'default', className }: BadgeProps) {
+export default function Badge({ children, variant = 'default', className, ...rest }: BadgeProps) {
   return (
     <span
       className={cn(
@@ -24,6 +23,7 @@ export default function Badge({ children, variant = 'default', className }: Badg
         variantStyles[variant],
         className,
       )}
+      {...rest}
     >
       {children}
     </span>
