@@ -279,3 +279,33 @@ def test_repeats_group_the_samples_of_a_multi_sample_record_by_question() -> Non
     for sample in dataset:
         groups.setdefault(sample.group_id, []).append(sample.metadata['question'])
     assert groups == {0: ['a', 'a'], 1: ['b', 'b']}
+
+
+@pytest.mark.parametrize('seed', [0, 42])
+@pytest.mark.parametrize('limit', [None, 3, 0.5])
+def test_dict_loader_seeded_shuffle_is_repeatable(seed: int, limit: Optional[float | int]) -> None:
+    records = [{'input': f'question-{index}'} for index in range(12)]
+    original_inputs = [record['input'] for record in records]
+    loader = DictDataLoader(dict_list=records, shuffle=True, seed=seed, limit=limit)
+
+    first = [sample.input for sample in loader.load()]
+    second = [sample.input for sample in loader.load()]
+    shared_input = [
+        sample.input
+        for sample in DictDataLoader(dict_list=records, shuffle=True, seed=seed, limit=limit).load()
+    ]
+
+    assert first != original_inputs[:len(first)]
+    assert second == first
+    assert shared_input == first
+
+
+@pytest.mark.parametrize('seed', [None, 0])
+def test_dict_loader_shuffle_preserves_input_records(seed: Optional[int]) -> None:
+    records = [{'input': f'question-{index}'} for index in range(12)]
+    original_records = list(records)
+
+    dataset = DictDataLoader(dict_list=records, shuffle=True, seed=seed, limit=3).load()
+
+    assert len(dataset) == 3
+    assert records == original_records

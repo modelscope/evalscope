@@ -455,7 +455,7 @@ class DictDataLoader(DataLoader):
 
     def load(self) -> Dataset:
         data_to_sample = record_to_sample_fn(self.sample_fields)
-        dataset = self.dict_list
+        dataset = list(self.dict_list)
 
         # shuffle if requested
         if self.shuffle:
