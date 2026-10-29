@@ -27,8 +27,10 @@ import tempfile
 import textwrap
 import threading
 import types
+from enum import Enum
 from pathlib import Path
 from typing import (
+    Annotated,
     Any,
     Callable,
     Dict,
@@ -1349,6 +1351,65 @@ def _persisted(suite: Any, environment: Any) -> Any:
     return restore_environment(suite.environment_type, data)
 
 
+class _Permission(str, Enum):
+    READ = 'r'
+    WRITE = 'rw'
+
+
+class _Contact(BaseModel):
+    email: str
+    permission: _Permission
+
+
+class _Record(BaseModel):
+    """Annotation kinds beyond the pinned upstream environments; ``EmailStr`` is covered by ``TestGroundTruth``."""
+
+    owner: Optional[_Contact]
+    reviewer: Optional[_Contact]
+    attachments: List[Union[str, _Contact]]
+    pair: Tuple[str, datetime.date]
+    tags: FrozenSet[str]
+    counts: Tuple[int, ...]
+    shared_with: Dict[str, Annotated[_Permission, Field(description='permission')]]
+    extra: Any
+
+
+class TestRestoreEnvironment:
+    def test_annotations_drive_an_exact_restoration(self) -> None:
+        contact = _Contact.model_construct(email='John@EXAMPLE.com', permission=_Permission.WRITE)
+        live = _Record.model_construct(
+            owner=contact,
+            reviewer=None,
+            attachments=['john', contact],
+            pair=('john', datetime.date(2024, 5, 15)),
+            tags=frozenset({'a', 'b'}),
+            counts=(1, 2),
+            shared_with={'John <j@x.com>': _Permission.READ},
+            extra={'free': [1, 'x']},
+        )
+        restored = restore_environment(_Record, json.loads(json.dumps(live.model_dump(mode='json', round_trip=True))))
+        assert restored == live
+        assert isinstance(restored.owner, _Contact) and restored.owner.email == 'John@EXAMPLE.com'
+        assert isinstance(restored.attachments[1], _Contact) and restored.attachments[0] == 'john'
+        assert type(restored.pair[1]) is datetime.date and type(restored.tags) is frozenset
+        assert type(restored.shared_with['John <j@x.com>']) is _Permission
+
+    def test_values_of_the_wrong_shape_are_rejected(self) -> None:
+        data = _Record.model_construct(
+            owner=None,
+            reviewer=None,
+            attachments=[],
+            pair=('a', datetime.date(2024, 5, 15)),
+            tags=frozenset(),
+            counts=(),
+            shared_with={},
+            extra=None,
+        ).model_dump(mode='json', round_trip=True)
+        for field, value in (('owner', 'x'), ('attachments', {}), ('pair', ['a']), ('shared_with', {'a': 'x'})):
+            with pytest.raises(ValueError):
+                restore_environment(_Record, {**data, field: value})
+
+
 @requires_upstream
 class TestGroundTruth:
     """Every task's ground truth, run through the binding, passes its own upstream check (as ``TaskSuite.check``).
@@ -1403,6 +1464,50 @@ class TestGroundTruth:
         data = environment.model_dump(mode='json', round_trip=True)
         assert suite.environment_type.model_validate(data) != environment
         assert _persisted(suite, environment) == environment
+
+    # ``share_file`` writes its ``email`` argument into an ``EmailStr`` key without validation; validating it on
+    # restore would lowercase the domain, strip the display name or reject the value.
+    @pytest.mark.parametrize(
+        'email, utility',
+        [
+            ('john.doe@gmail.com', True),
+            ('john.doe@GMAIL.com', False),
+            ('John <john.doe@gmail.com>', False),
+            ('john', False),
+        ],
+    )
+    def test_unvalidated_shared_email_is_restored_exactly(
+        self, upstream: UpstreamContext, email: str, utility: bool
+    ) -> None:
+        suite = upstream.suites['workspace']
+        task = suite.user_tasks['user_task_32']
+        meta = _meta('workspace', 'user_task_32')
+        pre_environment, environment = create_environment(upstream, meta), create_environment(upstream, meta)
+        binding = AgentDojoToolBinding(suite, environment)
+        for call in task.ground_truth(environment):
+            args = {**call.args, 'email': email} if call.function == 'share_file' else dict(call.args)
+            binding.execute(call.function, args, call.id)
+        restored = _persisted(suite, environment)
+        assert restored == environment
+        assert any(list(file.shared_with) == [email] for file in restored.cloud_drive.files.values())
+        output, trace = task.GROUND_TRUTH_OUTPUT, binding.trace
+        assert check_results(upstream, meta, output, pre_environment, restored, trace) == (utility, None)
+        assert check_results(upstream, meta, output, pre_environment, environment, trace) == (utility, None)
+
+    def test_unvalidated_participants_are_restored_exactly(self, upstream: UpstreamContext) -> None:
+        suite = upstream.suites['workspace']
+        meta = _meta('workspace', 'user_task_8')
+        pre_environment, environment = create_environment(upstream, meta), create_environment(upstream, meta)
+        binding = AgentDojoToolBinding(suite, environment)
+        participants = ['john', 'John@EXAMPLE.com']
+        binding.execute('add_calendar_event_participants', {'event_id': '24', 'participants': participants}, 'c0')
+        restored = _persisted(suite, environment)
+        assert restored == environment
+        assert restored.calendar.events['24'].participants[-2:] == participants
+        results = [
+            check_results(upstream, meta, '', pre_environment, post, binding.trace) for post in (environment, restored)
+        ]
+        assert results == [(False, None), (False, None)]
 
     def test_invalid_environment_data_is_rejected(self, upstream: UpstreamContext) -> None:
         suite = upstream.suites[SUITE]

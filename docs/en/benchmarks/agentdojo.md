@@ -45,9 +45,11 @@ often the injection succeeds.
   any other supported attack.
 - Scoring uses the deterministic upstream utility and security checks; no LLM judge is involved, and an explicit
   `judge.strategy` of `llm` or `llm_recall` is ignored with a warning. Each run persists the tool call trace and the
-  final task environment of every sample (100-160 KB per `workspace` sample, at most about 30 KB for the other
-  suites).
-  Scoring restores that environment and rebuilds the pre-run environment from the sample metadata, so `rerun_review`
+  final task environment of every sample in both the predictions and the reviews files: 100-160 KB per `workspace`
+  sample in each file (about 60-90 MB per file for the 560 `workspace` attack samples) and at most about 30 KB per
+  sample for the other suites.
+  Scoring restores that environment exactly, without re-validating its fields (upstream tools store unvalidated
+  email addresses), and rebuilds the pre-run environment from the sample metadata, so `rerun_review`
   and a `use_cache` resume reproduce the same scores in any process, without calling the model or re-executing
   tools.
 - Differences from the upstream runner: a context-length overflow is scored as a failed user task and a successful

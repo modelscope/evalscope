@@ -11,11 +11,14 @@ Scoring calls ``TaskSuite._check_task_result`` with the same inputs as upstream 
 upstream package is imported inside functions only.
 """
 
+import collections.abc
 import functools
+import types
+import typing
 from enum import Enum
-from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Type
+from typing import Annotated, Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Type, Union
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, EmailStr, TypeAdapter, ValidationError
 
 from evalscope.api.agent.constants import LoopMessages
 from evalscope.api.agent.trace import EventType
@@ -109,13 +112,68 @@ def _type_adapter(annotation: Any) -> TypeAdapter:
     return TypeAdapter(annotation)
 
 
+def _is_subclass(annotation: Any, base: type) -> bool:
+    # Python 3.10 reports parametrized generics such as ``list[int]`` as types.
+    return isinstance(annotation, type) and typing.get_origin(annotation) is None and issubclass(annotation, base)
+
+
+def _is_model(annotation: Any) -> bool:
+    return _is_subclass(annotation, BaseModel)
+
+
+def _is_string(annotation: Any) -> bool:
+    return annotation is EmailStr or (_is_subclass(annotation, str) and not _is_subclass(annotation, Enum))
+
+
+def _restore(annotation: Any, value: Any) -> Any:
+    """Rebuild ``value`` from its JSON form as ``annotation`` without validating string values."""
+    origin, args = typing.get_origin(annotation), typing.get_args(annotation)
+    if annotation is Any:
+        return value
+    if origin is Annotated:
+        return _restore(args[0], value)
+    if _is_model(annotation):
+        return restore_environment(annotation, value)
+    if origin in (Union, types.UnionType):
+        if value is None and type(None) in args:
+            return None
+        # A stable sort tries the model members first for an object and last for anything else.
+        prefer_models = isinstance(value, Mapping)
+        for member in sorted(args, key=lambda arg: _is_model(arg) != prefer_models):
+            try:
+                return _restore(member, value)
+            except ValueError:
+                continue
+        raise ValueError(f'{value!r} matches no member of {annotation}.')
+    if origin in (list, tuple, set, frozenset):
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(f'{annotation} expects an array, got {type(value).__name__}.')
+        if origin is tuple and args and args[-1] is not Ellipsis:
+            if len(args) != len(value):
+                raise ValueError(f'{annotation} expects {len(args)} items, got {len(value)}.')
+            return tuple(_restore(arg, item) for arg, item in zip(args, value))
+        item_annotation = args[0] if args else Any
+        return origin(_restore(item_annotation, item) for item in value)
+    if origin in (dict, collections.abc.Mapping):
+        if not isinstance(value, Mapping):
+            raise ValueError(f'{annotation} expects an object, got {type(value).__name__}.')
+        key_annotation, item_annotation = args or (Any, Any)
+        return {_restore(key_annotation, key): _restore(item_annotation, item) for key, item in value.items()}
+    if _is_string(annotation) and isinstance(value, str):
+        return value
+    # Only JSON-lossy leaves (datetime, date, enums) and other scalars are converted.
+    return _type_adapter(annotation).validate_python(value)
+
+
 def restore_environment(environment_type: Type[BaseModel], data: Any) -> BaseModel:
-    """Rebuild a task environment from its ``model_dump(mode='json', round_trip=True)`` output.
+    """Rebuild a task environment exactly from its ``model_dump(mode='json', round_trip=True)`` output.
 
     ``model_validate`` would not restore it: upstream ``Inbox``, ``Calendar`` and ``CloudDrive`` rebuild ``emails``,
     ``events`` and ``files`` from their ``initial_*`` fields in an ``after`` validator, which undoes every change of
-    the run. Model-typed fields are therefore rebuilt recursively with ``model_construct``, which skips those
-    validators, and every other field is validated against its annotation.
+    the run, and upstream tools such as ``share_file`` write unvalidated strings into ``EmailStr`` fields, which
+    validation would normalize or reject. The data is therefore rebuilt along the field annotations: models with
+    ``model_construct``, containers and unions element by element, string values as they are, and only the remaining
+    leaves (datetime, date, enums, numbers) through their ``TypeAdapter``.
 
     Raises:
         ValueError: ``data`` does not match ``environment_type``.
@@ -126,11 +184,7 @@ def restore_environment(environment_type: Type[BaseModel], data: Any) -> BaseMod
     for name, field in environment_type.model_fields.items():
         if name not in data:
             raise ValueError(f'{environment_type.__name__}.{name} is missing.')
-        annotation = field.annotation
-        if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-            values[name] = restore_environment(annotation, data[name])
-        else:
-            values[name] = _type_adapter(annotation).validate_python(data[name])
+        values[name] = _restore(field.annotation, data[name])
     return environment_type.model_construct(**values)
 
 
