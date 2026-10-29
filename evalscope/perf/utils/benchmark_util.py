@@ -388,7 +388,10 @@ class MetricsAccumulator:
             )
             qps = _safe_div(n, t)
             # Deliberately population-wide: only used by embedding/rerank APIs
-            avg_input_token_throughput = _safe_div(self.total_prompt_tokens, self.total_first_chunk_latency)
+            # Use wall_time (t) as denominator ? total_first_chunk_latency is the sum of
+            # per-request latencies, which grows with concurrency and would make throughput
+            # appear to decrease as parallelism increases (10x deviation at concurrency 10).
+            avg_input_token_throughput = _safe_div(self.total_prompt_tokens, t)
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
             avg_turns_per_request = _safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1
