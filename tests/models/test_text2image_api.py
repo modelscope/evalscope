@@ -1,5 +1,7 @@
 import base64
+import glob
 import json
+import os
 import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -126,6 +128,30 @@ def _image_bytes(content: Any) -> bytes:
     return base64.b64decode(data_uri_to_base64(content.image))
 
 
+class _StubModel:
+    name = 'test-image-model'
+
+
+def _t2i_adapter() -> Text2ImageAdapter:
+    return Text2ImageAdapter(
+        benchmark_meta=BenchmarkMeta(name='general_t2i', dataset_id='general_t2i'),
+        task_config=TaskConfig(
+            model='test-image-model',
+            model_task=ModelTask.IMAGE_GENERATION,
+            eval_type=EvalType.TEXT2IMAGE,
+            datasets=['general_t2i'],
+        ),
+    )
+
+
+def _image_output() -> ModelOutput:
+    image_uri = 'data:image/png;base64,' + base64.b64encode(_ImageServiceHandler.image_bytes).decode('utf-8')
+    return ModelOutput(
+        model='test-image-model',
+        choices=[ChatCompletionChoice.from_content(content=[ContentImage(image=image_uri)])],
+    )
+
+
 def test_remote_text2image_uses_openai_compatible_endpoint(caplog: pytest.LogCaptureFixture) -> None:
     with _image_service() as service_url:
         model = get_model(
@@ -200,7 +226,7 @@ def test_remote_text2image_downloads_url_response(monkeypatch: pytest.MonkeyPatc
 
 
 def test_remote_text2image_empty_key_uses_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv('OPENAI_API_KEY', 'environment-key')
+    monkeypatch.setenv('OPENAI_API_KEY', 'openai-key')
     monkeypatch.delenv('EVALSCOPE_API_KEY', raising=False)
     with _image_service() as service_url:
         model = get_model(
@@ -212,7 +238,23 @@ def test_remote_text2image_empty_key_uses_environment(monkeypatch: pytest.Monkey
         )
         model.generate('Draw a cabin in the snow.')
 
-    assert _ImageServiceHandler.requests[0]['headers']['Authorization'] == 'Bearer environment-key'
+    assert _ImageServiceHandler.requests[0]['headers']['Authorization'] == 'Bearer openai-key'
+
+
+def test_remote_text2image_prefers_evalscope_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('OPENAI_API_KEY', 'openai-key')
+    monkeypatch.setenv('EVALSCOPE_API_KEY', 'evalscope-key')
+    with _image_service() as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='EMPTY',
+            memoize=False,
+        )
+        model.generate('Draw a cabin in the snow.')
+
+    assert _ImageServiceHandler.requests[0]['headers']['Authorization'] == 'Bearer evalscope-key'
 
 
 def test_remote_text2image_normalizes_chat_completions_url() -> None:
@@ -434,30 +476,50 @@ def test_image_generation_service_is_selected_from_task_config() -> None:
 
 
 def test_text2image_adapter_saves_data_uri_output(tmp_path: Path) -> None:
-    task_config = TaskConfig(
-        model='test-image-model',
-        model_task=ModelTask.IMAGE_GENERATION,
-        eval_type=EvalType.TEXT2IMAGE,
-        datasets=['general_t2i'],
-    )
-    adapter = Text2ImageAdapter(
-        benchmark_meta=BenchmarkMeta(name='general_t2i', dataset_id='general_t2i'),
-        task_config=task_config,
-    )
-    image_uri = 'data:image/png;base64,' + base64.b64encode(_ImageServiceHandler.image_bytes).decode('utf-8')
-    output = ModelOutput(
-        model='test-image-model',
-        choices=[ChatCompletionChoice.from_content(content=[ContentImage(image=image_uri)])],
-    )
+    adapter = _t2i_adapter()
+    output = _image_output()
     sample = Sample(input='Draw a red dot.', id=1, group_id=0)
 
-    class _Model:
-        name = 'test-image-model'
-
-    adapter._on_inference_end(_Model(), sample, output, str(tmp_path))
+    adapter._on_inference_end(_StubModel(), sample, output, str(tmp_path))
 
     with open(sample.metadata[FileConstants.IMAGE_PATH], 'rb') as f:
         assert f.read() == _ImageServiceHandler.image_bytes
+
+
+def test_text2image_adapter_saves_concurrently(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = _t2i_adapter()
+    worker_count = 4
+    barrier = threading.Barrier(worker_count)
+    real_makedirs = os.makedirs
+
+    def synchronized_makedirs(name: str, *args: Any, **kwargs: Any) -> None:
+        # Release every worker into the real call at once, so the shared image directory
+        # is always created by several workers simultaneously rather than by chance.
+        barrier.wait(timeout=10)
+        real_makedirs(name, *args, **kwargs)
+
+    monkeypatch.setattr(
+        'evalscope.api.benchmark.adapters.text2image_adapter.os.makedirs',
+        synchronized_makedirs,
+    )
+    samples = [Sample(input=f'Draw dot {index}.', id=index, group_id=index) for index in range(worker_count)]
+    failures: list[BaseException] = []
+
+    def save(sample: Sample) -> None:
+        try:
+            adapter._on_inference_end(_StubModel(), sample, _image_output(), str(tmp_path))
+        except BaseException as ex:  # noqa: BLE001 - recorded so the assertion can report it
+            failures.append(ex)
+
+    threads = [threading.Thread(target=save, args=(sample, )) for sample in samples]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=15)
+
+    assert not failures, failures
+    saved = sorted(glob.glob(os.path.join(str(tmp_path), 'images', '*.png')))
+    assert len(saved) == worker_count
 
 
 def test_local_text2image_still_checks_aigc_dependencies(monkeypatch: pytest.MonkeyPatch) -> None:

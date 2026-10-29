@@ -88,9 +88,10 @@ data URI。`api_url` 可以传基础地址、完整的 `/images/generations` 地
 显式设置 `num_inference_steps` 或 `guidance_scale` 后，它们会随请求体发送；仅适用于接受这些非 OpenAI
 字段的服务。
 
-`api_key='EMPTY'` 会先读取 `OPENAI_API_KEY`，再读取 `EVALSCOPE_API_KEY`。如果都没有设置，
-请求会把 `EMPTY` 作为本地服务的占位密钥。这一模式暂不支持 DashScope/Model Studio 图像生成 API
-等厂商私有协议、使用 `images` 字段的响应、异步提交后轮询的接口和图像编辑。这些协议需要单独适配。
+`api_key='EMPTY'` 会先读取 `EVALSCOPE_API_KEY`，再读取 `OPENAI_API_KEY`。如果都没有设置，
+请求会把 `EMPTY` 作为本地服务的占位密钥。请求默认串行发送，调高 `eval_batch_size` 即为并发请求数。
+这一模式暂不支持 DashScope/Model Studio 图像生成 API 等厂商私有协议、使用 `images` 字段的响应、
+异步提交后轮询的接口和图像编辑。这些协议需要单独适配。
 
 ## 本地模型评测
 

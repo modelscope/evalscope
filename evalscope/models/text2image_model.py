@@ -128,7 +128,9 @@ class Text2ImageAPI(ModelAPI):
     def _resolve_service_api_key(api_key: Optional[str]) -> str:
         if api_key and api_key != 'EMPTY':
             return api_key
-        return os.getenv('OPENAI_API_KEY') or os.getenv('EVALSCOPE_API_KEY') or api_key or 'EMPTY'
+        # EVALSCOPE_API_KEY first, as elsewhere in the framework: an OPENAI_API_KEY meant for
+        # api.openai.com must not be sent to a local or third-party service by default.
+        return os.getenv('EVALSCOPE_API_KEY') or os.getenv('OPENAI_API_KEY') or api_key or 'EMPTY'
 
     def generate(
         self,

@@ -89,10 +89,11 @@ after the first attempt. Without an explicit `generation_config`, service mode o
 (`1024x1024`). Set `num_inference_steps` or `guidance_scale` explicitly to forward them in the request body; this
 works only with services that accept these non-OpenAI fields.
 
-`api_key='EMPTY'` first checks `OPENAI_API_KEY`, then `EVALSCOPE_API_KEY`. If neither variable is set, `EMPTY`
-is sent as a placeholder for a local service. This mode does not cover native provider protocols such as the
-DashScope/Model Studio image-generation API, responses with an `images` field, asynchronous submit-and-poll
-APIs, or image editing. Those protocols need separate adapters.
+`api_key='EMPTY'` first checks `EVALSCOPE_API_KEY`, then `OPENAI_API_KEY`. If neither variable is set, `EMPTY`
+is sent as a placeholder for a local service. Requests are sent one at a time unless you raise
+`eval_batch_size`, which sets the number of concurrent requests. This mode does not cover native provider
+protocols such as the DashScope/Model Studio image-generation API, responses with an `images` field,
+asynchronous submit-and-poll APIs, or image editing. Those protocols need separate adapters.
 
 ## Local Model Evaluation
 
