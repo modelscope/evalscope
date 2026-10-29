@@ -5,22 +5,9 @@ These cover the NPU/CUDA/CPU device selection that ``get_device()`` already
 exposes, plus the small NPU-aware branches added to ``update_gpu_usage`` and
 ``seed_everything``. They run on a CPU-only box by monkeypatching the
 ``transformers.utils.is_torch_*_available`` probes that ``get_device`` reads.
-
-A few heavy optional deps (``editdistance`` and friends) are stubbed out so the
-test collection does not require building their C extensions on Windows.
 """
 
-import sys
-import types
-
 import pytest
-
-# Stub optional C-extension deps that evalscope.metrics pulls in eagerly, so
-# the test can import evalscope.utils.model_utils without building them.
-for _name in ('editdistance',):
-    if _name not in sys.modules:
-        sys.modules[_name] = types.ModuleType(_name)
-
 
 from evalscope.utils.model_utils import get_device, seed_everything  # noqa: E402
 
