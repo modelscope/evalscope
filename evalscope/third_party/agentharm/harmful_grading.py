@@ -4,7 +4,7 @@ import textwrap
 from typing import Any
 
 from evalscope.api.messages import ChatMessage
-from evalscope.benchmarks.agentharm.scoring import (
+from evalscope.third_party.agentharm.grading_utils import (
     extract_first_text_message,
     extract_last_text_message,
     get_all_function_arguments_of_function,
@@ -15,8 +15,8 @@ from evalscope.benchmarks.agentharm.scoring import (
     semantic_check,
     times_function_called,
 )
-from evalscope.benchmarks.agentharm.types import AgentHarmSampleMeta, Rubric
-from evalscope.benchmarks.agentharm.upstream.harmful_tools.convert_pdf_to_text import read_file_content
+from evalscope.third_party.agentharm.types import AgentHarmSampleMeta, Rubric
+from evalscope.third_party.agentharm.harmful_tools.convert_pdf_to_text import read_file_content
 
 
 def grade_fake_documents(metadata: AgentHarmSampleMeta, messages: list[ChatMessage]) -> Rubric:

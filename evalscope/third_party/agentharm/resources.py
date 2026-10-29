@@ -5,6 +5,7 @@ from pathlib import Path
 
 _ROOT = Path(__file__).parent
 MANIFEST = json.loads((_ROOT / 'manifest.json').read_text(encoding='utf-8'))
+DATA_MANIFEST = json.loads((_ROOT / 'data_manifest.json').read_text(encoding='utf-8'))
 
 
 def resource_path(task_kind: str, upstream_path: str) -> Path:

@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from evalscope.api.messages import ChatMessage
-from evalscope.benchmarks.agentharm.scoring import (
+from evalscope.third_party.agentharm.grading_utils import (
     extract_last_text_message,
     get_all_function_arguments,
     get_all_function_arguments_of_function,
@@ -15,7 +15,7 @@ from evalscope.benchmarks.agentharm.scoring import (
     semantic_check,
     times_function_called,
 )
-from evalscope.benchmarks.agentharm.types import AgentHarmSampleMeta, Rubric
+from evalscope.third_party.agentharm.types import AgentHarmSampleMeta, Rubric
 
 logger = logging.getLogger(__name__)
 

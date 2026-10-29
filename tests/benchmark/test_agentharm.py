@@ -13,11 +13,11 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
 from evalscope.benchmarks.agentharm.agentharm_adapter import AgentHarmAdapter
-from evalscope.benchmarks.agentharm.types import AgentHarmSampleMeta
-from evalscope.benchmarks.agentharm.upstream.content import tool_function, tool_info
-from evalscope.benchmarks.agentharm.upstream.resources import MANIFEST, resource_path
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
+from evalscope.third_party.agentharm.content import tool_function, tool_info
+from evalscope.third_party.agentharm.resources import MANIFEST, resource_path
+from evalscope.third_party.agentharm.types import AgentHarmSampleMeta
 from tests.api.judge.test_migrated_adapters import ScriptedJudge
 
 FIXTURES = Path(__file__).parent / 'fixtures/agentharm'

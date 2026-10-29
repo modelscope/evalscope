@@ -1,18 +1,20 @@
 """Structural gates that stop the judge-parsing debt from growing back.
 
 A benchmark must not call a judge model, must not touch a raw judge response, and must not define
-its own parser -- in an adapter or in any helper module beside it. ``PENDING_MIGRATION`` is empty:
-every benchmark that scores with a judge now goes through ``evalscope.api.judge``.
+its own parser -- in an adapter, in any helper module beside it, or in vendored upstream sources
+under ``evalscope/third_party``. ``PENDING_MIGRATION`` is empty: every benchmark that scores with a
+judge now goes through ``evalscope.api.judge``.
 """
 import ast
 import os
 from typing import Dict, List, Set, Tuple
 
-BENCHMARKS_ROOT = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-    'evalscope',
-    'benchmarks',
-)
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+BENCHMARKS_ROOT = os.path.join(_REPO_ROOT, 'evalscope', 'benchmarks')
+# Vendored upstream benchmark sources live outside evalscope/benchmarks but are scored the same
+# way, so they are in scope too: moving a grader into third_party must not escape the gate.
+VENDORED_ROOT = os.path.join(_REPO_ROOT, 'evalscope', 'third_party')
+SCAN_ROOTS = (BENCHMARKS_ROOT, VENDORED_ROOT)
 
 RAW_RESPONSE_NAMES = ('judge_response', 'grading_response', 'judge_raw', 'judgment', 'last_response')
 PARSER_CALLS = ('search', 'match', 'fullmatch', 'findall', 'finditer', 'loads')
@@ -32,17 +34,18 @@ def adapter_files() -> List[str]:
     past the gate.
     """
     paths = []
-    for dirpath, _, filenames in os.walk(BENCHMARKS_ROOT):
-        if '__pycache__' in dirpath or os.path.basename(dirpath) == '_meta':
-            continue
-        for name in filenames:
-            if name.endswith('.py') and name != '__init__.py':
-                paths.append(os.path.join(dirpath, name))
+    for root in SCAN_ROOTS:
+        for dirpath, _, filenames in os.walk(root):
+            if '__pycache__' in dirpath or os.path.basename(dirpath) == '_meta':
+                continue
+            for name in filenames:
+                if name.endswith('.py') and name != '__init__.py':
+                    paths.append(os.path.join(dirpath, name))
     return sorted(paths)
 
 
 def relative(path: str) -> str:
-    return os.path.relpath(path, BENCHMARKS_ROOT)
+    return os.path.relpath(path, _REPO_ROOT)
 
 
 def scan(path: str) -> List[str]:

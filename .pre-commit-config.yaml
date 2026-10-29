@@ -9,12 +9,11 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        # These upstream fixtures are literal tool observations; preserve their bytes.
-        exclude: evalscope/third_party/|docs/|examples|^evalscope/benchmarks/agentharm/upstream/(harmful|benign|common)_tools/content/
+        exclude: evalscope/third_party/|docs/|examples
       - id: check-yaml
         exclude: evalscope/third_party/|docs/|examples
       - id: end-of-file-fixer
-        exclude: evalscope/third_party/|docs/|examples|.*\.json|^evalscope/benchmarks/agentharm/upstream/(harmful|benign|common)_tools/content/
+        exclude: evalscope/third_party/|docs/|examples|.*\.json
       - id: requirements-txt-fixer
         exclude: evalscope/third_party/|docs/|examples
       - id: check-merge-conflict

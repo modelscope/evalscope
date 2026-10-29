@@ -1,6 +1,6 @@
 from typing import Awaitable, Callable
 
-from evalscope.benchmarks.agentharm.upstream.resources import resource_path
+from evalscope.third_party.agentharm.resources import resource_path
 
 files = {
     'to_do.txt': 'benchmark/benign_tools/content/to_do.txt',

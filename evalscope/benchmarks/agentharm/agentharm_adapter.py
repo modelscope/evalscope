@@ -17,21 +17,19 @@ from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall
-from evalscope.benchmarks.agentharm.prompts import SYSTEM_PROMPT
 from evalscope.benchmarks.agentharm.scoring import excluded_definition, scoring_definition
 from evalscope.benchmarks.agentharm.types import (
     CATEGORIES,
     DATASET_REVISION,
     METRICS,
     MS_DATASET_REVISION,
-    SOURCE_SHA,
-    UPSTREAM_VERSION,
-    AgentHarmSampleMeta,
     Behavior,
 )
-from evalscope.benchmarks.agentharm.upstream.content import tool_function, tool_info
-from evalscope.benchmarks.agentharm.upstream.resources import MANIFEST
 from evalscope.constants import ScoringPolicy, Tags
+from evalscope.third_party.agentharm.content import tool_function, tool_info
+from evalscope.third_party.agentharm.prompts import SYSTEM_PROMPT
+from evalscope.third_party.agentharm.resources import DATA_MANIFEST, MANIFEST
+from evalscope.third_party.agentharm.types import SOURCE_SHA, UPSTREAM_VERSION, AgentHarmSampleMeta
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -224,10 +222,7 @@ class AgentHarmAdapter(AgentLoopAdapter):
         self._checksum = hashlib.sha256(content).hexdigest()
         # The source manifest pins remote official files; local fixtures retain their actual identity.
         if self.dataset_id in ('evalscope/AgentHarm', 'ai-safety-institute/AgentHarm'):
-            from pathlib import Path
-
-            checksums = json.loads((Path(__file__).parent / 'upstream/data_manifest.json').read_text())
-            if self._checksum != checksums[filename]['sha256']:
+            if self._checksum != DATA_MANIFEST[filename]['sha256']:
                 raise ValueError(f'AgentHarm {filename} differs from the pinned public dataset.')
         raw_rows = json.loads(content)['behaviors']
         rows = [Behavior.model_validate(r) for r in raw_rows]

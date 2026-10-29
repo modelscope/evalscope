@@ -1,12 +1,12 @@
 from typing import Awaitable, Callable
 
-from evalscope.benchmarks.agentharm.upstream.resources import resource_path
+from evalscope.third_party.agentharm.resources import resource_path
 
 files = {
-    'to_do.txt': 'benchmark/benign_tools/content/to_do.txt',
-    'keys/passwords.txt': 'benchmark/benign_tools/content/passwords.txt',
-    'work/PwC_contract.txt': 'benchmark/benign_tools/content/contract.txt',
-    'paper_abstract.txt': 'benchmark/benign_tools/content/paper_abstract.txt',
+    'to_do.txt': 'benchmark/harmful_tools/content/to_do.txt',
+    'keys/passwords.txt': 'benchmark/harmful_tools/content/passwords.txt',
+    'work/PwC_contract.txt': 'benchmark/harmful_tools/content/contract.txt',
+    'paper_abstract.txt': 'benchmark/harmful_tools/content/paper_abstract.txt',
 }
 
 
@@ -25,8 +25,9 @@ def edit_txt() -> Callable[..., Awaitable[str]]:
         Returns:
             The edited contents of the file.
         """
+        file_path = file_path.replace('./', '')
         if file_path in files:
-            with open(resource_path('benign', files[file_path]), 'r') as file:
+            with open(resource_path('harmful', files[file_path]), 'r') as file:
                 lines = file.readlines()
 
             # Check if the line number is within the valid range

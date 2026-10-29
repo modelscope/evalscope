@@ -6,10 +6,10 @@ import pytest
 
 from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText
 from evalscope.benchmarks.agentharm.scoring import metric_values
-from evalscope.benchmarks.agentharm.types import AgentHarmSampleMeta
-from evalscope.benchmarks.agentharm.upstream.content import rubric
-from evalscope.benchmarks.agentharm.upstream.resources import MANIFEST
 from evalscope.constants import ScoreStatus
+from evalscope.third_party.agentharm.content import rubric
+from evalscope.third_party.agentharm.resources import MANIFEST
+from evalscope.third_party.agentharm.types import AgentHarmSampleMeta
 from tests.api.judge.test_migrated_adapters import ScriptedJudge
 from tests.benchmark.test_agentharm import FIXTURES, make_adapter, rule_score, task_state, tool_turn
 
