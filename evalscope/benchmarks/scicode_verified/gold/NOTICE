@@ -1,0 +1,9 @@
+13.6.txt, 62.1.txt, 76.3.txt: reference implementations of the three SciCode steps that the official harness never
+generates nor scores (it injects this code so that later steps build on it). Copied unchanged from
+https://github.com/scicode-bench/SciCode/tree/main/eval/data (Apache License 2.0), as used by the SciCode-Verified
+harness (https://github.com/flyingwagner/scicode-verified, eval_clean/run_deepseek_eval.py, SKIP set).
+
+../official/background_comment_template.txt, ../official/multistep_template.txt: the official SciCode prompt
+templates (without / with scientist background), copied unchanged from
+https://github.com/scicode-bench/SciCode/tree/main/eval/data (Apache License 2.0), byte-identical to the copies
+vendored by SciCode-Verified (eval_clean/vendor/eval_data, md5 3a376df5... / 5de36afe...).
