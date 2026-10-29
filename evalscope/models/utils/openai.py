@@ -859,6 +859,30 @@ def _stream_finish_reasons(
     return finish_reasons
 
 
+def _stream_tool_call_key(calls: Dict[Any, Dict[str, Any]], tool_call: Any) -> Any:
+    """Return the key of the call a streamed tool-call delta belongs to.
+
+    Chunks normally carry the ``index`` of their call. Some OpenAI-compatible endpoints (for
+    example Gemini's) omit it, which would merge every parallel call into one. Without an
+    index, a delta continues the latest call, unless it starts a new one: it carries a different
+    id, or it names a function when the latest call already has a name.
+    """
+    index = getattr(tool_call, 'index', None)
+    if index is not None:
+        return index
+    if not calls:
+        return 0
+    last_key = next(reversed(calls))
+    last = calls[last_key]
+    call_id = getattr(tool_call, 'id', None)
+    name = getattr(getattr(tool_call, 'function', None), 'name', None)
+    if call_id:
+        starts_new_call = last['id'] is not None and call_id != last['id']
+    else:
+        starts_new_call = bool(name) and bool(last['function']['name'])
+    return last_key + 1 if starts_new_call else last_key
+
+
 def collect_stream_response(
     response_stream: Iterable[ChatCompletionChunk],
     request_start: Optional[float] = None,
@@ -935,7 +959,7 @@ def collect_stream_response(
             # Handle tool calls
             if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
                 for tool_call in choice.delta.tool_calls:
-                    tool_id = tool_call.index
+                    tool_id = _stream_tool_call_key(collected_tool_calls[choice.index], tool_call)
 
                     # Initialize tool call if not present
                     if tool_id not in collected_tool_calls[choice.index]:
@@ -1067,7 +1091,7 @@ async def async_collect_stream_response(
             # Handle tool calls
             if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
                 for tool_call in choice.delta.tool_calls:
-                    tool_id = tool_call.index
+                    tool_id = _stream_tool_call_key(collected_tool_calls[choice.index], tool_call)
 
                     # Initialize tool call if not present
                     if tool_id not in collected_tool_calls[choice.index]:
