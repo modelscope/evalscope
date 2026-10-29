@@ -6,7 +6,7 @@ importable when the optional dependency is not installed.
 """
 
 import re
-from typing import Any, Dict, List, Mapping, Optional, Type
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Type
 
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
@@ -31,17 +31,15 @@ from evalscope.benchmarks.agentdojo.injections import InjectionPlanner, resolve_
 from evalscope.benchmarks.agentdojo.scoring import (
     AgentDojoRunRecord,
     AgentDojoSampleMeta,
-    ReplayMismatchError,
-    ReplayPayload,
-    ReplayPayloadError,
     ScoreMetadata,
+    ScoringPayload,
+    ScoringPayloadError,
     TerminationReason,
     check_results,
-    create_session,
+    create_environment,
     map_termination,
-    replay_trace,
 )
-from evalscope.benchmarks.agentdojo.tool_binding import AgentDojoStrategy
+from evalscope.benchmarks.agentdojo.tool_binding import AgentDojoStrategy, AgentDojoToolBinding
 from evalscope.benchmarks.agentdojo.upstream import UpstreamContext, load_upstream
 from evalscope.constants import JudgeStrategy, ScoreStatus, Tags
 from evalscope.utils.logger import get_logger
@@ -132,18 +130,26 @@ often the injection succeeds.
   is `utility` for `attack=none` and `targeted_asr` for any other attack. Scores are reported per suite.
 - Benign utility needs a separate run with `attack=none`; utility under attack and targeted ASR come from a run with
   any other supported attack.
-- Scoring uses the deterministic upstream utility and security checks; no LLM judge is involved. Each run persists
-  the tool call trace, including the time of each call, and scoring rebuilds the final environment by replaying that
-  trace, so `rerun_review` reproduces the same scores without calling the model.
+- Scoring uses the deterministic upstream utility and security checks; no LLM judge is involved, and an explicit
+  `judge.strategy` of `llm` or `llm_recall` is ignored with a warning. Each run persists the tool call trace and the
+  final task environment of every sample (100-160 KB per `workspace` sample, at most about 30 KB for the other
+  suites).
+  Scoring restores that environment and rebuilds the pre-run environment from the sample metadata, so `rerun_review`
+  and a `use_cache` resume reproduce the same scores in any process, without calling the model or re-executing
+  tools.
 - Differences from the upstream runner: a context-length overflow is scored as a failed user task and a successful
   attack (as upstream). Model and environment errors are raised to the evaluator: with `ignore_errors` the sample is
-  skipped and retried on a `use_cache` resume. A `content_filter` reply, a replay mismatch, a check error or a
-  cached sample built with a different attack or victim model name excludes the sample from the metric denominator
-  instead of counting as a defended or successful attack, so `num` can be below the sample count. An empty final
-  answer is scored as an empty string instead of rerunning the pipeline (upstream retries up to 3 times). Tool calls
-  whose arguments are not valid JSON are answered with an error and are not part of the trace given to the upstream
-  trace-based checks. The step budget follows EvalScope semantics: `agent_config.max_steps` (default 15) counts
-  model generations, while upstream `max_iters=15` allows 16 LLM calls.
+  skipped and retried on a `use_cache` resume. A sample is excluded from the metric denominator, instead of
+  counting as a defended or successful attack, when the provider returned a `content_filter` reply, the persisted
+  data is missing or invalid, an upstream check raised, or the cached sample belongs to another task (the task
+  filters, `limit` or `shuffle` changed) or was built with a different attack or victim model name. `num` can
+  therefore be below the sample count. An empty final answer is scored as an empty string instead of rerunning the
+  pipeline (upstream retries up to 3 times). Tool calls whose arguments are not valid JSON are answered with an
+  error and are not part of the trace given to the upstream trace-based checks. A tool result that the upstream
+  formatter `tool_result_to_str` rejects with a `TypeError` is returned to the model as the observation
+  `TypeError: <message>` and the loop continues, while upstream aborts the run. The step budget follows EvalScope semantics:
+  `agent_config.max_steps` (default 15, must be positive) counts model generations, while upstream `max_iters=15`
+  allows 16 LLM calls.
 - With `tool_knowledge`, `workspace` injection tasks 6-13 have empty upstream ground truth, so their injection text
   carries no tool-call hints, the same as upstream.
 - Install the optional dependency with `pip install 'evalscope[agentdojo]'` (pins `agentdojo=={UPSTREAM_VERSION}`).
@@ -233,10 +239,14 @@ class AgentDojoAdapter(AgentLoopAdapter):
         self._upstream: Optional[UpstreamContext] = None
         self._planner: Optional[InjectionPlanner] = None
         self._victim_model_name: Optional[str] = None
+        # ``(suite, sample id) -> row_id`` of the loaded samples; a ``use_cache`` row overwrites the sample metadata,
+        # so the loaded identity is kept here.
+        self._loaded_row_ids: Dict[Tuple[str, int], str] = {}
 
         # Run-time checks and upstream loading, only for real runs.
         if self._task_config is not None:
             self._validate_agent_config()
+            self._warn_ignored_judge_strategy()
             self._ensure_runtime()
 
     # ------------------------------------------------------------------
@@ -285,6 +295,8 @@ class AgentDojoAdapter(AgentLoopAdapter):
             raise ValueError(
                 'AgentDojo tools are fixed by the task suite; NativeAgentConfig.mcp_servers must be empty.'
             )
+        if self._resolve_max_steps(ac) <= 0:
+            raise ValueError(f'AgentLoop max_steps must be greater than 0, got {ac.max_steps}.')
         if ac.validate_tool_arguments:
             logger.warning(
                 'AgentDojo ignores NativeAgentConfig.validate_tool_arguments=True: tool arguments are validated '
@@ -294,6 +306,15 @@ class AgentDojoAdapter(AgentLoopAdapter):
             logger.warning(
                 f'AgentDojo ignores NativeAgentConfig.kwargs {sorted(ac.kwargs)}: the strategy and system prompt '
                 'are fixed by the benchmark.'
+            )
+
+    def _warn_ignored_judge_strategy(self) -> None:
+        """Warn when an LLM judge strategy is configured explicitly; AgentDojo always scores by rule."""
+        strategy = self._task_config.judge.strategy
+        if strategy in (JudgeStrategy.LLM, JudgeStrategy.LLM_RECALL):
+            logger.warning(
+                f'AgentDojo ignores judge.strategy={strategy!r}: samples are scored only by the deterministic '
+                'upstream utility and security checks, and no LLM judge is called.'
             )
 
     # ------------------------------------------------------------------
@@ -347,7 +368,7 @@ class AgentDojoAdapter(AgentLoopAdapter):
             for user_task_id in user_task_ids
             for injection_task_id in injection_task_ids
         ]
-        return DictDataLoader(
+        dataset = DictDataLoader(
             dict_list=rows,
             sample_fields=self.record_to_sample,
             filter_func=self.sample_filter,
@@ -356,6 +377,9 @@ class AgentDojoAdapter(AgentLoopAdapter):
             shuffle=self.shuffle,
             seed=self.seed,
         ).load()
+        for sample in dataset:
+            self._loaded_row_ids[(subset, sample.id)] = sample.metadata[SAMPLE_META_KEY]['row_id']
+        return dataset
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert one generated row; attack rows get their injection map here, before inference."""
@@ -394,10 +418,11 @@ class AgentDojoAdapter(AgentLoopAdapter):
         from evalscope.api.agent import run_agent_loop
 
         meta = AgentDojoSampleMeta.model_validate(sample.metadata[SAMPLE_META_KEY])
-        # A new session per call, so repeats of one sample never share state.
-        session = create_session(self._upstream, meta)
-        handlers, tool_infos = session.binding.build()
-        strategy = AgentDojoStrategy(session.binding)
+        # A new environment per call, so repeats of one sample never share state.
+        environment = create_environment(self._upstream, meta)
+        binding = AgentDojoToolBinding(self._upstream.suites[meta.suite], environment)
+        handlers, tool_infos = binding.build()
+        strategy = AgentDojoStrategy(binding)
         ac = self._task_config.agent_config if self._task_config is not None else None
         result = run_agent_loop(
             model=model,
@@ -420,7 +445,8 @@ class AgentDojoAdapter(AgentLoopAdapter):
             termination_reason=reason,
             executed_steps=steps,
             empty_output=final_text == '',
-            tool_call_trace=list(session.binding.trace),
+            tool_call_trace=list(binding.trace),
+            post_environment=environment.model_dump(mode='json', round_trip=True),
         )
         sample.metadata[RUN_RECORD_META_KEY] = record.model_dump(mode='json')
 
@@ -440,25 +466,25 @@ class AgentDojoAdapter(AgentLoopAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        """Score one sample from its persisted replay payload, without any model call.
+        """Score one sample from its persisted payload, without calling the model or re-executing tools.
 
-        The post-run environment is rebuilt by replaying the tool call trace. Samples whose payload is invalid or
-        was built with a different attack or victim model name, whose reply was blocked by a content filter, whose
-        replay diverged or whose upstream check raised are returned as ``EXCLUDED`` with an empty value, so they
-        drop out of the metric denominator. ``task_state.metadata`` is only read, so the predictions cache stays
-        unchanged.
+        The persisted final environment is restored and the pre-run environment is rebuilt from the sample metadata.
+        Samples whose payload is invalid, belongs to another loaded row or was built with a different attack or
+        victim model name, whose reply was blocked by a content filter, whose pre-run environment cannot be rebuilt
+        or whose upstream check raised are returned as ``EXCLUDED`` with an empty value, so they drop out of the
+        metric denominator. ``task_state.metadata`` is only read, so the predictions cache stays unchanged.
         """
         metadata = task_state.metadata or {}
         sample_id = task_state.sample_id
         try:
-            payload = ReplayPayload.from_metadata(metadata)
-            self._check_config_drift(payload.meta)
-        except ReplayPayloadError as exc:
+            payload = ScoringPayload.from_metadata(metadata, self._upstream)
+            self._check_config_drift(payload.meta, sample_id)
+        except ScoringPayloadError as exc:
             logger.error(f'AgentDojo sample {sample_id} excluded from scoring: {exc}')
             return self._excluded_score(
                 original_prediction,
                 filtered_prediction,
-                self._partial_score_metadata(metadata, f'invalid_replay_payload: {list(exc.fields)}'),
+                self._partial_score_metadata(metadata, f'invalid_scoring_payload: {list(exc.fields)}'),
                 explanation=str(exc),
             )
 
@@ -495,25 +521,10 @@ class AgentDojoAdapter(AgentLoopAdapter):
             )
 
         try:
-            session = replay_trace(self._upstream, meta, run.tool_call_trace)
-        except Exception as exc:
-            # Any other error (e.g. EnvironmentCreationError) means the environment could not be rebuilt.
-            if isinstance(exc, ReplayMismatchError):
-                mismatch_step, reason = exc.step, f'replay_mismatch at step {exc.step}: {exc.reason}'
-            else:
-                mismatch_step, reason = None, f'replay_failed: {type(exc).__name__}: {exc}'
-            logger.error(f'AgentDojo sample {sample_id} ({meta.row_id}) excluded from scoring: {reason}')
-            return self._excluded_score(
-                original_prediction,
-                filtered_prediction,
-                ScoreMetadata(
-                    **base, replay_mismatch=True, replay_mismatch_step=mismatch_step, excluded_reason=reason
-                ).model_dump(mode='json'),
-                explanation=reason,
+            pre_environment = create_environment(self._upstream, meta)
+            utility, targeted_asr = check_results(
+                self._upstream, meta, run.final_output, pre_environment, payload.post_environment, run.tool_call_trace
             )
-
-        try:
-            utility, targeted_asr = check_results(self._upstream, meta, run.final_output, session, run.tool_call_trace)
         except Exception as exc:
             reason = f'check_error: {type(exc).__name__}: {exc}'
             logger.error(f'AgentDojo sample {sample_id} ({meta.row_id}) excluded from scoring: {reason}')
@@ -532,8 +543,19 @@ class AgentDojoAdapter(AgentLoopAdapter):
             metadata=ScoreMetadata(**base),
         )
 
-    def _check_config_drift(self, meta: AgentDojoSampleMeta) -> None:
-        """Reject a cached sample whose injections were built with a different attack or victim model name."""
+    def _check_config_drift(self, meta: AgentDojoSampleMeta, sample_id: int) -> None:
+        """Reject a cached sample that belongs to another row or whose injections were built differently.
+
+        The row check compares the persisted ``row_id`` with the row loaded at the same index; it is skipped for
+        samples this adapter did not load.
+        """
+        loaded_row_id = self._loaded_row_ids.get((meta.suite, sample_id))
+        if loaded_row_id is not None and loaded_row_id != meta.row_id:
+            raise ScoringPayloadError(
+                [f'{SAMPLE_META_KEY}.row_id'],
+                f'Persisted row {meta.row_id!r} differs from the row {loaded_row_id!r} loaded at index {sample_id}; '
+                'the task filters, limit or shuffle changed since the cached run.',
+            )
         current = {
             'attack': self._attack,
             'victim_model_name': self._victim_model_name,
@@ -543,7 +565,7 @@ class AgentDojoAdapter(AgentLoopAdapter):
         if drifted:
             persisted = {name: getattr(meta, name) for name in drifted}
             configured = {name: current[name] for name in drifted}
-            raise ReplayPayloadError(
+            raise ScoringPayloadError(
                 [f'{SAMPLE_META_KEY}.{name}' for name in drifted],
                 f'Persisted {persisted} differs from the current configuration {configured}.',
             )

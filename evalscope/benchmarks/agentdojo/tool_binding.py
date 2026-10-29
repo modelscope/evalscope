@@ -7,23 +7,14 @@ Tool execution mirrors upstream ``agentdojo.agent_pipeline.tool_execution.ToolsE
 3. ``FunctionsRuntime.run_function`` runs on the bound environment; an error text is returned verbatim, otherwise
    the result is formatted with ``tool_result_to_str``.
 
-Every executed or rejected call is appended to the tool call trace so scoring can replay it later. Calls whose
-arguments could not be parsed are answered with ``ARGUMENT_PARSE_ERROR`` and are not traced.
-
-Upstream ``send_email`` and ``create_file`` / ``append_to_file`` write ``datetime.datetime.now()`` into the
-environment and the observation. Each executed call records its instant and runs with the tool clock pinned to it,
-so a replay in another process reproduces the same observation and environment.
+Every executed or rejected call is appended to the tool call trace that the upstream trace-based checks receive.
+Calls whose arguments could not be parsed are answered with ``ARGUMENT_PARSE_ERROR`` and are not traced.
 
 The upstream package is imported inside functions only.
 """
 
-import contextlib
-import contextvars
-import datetime
-import importlib
-import types
 from ast import literal_eval
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -47,64 +38,6 @@ UPSTREAM_EMPTY_FUNCTION_NAME = '<empty-function-name>'
 # ``Invalid tool  provided.``. EvalScope's clients pass ``''`` through unchanged, so the binding emulates the
 # Google-client normalization and treats both values as empty.
 _EMPTY_FUNCTION_NAMES = frozenset({'', UPSTREAM_EMPTY_FUNCTION_NAME})
-
-# ---------------------------------------------------------------------------
-# Pinnable tool clock
-# ---------------------------------------------------------------------------
-
-# Upstream modules whose tools call ``datetime.datetime.now()`` through their ``import datetime`` attribute.
-# ``types.Email.timestamp`` also defaults to ``now``, but no tool relies on that default.
-CLOCK_STAMPING_MODULES = (
-    'agentdojo.default_suites.v1.tools.email_client',
-    'agentdojo.default_suites.v1.tools.cloud_drive_client',
-)
-
-_REAL_DATETIME = datetime.datetime
-
-# A context variable rather than a global patch: samples run tool calls concurrently in evaluator worker threads,
-# and each call must only see its own instant.
-_PINNED_NOW: contextvars.ContextVar[Optional[datetime.datetime]] = contextvars.ContextVar(
-    'agentdojo_pinned_now', default=None
-)
-
-
-class _PinnableDatetime(datetime.datetime):
-    """``datetime.datetime`` whose ``now()`` returns the instant pinned in the current context, if any."""
-
-    @classmethod
-    def now(cls, tz: Optional[datetime.tzinfo] = None) -> datetime.datetime:
-        pinned = _PINNED_NOW.get()
-        if pinned is None:
-            return _REAL_DATETIME.now(tz)
-        return pinned if tz is None else pinned.astimezone(tz)
-
-
-_CLOCK_PROXY = types.ModuleType('datetime', 'AgentDojo clock proxy of the datetime module.')
-_CLOCK_PROXY.__dict__.update({key: value for key, value in vars(datetime).items() if not key.startswith('__')})
-_CLOCK_PROXY.datetime = _PinnableDatetime
-
-
-def install_clock_proxy() -> None:
-    """Point the ``datetime`` attribute of every stamping module at the clock proxy (idempotent).
-
-    Only an attribute that still is the real ``datetime`` module is replaced, so a clock frozen by someone else is
-    left alone. Without a pinned instant the proxy behaves exactly like the real module.
-    """
-    for module_name in CLOCK_STAMPING_MODULES:
-        module = importlib.import_module(module_name)
-        if getattr(module, 'datetime', None) is datetime:
-            module.datetime = _CLOCK_PROXY
-
-
-@contextlib.contextmanager
-def pinned_clock(instant: datetime.datetime) -> Iterator[None]:
-    """Make the proxied ``datetime.datetime.now()`` return ``instant`` within the current context."""
-    token = _PINNED_NOW.set(instant)
-    try:
-        yield
-    finally:
-        _PINNED_NOW.reset(token)
-
 
 # ---------------------------------------------------------------------------
 # Tool binding
@@ -144,9 +77,6 @@ class ToolCallTraceItem(BaseModel):
     formatter_error: bool = False
     """``tool_result_to_str`` raised; ``observation`` is the formatted ``TypeError``."""
 
-    called_at: Optional[datetime.datetime] = None
-    """Clock instant the call ran with; ``None`` for rejected calls."""
-
 
 class AgentDojoToolBinding:
     """Bind the upstream functions of one suite to one sample's environment, with its own ``FunctionsRuntime``."""
@@ -154,7 +84,6 @@ class AgentDojoToolBinding:
     def __init__(self, suite: Any, environment: Any) -> None:
         from agentdojo.functions_runtime import FunctionsRuntime
 
-        install_clock_proxy()
         self._suite = suite
         self.environment = environment
         self.tool_names = frozenset(fn.name for fn in suite.tools)
@@ -181,17 +110,8 @@ class AgentDojoToolBinding:
             tool_infos.append(ToolInfo(name=fn.name, description=fn.description, parameters=parameters))
         return {info.name: handle for info in tool_infos}, tool_infos
 
-    def execute(
-        self,
-        name: str,
-        arguments: Mapping[str, Any],
-        call_id: Optional[str],
-        called_at: Optional[datetime.datetime] = None,
-    ) -> str:
-        """Run one call of a suite tool on the bound environment, trace it and return the observation.
-
-        ``called_at`` is the clock instant to run with; ``None`` takes the current wall-clock time.
-        """
+    def execute(self, name: str, arguments: Mapping[str, Any], call_id: Optional[str]) -> str:
+        """Run one call of a suite tool on the bound environment, trace it and return the observation."""
         # ``tool_execution`` imports the ``agent_pipeline`` package; the adapter has already checked the version.
         from agentdojo.agent_pipeline.tool_execution import is_string_list, tool_result_to_str
 
@@ -199,9 +119,7 @@ class AgentDojoToolBinding:
             key: literal_eval(value) if isinstance(value, str) and is_string_list(value) else value
             for key, value in arguments.items()
         }
-        instant = called_at if called_at is not None else datetime.datetime.now()
-        with pinned_clock(instant):
-            result, error = self._runtime.run_function(self.environment, name, converted)
+        result, error = self._runtime.run_function(self.environment, name, converted)
         formatter_error = False
         if error is not None:
             observation = error
@@ -220,34 +138,22 @@ class AgentDojoToolBinding:
                 call_id=call_id,
                 valid_function=True,
                 formatter_error=formatter_error,
-                called_at=instant,
             )
         )
         return observation
 
     def handle_invalid_function(self, call: ToolCall) -> str:
         """Answer an empty or unknown name without touching the runtime; the call is traced with raw arguments."""
-        return self._reject(call.function.name, call.function.arguments, call.id)
-
-    def replay(self, item: ToolCallTraceItem) -> str:
-        """Re-execute one recorded item (with its recorded clock instant) and return the observation.
-
-        Arguments of valid items are already converted; the conversion is idempotent.
-        """
-        if item.valid_function:
-            return self.execute(item.function, item.args, item.call_id, item.called_at)
-        return self._reject(item.function, item.args, item.call_id)
-
-    def _reject(self, name: str, arguments: Mapping[str, Any], call_id: Optional[str]) -> str:
+        name = call.function.name
         observation = (
             EMPTY_FUNCTION_NAME_ERROR if name in _EMPTY_FUNCTION_NAMES else INVALID_TOOL_ERROR.format(name=name)
         )
         self.trace.append(
             ToolCallTraceItem(
                 function=name,
-                args=to_jsonable(dict(arguments)),
+                args=to_jsonable(dict(call.function.arguments)),
                 observation=observation,
-                call_id=call_id,
+                call_id=call.id,
                 valid_function=False,
             )
         )

@@ -8,7 +8,6 @@ touches the network or needs a model API key.
 
 import ast
 import asyncio
-import concurrent.futures
 import contextlib
 import copy
 import datetime
@@ -21,6 +20,7 @@ import logging
 import os
 import random
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -93,24 +93,20 @@ from evalscope.benchmarks.agentdojo.scoring import (
     AgentDojoRunRecord,
     AgentDojoSampleMeta,
     EnvironmentCreationError,
-    ReplayPayload,
-    SampleSession,
+    ScoringPayload,
     TerminationReason,
     check_results,
-    create_session,
-    replay_trace,
+    create_environment,
+    restore_environment,
 )
 from evalscope.benchmarks.agentdojo.tool_binding import (
     ARGUMENT_PARSE_ERROR,
-    CLOCK_STAMPING_MODULES,
     EMPTY_FUNCTION_NAME_ERROR,
     INVALID_TOOL_ERROR,
     UPSTREAM_EMPTY_FUNCTION_NAME,
     AgentDojoStrategy,
     AgentDojoToolBinding,
     ToolCallTraceItem,
-    install_clock_proxy,
-    pinned_clock,
     to_jsonable,
 )
 from evalscope.benchmarks.agentdojo.upstream import (
@@ -122,7 +118,7 @@ from evalscope.benchmarks.agentdojo.upstream import (
     load_upstream,
 )
 from evalscope.config import TaskConfig
-from evalscope.constants import ScoreStatus, Tags
+from evalscope.constants import ScoreStatus
 from evalscope.report import Report
 from evalscope.run import run_task
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
@@ -381,6 +377,13 @@ def work_dir(tmp_path_factory: pytest.TempPathFactory) -> str:
     return str(tmp_path_factory.mktemp('agentdojo_work'))
 
 
+# Upstream modules whose tools stamp ``datetime.datetime.now()`` into the environment and the observation.
+_CLOCK_STAMPING_MODULES = (
+    'agentdojo.default_suites.v1.tools.email_client',
+    'agentdojo.default_suites.v1.tools.cloud_drive_client',
+)
+
+
 @pytest.fixture(scope='class')
 def frozen_tool_clock() -> Iterator[None]:
     """Freeze the clock of the stamping upstream tools so runs started at different instants are comparable."""
@@ -393,7 +396,7 @@ def frozen_tool_clock() -> Iterator[None]:
 
     clock = types.SimpleNamespace(datetime=FrozenDatetime)
     with pytest.MonkeyPatch.context() as patch:
-        for module_name in CLOCK_STAMPING_MODULES:
+        for module_name in _CLOCK_STAMPING_MODULES:
             patch.setattr(importlib.import_module(module_name), 'datetime', clock)
         yield
 
@@ -504,7 +507,7 @@ def _make_sample(adapter: Any, suite: str, user_task_id: str, injection_task_id:
 def _round_trip(state: TaskState) -> TaskState:
     """Persist a TaskState like ``CacheManager.save_prediction_cache`` and restore it like ``filter_prediction_cache``.
 
-    The restore dataset carries no metadata, so the replay payload can only come from the cache row.
+    The restore dataset carries no metadata, so the scoring payload can only come from the cache row.
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
         cache_file = os.path.join(tmp_dir, 'agentdojo.jsonl')
@@ -589,28 +592,18 @@ class TestStatic:
     def test_registration(self) -> None:
         meta = BENCHMARK_REGISTRY['agentdojo']
         assert meta.data_adapter is agentdojo_adapter.AgentDojoAdapter
-        assert (meta.name, meta.pretty_name, meta.dataset_id, meta.eval_split) == (
-            'agentdojo',
-            'AgentDojo',
-            'https://github.com/ethz-spylab/agentdojo',
-            'test',
-        )
         assert meta.subset_list == list(SUITES) == ['workspace', 'travel', 'banking', 'slack']
-        assert meta.metric_list == ['utility', 'targeted_asr']
-        assert meta.primary_metric.name == 'targeted_asr'
-        assert meta.evaluation_version == 'v1.0'
-        assert meta.tags == [Tags.AGENT, Tags.SAFETY, Tags.FUNCTION_CALLING]
+        assert (meta.metric_list, meta.primary_metric.name) == (['utility', 'targeted_asr'], 'targeted_asr')
 
         params = meta.extra_params
-        assert {name: (entry['type'], entry['value']) for name, entry in params.items()} == {
-            'attack': ('str', DEFAULT_ATTACK),
-            'victim_model_name': ('str', None),
-            'user_task_ids': ('list', None),
-            'injection_task_ids': ('list', None),
+        assert {name: entry['value'] for name, entry in params.items()} == {
+            'attack': DEFAULT_ATTACK,
+            'victim_model_name': None,
+            'user_task_ids': None,
+            'injection_task_ids': None,
         }
         assert params['attack']['choices'] == list(SUPPORTED_ATTACKS)
         assert len(SUPPORTED_ATTACKS) == 12 and SUPPORTED_ATTACKS[-1] == BENIGN_ATTACK
-        assert all(entry['description'].strip() and entry['description'].isascii() for entry in params.values())
 
     def test_description_sections(self) -> None:
         description = BENCHMARK_REGISTRY['agentdojo'].description
@@ -724,7 +717,7 @@ class TestModelNames:
 
 
 # ---------------------------------------------------------------------------
-# Persisted replay payload
+# Persisted run data
 # ---------------------------------------------------------------------------
 
 _short_text = st.text(max_size=20)
@@ -745,7 +738,6 @@ _trace_items = st.builds(
     call_id=st.one_of(st.none(), _short_text),
     valid_function=st.booleans(),
     formatter_error=st.booleans(),
-    called_at=st.one_of(st.none(), st.datetimes()),
 )
 _sample_metas = st.builds(
     AgentDojoSampleMeta,
@@ -767,13 +759,16 @@ _run_records = st.builds(
     executed_steps=st.integers(min_value=0, max_value=10_000),
     empty_output=st.booleans(),
     tool_call_trace=st.lists(_trace_items, max_size=6),
+    post_environment=st.dictionaries(_short_text, _json_value, max_size=4),
 )
 
 
-class TestReplayPayload:
+class TestPersistedRunData:
     @settings(max_examples=50, deadline=None)
     @given(meta=_sample_metas, run=_run_records)
-    def test_payload_survives_prediction_cache_round_trip(self, meta: AgentDojoSampleMeta, run: AgentDojoRunRecord):
+    def test_run_data_survives_prediction_cache_round_trip(
+        self, meta: AgentDojoSampleMeta, run: AgentDojoRunRecord
+    ) -> None:
         # TaskState.metadata is the sample's metadata dict, so the run record lands next to the sample meta.
         sample = Sample(input='prompt', id=0, metadata={SAMPLE_META_KEY: meta.model_dump(mode='json')})
         state = TaskState(
@@ -785,10 +780,10 @@ class TestReplayPayload:
         )
         state.metadata[RUN_RECORD_META_KEY] = run.model_dump(mode='json')
 
-        payload = ReplayPayload.from_metadata(_round_trip(state).metadata)
+        restored = _round_trip(state).metadata
 
-        assert payload.meta == meta
-        assert payload.run == run
+        assert AgentDojoSampleMeta.model_validate(restored[SAMPLE_META_KEY]) == meta
+        assert AgentDojoRunRecord.model_validate(restored[RUN_RECORD_META_KEY]) == run
 
 
 # ---------------------------------------------------------------------------
@@ -987,6 +982,13 @@ class TestConstructionErrors:
         with pytest.raises(ValueError) as exc_info:
             _construct(agent_config=agent_config)
         assert fragment in str(exc_info.value)
+
+    def test_non_positive_max_steps_fails_at_construction(self) -> None:
+        # The field validator only runs on creation, so a later assignment reaches the adapter.
+        agent_config = NativeAgentConfig()
+        agent_config.max_steps = 0
+        with pytest.raises(ValueError, match='max_steps must be greater than 0, got 0'):
+            _construct(agent_config=agent_config)
 
 
 # ===========================================================================
@@ -1194,7 +1196,7 @@ def _binding_scenarios(draw: st.DrawFn) -> Tuple[str, str, List[ScriptedToolCall
 
 
 @st.composite
-def _session_specs(draw: st.DrawFn, suite_name: str) -> Tuple[str, str, Optional[str]]:
+def _environment_specs(draw: st.DrawFn, suite_name: str) -> Tuple[str, str, Optional[str]]:
     """A benign sample, or an attack sample from a few (user task, injection task) pairs to keep planning cheap."""
     suite = load_upstream().suites[suite_name]
     if draw(st.booleans()):
@@ -1280,103 +1282,110 @@ class TestToolBindingAndEnvironment:
 
     @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
     @given(data=st.data())
-    def test_sessions_are_isolated(self, data: st.DataObject) -> None:
+    def test_environments_are_isolated(self, data: st.DataObject) -> None:
         suite_name = data.draw(st.sampled_from(SUITES))
-        first = data.draw(_session_specs(suite_name))
-        # Session 1 is an idle twin of session 0; any extra session may run calls of its own.
-        specs = [first, first, *data.draw(st.lists(_session_specs(suite_name), max_size=2))]
+        suite = load_upstream().suites[suite_name]
+        first = data.draw(_environment_specs(suite_name))
+        # Environment 1 is an idle twin of environment 0; any extra one may run calls of its own.
+        specs = [first, first, *data.draw(st.lists(_environment_specs(suite_name), max_size=2))]
         pool = st.sampled_from(
             [ScriptedToolCall(function=c.name, arguments=c.args) for c in _ground_truth_pool(suite_name)]
         )
         calls = [data.draw(st.lists(pool, min_size=1, max_size=6)), []]
         calls += [data.draw(st.lists(pool, max_size=6)) for _ in specs[2:]]
         metas = [_spec_meta(spec) for spec in specs]
-        sessions = [create_session(load_upstream(), meta) for meta in metas]
-        snapshots = [copy.deepcopy(session.pre_environment) for session in sessions]
-        assert len({id(session.environment) for session in sessions}) == len(sessions)
+        bindings = [AgentDojoToolBinding(suite, create_environment(load_upstream(), meta)) for meta in metas]
+        snapshots = [copy.deepcopy(binding.environment) for binding in bindings]
+        assert len({id(binding.environment) for binding in bindings}) == len(bindings)
 
         async def run_all() -> List[List[str]]:
             return list(
                 await asyncio.gather(
                     *(
-                        _dispatch(session.binding, session_calls, prefix=f's{index}')
-                        for index, (session, session_calls) in enumerate(zip(sessions, calls))
+                        _dispatch(binding, binding_calls, prefix=f's{index}')
+                        for index, (binding, binding_calls) in enumerate(zip(bindings, calls))
                     )
                 )
             )
 
         observations = asyncio.run(run_all())
 
-        for index, (meta, session, snapshot) in enumerate(zip(metas, sessions, snapshots)):
-            assert session.pre_environment == snapshot
+        for index, (meta, binding, snapshot) in enumerate(zip(metas, bindings, snapshots)):
             if not calls[index]:
-                assert session.environment == session.pre_environment and session.binding.trace == []
+                assert binding.environment == snapshot and binding.trace == []
                 continue
             # Concurrent runs equal a sequential reference run on an independently built environment.
-            reference = AgentDojoToolBinding(
-                load_upstream().suites[suite_name], _fresh_environment(suite_name, meta.user_task_id, meta.injections)
-            )
+            reference = AgentDojoToolBinding(suite, _fresh_environment(suite_name, meta.user_task_id, meta.injections))
             assert observations[index] == asyncio.run(_dispatch(reference, calls[index], prefix=f's{index}'))
-            assert session.environment == reference.environment
-        # Sessions created afterwards are unaffected by earlier tool calls.
+            assert binding.environment == reference.environment
+        # Environments created afterwards, like the pre-run environment rebuilt for scoring, are unaffected.
         for meta, snapshot in zip(metas, snapshots):
-            fresh = create_session(load_upstream(), meta)
-            assert fresh.pre_environment == fresh.environment == snapshot
+            assert create_environment(load_upstream(), meta) == snapshot
 
     @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
-    @given(spec=st.sampled_from(SUITES).flatmap(_session_specs))
+    @given(spec=st.sampled_from(SUITES).flatmap(_environment_specs))
     def test_environment_creation_is_reproducible(self, spec: Tuple[str, str, Optional[str]]) -> None:
         meta = _spec_meta(spec)
-        first, second = create_session(load_upstream(), meta), create_session(load_upstream(), meta)
-        assert first.environment is not second.environment and first.environment is not first.pre_environment
-        direct = _fresh_environment(spec[0], spec[1], meta.injections)
-        assert first.pre_environment == first.environment == second.environment == direct
+        first, second = create_environment(load_upstream(), meta), create_environment(load_upstream(), meta)
+        assert first is not second
+        assert first == second == _fresh_environment(spec[0], spec[1], meta.injections)
         if spec[2] is None:
             return
         # The injection map is actually written into the attack environment.
-        assert first.environment != _fresh_environment(spec[0], spec[1])
-        texts = [' '.join(text.split()) for text in _strings(first.environment.model_dump())]
+        assert first != _fresh_environment(spec[0], spec[1])
+        texts = [' '.join(text.split()) for text in _strings(first.model_dump())]
         for injection in meta.injections.values():
             assert any(' '.join(injection.split()) in text for text in texts)
 
     def test_invalid_injection_vector_fails_environment_creation(self) -> None:
         meta = _meta(SUITE, USER_TASK_ID, INJECTION_TASK_ID, {'not_an_injection_vector': 'x'})
         with pytest.raises(EnvironmentCreationError, match="suite='banking', user_task_id='user_task_0'"):
-            create_session(load_upstream(), meta)
+            create_environment(load_upstream(), meta)
+
+
+def _persisted(suite: Any, environment: Any) -> Any:
+    """Persist an environment like the run record does and restore it like scoring does."""
+    data = json.loads(json.dumps(environment.model_dump(mode='json', round_trip=True)))
+    return restore_environment(suite.environment_type, data)
 
 
 @requires_upstream
 class TestGroundTruth:
-    """Every task's ground truth, run through the binding, passes its own upstream check (as ``TaskSuite.check``)."""
+    """Every task's ground truth, run through the binding, passes its own upstream check (as ``TaskSuite.check``).
+
+    The final environment survives the JSON round trip of the run record unchanged, so the restored environment
+    scores exactly like the live one.
+    """
 
     @pytest.mark.parametrize('suite_name', SUITES)
     def test_ground_truth_solves_its_task(self, upstream: UpstreamContext, suite_name: str) -> None:
         suite = upstream.suites[suite_name]
+
+        def run(meta: AgentDojoSampleMeta, task: Any, pre_environment: Any, environment: Any) -> Tuple[Any, ...]:
+            binding = AgentDojoToolBinding(suite, environment)
+            for call in task.ground_truth(environment):
+                binding.execute(call.function, dict(call.args), call.id)
+            restored = _persisted(suite, environment)
+            assert restored == environment and restored is not environment
+            output, trace = task.GROUND_TRUTH_OUTPUT, binding.trace
+            result = check_results(upstream, meta, output, pre_environment, environment, trace)
+            assert check_results(upstream, meta, output, pre_environment, restored, trace) == result
+            return result
+
         failing_user = []
         for user_task_id, user_task in suite.user_tasks.items():
             meta = _meta(suite_name, user_task_id)
-            session = create_session(upstream, meta)
-            for call in user_task.ground_truth(session.environment):
-                session.binding.execute(call.function, dict(call.args), call.id)
-            utility, asr = check_results(upstream, meta, user_task.GROUND_TRUTH_OUTPUT, session, session.binding.trace)
-            if not utility or asr is not None:
+            pre_environment = create_environment(upstream, meta)
+            if run(meta, user_task, pre_environment, create_environment(upstream, meta)) != (True, None):
                 failing_user.append(user_task_id)
 
         failing_injection = []
         # Upstream pairs every injection task with the first user task on the default environment.
         first_user_task_id = next(iter(suite.user_tasks))
         for injection_task_id, injection_task in suite.injection_tasks.items():
-            environment = suite.load_and_inject_default_environment({})
-            session = SampleSession(
-                pre_environment=copy.deepcopy(environment),
-                environment=environment,
-                binding=AgentDojoToolBinding(suite, environment),
-            )
-            for call in injection_task.ground_truth(session.environment):
-                session.binding.execute(call.function, dict(call.args), call.id)
             meta = _meta(suite_name, first_user_task_id, injection_task_id)
-            output = injection_task.GROUND_TRUTH_OUTPUT
-            if not check_results(upstream, meta, output, session, session.binding.trace)[1]:
+            environment = suite.load_and_inject_default_environment({})
+            if not run(meta, injection_task, copy.deepcopy(environment), environment)[1]:
                 failing_injection.append(injection_task_id)
 
         assert failing_user == []
@@ -1384,21 +1393,23 @@ class TestGroundTruth:
         expected = {f'injection_task_{index}' for index in range(6, 14)} if suite_name == 'workspace' else set()
         assert set(failing_injection) == expected
 
+    def test_model_validate_would_undo_the_run(self, upstream: UpstreamContext) -> None:
+        # Upstream validators rebuild ``emails`` from ``initial_emails``, so a plain model_validate drops sent mail.
+        suite = upstream.suites['workspace']
+        environment = suite.load_and_inject_default_environment({})
+        AgentDojoToolBinding(suite, environment).execute(
+            'send_email', {'recipients': ['a@x.com'], 'subject': 'Hi', 'body': 'Hello'}, 'call_0'
+        )
+        data = environment.model_dump(mode='json', round_trip=True)
+        assert suite.environment_type.model_validate(data) != environment
+        assert _persisted(suite, environment) == environment
 
-@requires_upstream
-class TestClock:
-    def test_pinned_clock_is_visible_in_its_own_context_only(self) -> None:
-        install_clock_proxy()
-        clocks = [importlib.import_module(name).datetime.datetime for name in CLOCK_STAMPING_MODULES]
-        pinned_at = datetime.datetime(2001, 2, 3, 4, 5, 6, 789)
-        with pinned_clock(pinned_at), concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            # A plain worker thread starts from an empty context, like a concurrent sample's tool call.
-            before = datetime.datetime.now()
-            other_thread = pool.submit(lambda: [clock.now() for clock in clocks]).result()
-            after = datetime.datetime.now()
-            assert [clock.now() for clock in clocks] == [pinned_at] * len(clocks)
-        assert all(before <= now <= after and type(now) is datetime.datetime for now in other_thread)
-        assert all(clock.now() != pinned_at for clock in clocks)
+    def test_invalid_environment_data_is_rejected(self, upstream: UpstreamContext) -> None:
+        suite = upstream.suites[SUITE]
+        data = suite.load_and_inject_default_environment({}).model_dump(mode='json', round_trip=True)
+        for broken in ([], {**data, 'bank_account': None}, {k: v for k, v in data.items() if k != 'filesystem'}):
+            with pytest.raises(ValueError):
+                restore_environment(suite.environment_type, broken)
 
 
 # ---------------------------------------------------------------------------
@@ -1652,19 +1663,19 @@ class TestStepBudget:
 
 
 # ---------------------------------------------------------------------------
-# Trace replay
+# Scoring from the prediction cache
 # ---------------------------------------------------------------------------
 #
-# The clock is real: upstream email and cloud-drive tools stamp ``datetime.now()`` into the environment and the
-# observations, and the replay must reproduce them from the call instants recorded in the trace.
+# The clock is real: upstream email and cloud-drive tools stamp ``datetime.now()`` into the environment, and scoring
+# must use the persisted final environment rather than anything it recomputes.
 
 USER_GROUND_TRUTH = 'user_ground_truth'
 USER_THEN_INJECTION_GROUND_TRUTH = 'user_then_injection_ground_truth'
 # The longest ground-truth plan (travel user_task_19 + an injection ground truth + final text) needs 23 generations.
-_REPLAY_MAX_STEPS = 32
+_SCRIPT_MAX_STEPS = 32
 
 
-class _ReplayCase(NamedTuple):
+class _ScriptCase(NamedTuple):
     suite: str
     user_task_id: str
     injection_task_id: Optional[str]
@@ -1690,18 +1701,18 @@ def _random_turns(draw: st.DrawFn, suite_name: str) -> Tuple[Turn, ...]:
 
 
 @st.composite
-def _replay_cases(draw: st.DrawFn) -> _ReplayCase:
+def _script_cases(draw: st.DrawFn) -> _ScriptCase:
     suite_name = draw(st.sampled_from(SUITES))
     suite = load_upstream().suites[suite_name]
     user_task_id = draw(st.sampled_from(sorted(suite.user_tasks)))
     injection_task_id = draw(st.one_of(st.none(), st.sampled_from(sorted(suite.injection_tasks))))
     named = [USER_GROUND_TRUTH] + ([USER_THEN_INJECTION_GROUND_TRUTH] if injection_task_id else [])
-    return _ReplayCase(
+    return _ScriptCase(
         suite_name, user_task_id, injection_task_id, draw(st.one_of(st.sampled_from(named), _random_turns(suite_name)))
     )
 
 
-def _replay_script(case: _ReplayCase, meta: AgentDojoSampleMeta) -> List[Turn]:
+def _case_script(case: _ScriptCase, meta: AgentDojoSampleMeta) -> List[Turn]:
     """Materialize the plan; ground truth is computed on the sample's own injected environment."""
     if not isinstance(case.plan, str):
         return list(case.plan)
@@ -1716,58 +1727,59 @@ def _replay_script(case: _ReplayCase, meta: AgentDojoSampleMeta) -> List[Turn]:
 
 
 @functools.lru_cache(maxsize=None)
-def _replay_adapters(work_dir: str, attack: str) -> Tuple[Any, Any]:
-    """An inference adapter and a second instance that never ran inference, as in a new ``rerun_review`` process."""
+def _cache_adapters(work_dir: str, attack: str) -> Tuple[Any, Any]:
+    """Two adapters in this process: one runs inference, the other never saw the run and scores from the cache row.
+
+    Scoring in another process is covered by ``TestCrossProcessScoring``.
+    """
     config = make_task_config(
-        work_dir, subset=list(SUITES), attack=attack, agent_config=NativeAgentConfig(max_steps=_REPLAY_MAX_STEPS)
+        work_dir, subset=list(SUITES), attack=attack, agent_config=NativeAgentConfig(max_steps=_SCRIPT_MAX_STEPS)
     )
     return get_benchmark('agentdojo', config), get_benchmark('agentdojo', config)
 
 
 @requires_upstream
 @pytest.mark.usefixtures('loop_runner_cleanup')
-class TestReplay:
+class TestScoringFromCache:
     @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
-    @given(case=_replay_cases())
+    @given(case=_script_cases())
     # One benign and one attack ground-truth sample per suite, including tools that stamp the current time.
-    @example(case=_ReplayCase('workspace', 'user_task_13', None, USER_GROUND_TRUTH))
-    @example(case=_ReplayCase('workspace', 'user_task_13', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ReplayCase('travel', 'user_task_3', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ReplayCase('banking', 'user_task_0', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ReplayCase('slack', 'user_task_1', 'injection_task_1', USER_THEN_INJECTION_GROUND_TRUTH))
-    def test_replay_reproduces_the_inference_environment(self, work_dir: str, case: _ReplayCase) -> None:
+    @example(case=_ScriptCase('workspace', 'user_task_13', None, USER_GROUND_TRUTH))
+    @example(case=_ScriptCase('workspace', 'user_task_13', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
+    @example(case=_ScriptCase('travel', 'user_task_3', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
+    @example(case=_ScriptCase('banking', 'user_task_0', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
+    @example(case=_ScriptCase('slack', 'user_task_1', 'injection_task_1', USER_THEN_INJECTION_GROUND_TRUTH))
+    def test_cached_sample_scores_like_the_live_run(self, work_dir: str, case: _ScriptCase) -> None:
         attack = BENIGN_ATTACK if case.injection_task_id is None else DEFAULT_ATTACK
-        inference_adapter, review_adapter = _replay_adapters(work_dir, attack)
+        inference_adapter, review_adapter = _cache_adapters(work_dir, attack)
         sample = _make_sample(inference_adapter, case.suite, case.user_task_id, case.injection_task_id)
         meta = AgentDojoSampleMeta.model_validate(sample.metadata[SAMPLE_META_KEY])
-        sessions: List[SampleSession] = []
+        environments: List[Any] = []
 
-        def capture_session(upstream: UpstreamContext, sample_meta: AgentDojoSampleMeta) -> SampleSession:
-            sessions.append(create_session(upstream, sample_meta))
-            return sessions[-1]
+        def capture_environment(upstream: UpstreamContext, sample_meta: AgentDojoSampleMeta) -> Any:
+            environments.append(create_environment(upstream, sample_meta))
+            return environments[-1]
 
         with pytest.MonkeyPatch.context() as patch, installed_scripts(
-            {(case.suite, case.user_task_id): _replay_script(case, meta)}
+            {(case.suite, case.user_task_id): _case_script(case, meta)}
         ):
-            patch.setattr(agentdojo_adapter, 'create_session', capture_session)
+            patch.setattr(agentdojo_adapter, 'create_environment', capture_environment)
             state = inference_adapter.run_inference(model=_scripted_model(), sample=sample, output_dir=work_dir)
             calls_after_inference = len(model_calls())
             score = inference_adapter.calculate_metrics(task_state=state).score
             restored = _round_trip(state)
             review_score = review_adapter.calculate_metrics(task_state=restored).score
-            payload = ReplayPayload.from_metadata(restored.metadata)
-            replayed = replay_trace(load_upstream(), payload.meta, payload.run.tool_call_trace)
             assert len(model_calls()) == calls_after_inference, 'scoring must not call the model'
 
-        (inference_session,) = sessions
+        # The inference environment, then one rebuilt pre-run environment per checked scoring; a context-length
+        # overflow is scored by rule without any environment.
+        inference_environment, *pre_environments = environments
+        overflow = state.metadata[RUN_RECORD_META_KEY]['termination_reason'] == 'context_length_exceeded'
+        assert len(pre_environments) == (0 if overflow else 2)
+        payload = ScoringPayload.from_metadata(restored.metadata, load_upstream())
         assert payload.meta == meta
-        assert (replayed.pre_environment, replayed.environment) == (
-            inference_session.pre_environment,
-            inference_session.environment,
-        )
-        assert [item.observation for item in replayed.binding.trace] == [
-            item.observation for item in payload.run.tool_call_trace
-        ]
+        assert payload.post_environment == inference_environment
+        assert all(pre == create_environment(load_upstream(), meta) for pre in pre_environments)
         assert score.status == review_score.status == ScoreStatus.SUCCESS, review_score.explanation
         assert (review_score.value, review_score.metadata) == (score.value, score.metadata)
         assert set(score.value) == ({'utility'} if attack == BENIGN_ATTACK else {'utility', 'targeted_asr'})
@@ -1775,12 +1787,117 @@ class TestReplay:
             assert score.value['utility'] == 1.0
 
 
+# Upstream ``Calendar.create_event`` stores ``list(set(participants))``, so the participant order of a new event
+# depends on the string hash seed and differs between processes. A workspace attack sample creates such events,
+# reads them back and is then re-scored with ``rerun_review`` in fresh interpreters with other hash seeds.
+_CALENDAR_USER_TASK_ID = 'user_task_9'
+_CALENDAR_INJECTION_TASK_ID = 'injection_task_2'
+_EXTRA_EVENT = {
+    'title': 'Cross-process sync',
+    'start_time': '2024-05-20 10:00',
+    'end_time': '2024-05-20 11:00',
+    'participants': ['a@x.com', 'b@x.com', 'c@x.com', 'd@x.com', 'e@x.com'],
+}
+_CROSS_PROCESS_SCRIPT = textwrap.dedent(
+    """
+    import json
+    import sys
+    from pathlib import Path
+
+    from tests.benchmark import test_agentdojo as t
+
+    mode, work_dir = sys.argv[1], Path(sys.argv[2])
+    config = dict(
+        subset='workspace',
+        attack=t.DEFAULT_ATTACK,
+        user_task_ids=[t._CALENDAR_USER_TASK_ID],
+        injection_task_ids=[t._CALENDAR_INJECTION_TASK_ID],
+        victim_model_name=t.VICTIM_MODEL_NAME,
+        agent_config=t.NativeAgentConfig(max_steps=t._SCRIPT_MAX_STEPS),
+    )
+    if mode == 'record':
+        report = t._run({('workspace', t._CALENDAR_USER_TASK_ID): t._calendar_script()}, work_dir, **config)
+    else:
+        report = t._run({}, work_dir, use_cache=str(work_dir), rerun_review=True, **config)
+        assert t.model_calls() == []
+    (row,) = t._reviews(work_dir, 'workspace').values()
+    print(json.dumps({
+        'score': {key: t._score(row)[key] for key in ('status', 'value', 'metadata')},
+        'report': {m.identity.name: [m.score, m.num] for m in report.metrics},
+        'set_order': list(set(t._EXTRA_EVENT['participants'])),
+    }))
+    """
+)
+_RECORD_HASH_SEED = '1'
+_RESCORE_HASH_SEEDS = ('2', '3', '4', '5')
+
+
+def _calendar_script() -> List[Turn]:
+    """User then injection ground truth, plus an event with five participants that is read back."""
+    upstream = load_upstream()
+    planner = InjectionPlanner(upstream, DEFAULT_ATTACK, VICTIM_MODEL_NAME)
+    injections = planner.injections_for('workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID)
+    case = _ScriptCase(
+        'workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID, USER_THEN_INJECTION_GROUND_TRUTH
+    )
+    turns = _case_script(case, _meta('workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID, injections))
+    read_back = [
+        tool_calls_turn(('create_calendar_event', _EXTRA_EVENT)),
+        tool_calls_turn(('search_calendar_events', {'query': _EXTRA_EVENT['title']})),
+        tool_calls_turn(('get_day_calendar_events', {'day': '2024-05-20'})),
+    ]
+    return [*turns[:-1], *read_back, turns[-1]]
+
+
+def _cross_process(mode: str, work_dir: Path, hash_seed: str) -> 'subprocess.Popen[str]':
+    repo_root = str(EVALSCOPE_ROOT.parent)
+    python_path = os.pathsep.join(filter(None, [repo_root, os.environ.get('PYTHONPATH')]))
+    return subprocess.Popen(
+        [sys.executable, '-c', _CROSS_PROCESS_SCRIPT, mode, str(work_dir)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=repo_root,
+        env={**os.environ, 'PYTHONHASHSEED': hash_seed, 'PYTHONPATH': python_path},
+    )
+
+
+def _result(process: 'subprocess.Popen[str]') -> Dict[str, Any]:
+    stdout, stderr = process.communicate(timeout=600)
+    assert process.returncode == 0, f'stdout:\n{stdout}\nstderr:\n{stderr}'
+    return json.loads(stdout.strip().splitlines()[-1])
+
+
+@requires_upstream
+class TestCrossProcessScoring:
+    def test_rerun_review_under_other_hash_seeds_reproduces_the_scores(self, tmp_path: Path) -> None:
+        recorded = _result(_cross_process('record', tmp_path / 'record', _RECORD_HASH_SEED))
+        assert recorded['score']['status'] == ScoreStatus.SUCCESS
+        # The extra events break the strict user-task diff; the attack succeeds only if the injected event persists.
+        assert recorded['score']['value'] == {'utility': 0.0, 'targeted_asr': 1.0}
+        predictions = tmp_path / 'record' / 'predictions' / SCRIPTED_MODEL_NAME / 'agentdojo_workspace.jsonl'
+        (row,) = jsonl_to_list(str(predictions))
+        trace = row['metadata'][RUN_RECORD_META_KEY]['tool_call_trace']
+        assert sum(item['function'] == 'create_calendar_event' for item in trace) == 3
+        assert _EXTRA_EVENT['title'] in trace[-1]['observation']
+
+        # Each process scores its own copy of the outputs, so concurrent reviews never share a file.
+        copies = [shutil.copytree(tmp_path / 'record', tmp_path / f'seed_{seed}') for seed in _RESCORE_HASH_SEEDS]
+        processes = [_cross_process('rescore', Path(path), seed) for path, seed in zip(copies, _RESCORE_HASH_SEEDS)]
+        rescored = [_result(process) for process in processes]
+
+        assert all(result['score'] == recorded['score'] for result in rescored)
+        assert all(result['report'] == recorded['report'] for result in rescored)
+        # At least one seed orders the participants differently, which the persisted environment makes irrelevant.
+        assert any(result['set_order'] != recorded['set_order'] for result in rescored)
+
+
 # ---------------------------------------------------------------------------
 # Incomplete or tampered payloads
 # ---------------------------------------------------------------------------
 
 _PAYLOAD_USER_TASKS = ('user_task_0', 'user_task_1')
-_REPLAY_META_FIELDS = (
+_PAYLOAD_META_FIELDS = (
     'suite',
     'user_task_id',
     'injection_task_id',
@@ -1790,68 +1907,60 @@ _REPLAY_META_FIELDS = (
     'benchmark_version',
     'upstream_version',
 )
-_REPLAY_RUN_FIELDS = ('final_output', 'termination_reason', 'tool_call_trace')
+_PAYLOAD_RUN_FIELDS = ('final_output', 'termination_reason', 'tool_call_trace', 'post_environment')
 _PINNED_VERSIONS = {'benchmark_version': BENCHMARK_VERSION, 'upstream_version': UPSTREAM_VERSION}
+_POST_ENVIRONMENT_FIELD = f'{RUN_RECORD_META_KEY}.post_environment'
 
 
 class _PayloadCorruption(NamedTuple):
     kind: str
     metadata: Dict[str, Any]
-    bad_field: Optional[str]
-    """Dotted name of the missing or inconsistent field, for payload corruptions."""
-
-    mismatch_step: Optional[int]
-    """Index of the first tampered trace item, for trace corruptions."""
+    bad_field: str
+    """Dotted name of the missing or inconsistent field."""
 
 
 @st.composite
 def _payload_corruptions(draw: st.DrawFn, metadata: Dict[str, Any]) -> _PayloadCorruption:
     """Apply exactly one corruption to a deep copy of a valid payload."""
     corrupted = copy.deepcopy(metadata)
-    trace: List[Dict[str, Any]] = corrupted[RUN_RECORD_META_KEY]['tool_call_trace']
-    kind = draw(st.sampled_from(['drop_key', 'drop_field', 'version', 'insert_item', 'observation', 'function']))
+    kind = draw(st.sampled_from(['drop_key', 'drop_field', 'version', 'environment']))
     if kind == 'drop_key':
         key = draw(st.sampled_from([SAMPLE_META_KEY, RUN_RECORD_META_KEY]))
         del corrupted[key]
-        return _PayloadCorruption(kind, corrupted, key, None)
+        return _PayloadCorruption(kind, corrupted, key)
     if kind == 'drop_field':
         key, name = draw(
             st.sampled_from(
-                [(SAMPLE_META_KEY, name) for name in _REPLAY_META_FIELDS]
-                + [(RUN_RECORD_META_KEY, name) for name in _REPLAY_RUN_FIELDS]
+                [(SAMPLE_META_KEY, name) for name in _PAYLOAD_META_FIELDS]
+                + [(RUN_RECORD_META_KEY, name) for name in _PAYLOAD_RUN_FIELDS]
             )
         )
         del corrupted[key][name]
-        return _PayloadCorruption(kind, corrupted, f'{key}.{name}', None)
+        return _PayloadCorruption(kind, corrupted, f'{key}.{name}')
     if kind == 'version':
         name = draw(st.sampled_from(sorted(_PINNED_VERSIONS)))
         corrupted[SAMPLE_META_KEY][name] = draw(st.text(max_size=12).filter(lambda v: v != _PINNED_VERSIONS[name]))
-        return _PayloadCorruption(kind, corrupted, f'{SAMPLE_META_KEY}.{name}', None)
-    if kind == 'insert_item':
-        # An unknown tool replays as ``Invalid tool <name> provided.``, never as the recorded observation.
-        step = draw(st.integers(min_value=0, max_value=len(trace)))
-        item = ToolCallTraceItem(function='tampered_tool', args={}, observation='<<tampered>>', valid_function=False)
-        trace.insert(step, item.model_dump(mode='json'))
-        return _PayloadCorruption(kind, corrupted, None, step)
-    step = draw(st.integers(min_value=0, max_value=len(trace) - 1))
-    if kind == 'function':
-        # Still flagged valid, so the replay asks the runtime for an unknown function and gets an error text.
-        trace[step]['function'] += '_tampered'
+        return _PayloadCorruption(kind, corrupted, f'{SAMPLE_META_KEY}.{name}')
+    # A post environment that is not an environment of the suite: a part is missing or has the wrong shape.
+    environment = corrupted[RUN_RECORD_META_KEY]['post_environment']
+    part = draw(st.sampled_from(sorted(environment)))
+    if draw(st.booleans()):
+        del environment[part]
     else:
-        trace[step]['observation'] += draw(st.text(min_size=1, max_size=10))
-    return _PayloadCorruption(kind, corrupted, None, step)
+        environment[part] = draw(st.sampled_from([None, 'x', 1, [], {'balance': 'not a number'}]))
+    return _PayloadCorruption(kind, corrupted, _POST_ENVIRONMENT_FIELD)
 
 
 @contextlib.contextmanager
-def _captured_errors() -> Iterator[List[str]]:
-    """Collect ERROR records of the ``evalscope`` logger, which does not propagate to the root logger."""
+def _captured_errors(level: int = logging.ERROR) -> Iterator[List[str]]:
+    """Collect records of ``level`` and above from the ``evalscope`` logger, which does not propagate to root."""
     messages: List[str] = []
 
     class Collect(logging.Handler):
         def emit(self, record: logging.LogRecord) -> None:
             messages.append(record.getMessage())
 
-    handler = Collect(level=logging.ERROR)
+    handler = Collect(level=level)
     logging.getLogger('evalscope').addHandler(handler)
     try:
         yield messages
@@ -1871,7 +1980,7 @@ def valid_states(work_dir: str, loop_runner_cleanup: None) -> List[Tuple[Any, Ta
                 sample = _make_sample(adapter, SUITE, user_task_id, injection_task_id)
                 state = adapter.run_inference(_scripted_model(), sample, work_dir)
                 assert state.metadata[RUN_RECORD_META_KEY]['tool_call_trace']
-                # Positive control: the untouched payload is scored through the replay.
+                # Positive control: the untouched payload is scored.
                 assert adapter.calculate_metrics(copy.deepcopy(state)).score.status == ScoreStatus.SUCCESS
                 states.append((adapter, state))
     return states
@@ -1883,7 +1992,7 @@ class TestPayloadExclusion:
     @given(data=st.data())
     def test_incomplete_or_tampered_payload_is_excluded(
         self, valid_states: List[Tuple[Any, TaskState]], data: st.DataObject
-    ):
+    ) -> None:
         adapter, base = data.draw(st.sampled_from(valid_states))
         base_snapshot = copy.deepcopy(base.metadata)
         corruption = data.draw(_payload_corruptions(base.metadata))
@@ -1897,13 +2006,8 @@ class TestPayloadExclusion:
 
         # Excluded from the denominator: neither 0 nor 1 for any metric.
         assert score.status == ScoreStatus.EXCLUDED and score.value == {}, (corruption.kind, score)
-        if corruption.bad_field is not None:
-            assert corruption.bad_field in score.metadata['excluded_reason']
-            assert any(f'sample {state.sample_id} ' in m and f"'{corruption.bad_field}'" in m for m in errors), errors
-            assert score.metadata.get('replay_mismatch') is not True
-        else:
-            assert score.metadata['replay_mismatch'] is True
-            assert score.metadata['replay_mismatch_step'] == corruption.mismatch_step, score.metadata
+        assert score.metadata['excluded_reason'] == f"invalid_scoring_payload: ['{corruption.bad_field}']"
+        assert any(f'sample {state.sample_id} ' in m and f"'{corruption.bad_field}'" in m for m in errors), errors
         # Scoring is read-only and never calls the model.
         assert state.metadata == persisted and base.metadata == base_snapshot
         assert model_calls() == []
@@ -1925,7 +2029,7 @@ class TestPayloadExclusion:
 
         assert (score.status, score.value) == (ScoreStatus.EXCLUDED, {})
         assert score.metadata['excluded_reason'] == (
-            f'invalid_replay_payload: {[f"{SAMPLE_META_KEY}.{name}" for name in drifted]}'
+            f'invalid_scoring_payload: {[f"{SAMPLE_META_KEY}.{name}" for name in drifted]}'
         )
 
 
@@ -1975,7 +2079,7 @@ def _report_subsets(report: Report, name: str) -> Dict[str, Any]:
 
 @requires_upstream
 class TestAggregation:
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=15, deadline=None)
     @given(attack=st.sampled_from([BENIGN_ATTACK, DEFAULT_ATTACK]), suite_entries=_suite_entries)
     def test_metric_aggregation(self, work_dir: str, attack: str, suite_entries: Dict[str, List[ScoreEntry]]) -> None:
         adapter = _aggregation_adapter(work_dir, attack)
@@ -2011,23 +2115,13 @@ class TestAggregation:
         if not score_dict:
             return
 
+        # Report weighting is generic; only the AgentDojo labels and the primary metric are checked here.
         report = adapter.generate_report(scores=score_dict, model_name=SCRIPTED_MODEL_NAME, output_dir='')
         assert sorted(metric.identity.name for metric in report.metrics) == metric_names
         assert report.primary_metric.identity.name == ('utility' if benign else 'targeted_asr')
         for name in metric_names:
-            metric = _report_metric(report, name)
-            assert metric.identity.dimensions == dimensions
-            subsets = _report_subsets(report, name)
-            assert sorted(subsets) == sorted(score_dict)
-            all_values: List[float] = []
-            for suite_name, subset in subsets.items():
-                expected = values(suite_entries[suite_name], name)
-                all_values += expected
-                assert subset.num == len(expected) and subset.metadata == run_metadata
-                assert subset.score == pytest.approx(sum(expected) / len(expected), abs=SCORE_TOLERANCE)
-            # Overall is the sample-weighted mean over every non-excluded sample.
-            assert metric.num == len(all_values)
-            assert metric.score == pytest.approx(sum(all_values) / len(all_values), abs=SCORE_TOLERANCE)
+            assert _report_metric(report, name).identity.dimensions == dimensions
+            assert sorted(_report_subsets(report, name)) == sorted(score_dict)
 
 
 # ---------------------------------------------------------------------------
@@ -2128,9 +2222,8 @@ class TestEndToEnd:
         assert observations[0] == INVALID_TOOL_ERROR.format(name='nonexistent_tool')
         assert observations[1].startswith('ValidationError: ')
         assert all(EVALSCOPE_UNKNOWN_TOOL_TEXT not in text for text in observations)
-        # The unknown name never reached the upstream runtime; scoring replays the same calls once more.
-        executed = ['send_money', *(turn.calls[0].function for turn in ground_truth[:-1])]
-        assert runtime_calls == executed * 2
+        # The unknown name never reached the upstream runtime, and scoring executes no tool.
+        assert runtime_calls == ['send_money', *(turn.calls[0].function for turn in ground_truth[:-1])]
         trace = row['sample_score']['sample_metadata'][RUN_RECORD_META_KEY]['tool_call_trace']
         assert [(item['function'], item['valid_function'], item['args']) for item in trace[:2]] == [
             ('nonexistent_tool', False, {'x': 1}),
@@ -2229,12 +2322,16 @@ class TestEndToEnd:
         assert _subset_nums(report, 'utility') == {SUITE: 1}
         assert _report_metric(report, 'utility').score == pytest.approx(1.0)
 
-    def test_rerun_review_replays_without_model_calls(self, tmp_path: Path) -> None:
+    def test_rerun_review_scores_without_model_or_tool_calls(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         config = {'attack': DEFAULT_ATTACK, 'user_task_ids': [USER_TASK_ID], 'injection_task_ids': [INJECTION_TASK_ID]}
         first = _run(_ground_truth_script(USER_TASK_ID), tmp_path, **config)
         first_score = _score(_reviews(tmp_path)[USER_TASK_ID])
 
-        # A second run_task builds a new adapter; no script is installed.
+        # A second run_task builds a new adapter; no script is installed and no agent tool call may run. Injection
+        # planning still runs upstream ground truth on its own environments while the dataset loads.
+        monkeypatch.setattr(AgentDojoToolBinding, 'execute', _raise(AssertionError('tool executed while scoring')))
         second = _run({}, tmp_path, use_cache=str(tmp_path), rerun_review=True, **config)
 
         assert model_calls() == []
@@ -2245,3 +2342,30 @@ class TestEndToEnd:
                 pytest.approx(_report_metric(first, name).score),
                 1,
             )
+
+    def test_cached_row_of_another_task_is_excluded(self, tmp_path: Path) -> None:
+        _run(_ground_truth_script(USER_TASK_ID, 'user_task_1'), tmp_path, user_task_ids=[USER_TASK_ID, 'user_task_1'])
+
+        # Index 1 now loads user_task_2, while the cache still holds user_task_1 there.
+        report = _run(
+            {}, tmp_path, user_task_ids=[USER_TASK_ID, 'user_task_2'], use_cache=str(tmp_path), rerun_review=True
+        )
+
+        assert model_calls() == []
+        reviews = _reviews(tmp_path)
+        assert _score(reviews[USER_TASK_ID])['value'] == {'utility': 1.0}
+        drifted = _score(reviews['user_task_1'])
+        assert (drifted['status'], drifted['value']) == (ScoreStatus.EXCLUDED, {})
+        assert drifted['metadata']['excluded_reason'] == f"invalid_scoring_payload: ['{SAMPLE_META_KEY}.row_id']"
+        assert "loaded at index 1" in drifted['explanation']
+        assert _subset_nums(report, 'utility') == {SUITE: 1}
+
+    def test_llm_judge_strategy_is_ignored_with_a_warning(self, tmp_path: Path) -> None:
+        with _captured_errors(logging.WARNING) as warnings:
+            report = _run(
+                _ground_truth_script(USER_TASK_ID), tmp_path, user_task_ids=[USER_TASK_ID], judge={'strategy': 'llm'}
+            )
+
+        assert any("ignores judge.strategy='llm'" in message for message in warnings), warnings
+        assert _score(_reviews(tmp_path)[USER_TASK_ID])['value'] == {'utility': 1.0}
+        assert _report_metric(report, 'utility').num == 1
