@@ -615,6 +615,9 @@ class TestStatic:
         section = description.split('## Task Description')[1].split('##')[0]
         fields = re.findall(r'^\s*-\s+\*\*(.+?)\*\*\s*:\s*\S', section, flags=re.MULTILINE)
         assert fields == ['Task Type', 'Input', 'Output', 'Domain']
+        # The user-facing facts stay in sync with the pinned versions and the attack list.
+        assert f'`{BENCHMARK_VERSION}`' in description and f'`agentdojo=={UPSTREAM_VERSION}`' in description
+        assert f'{len(SUPPORTED_ATTACKS) - 1} fixed-template attacks' in description
 
     @pytest.mark.parametrize(
         ('metric', 'display_name', 'direction'),

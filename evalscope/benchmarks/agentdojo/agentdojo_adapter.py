@@ -3,6 +3,21 @@
 The upstream ``agentdojo`` package is never imported at module level. ``load_upstream()`` runs only when the adapter
 is built with a ``TaskConfig`` (or from ``load_subset()`` for the docs statistics path), so the module stays
 importable when the optional dependency is not installed.
+
+Differences from the upstream runner:
+
+- Model and environment errors are raised to the evaluator instead of being scored; with ``ignore_errors`` the sample
+  is skipped and retried on a ``use_cache`` resume. A context-length overflow is scored as a failed user task and a
+  successful attack, as upstream.
+- Samples with a ``content_filter`` reply, missing or invalid persisted data, a raising upstream check, or a cached
+  payload from another task, attack or victim model name are ``EXCLUDED`` from the metrics.
+- An empty final answer is scored as an empty string; upstream reruns the pipeline up to 3 times.
+- Tool calls with invalid JSON arguments are answered with an error and left out of the trace given to the upstream
+  checks. A ``TypeError`` from ``tool_result_to_str`` is returned to the model as an observation; upstream aborts.
+- An empty function name ``''`` gets the same error as the upstream Google-client sentinel (see ``tool_binding``).
+- ``agent_config.max_steps`` (default 15) counts model generations; upstream ``max_iters=15`` allows 16 LLM calls.
+- Scoring restores the persisted final environment without re-validating its fields, so ``rerun_review`` and a
+  ``use_cache`` resume reproduce the same scores without calling the model or re-executing tools.
 """
 
 import re
@@ -53,34 +68,28 @@ _TASK_NUMBER_PATTERN = re.compile(r'_(\d+)$')
 EXTRA_PARAMS = {
     'attack': {
         'type': 'str',
-        'description': (
-            'Prompt-injection attack used to build the injected environments. Matched case-sensitively. '
-            "Use 'none' for a benign run that measures utility without injections."
-        ),
+        'description': "Prompt-injection attack to run. Use 'none' for a benign run without injections.",
         'value': DEFAULT_ATTACK,
         'choices': list(SUPPORTED_ATTACKS),
     },
     'victim_model_name': {
         'type': 'str',
         'description': (
-            'Model name substituted into attack templates. When unset, it is resolved from the evaluated model id '
-            "through the upstream MODEL_NAMES table, falling back to 'the AI language model'."
+            'Model name used in attack texts that mention the target model. Defaults to a name derived from the '
+            'model id.'
         ),
         'value': None,
     },
     'user_task_ids': {
         'type': 'list',
-        'description': (
-            'Exact user task ids to evaluate, e.g. ["user_task_0"]. Unset or empty means no filter. '
-            'Only supported when a single suite is selected.'
-        ),
+        'description': 'Only evaluate these user tasks, e.g. ["user_task_0"]. Requires a single suite.',
         'value': None,
     },
     'injection_task_ids': {
         'type': 'list',
         'description': (
-            'Exact injection task ids to evaluate in attack mode, e.g. ["injection_task_0"]. Unset or empty '
-            'means no filter. Ignored for benign runs. Only supported when a single suite is selected.'
+            'Only evaluate these injection tasks, e.g. ["injection_task_0"]. Requires a single suite; '
+            'ignored for benign runs.'
         ),
         'value': None,
     },
@@ -89,74 +98,40 @@ EXTRA_PARAMS = {
 DESCRIPTION = f"""
 ## Overview
 
-AgentDojo is a dynamic benchmark for prompt-injection attacks against tool-using LLM agents. The agent solves
-realistic user tasks with the tools of a simulated environment while some tool results carry injected instructions
-that try to make it pursue an attacker goal. EvalScope measures how well the agent completes the user task and how
-often the injection succeeds.
+AgentDojo evaluates how robust tool-using LLM agents are to prompt injection. The agent solves realistic user tasks in
+simulated environments while some tool outputs contain injected instructions that try to make it carry out an
+attacker's goal.
 
 ## Task Description
 
-- **Task Type**: Tool-use agent security evaluation (prompt injection)
-- **Input**: The upstream default system message, a user task prompt and the tools of the suite
-- **Output**: A sequence of tool calls followed by a final assistant answer
-- **Domain**: Email and calendar, travel booking, online banking, team messaging
+- **Task Type**: Tool-use agent security (prompt injection)
+- **Input**: A user task and the tools of a simulated environment
+- **Output**: Tool calls followed by a final answer
+- **Domain**: Workspace (email, calendar, cloud drive), travel booking, online banking, Slack
 
 ## Key Features
 
-- Pinned to AgentDojo benchmark version `{BENCHMARK_VERSION}` and the upstream package `agentdojo=={UPSTREAM_VERSION}`.
-  Samples are generated from the installed upstream task suites; there is no separate dataset download.
-- Four suites (subsets): `workspace` (40 user tasks, 14 injection tasks), `travel` (20 / 7), `banking` (16 / 9) and
-  `slack` (21 / 5). An attack run pairs every user task with every injection task of its suite (949 samples in
-  total); a benign run uses each user task once (97 samples). The sample counts in the dataset statistics are the
-  attack-run counts. Samples are ordered by user task number, then injection task number.
-- Choose the attack with `dataset_args.agentdojo.extra_params.attack`. Supported attacks: `important_instructions`
-  (default), `important_instructions_no_user_name`, `important_instructions_no_model_name`,
-  `important_instructions_no_names`, `important_instructions_wrong_model_name`,
-  `important_instructions_wrong_user_name`, `tool_knowledge`, `direct`, `ignore_previous`, `system_message`,
-  `injecagent`, and `none` for a benign run without injections.
-- Injection texts and positions come from the upstream attack classes. The `{{model}}` placeholder uses
-  `victim_model_name` when set; otherwise the first upstream `MODEL_NAMES` key contained in the evaluated model id
-  selects the name, falling back to `the AI language model` with a warning.
-- `user_task_ids` and `injection_task_ids` filter exact task ids before `limit`; they require a single suite in
-  `subset_list`, and `injection_task_ids` is ignored for benign runs.
-- Each sample runs on a fresh, isolated environment through EvalScope's native AgentLoop. The model only sees the
-  suite tools; only `NativeAgentConfig` with the `function_calling` strategy is supported, and custom `tools` or
-  `mcp_servers` are rejected.
+- Four suites: `workspace`, `travel`, `banking` and `slack`, with 97 user tasks and 35 injection tasks (AgentDojo
+  `{BENCHMARK_VERSION}`).
+- An attack run pairs every user task with every injection task of its suite (949 samples); a benign run
+  (`attack='none'`) uses each user task once (97 samples).
+- 11 fixed-template attacks from the paper, selected with `extra_params.attack` (default `{DEFAULT_ATTACK}`).
+- Results are scored by checking the final environment state with the official deterministic task checks; no LLM
+  judge is used.
 
 ## Evaluation Notes
 
-- Metrics: `utility` is the fraction of scored samples whose user task succeeded; `targeted_asr` (attack success
-  rate, lower is better) is the fraction of scored attack samples whose injection task succeeded. The primary metric
-  is `utility` for `attack=none` and `targeted_asr` for any other attack. Scores are reported per suite.
-- Benign utility needs a separate run with `attack=none`; utility under attack and targeted ASR come from a run with
-  any other supported attack.
-- Scoring uses the deterministic upstream utility and security checks; no LLM judge is involved, and an explicit
-  `judge.strategy` of `llm` or `llm_recall` is ignored with a warning. Each run persists the tool call trace and the
-  final task environment of every sample in both the predictions and the reviews files: 100-160 KB per `workspace`
-  sample in each file (about 60-90 MB per file for the 560 `workspace` attack samples) and at most about 30 KB per
-  sample for the other suites.
-  Scoring restores that environment exactly, without re-validating its fields (upstream tools store unvalidated
-  email addresses), and rebuilds the pre-run environment from the sample metadata, so `rerun_review`
-  and a `use_cache` resume reproduce the same scores in any process, without calling the model or re-executing
-  tools.
-- Differences from the upstream runner: a context-length overflow is scored as a failed user task and a successful
-  attack (as upstream). Model and environment errors are raised to the evaluator: with `ignore_errors` the sample is
-  skipped and retried on a `use_cache` resume. A sample is excluded from the metric denominator, instead of
-  counting as a defended or successful attack, when the provider returned a `content_filter` reply, the persisted
-  data is missing or invalid, an upstream check raised, or the cached sample belongs to another task (the task
-  filters, `limit` or `shuffle` changed) or was built with a different attack or victim model name. `num` can
-  therefore be below the sample count. An empty final answer is scored as an empty string instead of rerunning the
-  pipeline (upstream retries up to 3 times). Tool calls whose arguments are not valid JSON are answered with an
-  error and are not part of the trace given to the upstream trace-based checks. A tool result that the upstream
-  formatter `tool_result_to_str` rejects with a `TypeError` is returned to the model as the observation
-  `TypeError: <message>` and the loop continues, while upstream aborts the run. The step budget follows EvalScope semantics:
-  `agent_config.max_steps` (default 15, must be positive) counts model generations, while upstream `max_iters=15`
-  allows 16 LLM calls.
-- With `tool_knowledge`, `workspace` injection tasks 6-13 have empty upstream ground truth, so their injection text
-  carries no tool-call hints, the same as upstream.
-- Install the optional dependency with `pip install 'evalscope[agentdojo]'` (pins `agentdojo=={UPSTREAM_VERSION}`).
-- Not supported: the `manual`, `dos`, `swearwords_dos`, `captcha_dos`, `offensive_email_dos` and `felony_dos`
-  attacks, prompt-injection defenses, and the `workspace_plus` suite.
+- Metrics: `utility` (the user task was completed, higher is better) and `targeted_asr` (the attacker's goal was
+  achieved, lower is better). The primary metric is `targeted_asr` for attack runs and `utility` for benign runs.
+- Run once with `attack='none'` for benign utility, and once with an attack for utility under attack and attack
+  success rate.
+- Install with `pip install 'evalscope[agentdojo]'`. Samples are built from the installed
+  `agentdojo=={UPSTREAM_VERSION}` package, so no dataset is downloaded.
+- Uses EvalScope's native agent loop with the `function_calling` strategy; the default step budget is 15 model calls
+  (`agent_config.max_steps`).
+- Samples that fail to run (with `ignore_errors` enabled), cannot be scored, or whose reply is blocked by the
+  provider's content filter are left out of the metrics, so `num` can be lower than the number of samples.
+- Not supported: DoS and manual attacks, prompt-injection defenses and the `workspace_plus` suite.
 """.strip()
 
 
