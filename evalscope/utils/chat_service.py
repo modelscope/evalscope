@@ -109,6 +109,7 @@ class ChatService:
         self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
         self.model_id = os.path.basename(model_path)
         from evalscope.utils.model_utils import get_device
+
         self.device = torch.device(get_device())
 
     def count_tokens(self, text: str) -> int:

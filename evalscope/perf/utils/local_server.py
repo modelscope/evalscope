@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI):
     yield
     try:
         import torch
+
         from evalscope.utils.model_utils import get_device
 
         device = get_device()
@@ -71,6 +72,7 @@ def start_app(args: Arguments):
 
     elif args.api == 'local_vllm':
         import torch
+
         from evalscope.utils.model_utils import get_device
 
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
