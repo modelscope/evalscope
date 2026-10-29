@@ -50,7 +50,9 @@ pip install evalscope[aigc] -U
 ## OpenAI-Compatible Image Service
 
 EvalScope supports self-hosted services that implement the OpenAI Images API contract. Set `eval_type` to
-`text2image` and pass the API base URL:
+`text2image` and pass the API base URL. Omitting `eval_type` selects `text2image` automatically for an image
+generation task, and `eval_type='openai_api'` is corrected to it with a warning, because the Chat Completions
+API cannot generate images:
 
 ```python
 from evalscope import TaskConfig, run_task

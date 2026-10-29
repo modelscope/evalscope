@@ -547,6 +547,18 @@ class TaskConfig(BaseArgument):
                 EvalType.TEXT2IMAGE if self.model_task == ModelTask.IMAGE_GENERATION else EvalType.OPENAI_API
             )
             logger.info(f"api_url is provided, setting eval_type to '{self.eval_type}'.")
+        elif (
+            self.api_url is not None
+            and self.eval_type == EvalType.OPENAI_API
+            and self.model_task == ModelTask.IMAGE_GENERATION
+        ):
+            # openai_api targets Chat Completions, which cannot generate images: the request would
+            # reach /chat/completions on an image endpoint and fail.
+            logger.warning(
+                f"eval_type '{EvalType.OPENAI_API}' cannot serve image generation; "
+                f"using '{EvalType.TEXT2IMAGE}' for the image generation service instead."
+            )
+            self.eval_type = EvalType.TEXT2IMAGE
 
         # Set eval_type to CHECKPOINT if model is a string path and eval_type is not set
         if self.model and self.eval_type is None:

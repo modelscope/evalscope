@@ -475,6 +475,48 @@ def test_image_generation_service_is_selected_from_task_config() -> None:
     assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
 
 
+def test_image_generation_service_corrects_openai_api_eval_type() -> None:
+    with _image_service() as service_url:
+        task_config = TaskConfig(
+            model='test-image-model',
+            model_task=ModelTask.IMAGE_GENERATION,
+            # The pairing reported in issue #1040: an Images endpoint with eval_type=openai_api,
+            # which would otherwise post to /chat/completions.
+            api_url=f'{service_url}/v1/images/generations',
+            eval_type=EvalType.OPENAI_API,
+            api_key='EMPTY',
+        )
+        model = get_model_with_task_config(task_config)
+        output = model.generate('Draw a lighthouse at dusk.')
+
+    assert task_config.eval_type == EvalType.TEXT2IMAGE
+    assert _ImageServiceHandler.requests[0]['path'] == '/v1/images/generations'
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
+
+
+def test_text_generation_service_keeps_openai_api_eval_type() -> None:
+    task_config = TaskConfig(
+        model='test-chat-model',
+        api_url='http://127.0.0.1:1/v1',
+        eval_type=EvalType.OPENAI_API,
+        api_key='EMPTY',
+    )
+
+    assert task_config.eval_type == EvalType.OPENAI_API
+
+
+def test_image_editing_service_keeps_its_eval_type() -> None:
+    task_config = TaskConfig(
+        model='test-edit-model',
+        model_task=ModelTask.IMAGE_GENERATION,
+        api_url='http://127.0.0.1:1/v1',
+        eval_type=EvalType.IMAGE_EDITING,
+        api_key='EMPTY',
+    )
+
+    assert task_config.eval_type == EvalType.IMAGE_EDITING
+
+
 def test_text2image_adapter_saves_data_uri_output(tmp_path: Path) -> None:
     adapter = _t2i_adapter()
     output = _image_output()

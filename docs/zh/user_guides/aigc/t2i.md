@@ -50,7 +50,8 @@ pip install evalscope[aigc] -U
 ## OpenAI 兼容的图像生成服务
 
 对于自托管服务，当前支持符合 OpenAI Images API 格式的接口。将 `eval_type` 设为
-`text2image`，并传入 API 的基础地址：
+`text2image`，并传入 API 的基础地址。图像生成任务不填 `eval_type` 时会自动选择 `text2image`；
+填 `openai_api` 会在告警后被纠正为 `text2image`，因为 Chat Completions 接口无法生成图像：
 
 ```python
 from evalscope import TaskConfig, run_task
