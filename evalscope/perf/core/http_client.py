@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
+# Fixed preflight policy for the pre-benchmark connection test. This is an internal
+# health check, not a tunable: a misconfigured URL must fail in well under a minute
+# rather than wait for --total-timeout (default 6h). Patch these constants in tests
+# to shorten the waits.
+_PREFLIGHT_DEADLINE = 60  # total wall-clock seconds for the whole probe
+_PREFLIGHT_MAX_ATTEMPTS = 3  # hard cap on attempts regardless of time left
+_PREFLIGHT_RETRY_INTERVAL = 2  # seconds between attempts (clamped to remaining time)
+
 
 class AioHttpClient:
     def __init__(
@@ -150,7 +158,11 @@ class AioHttpClient:
 
 
 async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
-    start_time = time.perf_counter()
+    # Fixed internal preflight policy: a short total deadline, a small attempt cap, and a
+    # short retry interval. A misconfigured URL must fail in well under a minute rather than
+    # wait for --total-timeout (default 6h). --total-timeout stays scoped to a single request;
+    # --no-test-connection remains the escape hatch to skip the probe entirely.
+    deadline = time.monotonic() + _PREFLIGHT_DEADLINE
 
     # Building the request is deterministic and network-independent: a failure here
     # is a configuration error that retrying can never fix, so it happens once,
@@ -170,30 +182,45 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
             output = await client.post(request)
             return output
 
-    while True:
+    def _log_failure(reason: str) -> None:
+        logger.error(
+            f'Connection test failed: {reason}. '
+            f'Please check --url, --api and --model (or use --no-test-connection to skip).'
+        )
+
+    for attempt in range(1, _PREFLIGHT_MAX_ATTEMPTS + 1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            _log_failure(f'deadline of {_PREFLIGHT_DEADLINE}s exceeded before attempt {attempt}')
+            return False
         try:
-            output = await attempt_connection()
+            # Cap each attempt at the remaining time so a pending request is cancelled at the
+            # deadline instead of waiting for --total-timeout.
+            output = await asyncio.wait_for(attempt_connection(), timeout=remaining)
+        except asyncio.TimeoutError:
+            _log_failure(f'request hung past the {_PREFLIGHT_DEADLINE}s deadline')
+            return False
+        except Exception as e:
+            # Network error: retry if attempts and deadline allow.
+            logger.warning(f'Retrying... <{e}>')
+        else:
             if output.success:
                 logger.info('Test connection successful.')
                 return True
-            # 4xx errors are client-side configuration errors (wrong URL, wrong
-            # request format, auth failure, etc.) and will never succeed on
-            # retry – bail out immediately instead of looping until timeout.
+            # 4xx errors are client-side configuration errors (wrong URL, wrong request format,
+            # auth failure, etc.) and will never succeed on retry — bail out immediately.
             if output.status_code is not None and 400 <= output.status_code < 500:
-                logger.error(
-                    f'Non-retryable error (HTTP {output.status_code}): {output.error}. '
-                    'Please check your --model, --url and --api settings.'
-                )
+                _log_failure(f'non-retryable HTTP {output.status_code}: {output.error}')
                 return False
+            # Retryable 5xx: retry if attempts and deadline allow.
             logger.warning(f'Retrying... <{output.error}>')
-        except Exception as e:
-            logger.warning(f'Retrying... <{e}>')
 
-        if time.perf_counter() - start_time >= args.connection_timeout:
-            logger.error(
-                f'Overall connection attempt timed out after {args.connection_timeout}s. '
-                'Use --connection-timeout to extend the window, or check --url/--api/--model.'
-            )
-            return False
+        if attempt < _PREFLIGHT_MAX_ATTEMPTS:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                _log_failure(f'deadline of {_PREFLIGHT_DEADLINE}s exceeded after attempt {attempt}')
+                return False
+            await asyncio.sleep(min(_PREFLIGHT_RETRY_INTERVAL, remaining))
 
-        await asyncio.sleep(10)
+    _log_failure(f'exhausted {_PREFLIGHT_MAX_ATTEMPTS} attempts within {_PREFLIGHT_DEADLINE}s')
+    return False
