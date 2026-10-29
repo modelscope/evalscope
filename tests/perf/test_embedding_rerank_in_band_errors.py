@@ -10,17 +10,9 @@ guards this (#1906/#1918); the embedding and rerank plugins used to set
 
 import asyncio
 import json
-import sys
 import threading
-import types
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-
-# Stub optional C-extension deps that evalscope.metrics pulls in eagerly, so
-# the test can import the perf plugins without building them on Windows.
-for _name in ('editdistance',):
-    if _name not in sys.modules:
-        sys.modules[_name] = types.ModuleType(_name)
 
 import aiohttp
 import pytest
