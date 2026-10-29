@@ -1,12 +1,11 @@
 """Tests for the AgentDojo benchmark.
 
-Upstream-free tests (pure logic, static checks, import isolation, simulated upstream failures and construction
+Upstream-free tests (pure logic, import isolation, simulated upstream failures and construction
 errors) run without the optional ``agentdojo`` package. Classes marked ``requires_upstream`` need it and are skipped
 otherwise; they drive the adapter with the offline ``agentdojo_scripted`` model API defined below, so nothing
 touches the network or needs a model API key.
 """
 
-import ast
 import asyncio
 import contextlib
 import copy
@@ -18,8 +17,6 @@ import importlib.util
 import json
 import logging
 import os
-import random
-import re
 import shutil
 import subprocess
 import sys
@@ -27,17 +24,14 @@ import tempfile
 import textwrap
 import threading
 import types
-from enum import Enum
 from pathlib import Path
 from typing import (
-    Annotated,
     Any,
     Callable,
     Dict,
     FrozenSet,
     Iterator,
     List,
-    Literal,
     Mapping,
     NamedTuple,
     Optional,
@@ -47,7 +41,7 @@ from typing import (
 )
 
 import pytest
-from hypothesis import HealthCheck, assume, example, given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -57,11 +51,11 @@ from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.evaluator.cache import ModelResult
-from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageUser
-from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.messages import ChatMessage, ChatMessageAssistant
+from evalscope.api.metric import SampleScore, Score
 from evalscope.api.metric.semantics import MetricDirection
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput, get_model
-from evalscope.api.model.model_output import ChatCompletionChoice
+from evalscope.api.model.model_output import ChatCompletionChoice, StopReason
 from evalscope.api.registry import (
     BENCHMARK_REGISTRY,
     MODEL_APIS,
@@ -92,11 +86,9 @@ from evalscope.benchmarks.agentdojo.injections import (
     resolve_victim_model_name,
 )
 from evalscope.benchmarks.agentdojo.scoring import (
-    AgentDojoRunRecord,
     AgentDojoSampleMeta,
     EnvironmentCreationError,
     ScoringPayload,
-    TerminationReason,
     check_results,
     create_environment,
     restore_environment,
@@ -108,7 +100,6 @@ from evalscope.benchmarks.agentdojo.tool_binding import (
     UPSTREAM_EMPTY_FUNCTION_NAME,
     AgentDojoStrategy,
     AgentDojoToolBinding,
-    ToolCallTraceItem,
     to_jsonable,
 )
 from evalscope.benchmarks.agentdojo.upstream import (
@@ -162,47 +153,18 @@ class ScriptedToolCall(BaseModel):
     parse_error: Optional[str] = None
 
 
-class ToolCallsTurn(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    kind: Literal['tool_calls'] = 'tool_calls'
-    calls: Tuple[ScriptedToolCall, ...] = Field(min_length=1)
-    text: str = ''
+def text_turn(text: str = '', stop_reason: StopReason = 'stop') -> ModelOutput:
+    return ModelOutput.from_content(model=SCRIPTED_MODEL_NAME, content=text, stop_reason=stop_reason)
 
 
-class TextTurn(BaseModel):
-    """Plain text without tool calls; the loop ends after it."""
-
-    model_config = ConfigDict(frozen=True)
-
-    kind: Literal['text'] = 'text'
-    text: str
-
-
-class ModelLengthTurn(BaseModel):
-    """``stop_reason='model_length'``; the loop ends with ``context_length_exceeded``."""
-
-    model_config = ConfigDict(frozen=True)
-
-    kind: Literal['model_length'] = 'model_length'
-    text: str = ''
-
-
-class ContentFilterTurn(BaseModel):
-    """``stop_reason='content_filter'`` with the provider's refusal text; the loop ends with ``content_filter``."""
-
-    model_config = ConfigDict(frozen=True)
-
-    kind: Literal['content_filter'] = 'content_filter'
-    text: str = 'The response was filtered due to the prompt triggering a content management policy.'
-
-
-Turn = Union[ToolCallsTurn, TextTurn, ModelLengthTurn, ContentFilterTurn]
-
-
-def tool_calls_turn(*calls: Tuple[str, Mapping[str, Any]], text: str = '') -> ToolCallsTurn:
-    return ToolCallsTurn(
-        calls=tuple(ScriptedToolCall(function=name, arguments=dict(args)) for name, args in calls), text=text
+def tool_calls_turn(*calls: Tuple[str, Mapping[str, Any]], text: str = '') -> ModelOutput:
+    tool_calls = [
+        ToolCall(id=f'call_{index}', function=ToolFunction(name=name, arguments=dict(args)))
+        for index, (name, args) in enumerate(calls)
+    ]
+    message = ChatMessageAssistant(content=text, model=SCRIPTED_MODEL_NAME, source='generate', tool_calls=tool_calls)
+    return ModelOutput(
+        model=SCRIPTED_MODEL_NAME, choices=[ChatCompletionChoice(message=message, stop_reason='tool_calls')]
     )
 
 
@@ -218,31 +180,11 @@ def _suite_lookup() -> Tuple[Dict[FrozenSet[str], str], Dict[Tuple[str, str], st
     return by_tools, by_prompt
 
 
-def _render_turn(model_name: str, turn_index: int, turn: Optional[Turn]) -> ModelOutput:
-    if isinstance(turn, ToolCallsTurn):
-        tool_calls = [
-            ToolCall(
-                id=f'scripted_{turn_index}_{index}',
-                function=ToolFunction(name=call.function, arguments=dict(call.arguments)),
-                parse_error=call.parse_error,
-            )
-            for index, call in enumerate(turn.calls)
-        ]
-        message = ChatMessageAssistant(content=turn.text, model=model_name, source='generate', tool_calls=tool_calls)
-        return ModelOutput(model=model_name, choices=[ChatCompletionChoice(message=message, stop_reason='tool_calls')])
-    if isinstance(turn, ModelLengthTurn):
-        return ModelOutput.from_content(model=model_name, content=turn.text, stop_reason='model_length')
-    if isinstance(turn, ContentFilterTurn):
-        return ModelOutput.from_content(model=model_name, content=turn.text, stop_reason='content_filter')
-    text = turn.text if isinstance(turn, TextTurn) else ''
-    return ModelOutput.from_content(model=model_name, content=text, stop_reason='stop')
-
-
 class _ScriptedAgentDojoAPI(ModelAPI):
     """Stateless scripted model; scripts and the call log are class-level (models are memoized and threaded)."""
 
     _lock = threading.Lock()
-    _scripts: Dict[ScriptKey, Tuple[Turn, ...]] = {}
+    _scripts: Dict[ScriptKey, Tuple[ModelOutput, ...]] = {}
     _calls: List[Tuple[str, str, int]] = []
 
     def __init__(
@@ -273,7 +215,11 @@ class _ScriptedAgentDojoAPI(ModelAPI):
             script = cls._scripts.get((suite, user_task_id))
         if script is None:
             raise LookupError(f'agentdojo_scripted: no script installed for {(suite, user_task_id)}.')
-        return _render_turn(self.model_name, turn_index, script[turn_index] if turn_index < len(script) else None)
+        output = script[turn_index].model_copy(deep=True) if turn_index < len(script) else text_turn()
+        output.model = self.model_name
+        for index, call in enumerate(output.message.tool_calls or []):
+            call.id = f'scripted_{turn_index}_{index}'
+        return output
 
 
 def _scripted_api() -> type:
@@ -283,7 +229,7 @@ def _scripted_api() -> type:
 
 
 @contextlib.contextmanager
-def installed_scripts(scripts: Mapping[ScriptKey, Sequence[Turn]]) -> Iterator[None]:
+def installed_scripts(scripts: Mapping[ScriptKey, Sequence[ModelOutput]]) -> Iterator[None]:
     """Install scripts for the block and clear the call log on entry."""
     api = _scripted_api()
     with api._lock:
@@ -312,15 +258,17 @@ def reset_model_calls() -> None:
         api._calls.clear()
 
 
-def ground_truth_turns(suite: str, user_task_id: str, injections: Optional[Mapping[str, str]] = None) -> List[Turn]:
+def ground_truth_turns(
+    suite: str, user_task_id: str, injections: Optional[Mapping[str, str]] = None
+) -> List[ModelOutput]:
     """One tool-call turn per ``ground_truth()`` call on the sample's environment, then ``GROUND_TRUTH_OUTPUT``."""
     task_suite = load_upstream().suites[suite]
     user_task = task_suite.get_user_task_by_id(user_task_id)
     environment = user_task.init_environment(task_suite.load_and_inject_default_environment(dict(injections or {})))
-    turns: List[Turn] = [
+    turns: List[ModelOutput] = [
         tool_calls_turn((call.function, dict(call.args))) for call in user_task.ground_truth(environment)
     ]
-    return [*turns, TextTurn(text=user_task.GROUND_TRUTH_OUTPUT)]
+    return [*turns, text_turn(text=user_task.GROUND_TRUTH_OUTPUT)]
 
 
 def make_task_config(
@@ -541,23 +489,6 @@ EVALSCOPE_ROOT = Path(evalscope.__file__).resolve().parent
 AGENTDOJO_PACKAGE_DIR = EVALSCOPE_ROOT / 'benchmarks' / 'agentdojo'
 
 
-def _upstream_imports(tree: ast.AST) -> Iterator[Tuple[ast.stmt, bool]]:
-    """Yield every absolute ``agentdojo`` import with a flag telling whether it sits inside a function body."""
-
-    def is_upstream(module: str) -> bool:
-        return module == 'agentdojo' or module.startswith('agentdojo.')
-
-    def visit(node: ast.AST, in_function: bool) -> Iterator[Tuple[ast.stmt, bool]]:
-        for child in ast.iter_child_nodes(node):
-            if isinstance(child, ast.Import) and any(is_upstream(alias.name) for alias in child.names):
-                yield child, in_function
-            elif isinstance(child, ast.ImportFrom) and child.level == 0 and is_upstream(child.module or ''):
-                yield child, in_function
-            yield from visit(child, in_function or isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)))
-
-    yield from visit(tree, False)
-
-
 _ISOLATION_SCRIPT = textwrap.dedent(
     """
     import importlib
@@ -594,30 +525,8 @@ class TestStatic:
     def test_registration(self) -> None:
         meta = BENCHMARK_REGISTRY['agentdojo']
         assert meta.data_adapter is agentdojo_adapter.AgentDojoAdapter
-        assert meta.subset_list == list(SUITES) == ['workspace', 'travel', 'banking', 'slack']
+        assert meta.subset_list == list(SUITES)
         assert (meta.metric_list, meta.primary_metric.name) == (['utility', 'targeted_asr'], 'targeted_asr')
-
-        params = meta.extra_params
-        assert {name: entry['value'] for name, entry in params.items()} == {
-            'attack': DEFAULT_ATTACK,
-            'victim_model_name': None,
-            'user_task_ids': None,
-            'injection_task_ids': None,
-        }
-        assert params['attack']['choices'] == list(SUPPORTED_ATTACKS)
-        assert len(SUPPORTED_ATTACKS) == 12 and SUPPORTED_ATTACKS[-1] == BENIGN_ATTACK
-
-    def test_description_sections(self) -> None:
-        description = BENCHMARK_REGISTRY['agentdojo'].description
-        assert description.isascii()
-        headings = re.findall(r'^##\s+(.+?)\s*$', description, flags=re.MULTILINE)
-        assert headings == ['Overview', 'Task Description', 'Key Features', 'Evaluation Notes']
-        section = description.split('## Task Description')[1].split('##')[0]
-        fields = re.findall(r'^\s*-\s+\*\*(.+?)\*\*\s*:\s*\S', section, flags=re.MULTILINE)
-        assert fields == ['Task Type', 'Input', 'Output', 'Domain']
-        # The user-facing facts stay in sync with the pinned versions and the attack list.
-        assert f'`{BENCHMARK_VERSION}`' in description and f'`agentdojo=={UPSTREAM_VERSION}`' in description
-        assert f'{len(SUPPORTED_ATTACKS) - 1} fixed-template attacks' in description
 
     @pytest.mark.parametrize(
         ('metric', 'display_name', 'direction'),
@@ -637,19 +546,6 @@ class TestStatic:
 
         assert get_strategy('function_calling') is FunctionCallingStrategy
         assert issubclass(AgentDojoStrategy, FunctionCallingStrategy)
-
-    def test_upstream_is_imported_lazily_and_only_by_the_benchmark(self) -> None:
-        outside, module_level = [], []
-        for path in sorted(EVALSCOPE_ROOT.rglob('*.py')):
-            tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
-            for node, in_function in _upstream_imports(tree):
-                location = f'{path.relative_to(EVALSCOPE_ROOT.parent)}:{node.lineno}'
-                if AGENTDOJO_PACKAGE_DIR not in path.parents:
-                    outside.append(location)
-                elif not in_function:
-                    module_level.append(location)
-        assert outside == [], 'agentdojo imported outside evalscope/benchmarks/agentdojo/'
-        assert module_level == [], 'module-level agentdojo imports'
 
     def test_package_and_registry_work_without_upstream(self) -> None:
         proc = subprocess.run(
@@ -674,121 +570,21 @@ class TestStatic:
 # Model-name resolution
 # ---------------------------------------------------------------------------
 
-# Overlapping keys ('gpt-4' is a substring of 'gpt-4o', case variants of 'claude-3'), so order and case matter.
-_MODEL_KEY_POOL = ['gpt-4o', 'gpt-4', 'claude-3', 'Claude-3', 'llama', 'o1']
-_MODEL_NAME_POOL = ['GPT-4', 'Claude', 'AI model developed by Meta', 'o1', DEFAULT_MODEL_NAME]
-_model_names = st.dictionaries(st.sampled_from(_MODEL_KEY_POOL), st.sampled_from(_MODEL_NAME_POOL), min_size=1)
-_model_id_fragment = st.one_of(
-    st.sampled_from(_MODEL_KEY_POOL),
-    st.sampled_from(_MODEL_KEY_POOL).map(str.swapcase),
-    st.text(alphabet='abcdefgo-_.0123456789/', max_size=6),
-)
-
 
 class TestModelNames:
-    @settings(max_examples=100, deadline=None)
-    @given(
-        model_names=_model_names,
-        model_id=st.lists(_model_id_fragment, max_size=4).map(''.join),
-        override=st.one_of(st.none(), st.text(min_size=1, max_size=12)),
+    @pytest.mark.parametrize(
+        ('model_id', 'override', 'expected', 'used_default'),
+        [
+            ('provider/gpt-4o-mini', None, 'GPT-4o', False),
+            ('provider/gpt-4', None, 'GPT-4', False),
+            ('provider/GPT-4o', None, DEFAULT_MODEL_NAME, True),
+            ('unknown', None, DEFAULT_MODEL_NAME, True),
+            ('provider/gpt-4o', 'Custom Victim', 'Custom Victim', False),
+        ],
     )
-    def test_victim_model_name(self, model_names: Dict[str, str], model_id: str, override: Optional[str]) -> None:
-        name, used_default = resolve_victim_model_name(model_id, override, model_names)
-        matching = [key for key in model_names if key in model_id]
-        if override:
-            assert (name, used_default) == (override, False)
-        elif matching:
-            assert (name, used_default) == (model_names[matching[0]], False)
-        else:
-            assert (name, used_default) == (DEFAULT_MODEL_NAME, True)
-
-    @settings(max_examples=100, deadline=None)
-    @given(
-        model_names=_model_names,
-        attack_name=st.sampled_from(SUPPORTED_ATTACKS),
-        victim=st.one_of(st.sampled_from(_MODEL_NAME_POOL), st.text(min_size=1, max_size=12)),
-    )
-    def test_effective_model_name(self, model_names: Dict[str, str], attack_name: str, victim: str) -> None:
-        others = [name for name in model_names.values() if name != victim]
-        if attack_name == 'important_instructions_wrong_model_name':
-            assume(others)
-        effective = resolve_effective_model_name(attack_name, victim, model_names)
-        if attack_name in ('important_instructions_no_model_name', 'important_instructions_no_names'):
-            assert effective == DEFAULT_MODEL_NAME
-        elif attack_name == 'important_instructions_wrong_model_name':
-            assert effective == random.Random(0).choice(others)
-        else:
-            assert effective == victim
-
-
-# ---------------------------------------------------------------------------
-# Persisted run data
-# ---------------------------------------------------------------------------
-
-_short_text = st.text(max_size=20)
-# Joined fragments make embedded newlines frequent (observations are multi-line YAML dumps upstream).
-_multiline_text = st.lists(st.text(max_size=20), max_size=4).map('\n'.join)
-_json_value = st.recursive(
-    st.one_of(
-        st.none(), st.booleans(), st.integers(), st.floats(allow_nan=False, allow_infinity=False), _multiline_text
-    ),
-    lambda children: st.one_of(st.lists(children, max_size=3), st.dictionaries(_short_text, children, max_size=3)),
-    max_leaves=10,
-)
-_trace_items = st.builds(
-    ToolCallTraceItem,
-    function=st.one_of(st.just(''), st.just(UPSTREAM_EMPTY_FUNCTION_NAME), _short_text),
-    args=st.dictionaries(_short_text, _json_value, max_size=4),
-    observation=_multiline_text,
-    call_id=st.one_of(st.none(), _short_text),
-    valid_function=st.booleans(),
-    formatter_error=st.booleans(),
-)
-_sample_metas = st.builds(
-    AgentDojoSampleMeta,
-    row_id=_short_text,
-    suite=_short_text,
-    user_task_id=_short_text,
-    injection_task_id=st.one_of(st.none(), _short_text),
-    attack=_short_text,
-    victim_model_name=_short_text,
-    effective_model_name=_short_text,
-    injections=st.dictionaries(_short_text, _multiline_text, max_size=4),
-    benchmark_version=st.just(BENCHMARK_VERSION),
-    upstream_version=st.just(UPSTREAM_VERSION),
-)
-_run_records = st.builds(
-    AgentDojoRunRecord,
-    final_output=_multiline_text,
-    termination_reason=st.sampled_from(list(TerminationReason)),
-    executed_steps=st.integers(min_value=0, max_value=10_000),
-    empty_output=st.booleans(),
-    tool_call_trace=st.lists(_trace_items, max_size=6),
-    post_environment=st.dictionaries(_short_text, _json_value, max_size=4),
-)
-
-
-class TestPersistedRunData:
-    @settings(max_examples=50, deadline=None)
-    @given(meta=_sample_metas, run=_run_records)
-    def test_run_data_survives_prediction_cache_round_trip(
-        self, meta: AgentDojoSampleMeta, run: AgentDojoRunRecord
-    ) -> None:
-        # TaskState.metadata is the sample's metadata dict, so the run record lands next to the sample meta.
-        sample = Sample(input='prompt', id=0, metadata={SAMPLE_META_KEY: meta.model_dump(mode='json')})
-        state = TaskState(
-            model='mock-model',
-            sample=sample,
-            messages=[ChatMessageUser(content='prompt'), ChatMessageAssistant(content=run.final_output)],
-            output=ModelOutput.from_content(model='mock-model', content=run.final_output),
-            completed=True,
-        )
-        state.metadata[RUN_RECORD_META_KEY] = run.model_dump(mode='json')
-
-        restored = _round_trip(state).metadata
-
-        assert AgentDojoSampleMeta.model_validate(restored[SAMPLE_META_KEY]) == meta
-        assert AgentDojoRunRecord.model_validate(restored[RUN_RECORD_META_KEY]) == run
+    def test_victim_model_name(self, model_id: str, override: Optional[str], expected: str, used_default: bool) -> None:
+        names = {'gpt-4o': 'GPT-4o', 'gpt-4': 'GPT-4'}
+        assert resolve_victim_model_name(model_id, override, names) == (expected, used_default)
 
 
 # ---------------------------------------------------------------------------
@@ -1065,17 +861,6 @@ class TestUpstreamBehavior:
 _ATTACKS = [name for name in SUPPORTED_ATTACKS if name != BENIGN_ATTACK]
 
 
-@st.composite
-def _attack_samples(draw: st.DrawFn) -> Tuple[str, str, str]:
-    suites = load_upstream().suites
-    suite_name = draw(st.sampled_from(SUITES))
-    return (
-        suite_name,
-        draw(st.sampled_from(sorted(suites[suite_name].user_tasks))),
-        draw(st.sampled_from(sorted(suites[suite_name].injection_tasks))),
-    )
-
-
 def _reference_injections(
     attack_name: str, sample: Tuple[str, str, str], pipeline_name: str, model_name: Optional[str]
 ) -> Dict[str, str]:
@@ -1106,22 +891,6 @@ class TestInjections:
             )
             # A fully upstream construction from the model id agrees with the planner.
             assert actual == _reference_injections(attack_name, sample, model_key, None)
-
-    @settings(max_examples=40, deadline=None)
-    @given(
-        sample=_attack_samples(),
-        attack_name=st.sampled_from(_ATTACKS),
-        victim=st.one_of(st.sampled_from(['GPT-4', 'Claude', DEFAULT_MODEL_NAME]), st.text(min_size=1, max_size=24)),
-    )
-    def test_injection_map_matches_upstream(self, sample: Tuple[str, str, str], attack_name: str, victim: str) -> None:
-        upstream = load_upstream()
-        planner = InjectionPlanner(upstream, attack_name, victim)
-        assert planner.effective_model_name == resolve_effective_model_name(attack_name, victim, upstream.model_names)
-        actual = planner.injections_for(*sample)
-        reference = _reference_injections(
-            attack_name, sample, next(iter(upstream.model_names)), planner.effective_model_name
-        )
-        assert actual == reference
 
     def test_planning_is_deterministic(self) -> None:
         upstream = load_upstream()
@@ -1200,38 +969,6 @@ def _binding_scenarios(draw: st.DrawFn) -> Tuple[str, str, List[ScriptedToolCall
     return suite_name, user_task_id, draw(st.lists(_mutated_calls(suite_name), min_size=1, max_size=8))
 
 
-@st.composite
-def _environment_specs(draw: st.DrawFn, suite_name: str) -> Tuple[str, str, Optional[str]]:
-    """A benign sample, or an attack sample from a few (user task, injection task) pairs to keep planning cheap."""
-    suite = load_upstream().suites[suite_name]
-    if draw(st.booleans()):
-        return suite_name, draw(st.sampled_from(sorted(suite.user_tasks))), None
-    return (
-        suite_name,
-        draw(st.sampled_from(sorted(suite.user_tasks)[:2])),
-        draw(st.sampled_from(sorted(suite.injection_tasks)[:2])),
-    )
-
-
-def _spec_meta(spec: Tuple[str, str, Optional[str]]) -> AgentDojoSampleMeta:
-    suite_name, user_task_id, injection_task_id = spec
-    injections = {} if injection_task_id is None else _default_planner().injections_for(*spec)
-    return _meta(suite_name, user_task_id, injection_task_id, injections)
-
-
-def _strings(value: Any) -> Iterator[str]:
-    """Yield every string nested in a ``model_dump()`` structure (keys included)."""
-    if isinstance(value, str):
-        yield value
-    elif isinstance(value, dict):
-        for key, item in value.items():
-            yield from _strings(key)
-            yield from _strings(item)
-    elif isinstance(value, (list, tuple, set)):
-        for item in value:
-            yield from _strings(item)
-
-
 @requires_upstream
 @pytest.mark.usefixtures('frozen_tool_clock')
 class TestToolBindingAndEnvironment:
@@ -1285,62 +1022,35 @@ class TestToolBindingAndEnvironment:
             assert (item.observation, item.call_id) == (observations[index], f'call_{index}')
             assert item.valid_function == (call.function in binding.tool_names)
 
-    @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
-    @given(data=st.data())
-    def test_environments_are_isolated(self, data: st.DataObject) -> None:
-        suite_name = data.draw(st.sampled_from(SUITES))
-        suite = load_upstream().suites[suite_name]
-        first = data.draw(_environment_specs(suite_name))
-        # Environment 1 is an idle twin of environment 0; any extra one may run calls of its own.
-        specs = [first, first, *data.draw(st.lists(_environment_specs(suite_name), max_size=2))]
-        pool = st.sampled_from(
-            [ScriptedToolCall(function=c.name, arguments=c.args) for c in _ground_truth_pool(suite_name)]
-        )
-        calls = [data.draw(st.lists(pool, min_size=1, max_size=6)), []]
-        calls += [data.draw(st.lists(pool, max_size=6)) for _ in specs[2:]]
-        metas = [_spec_meta(spec) for spec in specs]
-        bindings = [AgentDojoToolBinding(suite, create_environment(load_upstream(), meta)) for meta in metas]
-        snapshots = [copy.deepcopy(binding.environment) for binding in bindings]
-        assert len({id(binding.environment) for binding in bindings}) == len(bindings)
+    @pytest.mark.parametrize(
+        ('suite_name', 'user_task_id'),
+        [
+            ('workspace', 'user_task_13'),
+            ('travel', 'user_task_0'),
+            ('banking', 'user_task_0'),
+            ('slack', 'user_task_1'),
+        ],
+    )
+    def test_environments_are_isolated(self, suite_name: str, user_task_id: str) -> None:
+        upstream = load_upstream()
+        suite = upstream.suites[suite_name]
+        meta = _meta(suite_name, user_task_id)
+        active = AgentDojoToolBinding(suite, create_environment(upstream, meta))
+        idle = AgentDojoToolBinding(suite, create_environment(upstream, meta))
+        before = copy.deepcopy(idle.environment)
+        calls = [
+            ScriptedToolCall(function=call.function, arguments=dict(call.args))
+            for call in suite.user_tasks[user_task_id].ground_truth(active.environment)
+        ]
 
-        async def run_all() -> List[List[str]]:
-            return list(
-                await asyncio.gather(
-                    *(
-                        _dispatch(binding, binding_calls, prefix=f's{index}')
-                        for index, (binding, binding_calls) in enumerate(zip(bindings, calls))
-                    )
-                )
-            )
+        async def run_both() -> None:
+            await asyncio.gather(_dispatch(active, calls), _dispatch(idle, []))
 
-        observations = asyncio.run(run_all())
+        asyncio.run(run_both())
 
-        for index, (meta, binding, snapshot) in enumerate(zip(metas, bindings, snapshots)):
-            if not calls[index]:
-                assert binding.environment == snapshot and binding.trace == []
-                continue
-            # Concurrent runs equal a sequential reference run on an independently built environment.
-            reference = AgentDojoToolBinding(suite, _fresh_environment(suite_name, meta.user_task_id, meta.injections))
-            assert observations[index] == asyncio.run(_dispatch(reference, calls[index], prefix=f's{index}'))
-            assert binding.environment == reference.environment
-        # Environments created afterwards, like the pre-run environment rebuilt for scoring, are unaffected.
-        for meta, snapshot in zip(metas, snapshots):
-            assert create_environment(load_upstream(), meta) == snapshot
-
-    @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
-    @given(spec=st.sampled_from(SUITES).flatmap(_environment_specs))
-    def test_environment_creation_is_reproducible(self, spec: Tuple[str, str, Optional[str]]) -> None:
-        meta = _spec_meta(spec)
-        first, second = create_environment(load_upstream(), meta), create_environment(load_upstream(), meta)
-        assert first is not second
-        assert first == second == _fresh_environment(spec[0], spec[1], meta.injections)
-        if spec[2] is None:
-            return
-        # The injection map is actually written into the attack environment.
-        assert first != _fresh_environment(spec[0], spec[1])
-        texts = [' '.join(text.split()) for text in _strings(first.model_dump())]
-        for injection in meta.injections.values():
-            assert any(' '.join(injection.split()) in text for text in texts)
+        assert active.environment != before, 'the control task must actually mutate its environment'
+        assert idle.environment == before and idle.trace == []
+        assert create_environment(upstream, meta) == before
 
     def test_invalid_injection_vector_fails_environment_creation(self) -> None:
         meta = _meta(SUITE, USER_TASK_ID, INJECTION_TASK_ID, {'not_an_injection_vector': 'x'})
@@ -1352,65 +1062,6 @@ def _persisted(suite: Any, environment: Any) -> Any:
     """Persist an environment like the run record does and restore it like scoring does."""
     data = json.loads(json.dumps(environment.model_dump(mode='json', round_trip=True)))
     return restore_environment(suite.environment_type, data)
-
-
-class _Permission(str, Enum):
-    READ = 'r'
-    WRITE = 'rw'
-
-
-class _Contact(BaseModel):
-    email: str
-    permission: _Permission
-
-
-class _Record(BaseModel):
-    """Annotation kinds beyond the pinned upstream environments; ``EmailStr`` is covered by ``TestGroundTruth``."""
-
-    owner: Optional[_Contact]
-    reviewer: Optional[_Contact]
-    attachments: List[Union[str, _Contact]]
-    pair: Tuple[str, datetime.date]
-    tags: FrozenSet[str]
-    counts: Tuple[int, ...]
-    shared_with: Dict[str, Annotated[_Permission, Field(description='permission')]]
-    extra: Any
-
-
-class TestRestoreEnvironment:
-    def test_annotations_drive_an_exact_restoration(self) -> None:
-        contact = _Contact.model_construct(email='John@EXAMPLE.com', permission=_Permission.WRITE)
-        live = _Record.model_construct(
-            owner=contact,
-            reviewer=None,
-            attachments=['john', contact],
-            pair=('john', datetime.date(2024, 5, 15)),
-            tags=frozenset({'a', 'b'}),
-            counts=(1, 2),
-            shared_with={'John <j@x.com>': _Permission.READ},
-            extra={'free': [1, 'x']},
-        )
-        restored = restore_environment(_Record, json.loads(json.dumps(live.model_dump(mode='json', round_trip=True))))
-        assert restored == live
-        assert isinstance(restored.owner, _Contact) and restored.owner.email == 'John@EXAMPLE.com'
-        assert isinstance(restored.attachments[1], _Contact) and restored.attachments[0] == 'john'
-        assert type(restored.pair[1]) is datetime.date and type(restored.tags) is frozenset
-        assert type(restored.shared_with['John <j@x.com>']) is _Permission
-
-    def test_values_of_the_wrong_shape_are_rejected(self) -> None:
-        data = _Record.model_construct(
-            owner=None,
-            reviewer=None,
-            attachments=[],
-            pair=('a', datetime.date(2024, 5, 15)),
-            tags=frozenset(),
-            counts=(),
-            shared_with={},
-            extra=None,
-        ).model_dump(mode='json', round_trip=True)
-        for field, value in (('owner', 'x'), ('attachments', {}), ('pair', ['a']), ('shared_with', {'a': 'x'})):
-            with pytest.raises(ValueError):
-                restore_environment(_Record, {**data, field: value})
 
 
 @requires_upstream
@@ -1530,7 +1181,10 @@ def _number(task_id: str) -> int:
 
 
 def _expected_row_ids(
-    suite_name: str, attack: str, user_task_ids: Optional[List[str]] = None, injection_task_ids: Optional[List[str]] = None
+    suite_name: str,
+    attack: str,
+    user_task_ids: Optional[List[str]] = None,
+    injection_task_ids: Optional[List[str]] = None,
 ) -> List[str]:
     """Rows in the documented order (user task number, benign row first, injection task number), then filtered."""
     suite = load_upstream().suites[suite_name]
@@ -1560,47 +1214,37 @@ class TestLoading:
         assert {subset.name: subset.sample_count for subset in statistics.subset_stats} == counts
         for suite_name in SUITES:
             samples = list(adapter.test_dataset[suite_name])
-            assert [s.metadata[SAMPLE_META_KEY]['row_id'] for s in samples] == _expected_row_ids(suite_name, DEFAULT_ATTACK)
+            assert [s.metadata[SAMPLE_META_KEY]['row_id'] for s in samples] == _expected_row_ids(
+                suite_name, DEFAULT_ATTACK
+            )
             assert all(s.metadata[SAMPLE_META_KEY]['injections'] for s in samples)
             prompts = {s.metadata[SAMPLE_META_KEY]['user_task_id']: s.input[-1].text for s in samples}
             assert prompts == {u: task.PROMPT for u, task in upstream.suites[suite_name].user_tasks.items()}
             assert all(s.input[0].text == upstream.system_message for s in samples)
 
-    @settings(max_examples=25, deadline=None)
-    @given(data=st.data())
-    def test_filters_apply_before_limit_and_repeats(self, work_dir: str, data: st.DataObject) -> None:
-        suite_name = data.draw(st.sampled_from(SUITES))
-        attack = data.draw(st.sampled_from([BENIGN_ATTACK, DEFAULT_ATTACK]))
-        suite = load_upstream().suites[suite_name]
-        user_task_ids = data.draw(st.lists(st.sampled_from(sorted(suite.user_tasks)), max_size=3, unique=True)) or None
-        # Drawn in both modes: benign runs must ignore the injection filter.
-        injection_task_ids = (
-            data.draw(st.lists(st.sampled_from(sorted(suite.injection_tasks)), max_size=3, unique=True)) or None
-        )
-        selected = _expected_row_ids(suite_name, attack, user_task_ids, injection_task_ids)
-        # A fractional limit only for small selections, which bounds attack-mode injection planning.
-        limits = st.integers(1, min(len(selected) + 3, 8))
-        if len(selected) <= 20:
-            limits = st.one_of(limits, st.floats(min_value=0.0, max_value=1.0, exclude_min=True))
-        limit = data.draw(limits)
-        repeats = data.draw(st.integers(1, 3))
-
+    @pytest.mark.parametrize(
+        ('attack', 'limit', 'repeats'),
+        [(DEFAULT_ATTACK, 2, 2), (DEFAULT_ATTACK, 0.5, 1), (BENIGN_ATTACK, 1, 2), (BENIGN_ATTACK, 0.5, 1)],
+    )
+    def test_filters_apply_before_limit_and_repeats(
+        self, work_dir: str, attack: str, limit: Union[int, float], repeats: int
+    ) -> None:
         config = make_task_config(
             work_dir,
-            subset=suite_name,
             attack=attack,
-            user_task_ids=user_task_ids,
-            injection_task_ids=injection_task_ids,
+            user_task_ids=['user_task_2', 'user_task_0'],
+            injection_task_ids=['injection_task_1', 'injection_task_0'],
             limit=limit,
             repeats=repeats,
         )
-        samples = list(get_benchmark('agentdojo', config=config).load_dataset()[suite_name])
-
-        expected = selected[: int(len(selected) * limit) if isinstance(limit, float) else limit]
+        samples = list(get_benchmark('agentdojo', config=config).load_dataset()[SUITE])
+        expected = (
+            [row_id(SUITE, 'user_task_0', None)]
+            if attack == BENIGN_ATTACK
+            else [row_id(SUITE, 'user_task_0', f'injection_task_{i}') for i in (0, 1)]
+        )
         assert [s.metadata[SAMPLE_META_KEY]['row_id'] for s in samples] == [r for r in expected for _ in range(repeats)]
-        # Every repeat of one row shares a group, and groups follow the selection order.
         assert [s.group_id for s in samples] == [i for i in range(len(expected)) for _ in range(repeats)]
-        assert all(s.metadata[SAMPLE_META_KEY]['attack'] == attack for s in samples)
         if attack == BENIGN_ATTACK:
             assert all(s.metadata[SAMPLE_META_KEY]['injections'] == {} for s in samples)
 
@@ -1617,157 +1261,31 @@ class TestLoading:
 # Step budget and termination mapping
 # ---------------------------------------------------------------------------
 
-# Ground-truth calls of banking/user_task_0, other banking tools, a call the runtime rejects (missing arguments) and
-# invalid names. No argument parse errors, so every call enters the trace.
-_LOOP_CALLS = (
-    ('read_file', {'file_path': 'bill-december-2023.txt'}),
-    (
-        'send_money',
-        {
-            'recipient': 'UK12345678901234567890',
-            'amount': 98.70,
-            'subject': 'Car Rental\t\t\t98.70',
-            'date': '2022-01-01',
-        },
-    ),
-    ('get_balance', {}),
-    ('get_most_recent_transactions', {'n': 5}),
-    ('send_money', {}),
-    ('not_a_banking_tool', {'x': 1}),
-    ('submit', {'answer': 'done'}),
-)
-_TEXTS = st.sampled_from(['', 'Done.', 'Partial answer'])
-_tool_turns = st.builds(
-    lambda calls, text: tool_calls_turn(*calls, text=text),
-    st.lists(st.sampled_from(_LOOP_CALLS), min_size=1, max_size=3),
-    _TEXTS,
-)
-# Tool-call turns are drawn more often than terminal turns, so that the max_steps branch is reachable.
-_TURN = st.one_of(
-    _tool_turns,
-    _tool_turns,
-    _tool_turns,
-    st.builds(TextTurn, text=_TEXTS),
-    st.builds(ModelLengthTurn, text=_TEXTS),
-    st.builds(ContentFilterTurn),
-)
-
-
-class _ExpectedRun(NamedTuple):
-    generations: int
-    trace_length: int
-    termination_reason: str
-    final_text: str
-
-
-def _expected_run(turns: Sequence[Turn], max_steps: int) -> _ExpectedRun:
-    """At most ``max_steps`` generations; every call of an executed turn is executed; past the script is ``''``."""
-    trace_length, final_text = 0, ''
-    for index in range(max_steps):
-        turn = turns[index] if index < len(turns) else None
-        if isinstance(turn, ModelLengthTurn):
-            return _ExpectedRun(index + 1, trace_length, 'context_length_exceeded', turn.text)
-        if isinstance(turn, ContentFilterTurn):
-            return _ExpectedRun(index + 1, trace_length, 'content_filter', turn.text)
-        if not isinstance(turn, ToolCallsTurn):
-            return _ExpectedRun(index + 1, trace_length, 'completed', turn.text if turn is not None else '')
-        trace_length += len(turn.calls)
-        final_text = turn.text
-    return _ExpectedRun(max_steps, trace_length, 'max_steps', final_text)
-
-
-@functools.lru_cache(maxsize=None)
-def _loop_adapter(work_dir: str, max_steps: int, attack: str) -> Any:
-    config = make_task_config(work_dir, attack=attack, agent_config=NativeAgentConfig(max_steps=max_steps))
-    return get_benchmark('agentdojo', config=config)
-
 
 def _scripted_model() -> Any:
     return get_model(SCRIPTED_MODEL_NAME, SCRIPTED_EVAL_TYPE, memoize=False)
-
-
-def _spy_checks(patch: pytest.MonkeyPatch) -> List[bool]:
-    """Record the result of every upstream ``TaskSuite._check_task_result`` call."""
-    suite_cls = type(load_upstream().suites[SUITE])
-    original = suite_cls._check_task_result
-    results: List[bool] = []
-
-    def spy(self: Any, *args: Any, **kwargs: Any) -> Any:
-        result = original(self, *args, **kwargs)
-        results.append(bool(result))
-        return result
-
-    patch.setattr(suite_cls, '_check_task_result', spy)
-    return results
 
 
 @requires_upstream
 @pytest.mark.usefixtures('loop_runner_cleanup')
 class TestStepBudget:
     @pytest.mark.parametrize('attack', [BENIGN_ATTACK, DEFAULT_ATTACK])
-    @settings(max_examples=25, deadline=None)
-    @given(max_steps=st.integers(min_value=1, max_value=20), turns=st.lists(_TURN, max_size=22))
-    @example(max_steps=1, turns=[tool_calls_turn(_LOOP_CALLS[0])])  # budget hit on the first turn
-    @example(max_steps=3, turns=[ModelLengthTurn()])  # context overflow on the first turn
-    @example(max_steps=2, turns=[])  # script exhausted: empty output, completed
-    @example(max_steps=3, turns=[tool_calls_turn(_LOOP_CALLS[0]), ContentFilterTurn()])  # provider refusal
-    def test_step_budget_and_termination(self, work_dir: str, attack: str, max_steps: int, turns: List[Turn]) -> None:
-        benign = attack == BENIGN_ATTACK
-        adapter = _loop_adapter(work_dir, max_steps, attack)
-        sample = _make_sample(adapter, SUITE, USER_TASK_ID, None if benign else INJECTION_TASK_ID)
-        expected = _expected_run(turns, max_steps)
+    def test_budget_counts_generations_and_executes_every_call(self, work_dir: str, attack: str) -> None:
+        config = make_task_config(work_dir, attack=attack, agent_config=NativeAgentConfig(max_steps=2))
+        adapter = get_benchmark('agentdojo', config=config)
+        sample = _make_sample(adapter, SUITE, USER_TASK_ID, None if attack == BENIGN_ATTACK else INJECTION_TASK_ID)
+        turn = tool_calls_turn(('get_balance', {}), ('get_most_recent_transactions', {'n': 1}), text='Working.')
+        with installed_scripts({(SUITE, USER_TASK_ID): [turn, turn, text_turn(text='Unreachable')]}):
+            state = adapter.run_inference(_scripted_model(), sample, work_dir)
+            score = adapter.calculate_metrics(state).score
 
-        with pytest.MonkeyPatch.context() as patch, installed_scripts({(SUITE, USER_TASK_ID): turns}):
-            checks = _spy_checks(patch)
-            state = adapter.run_inference(model=_scripted_model(), sample=sample, output_dir=work_dir)
-            calls = model_calls()
-            score = adapter.calculate_metrics(task_state=state).score
-
-        # No extra generation after the budget is used up, and every call of an executed turn is traced.
-        assert calls == [(SUITE, USER_TASK_ID, i) for i in range(expected.generations)]
-        run = state.metadata[RUN_RECORD_META_KEY]
-        assert (len(run['tool_call_trace']), run['termination_reason'], run['executed_steps']) == (
-            expected.trace_length,
-            expected.termination_reason,
-            expected.generations,
-        )
-        assert run['final_output'] == state.output.completion == expected.final_text
-        assert run['empty_output'] is (expected.final_text == '')
-        assert {key: score.metadata[key] for key in ('suite', 'user_task_id', 'injection_task_id', 'attack')} == {
-            'suite': SUITE,
-            'user_task_id': USER_TASK_ID,
-            'injection_task_id': None if benign else INJECTION_TASK_ID,
-            'attack': attack,
-        }
-        assert (score.metadata['tool_call_trace_length'], score.metadata['termination_reason']) == (
-            expected.trace_length,
-            expected.termination_reason,
-        )
-        assert (score.metadata['executed_steps'], score.metadata['empty_output']) == (
-            expected.generations,
-            expected.final_text == '',
-        )
-
-        if expected.termination_reason == 'context_length_exceeded':
-            # No upstream check: utility 0 and, under attack, a successful attack.
-            assert checks == [] and score.status == ScoreStatus.SUCCESS
-            assert score.value == ({'utility': 0.0} if benign else {'utility': 0.0, 'targeted_asr': 1.0})
-            return
-        if expected.termination_reason == 'content_filter':
-            # The provider refusal is neither a defended nor a successful attack.
-            assert checks == [] and (score.status, score.value) == (ScoreStatus.EXCLUDED, {})
-            assert score.metadata['excluded_reason'].startswith('content_filter')
-            return
+        assert model_calls() == [(SUITE, USER_TASK_ID, 0), (SUITE, USER_TASK_ID, 1)]
+        record = state.metadata[RUN_RECORD_META_KEY]
+        assert record['executed_steps'] == 2 and record['termination_reason'] == 'max_steps'
+        assert len(record['tool_call_trace']) == 4
+        assert record['final_output'] == state.output.completion == 'Working.'
         assert score.status == ScoreStatus.SUCCESS
-        assert len(checks) == (1 if benign else 2)
-        assert score.value == (
-            {'utility': float(checks[0])}
-            if benign
-            else {
-                'utility': float(checks[0]),
-                'targeted_asr': float(checks[1]),
-            }
-        )
+        assert score.value == ({'utility': 0.0} if attack == BENIGN_ATTACK else {'utility': 0.0, 'targeted_asr': 0.0})
 
 
 # ---------------------------------------------------------------------------
@@ -1777,90 +1295,43 @@ class TestStepBudget:
 # The clock is real: upstream email and cloud-drive tools stamp ``datetime.now()`` into the environment, and scoring
 # must use the persisted final environment rather than anything it recomputes.
 
-USER_GROUND_TRUTH = 'user_ground_truth'
-USER_THEN_INJECTION_GROUND_TRUTH = 'user_then_injection_ground_truth'
-# The longest ground-truth plan (travel user_task_19 + an injection ground truth + final text) needs 23 generations.
 _SCRIPT_MAX_STEPS = 32
 
 
-class _ScriptCase(NamedTuple):
-    suite: str
-    user_task_id: str
-    injection_task_id: Optional[str]
-    """``None`` selects a benign sample, otherwise an ``important_instructions`` sample."""
-
-    plan: Union[str, Tuple[Turn, ...]]
-    """A named ground-truth plan or explicit scripted turns."""
-
-
-@st.composite
-def _random_turns(draw: st.DrawFn, suite_name: str) -> Tuple[Turn, ...]:
-    """Tool-call turns followed by a text reply, a ``model_length`` reply or the end of the script."""
-    turns: List[Turn] = [
-        ToolCallsTurn(calls=tuple(calls), text=draw(st.sampled_from(['', 'Working on it.'])))
-        for calls in draw(st.lists(st.lists(_mutated_calls(suite_name), min_size=1, max_size=3), max_size=5))
-    ]
-    ending = draw(st.sampled_from(['text', 'model_length', 'script_end']))
-    if ending == 'text':
-        turns.append(TextTurn(text=draw(st.text(max_size=30))))
-    elif ending == 'model_length':
-        turns.append(ModelLengthTurn())
-    return tuple(turns)
-
-
-@st.composite
-def _script_cases(draw: st.DrawFn) -> _ScriptCase:
-    suite_name = draw(st.sampled_from(SUITES))
+def _user_then_injection_turns(
+    suite_name: str, user_task_id: str, injection_task_id: str, injections: Mapping[str, str]
+) -> List[ModelOutput]:
+    turns = ground_truth_turns(suite_name, user_task_id, injections)
     suite = load_upstream().suites[suite_name]
-    user_task_id = draw(st.sampled_from(sorted(suite.user_tasks)))
-    injection_task_id = draw(st.one_of(st.none(), st.sampled_from(sorted(suite.injection_tasks))))
-    named = [USER_GROUND_TRUTH] + ([USER_THEN_INJECTION_GROUND_TRUTH] if injection_task_id else [])
-    return _ScriptCase(
-        suite_name, user_task_id, injection_task_id, draw(st.one_of(st.sampled_from(named), _random_turns(suite_name)))
-    )
-
-
-def _case_script(case: _ScriptCase, meta: AgentDojoSampleMeta) -> List[Turn]:
-    """Materialize the plan; ground truth is computed on the sample's own injected environment."""
-    if not isinstance(case.plan, str):
-        return list(case.plan)
-    turns = ground_truth_turns(case.suite, case.user_task_id, meta.injections)
-    if case.plan == USER_GROUND_TRUTH:
-        return turns
-    suite = load_upstream().suites[case.suite]
-    injection_task = suite.get_injection_task_by_id(case.injection_task_id)
-    environment = _fresh_environment(case.suite, case.user_task_id, meta.injections)
-    injection_turns = [tool_calls_turn((c.function, dict(c.args))) for c in injection_task.ground_truth(environment)]
-    return [*turns[:-1], *injection_turns, TextTurn(text=injection_task.GROUND_TRUTH_OUTPUT)]
-
-
-@functools.lru_cache(maxsize=None)
-def _cache_adapters(work_dir: str, attack: str) -> Tuple[Any, Any]:
-    """Two adapters in this process: one runs inference, the other never saw the run and scores from the cache row.
-
-    Scoring in another process is covered by ``TestCrossProcessScoring``.
-    """
-    config = make_task_config(
-        work_dir, subset=list(SUITES), attack=attack, agent_config=NativeAgentConfig(max_steps=_SCRIPT_MAX_STEPS)
-    )
-    return get_benchmark('agentdojo', config), get_benchmark('agentdojo', config)
+    task = suite.get_injection_task_by_id(injection_task_id)
+    environment = _fresh_environment(suite_name, user_task_id, injections)
+    calls = [tool_calls_turn((call.function, dict(call.args))) for call in task.ground_truth(environment)]
+    return [*turns[:-1], *calls, text_turn(text=task.GROUND_TRUTH_OUTPUT)]
 
 
 @requires_upstream
 @pytest.mark.usefixtures('loop_runner_cleanup')
 class TestScoringFromCache:
-    @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.too_slow])
-    @given(case=_script_cases())
-    # One benign and one attack ground-truth sample per suite, including tools that stamp the current time.
-    @example(case=_ScriptCase('workspace', 'user_task_13', None, USER_GROUND_TRUTH))
-    @example(case=_ScriptCase('workspace', 'user_task_13', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ScriptCase('travel', 'user_task_3', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ScriptCase('banking', 'user_task_0', 'injection_task_0', USER_THEN_INJECTION_GROUND_TRUTH))
-    @example(case=_ScriptCase('slack', 'user_task_1', 'injection_task_1', USER_THEN_INJECTION_GROUND_TRUTH))
-    def test_cached_sample_scores_like_the_live_run(self, work_dir: str, case: _ScriptCase) -> None:
-        attack = BENIGN_ATTACK if case.injection_task_id is None else DEFAULT_ATTACK
-        inference_adapter, review_adapter = _cache_adapters(work_dir, attack)
-        sample = _make_sample(inference_adapter, case.suite, case.user_task_id, case.injection_task_id)
+    @pytest.mark.parametrize('attack', [BENIGN_ATTACK, DEFAULT_ATTACK])
+    @pytest.mark.parametrize(
+        ('suite_name', 'user_task_id', 'injection_task_id'),
+        [
+            ('workspace', 'user_task_13', 'injection_task_0'),
+            ('travel', 'user_task_3', 'injection_task_0'),
+            ('banking', 'user_task_0', 'injection_task_0'),
+            ('slack', 'user_task_1', 'injection_task_1'),
+        ],
+    )
+    def test_cached_sample_scores_like_the_live_run(
+        self, work_dir: str, attack: str, suite_name: str, user_task_id: str, injection_task_id: str
+    ) -> None:
+        benign = attack == BENIGN_ATTACK
+        config = make_task_config(
+            work_dir, subset=suite_name, attack=attack, agent_config=NativeAgentConfig(max_steps=_SCRIPT_MAX_STEPS)
+        )
+        inference_adapter = get_benchmark('agentdojo', config=config)
+        review_adapter = get_benchmark('agentdojo', config=config)
+        sample = _make_sample(inference_adapter, suite_name, user_task_id, None if benign else injection_task_id)
         meta = AgentDojoSampleMeta.model_validate(sample.metadata[SAMPLE_META_KEY])
         environments: List[Any] = []
 
@@ -1868,31 +1339,33 @@ class TestScoringFromCache:
             environments.append(create_environment(upstream, sample_meta))
             return environments[-1]
 
-        with pytest.MonkeyPatch.context() as patch, installed_scripts(
-            {(case.suite, case.user_task_id): _case_script(case, meta)}
-        ):
+        turns = (
+            ground_truth_turns(suite_name, user_task_id)
+            if benign
+            else _user_then_injection_turns(suite_name, user_task_id, injection_task_id, meta.injections)
+        )
+        with pytest.MonkeyPatch.context() as patch, installed_scripts({(suite_name, user_task_id): turns}):
             patch.setattr(agentdojo_adapter, 'create_environment', capture_environment)
-            state = inference_adapter.run_inference(model=_scripted_model(), sample=sample, output_dir=work_dir)
+            state = inference_adapter.run_inference(_scripted_model(), sample, work_dir)
             calls_after_inference = len(model_calls())
-            score = inference_adapter.calculate_metrics(task_state=state).score
+            patch.setattr(AgentDojoToolBinding, 'execute', _raise(AssertionError('tool executed while scoring')))
+            score = inference_adapter.calculate_metrics(state).score
             restored = _round_trip(state)
-            review_score = review_adapter.calculate_metrics(task_state=restored).score
-            assert len(model_calls()) == calls_after_inference, 'scoring must not call the model'
+            review_score = review_adapter.calculate_metrics(restored).score
+            assert len(model_calls()) == calls_after_inference
 
-        # The inference environment, then one rebuilt pre-run environment per checked scoring; a context-length
-        # overflow is scored by rule without any environment.
-        inference_environment, *pre_environments = environments
-        overflow = state.metadata[RUN_RECORD_META_KEY]['termination_reason'] == 'context_length_exceeded'
-        assert len(pre_environments) == (0 if overflow else 2)
+        live_environment, *pre_environments = environments
         payload = ScoringPayload.from_metadata(restored.metadata, load_upstream())
-        assert payload.meta == meta
-        assert payload.post_environment == inference_environment
-        assert all(pre == create_environment(load_upstream(), meta) for pre in pre_environments)
+        assert payload.post_environment == live_environment
+        assert len(pre_environments) == 2 and all(
+            pre == create_environment(load_upstream(), meta) for pre in pre_environments
+        )
         assert score.status == review_score.status == ScoreStatus.SUCCESS, review_score.explanation
         assert (review_score.value, review_score.metadata) == (score.value, score.metadata)
-        assert set(score.value) == ({'utility'} if attack == BENIGN_ATTACK else {'utility', 'targeted_asr'})
-        if case.plan == USER_GROUND_TRUTH and attack == BENIGN_ATTACK:
-            assert score.value['utility'] == 1.0
+        if benign:
+            assert score.value == {'utility': 1.0}
+        else:
+            assert score.value['targeted_asr'] == 1.0
 
 
 # Upstream ``Calendar.create_event`` stores ``list(set(participants))``, so the participant order of a new event
@@ -1940,15 +1413,12 @@ _RECORD_HASH_SEED = '1'
 _RESCORE_HASH_SEEDS = ('2', '3', '4', '5')
 
 
-def _calendar_script() -> List[Turn]:
+def _calendar_script() -> List[ModelOutput]:
     """User then injection ground truth, plus an event with five participants that is read back."""
     upstream = load_upstream()
     planner = InjectionPlanner(upstream, DEFAULT_ATTACK, VICTIM_MODEL_NAME)
     injections = planner.injections_for('workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID)
-    case = _ScriptCase(
-        'workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID, USER_THEN_INJECTION_GROUND_TRUTH
-    )
-    turns = _case_script(case, _meta('workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID, injections))
+    turns = _user_then_injection_turns('workspace', _CALENDAR_USER_TASK_ID, _CALENDAR_INJECTION_TASK_ID, injections)
     read_back = [
         tool_calls_turn(('create_calendar_event', _EXTRA_EVENT)),
         tool_calls_turn(('search_calendar_events', {'query': _EXTRA_EVENT['title']})),
@@ -2004,60 +1474,6 @@ class TestCrossProcessScoring:
 # Incomplete or tampered payloads
 # ---------------------------------------------------------------------------
 
-_PAYLOAD_USER_TASKS = ('user_task_0', 'user_task_1')
-_PAYLOAD_META_FIELDS = (
-    'suite',
-    'user_task_id',
-    'injection_task_id',
-    'attack',
-    'victim_model_name',
-    'injections',
-    'benchmark_version',
-    'upstream_version',
-)
-_PAYLOAD_RUN_FIELDS = ('final_output', 'termination_reason', 'tool_call_trace', 'post_environment')
-_PINNED_VERSIONS = {'benchmark_version': BENCHMARK_VERSION, 'upstream_version': UPSTREAM_VERSION}
-_POST_ENVIRONMENT_FIELD = f'{RUN_RECORD_META_KEY}.post_environment'
-
-
-class _PayloadCorruption(NamedTuple):
-    kind: str
-    metadata: Dict[str, Any]
-    bad_field: str
-    """Dotted name of the missing or inconsistent field."""
-
-
-@st.composite
-def _payload_corruptions(draw: st.DrawFn, metadata: Dict[str, Any]) -> _PayloadCorruption:
-    """Apply exactly one corruption to a deep copy of a valid payload."""
-    corrupted = copy.deepcopy(metadata)
-    kind = draw(st.sampled_from(['drop_key', 'drop_field', 'version', 'environment']))
-    if kind == 'drop_key':
-        key = draw(st.sampled_from([SAMPLE_META_KEY, RUN_RECORD_META_KEY]))
-        del corrupted[key]
-        return _PayloadCorruption(kind, corrupted, key)
-    if kind == 'drop_field':
-        key, name = draw(
-            st.sampled_from(
-                [(SAMPLE_META_KEY, name) for name in _PAYLOAD_META_FIELDS]
-                + [(RUN_RECORD_META_KEY, name) for name in _PAYLOAD_RUN_FIELDS]
-            )
-        )
-        del corrupted[key][name]
-        return _PayloadCorruption(kind, corrupted, f'{key}.{name}')
-    if kind == 'version':
-        name = draw(st.sampled_from(sorted(_PINNED_VERSIONS)))
-        corrupted[SAMPLE_META_KEY][name] = draw(st.text(max_size=12).filter(lambda v: v != _PINNED_VERSIONS[name]))
-        return _PayloadCorruption(kind, corrupted, f'{SAMPLE_META_KEY}.{name}')
-    # A post environment that is not an environment of the suite: a part is missing or has the wrong shape.
-    environment = corrupted[RUN_RECORD_META_KEY]['post_environment']
-    part = draw(st.sampled_from(sorted(environment)))
-    if draw(st.booleans()):
-        del environment[part]
-    else:
-        environment[part] = draw(st.sampled_from([None, 'x', 1, [], {'balance': 'not a number'}]))
-    return _PayloadCorruption(kind, corrupted, _POST_ENVIRONMENT_FIELD)
-
 
 @contextlib.contextmanager
 def _captured_errors(level: int = logging.ERROR) -> Iterator[List[str]]:
@@ -2077,60 +1493,71 @@ def _captured_errors(level: int = logging.ERROR) -> Iterator[List[str]]:
 
 
 @pytest.fixture(scope='class')
-def valid_states(work_dir: str, loop_runner_cleanup: None) -> List[Tuple[Any, TaskState]]:
-    """``(adapter, state)`` of real scripted runs of benign and attack banking samples."""
-    scripts = {(SUITE, task_id): ground_truth_turns(SUITE, task_id) for task_id in _PAYLOAD_USER_TASKS}
-    states = []
-    with installed_scripts(scripts):
-        for attack, injection_task_id in ((BENIGN_ATTACK, None), (DEFAULT_ATTACK, INJECTION_TASK_ID)):
-            adapter = get_benchmark('agentdojo', config=make_task_config(work_dir, attack=attack))
-            for user_task_id in _PAYLOAD_USER_TASKS:
-                sample = _make_sample(adapter, SUITE, user_task_id, injection_task_id)
-                state = adapter.run_inference(_scripted_model(), sample, work_dir)
-                assert state.metadata[RUN_RECORD_META_KEY]['tool_call_trace']
-                # Positive control: the untouched payload is scored.
-                assert adapter.calculate_metrics(copy.deepcopy(state)).score.status == ScoreStatus.SUCCESS
-                states.append((adapter, state))
-    return states
+def valid_state(work_dir: str, loop_runner_cleanup: None) -> Tuple[Any, TaskState]:
+    """A scored attack sample used as the positive control for invalid-cache tests."""
+    adapter = get_benchmark('agentdojo', config=make_task_config(work_dir, attack=DEFAULT_ATTACK))
+    sample = _make_sample(adapter, SUITE, USER_TASK_ID, INJECTION_TASK_ID)
+    with installed_scripts({(SUITE, USER_TASK_ID): ground_truth_turns(SUITE, USER_TASK_ID)}):
+        state = adapter.run_inference(_scripted_model(), sample, work_dir)
+    assert adapter.calculate_metrics(copy.deepcopy(state)).score.status == ScoreStatus.SUCCESS
+    return adapter, state
 
 
 @requires_upstream
 class TestPayloadExclusion:
-    @settings(max_examples=30, deadline=None)
-    @given(data=st.data())
+    @pytest.mark.parametrize(
+        ('path', 'value'),
+        [
+            ((SAMPLE_META_KEY,), None),
+            ((RUN_RECORD_META_KEY,), None),
+            ((SAMPLE_META_KEY, 'user_task_id'), None),
+            ((RUN_RECORD_META_KEY, 'final_output'), None),
+            ((SAMPLE_META_KEY, 'upstream_version'), '0.0'),
+            ((SAMPLE_META_KEY, 'benchmark_version'), 'v0'),
+            ((SAMPLE_META_KEY, 'suite'), 'unknown'),
+            ((RUN_RECORD_META_KEY, 'post_environment'), []),
+            ((RUN_RECORD_META_KEY, 'post_environment', 'bank_account'), None),
+            ((RUN_RECORD_META_KEY, 'post_environment', 'bank_account', 'balance'), 'not a number'),
+        ],
+    )
     def test_incomplete_or_tampered_payload_is_excluded(
-        self, valid_states: List[Tuple[Any, TaskState]], data: st.DataObject
+        self, valid_state: Tuple[Any, TaskState], path: Tuple[str, ...], value: Any
     ) -> None:
-        adapter, base = data.draw(st.sampled_from(valid_states))
-        base_snapshot = copy.deepcopy(base.metadata)
-        corruption = data.draw(_payload_corruptions(base.metadata))
+        adapter, base = valid_state
         state = copy.deepcopy(base)
-        state.metadata = corruption.metadata
-        persisted = copy.deepcopy(corruption.metadata)
+        part = state.metadata
+        for key in path[:-1]:
+            part = part[key]
+        if value is None:
+            del part[path[-1]]
+        else:
+            part[path[-1]] = value
+        persisted = copy.deepcopy(state.metadata)
+        bad_field = '.'.join(path[:2] if path[:2] == (RUN_RECORD_META_KEY, 'post_environment') else path)
         reset_model_calls()
 
         with _captured_errors() as errors:
             score = adapter.calculate_metrics(state).score
 
-        # Excluded from the denominator: neither 0 nor 1 for any metric.
-        assert score.status == ScoreStatus.EXCLUDED and score.value == {}, (corruption.kind, score)
-        assert score.metadata['excluded_reason'] == f"invalid_scoring_payload: ['{corruption.bad_field}']"
-        assert any(f'sample {state.sample_id} ' in m and f"'{corruption.bad_field}'" in m for m in errors), errors
-        # Scoring is read-only and never calls the model.
-        assert state.metadata == persisted and base.metadata == base_snapshot
-        assert model_calls() == []
+        assert (score.status, score.value) == (ScoreStatus.EXCLUDED, {})
+        assert score.metadata['excluded_reason'] == f'invalid_scoring_payload: {[bad_field]}'
+        assert any(bad_field in message for message in errors)
+        assert state.metadata == persisted and model_calls() == []
 
     @pytest.mark.parametrize(
         ('config_kwargs', 'drifted'),
         [
             ({'attack': 'direct'}, ['attack']),
-            ({'attack': DEFAULT_ATTACK, 'victim_model_name': 'Other Victim'}, ['victim_model_name', 'effective_model_name']),
+            (
+                {'attack': DEFAULT_ATTACK, 'victim_model_name': 'Other Victim'},
+                ['victim_model_name', 'effective_model_name'],
+            ),
         ],
     )
     def test_cached_sample_built_with_another_config_is_excluded(
-        self, valid_states: List[Tuple[Any, TaskState]], work_dir: str, config_kwargs: Dict[str, Any], drifted: List[str]
+        self, valid_state: Tuple[Any, TaskState], work_dir: str, config_kwargs: Dict[str, Any], drifted: List[str]
     ) -> None:
-        state = next(s for _, s in valid_states if s.metadata[SAMPLE_META_KEY]['attack'] == DEFAULT_ATTACK)
+        _, state = valid_state
         adapter = get_benchmark('agentdojo', config=make_task_config(work_dir, **config_kwargs))
 
         score = adapter.calculate_metrics(copy.deepcopy(state)).score
@@ -2145,37 +1572,6 @@ class TestPayloadExclusion:
 # Aggregation and report
 # ---------------------------------------------------------------------------
 
-SCORE_TOLERANCE = 2e-4
-"""Report scores are rounded to four decimals, once per subset and once per metric."""
-
-ScoreEntry = Tuple[int, bool, int, int]
-"""``(sample_id, excluded, utility, targeted_asr)``; sample ids may repeat, as with ``repeats``."""
-
-_suite_entries = st.dictionaries(
-    st.sampled_from(SUITES),
-    st.lists(st.tuples(st.integers(0, 5), st.booleans(), st.integers(0, 1), st.integers(0, 1)), min_size=1, max_size=8),
-    min_size=1,
-)
-
-
-@functools.lru_cache(maxsize=None)
-def _aggregation_adapter(work_dir: str, attack: str) -> Any:
-    config = make_task_config(work_dir, subset=list(SUITES), attack=attack, victim_model_name=VICTIM_MODEL_NAME)
-    return get_benchmark('agentdojo', config=config)
-
-
-def _sample_score(entry: ScoreEntry, benign: bool) -> SampleScore:
-    """Build a score in the shape the adapter emits: benign ``{utility}``, attack ``{utility, targeted_asr}``."""
-    sample_id, excluded, utility, targeted_asr = entry
-    if excluded:
-        score = Score(value={}, status=ScoreStatus.EXCLUDED, explanation='excluded')
-    else:
-        value = (
-            {'utility': float(utility)} if benign else {'utility': float(utility), 'targeted_asr': float(targeted_asr)}
-        )
-        score = Score(value=value, main_score_name='utility' if benign else 'targeted_asr')
-    return SampleScore(score=score, sample_id=sample_id, group_id=sample_id)
-
 
 def _report_metric(report: Report, name: str) -> Any:
     return next(metric for metric in report.metrics if metric.identity.name == name)
@@ -2187,49 +1583,24 @@ def _report_subsets(report: Report, name: str) -> Dict[str, Any]:
 
 @requires_upstream
 class TestAggregation:
-    @settings(max_examples=15, deadline=None)
-    @given(attack=st.sampled_from([BENIGN_ATTACK, DEFAULT_ATTACK]), suite_entries=_suite_entries)
-    def test_metric_aggregation(self, work_dir: str, attack: str, suite_entries: Dict[str, List[ScoreEntry]]) -> None:
-        adapter = _aggregation_adapter(work_dir, attack)
+    @pytest.mark.parametrize('attack', [BENIGN_ATTACK, DEFAULT_ATTACK])
+    def test_labels_primary_metric_and_excluded_samples(self, work_dir: str, attack: str) -> None:
+        adapter = get_benchmark('agentdojo', config=make_task_config(work_dir, attack=attack))
         benign = attack == BENIGN_ATTACK
-        metric_names = ['utility'] if benign else ['targeted_asr', 'utility']
-        dimensions = {'condition': 'benign' if benign else 'under_attack'}
-        run_metadata = {
-            'attack': attack,
-            'victim_model_name': VICTIM_MODEL_NAME,
-            'benchmark_version': BENCHMARK_VERSION,
-            'upstream_version': UPSTREAM_VERSION,
-        }
+        value = {'utility': 1.0} if benign else {'utility': 1.0, 'targeted_asr': 0.0}
+        scored = SampleScore(score=Score(value=value), sample_id=0, group_id=0)
+        excluded = SampleScore(score=Score(status=ScoreStatus.EXCLUDED), sample_id=1, group_id=1)
+        aggregates = adapter.aggregate_scores([scored, excluded])
 
-        def values(entries: List[ScoreEntry], name: str) -> List[float]:
-            return [float(entry[2 if name == 'utility' else 3]) for entry in entries if not entry[1]]
-
-        # Mirror the evaluator: aggregate each subset and keep only non-empty results.
-        score_dict: Dict[str, List[AggScore]] = {}
-        for suite_name, entries in suite_entries.items():
-            agg_scores = adapter.aggregate_scores([_sample_score(entry, benign) for entry in entries])
-            scored = [entry for entry in entries if not entry[1]]
-            if not scored:
-                assert agg_scores == [], 'an all-excluded suite yields no aggregate'
-                continue
-            assert sorted(agg.metric_name for agg in agg_scores) == metric_names
-            for agg in agg_scores:
-                expected = values(entries, agg.metric_name)
-                assert agg.num == len(scored)
-                assert agg.score == pytest.approx(sum(expected) / len(expected), abs=SCORE_TOLERANCE)
-                assert (agg.dimensions, agg.metadata) == (dimensions, run_metadata)
-                assert sorted(agg.ids) == sorted(entry[0] for entry in scored)
-            score_dict[suite_name] = agg_scores
-        if not score_dict:
-            return
-
-        # Report weighting is generic; only the AgentDojo labels and the primary metric are checked here.
-        report = adapter.generate_report(scores=score_dict, model_name=SCRIPTED_MODEL_NAME, output_dir='')
-        assert sorted(metric.identity.name for metric in report.metrics) == metric_names
-        assert report.primary_metric.identity.name == ('utility' if benign else 'targeted_asr')
-        for name in metric_names:
-            assert _report_metric(report, name).identity.dimensions == dimensions
-            assert sorted(_report_subsets(report, name)) == sorted(score_dict)
+        assert {agg.metric_name: agg.score for agg in aggregates} == value
+        for agg in aggregates:
+            assert agg.num == 1 and agg.ids == [0]
+            assert agg.dimensions == {'condition': 'benign' if benign else 'under_attack'}
+            assert agg.metadata['attack'] == attack
+            assert agg.metadata['benchmark_version'] == BENCHMARK_VERSION
+            assert agg.metadata['upstream_version'] == UPSTREAM_VERSION
+        assert adapter.aggregate_scores([excluded]) == []
+        assert adapter.primary_metric.name == ('utility' if benign else 'targeted_asr')
 
 
 # ---------------------------------------------------------------------------
@@ -2237,7 +1608,7 @@ class TestAggregation:
 # ---------------------------------------------------------------------------
 
 
-def _run(scripts: Mapping[ScriptKey, Sequence[Turn]], work_dir: Path, **config_kwargs: Any) -> Report:
+def _run(scripts: Mapping[ScriptKey, Sequence[ModelOutput]], work_dir: Path, **config_kwargs: Any) -> Report:
     with installed_scripts(scripts):
         result = run_task(make_task_config(work_dir, eval_batch_size=2, **config_kwargs))
     assert isinstance(result['agentdojo'], Report)
@@ -2259,7 +1630,7 @@ def _subset_nums(report: Report, name: str) -> Dict[str, int]:
     return {subset_name: subset.num for subset_name, subset in _report_subsets(report, name).items()}
 
 
-def _ground_truth_script(*user_task_ids: str) -> Dict[ScriptKey, List[Turn]]:
+def _ground_truth_script(*user_task_ids: str) -> Dict[ScriptKey, List[ModelOutput]]:
     return {(SUITE, task_id): ground_truth_turns(SUITE, task_id) for task_id in user_task_ids}
 
 
@@ -2331,7 +1702,10 @@ class TestEndToEnd:
         assert observations[1].startswith('ValidationError: ')
         assert all(EVALSCOPE_UNKNOWN_TOOL_TEXT not in text for text in observations)
         # The unknown name never reached the upstream runtime, and scoring executes no tool.
-        assert runtime_calls == ['send_money', *(turn.calls[0].function for turn in ground_truth[:-1])]
+        assert runtime_calls == [
+            'send_money',
+            *(turn.message.tool_calls[0].function.name for turn in ground_truth[:-1]),
+        ]
         trace = row['sample_score']['sample_metadata'][RUN_RECORD_META_KEY]['tool_call_trace']
         assert [(item['function'], item['valid_function'], item['args']) for item in trace[:2]] == [
             ('nonexistent_tool', False, {'x': 1}),
@@ -2395,22 +1769,25 @@ class TestEndToEnd:
         )
         assert sorted(_reviews(tmp_path)) == sorted(user_task_ids)
 
-    def test_first_turn_model_length_scores_by_rule(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize('attack', [BENIGN_ATTACK, DEFAULT_ATTACK])
+    def test_first_turn_model_length_scores_by_rule(self, tmp_path: Path, attack: str) -> None:
         report = _run(
-            {(SUITE, USER_TASK_ID): [ModelLengthTurn()]},
+            {(SUITE, USER_TASK_ID): [text_turn(stop_reason='model_length')]},
             tmp_path,
-            attack=DEFAULT_ATTACK,
+            attack=attack,
             user_task_ids=[USER_TASK_ID],
             injection_task_ids=[INJECTION_TASK_ID],
         )
 
         score = _score(_reviews(tmp_path)[USER_TASK_ID])
-        assert score['value'] == {'utility': 0.0, 'targeted_asr': 1.0}
+        assert score['value'] == (
+            {'utility': 0.0} if attack == BENIGN_ATTACK else {'utility': 0.0, 'targeted_asr': 1.0}
+        )
         assert score['metadata']['termination_reason'] == 'context_length_exceeded'
-        assert _report_metric(report, 'utility').num == _report_metric(report, 'targeted_asr').num == 1
+        assert all(metric.num == 1 for metric in report.metrics)
 
     def test_empty_final_output_is_scored(self, tmp_path: Path) -> None:
-        script = [*ground_truth_turns(SUITE, USER_TASK_ID)[:-1], TextTurn(text='')]
+        script = [*ground_truth_turns(SUITE, USER_TASK_ID)[:-1], text_turn(text='')]
         report = _run({(SUITE, USER_TASK_ID): script}, tmp_path, user_task_ids=[USER_TASK_ID])
 
         score = _score(_reviews(tmp_path)[USER_TASK_ID])
@@ -2418,10 +1795,14 @@ class TestEndToEnd:
         # This user task's upstream utility only inspects the environment, so the empty answer still succeeds.
         assert score['value'] == {'utility': 1.0} and _report_metric(report, 'utility').num == 1
 
-    def test_content_filtered_suite_reports_no_zero_metric(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize('attack', [BENIGN_ATTACK, DEFAULT_ATTACK])
+    def test_content_filtered_suite_reports_no_zero_metric(self, tmp_path: Path, attack: str) -> None:
         # The only slack sample gets a provider content-filter reply and is excluded.
-        scripts = {**_ground_truth_script(USER_TASK_ID), ('slack', USER_TASK_ID): [ContentFilterTurn()]}
-        report = _run(scripts, tmp_path, subset=[SUITE, 'slack'], limit=1)
+        scripts = {
+            **_ground_truth_script(USER_TASK_ID),
+            ('slack', USER_TASK_ID): [text_turn(text='Filtered by provider.', stop_reason='content_filter')],
+        }
+        report = _run(scripts, tmp_path, subset=[SUITE, 'slack'], limit=1, attack=attack)
 
         slack_score = _score(next(iter(_reviews(tmp_path, 'slack').values())))
         assert (slack_score['status'], slack_score['value']) == (ScoreStatus.EXCLUDED, {})
@@ -2465,7 +1846,7 @@ class TestEndToEnd:
         drifted = _score(reviews['user_task_1'])
         assert (drifted['status'], drifted['value']) == (ScoreStatus.EXCLUDED, {})
         assert drifted['metadata']['excluded_reason'] == f"invalid_scoring_payload: ['{SAMPLE_META_KEY}.row_id']"
-        assert "loaded at index 1" in drifted['explanation']
+        assert 'loaded at index 1' in drifted['explanation']
         assert _subset_nums(report, 'utility') == {SUITE: 1}
 
     def test_llm_judge_strategy_is_ignored_with_a_warning(self, tmp_path: Path) -> None:

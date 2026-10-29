@@ -11,12 +11,11 @@ Scoring calls ``TaskSuite._check_task_result`` with the same inputs as upstream 
 upstream package is imported inside functions only.
 """
 
-import collections.abc
 import functools
 import types
 import typing
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, EmailStr, TypeAdapter, ValidationError
 
@@ -112,26 +111,14 @@ def _type_adapter(annotation: Any) -> TypeAdapter:
     return TypeAdapter(annotation)
 
 
-def _is_subclass(annotation: Any, base: type) -> bool:
-    # Python 3.10 reports parametrized generics such as ``list[int]`` as types.
-    return isinstance(annotation, type) and typing.get_origin(annotation) is None and issubclass(annotation, base)
-
-
 def _is_model(annotation: Any) -> bool:
-    return _is_subclass(annotation, BaseModel)
-
-
-def _is_string(annotation: Any) -> bool:
-    return annotation is EmailStr or (_is_subclass(annotation, str) and not _is_subclass(annotation, Enum))
+    # Python 3.10 reports parametrized generics such as ``list[int]`` as types.
+    return isinstance(annotation, type) and typing.get_origin(annotation) is None and issubclass(annotation, BaseModel)
 
 
 def _restore(annotation: Any, value: Any) -> Any:
-    """Rebuild ``value`` from its JSON form as ``annotation`` without validating string values."""
+    """Restore field types used by the pinned AgentDojo environments, preserving raw strings."""
     origin, args = typing.get_origin(annotation), typing.get_args(annotation)
-    if annotation is Any:
-        return value
-    if origin is Annotated:
-        return _restore(args[0], value)
     if _is_model(annotation):
         return restore_environment(annotation, value)
     if origin in (Union, types.UnionType):
@@ -145,34 +132,29 @@ def _restore(annotation: Any, value: Any) -> Any:
             except ValueError:
                 continue
         raise ValueError(f'{value!r} matches no member of {annotation}.')
-    if origin in (list, tuple, set, frozenset):
-        if not isinstance(value, (list, tuple)):
+    if origin is list:
+        if not isinstance(value, list):
             raise ValueError(f'{annotation} expects an array, got {type(value).__name__}.')
-        if origin is tuple and args and args[-1] is not Ellipsis:
-            if len(args) != len(value):
-                raise ValueError(f'{annotation} expects {len(args)} items, got {len(value)}.')
-            return tuple(_restore(arg, item) for arg, item in zip(args, value))
-        item_annotation = args[0] if args else Any
-        return origin(_restore(item_annotation, item) for item in value)
-    if origin in (dict, collections.abc.Mapping):
+        return [_restore(args[0], item) for item in value]
+    if origin is dict:
         if not isinstance(value, Mapping):
             raise ValueError(f'{annotation} expects an object, got {type(value).__name__}.')
-        key_annotation, item_annotation = args or (Any, Any)
+        key_annotation, item_annotation = args
         return {_restore(key_annotation, key): _restore(item_annotation, item) for key, item in value.items()}
-    if _is_string(annotation) and isinstance(value, str):
+    if annotation in (str, EmailStr) and isinstance(value, str):
         return value
     # Only JSON-lossy leaves (datetime, date, enums) and other scalars are converted.
     return _type_adapter(annotation).validate_python(value)
 
 
 def restore_environment(environment_type: Type[BaseModel], data: Any) -> BaseModel:
-    """Rebuild a task environment exactly from its ``model_dump(mode='json', round_trip=True)`` output.
+    """Restore a pinned AgentDojo environment from its ``model_dump(mode='json', round_trip=True)`` output.
 
     ``model_validate`` would not restore it: upstream ``Inbox``, ``Calendar`` and ``CloudDrive`` rebuild ``emails``,
     ``events`` and ``files`` from their ``initial_*`` fields in an ``after`` validator, which undoes every change of
     the run, and upstream tools such as ``share_file`` write unvalidated strings into ``EmailStr`` fields, which
     validation would normalize or reject. The data is therefore rebuilt along the field annotations: models with
-    ``model_construct``, containers and unions element by element, string values as they are, and only the remaining
+    ``model_construct``, lists, dictionaries and unions element by element, string values as they are, and the remaining
     leaves (datetime, date, enums, numbers) through their ``TypeAdapter``.
 
     Raises:
