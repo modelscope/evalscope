@@ -438,6 +438,10 @@ METRIC_DEFINITIONS['safety'] = MetricEntry(baseline='quality.accuracy.ratio')
 METRIC_DEFINITIONS['attack_success_rate'] = MetricEntry(
     baseline='quality.error_rate.ratio', metric_name='Attack Success Rate'
 )
+# Agent safety benchmarks (agentdojo): `utility` is the share of user tasks completed and
+# `targeted_asr` is the share of samples where the injected attacker goal was achieved.
+METRIC_DEFINITIONS['utility'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Utility')
+METRIC_DEFINITIONS['targeted_asr'] = MetricEntry(baseline='quality.error_rate.ratio', metric_name='Targeted ASR')
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
 for _registered, _reported in {
     'decision_nll': 'nll',

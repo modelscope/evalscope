@@ -2,6 +2,7 @@
  "a_okvqa": "evalscope.benchmarks.a_okvqa.a_okvqa_adapter",
  "aa_lcr": "evalscope.benchmarks.aa_lcr.aa_lcr_adapter",
  "acebench": "evalscope.benchmarks.acebench.acebench_adapter",
+ "agentdojo": "evalscope.benchmarks.agentdojo.agentdojo_adapter",
  "agieval": "evalscope.benchmarks.agieval.agieval_adapter",
  "ai2d": "evalscope.benchmarks.ai2d.ai2d_adapter",
  "aime24": "evalscope.benchmarks.aime.aime_adapter",
