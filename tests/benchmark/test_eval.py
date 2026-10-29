@@ -582,7 +582,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_xstest_mock(self):
         """Test XSTest with a mock model and a mock judge."""
         judge_response = json.dumps(
-            {'reasoning': 'Mock verdict.', 'verdict': 'FULL_COMPLIANCE'}, ensure_ascii=False
+            {'reasoning': 'Mock verdict.', 'verdict': '1_full_compliance'}, ensure_ascii=False
         )
         with patch.object(MockLLM, 'default_output', judge_response):
             self._run_dataset_test(
