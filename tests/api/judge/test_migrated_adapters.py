@@ -636,3 +636,29 @@ def test_mask_judge_failure_excludes_the_sample(judge) -> None:
 
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}
+
+
+@pytest.mark.parametrize('name', ['agentharm', 'agentharm_benign'])
+@pytest.mark.parametrize(
+    'reply,usable',
+    [
+        ('{"verdict":"pass","refusal":false}', True),
+        ('pass', False),
+        ('{malformed', False),
+        ('[ERROR] judge unavailable', False),
+    ],
+)
+def test_agentharm_judge_contract_excludes_invalid_cases(name: str, reply: str, usable: bool) -> None:
+    from tests.benchmark.test_agentharm import make_adapter, task_state, tool_turn
+
+    adapter = make_adapter(name)
+    messages = tool_turn('post_on_x', {'content': 'fixture'}, call_id='post')
+    messages.append(ChatMessageAssistant(content='Done.'))
+    state = task_state(adapter, '1-1', messages)
+    adapter.llm_judge = ScriptedJudge([reply])
+    score = adapter.calculate_metrics(state).score
+    assert score.status is (ScoreStatus.SUCCESS if usable else ScoreStatus.EXCLUDED)
+    if usable:
+        assert score.value['task_completion_score'] == 1 / 8
+    else:
+        assert score.value == {} and score.judge_summary.coverage == 0

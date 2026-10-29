@@ -1,0 +1,118 @@
+{
+  "harmful_behaviors_test_public.json": {
+    "file": "harmful_behaviors_test_public.json",
+    "sha256": "fc3e4abbcd812022b85150b0e6f81c0bdbdfabb486e5b82ec46f1ba135f3ba08",
+    "rows": 176,
+    "base_behaviors": 44,
+    "categories": {
+      "Disinformation": 20,
+      "Harassment": 24,
+      "Drugs": 20,
+      "Fraud": 24,
+      "Hate": 20,
+      "Cybercrime": 20,
+      "Sexual": 24,
+      "Copyright": 24
+    },
+    "fields": [
+      "id",
+      "id_original",
+      "detailed_prompt",
+      "hint_included",
+      "name",
+      "category",
+      "prompt",
+      "target_functions",
+      "grading_function"
+    ],
+    "rubrics": 44,
+    "target_tools": 76
+  },
+  "harmful_behaviors_validation.json": {
+    "file": "harmful_behaviors_validation.json",
+    "sha256": "40cd099915258b41142acfc88a9f2b4e15cd631c5490ad02a0dce0cf2b9c175e",
+    "rows": 32,
+    "base_behaviors": 8,
+    "categories": {
+      "Fraud": 4,
+      "Drugs": 4,
+      "Harassment": 4,
+      "Copyright": 4,
+      "Cybercrime": 4,
+      "Sexual": 4,
+      "Disinformation": 4,
+      "Hate": 4
+    },
+    "fields": [
+      "id",
+      "id_original",
+      "detailed_prompt",
+      "hint_included",
+      "name",
+      "category",
+      "prompt",
+      "target_functions",
+      "grading_function"
+    ],
+    "rubrics": 8,
+    "target_tools": 17
+  },
+  "benign_behaviors_test_public.json": {
+    "file": "benign_behaviors_test_public.json",
+    "sha256": "65b4ebd4d8d2e7c9a79db4e11bc642f1800e642be0626ba0a990c763a325957a",
+    "rows": 176,
+    "base_behaviors": 44,
+    "categories": {
+      "Disinformation": 20,
+      "Harassment": 24,
+      "Drugs": 20,
+      "Fraud": 24,
+      "Hate": 20,
+      "Cybercrime": 20,
+      "Sexual": 24,
+      "Copyright": 24
+    },
+    "fields": [
+      "id",
+      "id_original",
+      "detailed_prompt",
+      "hint_included",
+      "name",
+      "category",
+      "prompt",
+      "target_functions",
+      "grading_function"
+    ],
+    "rubrics": 44,
+    "target_tools": 76
+  },
+  "benign_behaviors_validation.json": {
+    "file": "benign_behaviors_validation.json",
+    "sha256": "b74ffb781ce54182775a8b2843ea341ab2fb4cfea5743bfa89a368e52a76c27a",
+    "rows": 32,
+    "base_behaviors": 8,
+    "categories": {
+      "Fraud": 4,
+      "Drugs": 4,
+      "Harassment": 4,
+      "Copyright": 4,
+      "Cybercrime": 4,
+      "Sexual": 4,
+      "Disinformation": 4,
+      "Hate": 4
+    },
+    "fields": [
+      "id",
+      "id_original",
+      "detailed_prompt",
+      "hint_included",
+      "name",
+      "category",
+      "prompt",
+      "target_functions",
+      "grading_function"
+    ],
+    "rubrics": 8,
+    "target_tools": 16
+  }
+}
