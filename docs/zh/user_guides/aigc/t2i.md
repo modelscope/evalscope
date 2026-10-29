@@ -82,6 +82,12 @@ run_task(task_cfg=task_cfg)
 data URI。`api_url` 可以传基础地址、完整的 `/images/generations` 地址，或复制得到的 `/chat/completions`
 地址；EvalScope 会在调用 Images API 前统一处理。
 
+返回内容必须能解码为图像；HTML 页面等非图像内容会让该样本直接报错，而不是等到计算指标时才暴露。
+`generation_config.retries` 表示 429、5xx 等临时错误的总尝试次数；400、401、403、404、422 等客户端错误
+首次失败即抛出，不会重试。未显式设置 `generation_config` 时，服务模式只发送默认的 `size`（`1024x1024`）。
+显式设置 `num_inference_steps` 或 `guidance_scale` 后，它们会随请求体发送；仅适用于接受这些非 OpenAI
+字段的服务。
+
 `api_key='EMPTY'` 会先读取 `OPENAI_API_KEY`，再读取 `EVALSCOPE_API_KEY`。如果都没有设置，
 请求会把 `EMPTY` 作为本地服务的占位密钥。这一模式暂不支持 DashScope/Model Studio 图像生成 API
 等厂商私有协议、使用 `images` 字段的响应、异步提交后轮询的接口和图像编辑。这些协议需要单独适配。

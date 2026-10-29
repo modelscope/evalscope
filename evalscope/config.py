@@ -582,6 +582,9 @@ class TaskConfig(BaseArgument):
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
+            if self.api_url is not None:
+                # Diffusion-only knobs are not OpenAI Images API fields; services opt in explicitly.
+                return {key: DEFAULT_IMAGE_GEN_CONFIG[key] for key in ('height', 'width')}
             return DEFAULT_IMAGE_GEN_CONFIG.copy()
 
         elif self.model_task == ModelTask.TEXT_GENERATION:

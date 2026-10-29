@@ -40,6 +40,8 @@ def _install_fake_pipeline(
     import modelscope
 
     monkeypatch.setattr(modelscope, attr_name, FakePipeline, raising=False)
+    # The fake pipeline does not need the local aigc dependencies checked at construction time.
+    monkeypatch.setattr('evalscope.models.text2image_model.check_import', lambda *args, **kwargs: None)
 
 
 def _generated_image_content(output: Any) -> ContentImage:

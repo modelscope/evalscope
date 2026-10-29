@@ -82,6 +82,13 @@ the first item, which must have either `b64_json` or an HTTP(S) `url`. Base64 da
 URI. You may pass a base URL, a full `/images/generations` URL, or a copied `/chat/completions` URL; EvalScope
 normalizes these forms before calling the Images API.
 
+The returned bytes must decode as an image; an HTML page or other non-image payload fails the sample with an error
+instead of surfacing later at metric time. `generation_config.retries` is the total number of attempts for
+transient failures such as 429 and 5xx responses; client errors such as 400, 401, 403, 404, and 422 are raised
+after the first attempt. Without an explicit `generation_config`, service mode only sends the default `size`
+(`1024x1024`). Set `num_inference_steps` or `guidance_scale` explicitly to forward them in the request body; this
+works only with services that accept these non-OpenAI fields.
+
 `api_key='EMPTY'` first checks `OPENAI_API_KEY`, then `EVALSCOPE_API_KEY`. If neither variable is set, `EMPTY`
 is sent as a placeholder for a local service. This mode does not cover native provider protocols such as the
 DashScope/Model Studio image-generation API, responses with an `images` field, asynchronous submit-and-poll

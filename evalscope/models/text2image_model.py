@@ -5,11 +5,13 @@ import binascii
 import importlib
 import os
 import time
+from io import BytesIO
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 from openai.types import ImagesResponse
+from PIL import Image, UnidentifiedImageError
 
 from evalscope.api.messages import ChatMessage, ContentImage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
@@ -20,6 +22,8 @@ from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import PIL_to_base64, bytes_to_base64
 from evalscope.utils.model_utils import get_device
 from evalscope.utils.uri_utils import data_uri_to_base64, file_as_data, is_http_url
+
+from .openai_compatible import NON_RETRYABLE_OPENAI_ERRORS
 
 logger = getLogger()
 
@@ -169,10 +173,12 @@ class Text2ImageAPI(ModelAPI):
     def _generate_service(self, input: List[ChatMessage], config: GenerateConfig) -> ModelOutput:
         start_time = time.monotonic()
         request = self._service_request(input=input, config=config)
+        # Client errors (bad parameters, auth, unknown model) fail the same way on every attempt.
         response = retry_call(
             self.client.images.generate,
-            retries=max(config.retries or 1, 1),
+            retries=config.retries,
             sleep_interval=config.retry_interval or 0,
+            no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
             **request,
         )
         image_base64, metadata = self._parse_service_response(response)
@@ -198,6 +204,11 @@ class Text2ImageAPI(ModelAPI):
             if config.width is None or config.height is None:
                 raise ValueError('Both width and height are required when setting the image size.')
             request['size'] = f'{config.width}x{config.height}'
+        # Not part of the OpenAI Images API; diffusion servers that accept them receive them via extra_body.
+        if config.num_inference_steps is not None:
+            request['num_inference_steps'] = config.num_inference_steps
+        if config.guidance_scale is not None:
+            request['guidance_scale'] = config.guidance_scale
 
         request.update(config.model_extra or {})
         extra_body = dict(get_secret_value(config.extra_body) or {})
@@ -222,18 +233,21 @@ class Text2ImageAPI(ModelAPI):
         image_b64_json = image.b64_json
         image_url = image.url
         if isinstance(image_b64_json, str) and image_b64_json:
-            image_base64 = data_uri_to_base64(image_b64_json)
+            source = 'b64_json'
             try:
-                base64.b64decode(image_base64, validate=True)
+                image_bytes = base64.b64decode(data_uri_to_base64(image_b64_json), validate=True)
             except (binascii.Error, ValueError, TypeError) as ex:
                 raise ValueError('Image generation service returned invalid base64 image data.') from ex
         elif isinstance(image_url, str) and image_url:
             if not is_http_url(image_url):
                 raise ValueError('Image generation service returned a non-HTTP image URL.')
+            source = image_url
             image_bytes, _ = file_as_data(image_url)
-            image_base64 = bytes_to_base64(image_bytes)
         else:
             raise ValueError('Image generation service response must include b64_json or url.')
+        self._validate_image_bytes(image_bytes, source=source)
+        # Emit a data URI, matching the local pipeline output.
+        image_base64 = bytes_to_base64(image_bytes, add_header=True, guess_mimetype=True)
 
         response_payload = response.model_dump(exclude_none=True)
         metadata = {key: value for key, value in response_payload.items() if key != 'data'}
@@ -243,3 +257,15 @@ class Text2ImageAPI(ModelAPI):
         if image.revised_prompt is not None:
             metadata['revised_prompt'] = image.revised_prompt
         return image_base64, metadata
+
+    @staticmethod
+    def _validate_image_bytes(image_bytes: bytes, source: str) -> None:
+        # Fail at inference time instead of when a metric later opens the saved file.
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                image.verify()
+        except (UnidentifiedImageError, OSError, SyntaxError, ValueError) as ex:
+            raise ValueError(
+                f'Image generation service returned content that is not a valid image (from {source}): '
+                f'{image_bytes[:64]!r}'
+            ) from ex

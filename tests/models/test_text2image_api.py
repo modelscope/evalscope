@@ -3,15 +3,19 @@ import json
 import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any, Iterator
 
 import pytest
-from openai import APIStatusError
+from openai import APIStatusError, BadRequestError, RateLimitError
 
+from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
+from evalscope.api.dataset import Sample
 from evalscope.api.messages import ContentImage
-from evalscope.api.model import GenerateConfig, get_model, get_model_with_task_config
+from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, get_model, get_model_with_task_config
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, ModelTask
+from evalscope.constants import EvalType, FileConstants, ModelTask
+from evalscope.utils.uri_utils import data_uri_to_base64
 
 
 class _ImageServiceHandler(BaseHTTPRequestHandler):
@@ -22,6 +26,7 @@ class _ImageServiceHandler(BaseHTTPRequestHandler):
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
     )
     response_kind = 'base64'
+    transient_failures = 0
 
     def _send_json(self, status: int, response: dict[str, Any]) -> None:
         body = json.dumps(response).encode('utf-8')
@@ -44,16 +49,21 @@ class _ImageServiceHandler(BaseHTTPRequestHandler):
         if self.response_kind == 'error':
             self._send_json(503, {'error': {'message': 'image backend unavailable', 'type': 'server_error'}})
             return
-        if self.response_kind == 'retry' and len(self.requests) == 1:
+        if self.response_kind == 'bad_request':
+            self._send_json(400, {'error': {'message': 'unsupported size', 'type': 'invalid_request_error'}})
+            return
+        if len(self.requests) <= self.transient_failures:
             self._send_json(429, {'error': {'message': 'rate limited', 'type': 'rate_limit_error'}})
             return
 
-        if self.response_kind in {'base64', 'retry', 'data_uri', 'invalid_base64'}:
+        if self.response_kind in {'base64', 'data_uri', 'invalid_base64', 'non_image_base64'}:
             image_base64 = base64.b64encode(self.image_bytes).decode('utf-8')
             if self.response_kind == 'data_uri':
                 image_base64 = f'data:image/png;base64,{image_base64}'
             elif self.response_kind == 'invalid_base64':
                 image_base64 = 'not-valid-base64'
+            elif self.response_kind == 'non_image_base64':
+                image_base64 = base64.b64encode(b'definitely not an image').decode('utf-8')
             response = {
                 'created': 123,
                 'data': [{
@@ -66,9 +76,10 @@ class _ImageServiceHandler(BaseHTTPRequestHandler):
                     'total_tokens': 12,
                 },
             }
-        elif self.response_kind == 'url':
+        elif self.response_kind in {'url', 'html_url'}:
             host, port = self.server.server_address
-            response = {'created': 123, 'data': [{'url': f'http://{host}:{port}/generated.png'}]}
+            file_name = 'generated.png' if self.response_kind == 'url' else 'login.html'
+            response = {'created': 123, 'data': [{'url': f'http://{host}:{port}/{file_name}'}]}
         elif self.response_kind == 'invalid_url':
             response = {'created': 123, 'data': [{'url': '/tmp/generated.png'}]}
         else:
@@ -77,21 +88,26 @@ class _ImageServiceHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         self.image_requests.append(self.path)
+        if self.path.endswith('.html'):
+            body, content_type = b'<!doctype html><html><body>Sign in</body></html>', 'text/html'
+        else:
+            body, content_type = self.image_bytes, 'image/png'
         self.send_response(200)
-        self.send_header('Content-Type', 'image/png')
-        self.send_header('Content-Length', str(len(self.image_bytes)))
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        self.wfile.write(self.image_bytes)
+        self.wfile.write(body)
 
     def log_message(self, format: str, *args: Any) -> None:
         pass
 
 
 @contextmanager
-def _image_service(response_kind: str = 'base64') -> Iterator[str]:
+def _image_service(response_kind: str = 'base64', transient_failures: int = 0) -> Iterator[str]:
     _ImageServiceHandler.requests = []
     _ImageServiceHandler.image_requests = []
     _ImageServiceHandler.response_kind = response_kind
+    _ImageServiceHandler.transient_failures = transient_failures
     server = ThreadingHTTPServer(('127.0.0.1', 0), _ImageServiceHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -102,6 +118,12 @@ def _image_service(response_kind: str = 'base64') -> Iterator[str]:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def _image_bytes(content: Any) -> bytes:
+    assert isinstance(content, ContentImage)
+    assert content.image.startswith('data:image/png;base64,')
+    return base64.b64decode(data_uri_to_base64(content.image))
 
 
 def test_remote_text2image_uses_openai_compatible_endpoint(caplog: pytest.LogCaptureFixture) -> None:
@@ -144,9 +166,7 @@ def test_remote_text2image_uses_openai_compatible_endpoint(caplog: pytest.LogCap
     assert 'Ignoring model_args unsupported by the OpenAI client' in caplog.text
     assert 'pipeline_cls, use_safetensors, variant' in caplog.text
 
-    content = output.message.content[0]
-    assert isinstance(content, ContentImage)
-    assert base64.b64decode(content.image) == _ImageServiceHandler.image_bytes
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
     assert output.metadata == {
         'created': 123,
         'request_id': 'request-id',
@@ -176,9 +196,7 @@ def test_remote_text2image_downloads_url_response(monkeypatch: pytest.MonkeyPatc
     assert request['path'] == '/v1/images/generations'
     assert request['headers']['Authorization'] == 'Bearer EMPTY'
     assert _ImageServiceHandler.image_requests == ['/generated.png']
-    content = output.message.content[0]
-    assert isinstance(content, ContentImage)
-    assert base64.b64decode(content.image) == _ImageServiceHandler.image_bytes
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
 
 
 def test_remote_text2image_empty_key_uses_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -212,23 +230,55 @@ def test_remote_text2image_normalizes_chat_completions_url() -> None:
 
 
 def test_remote_text2image_retries_transient_errors(caplog: pytest.LogCaptureFixture) -> None:
-    with _image_service(response_kind='retry') as service_url:
+    with _image_service(transient_failures=2) as service_url:
         model = get_model(
             model='test-image-model',
             eval_type=EvalType.TEXT2IMAGE,
             base_url=f'{service_url}/v1',
             api_key='test-key',
-            config=GenerateConfig(retries=2, retry_interval=0),
+            config=GenerateConfig(retries=3, retry_interval=0),
             model_args={'max_retries': 3},
             memoize=False,
         )
         output = model.generate('Draw a sunrise.')
 
-    assert len(_ImageServiceHandler.requests) == 2
+    # SDK-internal retries are disabled, so each generation_config.retries attempt is exactly one request.
+    assert len(_ImageServiceHandler.requests) == 3
     assert 'use generation_config.retries instead' in caplog.text
-    content = output.message.content[0]
-    assert isinstance(content, ContentImage)
-    assert base64.b64decode(content.image) == _ImageServiceHandler.image_bytes
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
+
+
+def test_remote_text2image_stops_after_configured_retries() -> None:
+    with _image_service(transient_failures=10) as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='test-key',
+            config=GenerateConfig(retries=3, retry_interval=0),
+            memoize=False,
+        )
+        with pytest.raises(RateLimitError):
+            model.generate('Draw a crowded queue.')
+
+    assert len(_ImageServiceHandler.requests) == 3
+
+
+def test_remote_text2image_does_not_retry_client_errors() -> None:
+    with _image_service(response_kind='bad_request') as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='test-key',
+            config=GenerateConfig(retries=3, retry_interval=0),
+            memoize=False,
+        )
+        with pytest.raises(BadRequestError) as exc_info:
+            model.generate('Draw an unsupported size.')
+
+    assert exc_info.value.body == {'message': 'unsupported size', 'type': 'invalid_request_error'}
+    assert len(_ImageServiceHandler.requests) == 1
 
 
 def test_remote_text2image_zero_retries_still_sends_request() -> None:
@@ -276,9 +326,7 @@ def test_remote_text2image_accepts_base64_variants(response_kind: str) -> None:
         )
         output = model.generate('Draw a blue circle.')
 
-    content = output.message.content[0]
-    assert isinstance(content, ContentImage)
-    assert base64.b64decode(content.image) == _ImageServiceHandler.image_bytes
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
 
 
 def test_remote_text2image_rejects_invalid_base64() -> None:
@@ -292,6 +340,51 @@ def test_remote_text2image_rejects_invalid_base64() -> None:
         )
         with pytest.raises(ValueError, match='invalid base64 image data'):
             model.generate('Draw invalid image data.')
+
+
+def test_remote_text2image_rejects_base64_non_image_bytes() -> None:
+    with _image_service(response_kind='non_image_base64') as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='test-key',
+            memoize=False,
+        )
+        with pytest.raises(ValueError, match=r'not a valid image \(from b64_json\)'):
+            model.generate('Draw non-image bytes.')
+
+
+def test_remote_text2image_rejects_url_returning_html() -> None:
+    with _image_service(response_kind='html_url') as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='test-key',
+            memoize=False,
+        )
+        with pytest.raises(ValueError, match=r'not a valid image \(from http://.*/login\.html\)'):
+            model.generate('Draw behind a login page.')
+
+    assert _ImageServiceHandler.image_requests == ['/login.html']
+
+
+def test_remote_text2image_forwards_diffusion_params_in_body() -> None:
+    with _image_service() as service_url:
+        model = get_model(
+            model='test-image-model',
+            eval_type=EvalType.TEXT2IMAGE,
+            base_url=f'{service_url}/v1',
+            api_key='test-key',
+            config=GenerateConfig(num_inference_steps=8, guidance_scale=3.5),
+            memoize=False,
+        )
+        model.generate('Draw a quick sketch.')
+
+    payload = _ImageServiceHandler.requests[0]['payload']
+    assert payload['num_inference_steps'] == 8
+    assert payload['guidance_scale'] == 3.5
 
 
 def test_remote_text2image_rejects_non_http_url() -> None:
@@ -331,9 +424,40 @@ def test_image_generation_service_is_selected_from_task_config() -> None:
 
     assert task_config.eval_type == EvalType.TEXT2IMAGE
     assert _ImageServiceHandler.requests[0]['path'] == '/v1/images/generations'
-    content = output.message.content[0]
-    assert isinstance(content, ContentImage)
-    assert base64.b64decode(content.image) == _ImageServiceHandler.image_bytes
+    # The service default config keeps the image size but not the diffusion-only knobs.
+    assert _ImageServiceHandler.requests[0]['payload'] == {
+        'model': 'test-image-model',
+        'prompt': 'Draw a mountain reflected in a lake.',
+        'size': '1024x1024',
+    }
+    assert _image_bytes(output.message.content[0]) == _ImageServiceHandler.image_bytes
+
+
+def test_text2image_adapter_saves_data_uri_output(tmp_path: Path) -> None:
+    task_config = TaskConfig(
+        model='test-image-model',
+        model_task=ModelTask.IMAGE_GENERATION,
+        eval_type=EvalType.TEXT2IMAGE,
+        datasets=['general_t2i'],
+    )
+    adapter = Text2ImageAdapter(
+        benchmark_meta=BenchmarkMeta(name='general_t2i', dataset_id='general_t2i'),
+        task_config=task_config,
+    )
+    image_uri = 'data:image/png;base64,' + base64.b64encode(_ImageServiceHandler.image_bytes).decode('utf-8')
+    output = ModelOutput(
+        model='test-image-model',
+        choices=[ChatCompletionChoice.from_content(content=[ContentImage(image=image_uri)])],
+    )
+    sample = Sample(input='Draw a red dot.', id=1, group_id=0)
+
+    class _Model:
+        name = 'test-image-model'
+
+    adapter._on_inference_end(_Model(), sample, output, str(tmp_path))
+
+    with open(sample.metadata[FileConstants.IMAGE_PATH], 'rb') as f:
+        assert f.read() == _ImageServiceHandler.image_bytes
 
 
 def test_local_text2image_still_checks_aigc_dependencies(monkeypatch: pytest.MonkeyPatch) -> None:
