@@ -263,14 +263,15 @@ def anthropic_stop_reason(output: ModelOutput) -> str:
     Some OpenAI-compatible backends (Gemini) finish a tool-calling turn with
     ``finish_reason: "stop"``. A ``tool_use`` block with ``end_turn`` makes the
     Anthropic client treat the turn as final and not run the tool, so a message
-    that carries tool calls reports ``tool_use`` unless it was cut off.
+    that carries tool calls reports ``tool_use`` when the original reason is
+    ``stop``. ``content_filter``, ``unknown`` and truncation are left as mapped.
     """
     if not output.choices:
         return map_stop_reason_to_anthropic('stop')
-    stop_reason = map_stop_reason_to_anthropic(output.choices[0].stop_reason)
-    if stop_reason == 'end_turn' and output.choices[0].message.tool_calls:
+    choice = output.choices[0]
+    if choice.stop_reason == 'stop' and choice.message.tool_calls:
         return 'tool_use'
-    return stop_reason
+    return map_stop_reason_to_anthropic(choice.stop_reason)
 
 
 def anthropic_usage_payload(usage: Any) -> Dict[str, Any]:
