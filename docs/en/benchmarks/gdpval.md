@@ -28,9 +28,11 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
   `extra_params.auto_build_docker_image=false` to require a pre-built `evalscope/gdpval:latest`. Override the image,
   network, CPU or memory settings through `TaskConfig.sandbox.default_config`.
 - `submission_ready` is a local readiness metric: it is 1 when the model produced final text or at least one
-  deliverable file. It is not an official GDPval quality score.
-- EvalScope does not run a local GDPval judge. Use the exported submission package with OpenAI's official GDPval judge
-  to obtain quality scores.
+  deliverable file. It is not a GDPval quality score.
+- EvalScope does not run a GDPval quality judge, and OpenAI no longer accepts hosted grading requests. Use the exported
+  submission package with the public rubrics and gold deliverables in your own grading workflow. Pairwise human expert
+  preference is the standard; an LLM-based judge provides only a rough, non-official estimate. See
+  [OpenAI's current grading guidance](https://evals.openai.com/gdpval/grading).
 - Full document/spreadsheet/slide quality depends on the GDPval runtime image. Thin Python images are useful only for
   plumbing smoke tests.
 
@@ -38,7 +40,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 
 - EvalScope writes a local submission folder under the reports directory.
 - The submission contains `deliverable_text` and `deliverable_files` fields in the GDPval dataset format.
-- Official GDPval grading is external. Run OpenAI's official GDPval judge on the exported submission package.
+- Quality grading is external. Use the exported deliverables, public rubrics, and gold deliverables for pairwise human
+  review or a custom LLM judge; custom LLM-judge results are not official GDPval scores.
 
 
 ## Properties
@@ -70,7 +73,7 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
 {
   "input": [
     {
-      "id": "3315415d",
+      "id": "cc96c6b6",
       "content": "You are an auditor and as part of an audit engagement, you are tasked with reviewing and testing the accuracy of reported Anti-Financial Crime Risk Metrics.\n\nThe attached spreadsheet titled ‘Population’ contains Anti-Financial Crime Risk Metr ... [TRUNCATED 2069 chars] ...  folder named `deliverable_files` in the sandbox working directory.\nWe will grade your final message as part of the deliverable, but requested documents, spreadsheets, slides, media,\nor archives should be actual files in `deliverable_files`.\n"
     }
   ],
@@ -146,6 +149,8 @@ deliverable files. This adapter targets OpenAI's public 220-task gold subset mir
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

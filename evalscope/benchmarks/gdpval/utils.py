@@ -194,7 +194,9 @@ def export_submission(
         'local_metric': 'submission_ready',
         'official_gdpval_score_computed_locally': False,
         'next_step': (
-            "Local submission package exported. Run OpenAI's official GDPval judge externally to compute quality scores."
+            'Use the exported submission with public GDPval rubrics and gold deliverables in your own human or '
+            'LLM-judge workflow. LLM-judge results are non-official estimates; EvalScope does not compute quality '
+            'scores.'
         ),
     }
     with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:

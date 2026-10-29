@@ -3,36 +3,35 @@
 
 ## 概述
 
-GDPval 评估模型是否能够完成具有现实经济价值的工作任务，并生成所要求的交付文件。该适配器针对 OpenAI 公开的 220 个任务的 gold 子集，该子集在 ModelScope 上镜像为 `openai-mirror/gdpval`。
+GDPval 评估模型是否能够完成现实的具有经济价值的工作任务并生成所需的交付文件。此适配器针对 OpenAI 公开的 220 个任务黄金子集，该子集在 ModelScope 上镜像为 `openai-mirror/gdpval`。
 
 ## 任务描述
 
-- **任务类型**：代理式专业工作 / 交付物生成
-- **输入**：职场风格的任务提示，可选附带参考文件
-- **输出**：最终响应文本及位于 `deliverable_files/` 目录下的请求文件
-- **数据集**：OpenAI 公开的 GDPval gold 子集，包含 220 个任务
+- **任务类型**: 代理专业工作/交付物生成
+- **输入**: 工作场所风格的任务提示，可选地带有参考文件
+- **输出**: 最终响应文本和 `deliverable_files/` 目录下的请求文件
+- **数据集**: OpenAI 公开的 GDPval 黄金子集，包含 220 个任务
 
-## 主要特性
+## 主要特点
 
-- 使用原生 EvalScope 的 `AgentLoopAdapter`，支持 bash 和 Python 执行工具。
+- 使用 EvalScope 原生的 `AgentLoopAdapter`，配备 bash 和 Python 执行工具。
 - 默认从 ModelScope 加载记录和参考文件。
 - 将选定的参考文件以只读方式挂载到沙箱中的 `/reference_files` 目录下。
-- 在沙箱销毁前提取写入 `deliverable_files/` 的文件。
-- 生成符合 GDPval 格式的提交包，包含 `deliverable_text` 和 `deliverable_files` 两列。
+- 在沙箱拆除之前提取写入 `deliverable_files/` 的文件。
+- 生成包含 `deliverable_text` 和 `deliverable_files` 列的 GDPval 提交包。
 
 ## 评估说明
 
-- 默认 Docker 镜像会根据捆绑的 Dockerfile 自动构建，并打上基于内容哈希的本地标签。设置
-  `extra_params.auto_build_docker_image=false` 可强制使用预构建的 `evalscope/gdpval:latest` 镜像。可通过 `TaskConfig.sandbox.default_config` 覆盖镜像、网络、CPU 或内存配置。
-- `submission_ready` 是一个本地就绪指标：当模型生成了最终文本或至少一个交付文件时，其值为 1。该指标并非官方 GDPval 质量评分。
-- EvalScope 不运行本地 GDPval 评判器。请使用导出的提交包配合 OpenAI 官方 GDPval 评判器获取质量评分。
-- 完整文档/电子表格/幻灯片的质量依赖于 GDPval 运行时镜像。轻量级 Python 镜像仅适用于基础流程的冒烟测试。
+- 默认 Docker 镜像是根据捆绑的 Dockerfile 自动构建到内容哈希的本地标签中。设置 `extra_params.auto_build_docker_image=false` 以要求预构建的 `evalscope/gdpval:latest`。通过 `TaskConfig.sandbox.default_config` 覆盖镜像、网络、CPU 或内存设置。
+- `submission_ready` 是一个本地就绪指标：当模型生成最终文本或至少一个交付文件时，其值为 1。它不是 GDPval 质量评分。
+- EvalScope 不运行 GDPval 质量评判，OpenAI 也不再接受托管评分请求。使用导出的提交包以及公开的评分标准和黄金交付物，在您自己的评分工作流中进行评分。成对的人类专家偏好是标准；基于 LLM 的评判仅提供粗略的、非官方的估计。参见 [OpenAI 当前的评分指南](https://evals.openai.com/gdpval/grading)。
+- 完整文档/电子表格/幻灯片的质量取决于 GDPval 运行时镜像。轻量级的 Python 镜像仅适用于管道烟雾测试。
 
-## 评分与提交
+## 评分和提交
 
-- EvalScope 会在报告目录下写入一个本地提交文件夹。
-- 提交内容包含符合 GDPval 数据集格式的 `deliverable_text` 和 `deliverable_files` 字段。
-- 官方 GDPval 评分需在外部进行。请在导出的提交包上运行 OpenAI 官方 GDPval 评判器。
+- EvalScope 在报告目录下写入一个本地提交文件夹。
+- 提交包含 GDPval 数据集格式的 `deliverable_text` 和 `deliverable_files` 字段。
+- 质量评分是外部进行的。使用导出的交付物、公开的评分标准和黄金交付物进行成对的人类评审或自定义 LLM 评判；自定义 LLM 评判结果不是官方的 GDPval 分数。
 
 ## 属性
 
@@ -44,7 +43,7 @@ GDPval 评估模型是否能够完成具有现实经济价值的工作任务，�
 | **标签** | `Agent`, `Knowledge`, `MultiTurn` |
 | **指标** | `submission_ready` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `train` |
+| **评估拆分** | `train` |
 
 
 ## 数据统计
@@ -52,8 +51,8 @@ GDPval 评估模型是否能够完成具有现实经济价值的工作任务，�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 220 |
-| 提示词长度（平均） | 2742.59 字符 |
-| 提示词长度（最小/最大） | 1058 / 7160 字符 |
+| 提示词长度（平均） | 2742.59 个字符 |
+| 提示词长度（最小/最大） | 1058 / 7160 个字符 |
 
 ## 样例示例
 
@@ -63,7 +62,7 @@ GDPval 评估模型是否能够完成具有现实经济价值的工作任务，�
 {
   "input": [
     {
-      "id": "3315415d",
+      "id": "cc96c6b6",
       "content": "You are an auditor and as part of an audit engagement, you are tasked with reviewing and testing the accuracy of reported Anti-Financial Crime Risk Metrics.\n\nThe attached spreadsheet titled ‘Population’ contains Anti-Financial Crime Risk Metr ... [TRUNCATED 2069 chars] ...  folder named `deliverable_files` in the sandbox working directory.\nWe will grade your final message as part of the deliverable, but requested documents, spreadsheets, slides, media,\nor archives should be actual files in `deliverable_files`.\n"
     }
   ],
@@ -140,6 +139,8 @@ GDPval 评估模型是否能够完成具有现实经济价值的工作任务，�
 }
 ```
 
+*注：部分内容为了显示而被截断。*
+
 ## 提示模板
 
 **提示模板:**
@@ -151,8 +152,8 @@ GDPval 评估模型是否能够完成具有现实经济价值的工作任务，�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `auto_build_docker_image` | `bool` | `True` | 如果本地缺少默认 GDPval Docker 镜像，则自动构建。 |
-| `download_reference_files` | `bool` | `True` | 在推理前从数据集中心下载每个选定样本的参考文件。 |
+| `auto_build_docker_image` | `bool` | `True` | 如果本地缺少默认的 GDPval Docker 镜像，则自动构建。 |
+| `download_reference_files` | `bool` | `True` | 在推理之前从数据集中心下载每个选定样本的参考文件。 |
 
 ## 使用方法
 
@@ -165,7 +166,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets gdpval \
     --agent-config '{"mode":"native","strategy":"function_calling","max_steps":250}' \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -185,10 +186,10 @@ task_cfg = TaskConfig(
     ),
     dataset_args={
         'gdpval': {
-            # extra_params: {}  # 使用默认额外参数
+            # extra_params: {}  # uses default extra parameters
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
