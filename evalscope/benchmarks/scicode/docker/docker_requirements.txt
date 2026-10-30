@@ -1,4 +1,7 @@
 h5py
+# Problem 80 lists `from mpl_toolkits.mplot3d import Axes3D` in its required dependencies, which are prepended to
+# every step's script: without matplotlib all its steps fail with ModuleNotFoundError.
+matplotlib
 numpy
 # Problems 2 and 28 import scipy.integrate.simps, which was removed in SciPy 1.14.
 scipy<1.14
