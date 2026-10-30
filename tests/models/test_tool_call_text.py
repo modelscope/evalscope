@@ -162,3 +162,33 @@ def test_diagnostic_is_logged_only_once(reset_diagnostic, caplog):
 
     warnings = [record for record in caplog.records if 'tool call' in record.message.lower()]
     assert len(warnings) == 1
+
+
+def test_mixed_formats_keep_source_order_and_clean_text():
+    array = '[TOOL_CALLS] [{"name": "first", "arguments": {}}]'
+    block_call = f'{block}{{"name": "second", "arguments": {{}}}}{close}'
+    content, calls = parse_tool_calls_from_text(array + '\n' + block_call)
+
+    assert [call.function.name for call in calls] == ['first', 'second']
+    assert content == ''
+
+
+def test_partially_invalid_array_is_kept_as_text():
+    output = '[TOOL_CALLS] [{"name": "valid", "arguments": {}}, "broken"]'
+    content, calls = parse_tool_calls_from_text(output)
+
+    assert calls is None
+    assert content == output
+
+
+def test_consecutive_arrays_and_trailing_text():
+    output = (
+        '[TOOL_CALLS] [{"name": "a", "arguments": {"x": 1}}]'
+        ' [TOOL_CALLS] [{"name": "b", "arguments": {"y": 2}}] done'
+    )
+    content, calls = parse_tool_calls_from_text(output)
+
+    assert [call.function.name for call in calls] == ['a', 'b']
+    assert calls[0].function.arguments == {'x': 1}
+    assert calls[1].function.arguments == {'y': 2}
+    assert content == 'done'
