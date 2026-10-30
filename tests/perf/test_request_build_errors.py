@@ -100,3 +100,208 @@ class TestConnectionDoesNotRetryBuildErrors:
         assert time.perf_counter() - start < 5
         # The message names the plugin rather than guessing OpenAI-specific options.
         assert 'OpenaiPlugin' in errors[0]
+
+
+class _FakeClient500:
+    """AioHttpClient stand-in whose every post() returns a retryable 500."""
+
+    calls = 0  # class-level so the instance created inside test_connection is observable
+
+    def __init__(self, args, api_plugin):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def post(self, body, **kwargs):
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        type(self).calls += 1
+        out = BenchmarkData()
+        out.success = False
+        out.status_code = 500
+        out.error = 'Internal Server Error'
+        return out
+
+
+class _FakeClientHttpFailure:
+    """AioHttpClient stand-in returning a configurable HTTP failure."""
+
+    calls = 0
+    status_code = 404
+    error = 'Not Found'
+
+    def __init__(self, args, api_plugin):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def post(self, body, **kwargs):
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        type(self).calls += 1
+        out = BenchmarkData()
+        out.success = False
+        out.status_code = type(self).status_code
+        out.error = type(self).error
+        return out
+
+
+class _FakeClient4xx(_FakeClientHttpFailure):
+    pass
+
+
+class _FakeClient302(_FakeClientHttpFailure):
+    status_code = 302
+    error = 'Found'
+
+
+class _FakeClientProgramError(_FakeClientHttpFailure):
+    """Match post()'s default failure conversion and preflight propagation option."""
+
+    async def post(self, body, *, propagate_unexpected_errors: bool = False, **kwargs):
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        type(self).calls += 1
+        if propagate_unexpected_errors:
+            raise ValueError('plugin exploded')
+        out = BenchmarkData()
+        out.success = False
+        out.error = 'plugin exploded'
+        return out
+
+
+class _FakeClientHang:
+    """AioHttpClient stand-in whose post() never returns (simulates a hung server)."""
+
+    calls = 0
+
+    def __init__(self, args, api_plugin):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def post(self, body, **kwargs):
+        type(self).calls += 1
+        # Sleep far longer than any test deadline so asyncio.wait_for must cancel it.
+        await asyncio.sleep(1000)
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        return BenchmarkData()
+
+
+class TestConnectionPreflightPolicy:
+    """The fixed internal preflight policy: 60s deadline, 3 attempts, 2s interval, with each
+    attempt cancelled at the remaining deadline via asyncio.wait_for."""
+
+    def test_repeated_500_stops_after_three_attempts(self, monkeypatch):
+        """Immediate retryable 500s must stop after _PREFLIGHT_MAX_ATTEMPTS, not loop to timeout."""
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClient500.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient500)
+        # Collapse the retry interval so the test doesn't wait.
+        real_sleep = asyncio.sleep
+        monkeypatch.setattr(http_client.asyncio, 'sleep', lambda _: real_sleep(0))
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        start = time.perf_counter()
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        elapsed = time.perf_counter() - start
+        # Exactly 3 attempts, then failure — well under the 60s deadline.
+        assert _FakeClient500.calls == 3
+        assert elapsed < 5
+        assert any('exhausted 3 attempts' in e for e in errors)
+
+    def test_hung_request_cancelled_at_deadline(self, monkeypatch):
+        """A request that hangs past the deadline is cancelled by asyncio.wait_for, not awaited
+        up to --total-timeout."""
+        args = _args(total_timeout=6 * 60 * 60)
+        plugin = OpenaiPlugin(args)
+        _FakeClientHang.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClientHang)
+        # Shorten the deadline to 0.5s so the test is fast.
+        monkeypatch.setattr(http_client, '_PREFLIGHT_DEADLINE', 0.5)
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        start = time.perf_counter()
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        elapsed = time.perf_counter() - start
+        # The hung post() never returned; wait_for cancelled it at ~0.5s, not 6h.
+        assert _FakeClientHang.calls == 1
+        assert 0.4 < elapsed < 3
+        assert any('hung past the' in e for e in errors)
+
+    def test_4xx_receives_exactly_one_attempt(self, monkeypatch):
+        """A non-retryable 4xx must abort after a single attempt, no retries."""
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClient4xx.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient4xx)
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        start = time.perf_counter()
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        elapsed = time.perf_counter() - start
+        # Exactly one attempt, no retry sleep.
+        assert _FakeClient4xx.calls == 1
+        assert elapsed < 2
+        assert any('non-retryable HTTP 404' in e for e in errors)
+
+    def test_3xx_receives_exactly_one_attempt(self, monkeypatch):
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClient302.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient302)
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        assert _FakeClient302.calls == 1
+        assert any('non-retryable HTTP 302' in e for e in errors)
+
+    def test_unexpected_exception_receives_exactly_one_attempt(self, monkeypatch):
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClientProgramError.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClientProgramError)
+        errors = []
+        warnings = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        monkeypatch.setattr(http_client.logger, 'warning', lambda msg, *a, **kw: warnings.append(msg))
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        assert _FakeClientProgramError.calls == 1
+        assert not warnings
+        assert any('non-retryable ValueError: plugin exploded' in e for e in errors)
+
+    def test_final_sleep_does_not_exceed_deadline(self, monkeypatch):
+        """The retry sleep is clamped to the remaining time, so the last sleep can't push the
+        probe past the deadline."""
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClient500.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient500)
+        # Tight deadline so the inter-attempt sleep would overshoot if not clamped.
+        monkeypatch.setattr(http_client, '_PREFLIGHT_DEADLINE', 1)
+        monkeypatch.setattr(http_client, '_PREFLIGHT_RETRY_INTERVAL', 2)
+        # Track actual sleep durations.
+        slept = []
+        real_sleep = asyncio.sleep
+
+        async def spy_sleep(seconds):
+            slept.append(seconds)
+            await real_sleep(0)
+
+        monkeypatch.setattr(http_client.asyncio, 'sleep', spy_sleep)
+        start = time.perf_counter()
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        elapsed = time.perf_counter() - start
+        # Remaining time never exceeds the one-second deadline; an unclamped two-second sleep fails.
+        assert slept and all(0 < s <= 1 for s in slept)
+        assert elapsed < 3

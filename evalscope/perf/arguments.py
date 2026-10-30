@@ -92,7 +92,7 @@ class Arguments(BaseArgument):
     """Read timeout in seconds."""
 
     total_timeout: Optional[int] = 6 * 60 * 60
-    """Total timeout in seconds."""
+    """Total timeout in seconds for each request."""
 
     api_key: Optional[SecretStr] = None
     """The API key for authentication."""
