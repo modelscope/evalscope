@@ -2,10 +2,11 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from evalscope.report import ReportRef
 from evalscope.service.blueprints.reports import _extract_timestamp
+from evalscope.service.perf_archive import extract_timestamp as extract_perf_timestamp
 
 STARTED = datetime(2026, 3, 1, 9, 30, 0)
 RESTORED = datetime(2026, 10, 30, 16, 0, 0)
@@ -50,3 +51,57 @@ def test_directory_mtime_is_the_last_resort(tmp_path: Path) -> None:
         ref = _make_run(tmp_path, run_id)
 
         assert _extract_timestamp(ref, str(tmp_path)) == RESTORED.isoformat()
+
+
+def _make_perf_run(
+    root: Path,
+    task_id: str,
+    child: str = 'perf',
+    manifest: Optional[dict] = None,
+    mtime: datetime = RESTORED,
+) -> Tuple[str, str]:
+    """Create ``<task_id>/<child>`` as the perf archive lists it and return ``(rel_path, abs_path)``.
+
+    The service writes the task manifest at ``<task_id>/``, one level above the perf run directory.
+    """
+    task_dir = root / task_id
+    run_dir = task_dir / child
+    run_dir.mkdir(parents=True)
+    if manifest is not None:
+        (task_dir / 'task_info.json').write_text(json.dumps(manifest), encoding='utf-8')
+    for path in (run_dir, task_dir):
+        os.utime(path, (mtime.timestamp(), mtime.timestamp()))
+    return f'{task_id}/{child}', str(run_dir)
+
+
+def test_perf_manifest_started_at_wins_over_directory_mtime(tmp_path: Path) -> None:
+    rel_path, abs_path = _make_perf_run(tmp_path, 'perf_1', manifest={'started_at': STARTED.isoformat()})
+
+    assert extract_perf_timestamp(rel_path, abs_path) == STARTED.isoformat()
+
+
+def test_perf_web_ui_run_id_encodes_the_start_time(tmp_path: Path) -> None:
+    rel_path, abs_path = _make_perf_run(tmp_path, f'perf_{int(STARTED.timestamp() * 1000)}')
+
+    assert extract_perf_timestamp(rel_path, abs_path) == STARTED.isoformat()
+
+
+def test_perf_invalid_manifest_start_time_is_ignored(tmp_path: Path) -> None:
+    rel_path, abs_path = _make_perf_run(
+        tmp_path, f'perf_{int(STARTED.timestamp() * 1000)}', manifest={'started_at': 'not a date'}
+    )
+
+    assert extract_perf_timestamp(rel_path, abs_path) == STARTED.isoformat()
+
+
+def test_perf_dated_directory_names_still_parse(tmp_path: Path) -> None:
+    rel_path, abs_path = _make_perf_run(tmp_path, '20260423_201338', child='model')
+
+    assert extract_perf_timestamp(rel_path, abs_path) == datetime(2026, 4, 23, 20, 13, 38).isoformat()
+
+
+def test_perf_directory_mtime_is_the_last_resort(tmp_path: Path) -> None:
+    for task_id in ('custom-run', 'perf_123'):
+        rel_path, abs_path = _make_perf_run(tmp_path, task_id)
+
+        assert extract_perf_timestamp(rel_path, abs_path) == RESTORED.isoformat()

@@ -65,7 +65,7 @@ from evalscope.utils.logger import get_logger
 from evalscope.utils.uri_utils import sanitize_endpoint
 
 from ..responses import json_response
-from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest
+from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, recorded_start_time
 
 logger = get_logger()
 
@@ -187,17 +187,9 @@ def _extract_timestamp(ref: ReportRef, root: str) -> str:
     The directory mtime changes when outputs are copied, restored or rewritten, so it is only a last resort.
     """
     run_dir = os.path.join(root, ref.run_id)
-    # Service-launched runs record their start time in the task manifest
-    started_at = (read_task_manifest(run_dir) or {}).get('started_at')
-    if isinstance(started_at, str):
-        try:
-            return datetime.fromisoformat(started_at).isoformat()
-        except ValueError:
-            pass
-    # ... and are named "eval_<epoch milliseconds>"
-    prefix, _, epoch_ms = ref.run_id.rpartition('_')
-    if prefix == 'eval' and epoch_ms.isdigit() and 10**12 <= int(epoch_ms) < 10**13:
-        return datetime.fromtimestamp(int(epoch_ms) / 1000).isoformat()
+    recorded = recorded_start_time(ref.run_id, run_dir)
+    if recorded:
+        return recorded
     # Directory names typically look like "20260423_201338"
     for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
         try:
