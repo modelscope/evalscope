@@ -4,8 +4,6 @@ A local checkpoint returns the chat template's ``<tool_call>`` blocks as plain
 text. Before this parser existed the ModelScope generate path ignored them, so
 every tool-calling benchmark scored the model on an empty answer.
 """
-import logging
-
 import pytest
 
 import evalscope.models.utils.tool_call_text as tool_call_text
@@ -94,6 +92,14 @@ def reset_diagnostic():
     yield
     tool_call_text._DIAGNOSTIC_EMITTED = False
 
+
+@pytest.fixture
+def diagnostic_warnings(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    warnings = []
+    monkeypatch.setattr(tool_call_text.logger, 'warning', lambda message: warnings.append(message))
+    return warnings
+
+
 PARAMS_CALL = f'{block}\n{{"name": "get_weather", "parameters": {{"city": "Beijing"}}}}\n{close}'
 
 MISTRAL_ARRAY = '[TOOL_CALLS] [{"name": "get_weather", "arguments": {"city": "Beijing"}}]'
@@ -135,33 +141,29 @@ def test_mistral_array_with_several_calls_keeps_order():
     assert calls[1].function.arguments == {'y': 2}
 
 
-def test_unclosed_block_emits_a_diagnostic_and_stays_plain_text(caplog, reset_diagnostic):
+def test_unclosed_block_emits_a_diagnostic_and_stays_plain_text(diagnostic_warnings: list[str]) -> None:
     output = block + '{"name": "get_weather"}'
 
-    with caplog.at_level(logging.WARNING):
-        content, calls = parse_tool_calls_from_text(output)
+    content, calls = parse_tool_calls_from_text(output)
 
     assert calls is None
     assert content == output
-    assert any('tool call' in record.message.lower() for record in caplog.records)
+    assert any('tool call' in message.lower() for message in diagnostic_warnings)
 
 
-def test_plain_text_answer_emits_no_diagnostic(caplog):
-    with caplog.at_level(logging.WARNING):
-        content, calls = parse_tool_calls_from_text('I can help with that.')
+def test_plain_text_answer_emits_no_diagnostic(diagnostic_warnings: list[str]) -> None:
+    content, calls = parse_tool_calls_from_text('I can help with that.')
 
     assert calls is None
     assert content == 'I can help with that.'
-    assert caplog.records == []
+    assert diagnostic_warnings == []
 
 
-def test_diagnostic_is_logged_only_once(reset_diagnostic, caplog):
-    with caplog.at_level(logging.WARNING):
-        parse_tool_calls_from_text(block + '{"name": "a"}')
-        parse_tool_calls_from_text('[TOOL_CALLS] [{"name": "b"}')
+def test_diagnostic_is_logged_only_once(diagnostic_warnings: list[str]) -> None:
+    parse_tool_calls_from_text(block + '{"name": "a"}')
+    parse_tool_calls_from_text('[TOOL_CALLS] [{"name": "b"}')
 
-    warnings = [record for record in caplog.records if 'tool call' in record.message.lower()]
-    assert len(warnings) == 1
+    assert len(diagnostic_warnings) == 1
 
 
 def test_mixed_formats_keep_source_order_and_clean_text():
