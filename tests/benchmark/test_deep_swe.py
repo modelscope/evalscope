@@ -373,6 +373,40 @@ def test_run_pier_job_omits_credential_env_when_unset(monkeypatch: Any, tmp_path
     assert captured['config'].agents[0].env == {}
 
 
+class MockModelNamed:
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def test_agent_model_spec_prepends_provider_and_pops_directive(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai', 'model_class': 'litellm'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('qwen-plus'))
+
+    assert model_name == 'openai/qwen-plus'
+    # provider is a dispatch directive, not a LiteLLM kwarg.
+    assert agent_kwargs == {'model_class': 'litellm'}
+
+
+def test_agent_model_spec_keeps_bare_name_without_provider(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'model_class': 'litellm'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('qwen-plus'))
+
+    assert model_name == 'qwen-plus'
+    assert agent_kwargs == {'model_class': 'litellm'}
+
+
+def test_agent_model_spec_leaves_qualified_name_untouched(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('anthropic/claude-x'))
+
+    assert model_name == 'anthropic/claude-x'
+    assert agent_kwargs == {}
+
+
 @pytest.mark.skipif(
     os.getenv('EVALSCOPE_DEEP_SWE_E2E') != '1' or not os.getenv('OPENAI_API_KEY'),
     reason='Set EVALSCOPE_DEEP_SWE_E2E=1 and OPENAI_API_KEY to run the real Pier DeepSWE smoke test.',

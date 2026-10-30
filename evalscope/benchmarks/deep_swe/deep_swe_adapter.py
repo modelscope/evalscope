@@ -143,6 +143,26 @@ class DeepSWEAdapter(AgentAdapter):
             env['OPENAI_API_BASE'] = str(base_url)
         return env
 
+    def _agent_model_spec(self, model: Model) -> Tuple[str, Dict[str, Any]]:
+        """Resolve the agent's LiteLLM model name and the kwargs to forward.
+
+        The Pier mini-swe-agent calls LiteLLM, which addresses a model as
+        ``provider/model`` (e.g. ``openai/qwen-plus``), whereas EvalScope refers
+        to the model by its bare name. When ``pier_agent_kwargs`` carries a
+        ``provider`` directive, prepend it to the bare name so the agent targets
+        the right LiteLLM provider; a name that already contains ``/`` is left
+        untouched. ``provider`` is a dispatch directive rather than a LiteLLM
+        kwarg, so it is removed from the kwargs forwarded to the agent.
+
+        Returns a ``(model_name, agent_kwargs)`` pair.
+        """
+        agent_kwargs = dict(self.pier_agent_kwargs or {})
+        provider = agent_kwargs.pop('provider', None)
+        model_name = model.name
+        if provider and '/' not in model_name:
+            model_name = f'{provider}/{model_name}'
+        return model_name, agent_kwargs
+
     def _run_pier_job(self, model: Model, sample: Sample) -> Dict[str, Any]:
         check_import('pier', extra='deep_swe', raise_error=True, feature_name=self.pretty_name)
 
@@ -151,6 +171,7 @@ class DeepSWEAdapter(AgentAdapter):
         from pier.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, VerifierConfig
 
         task_id = str(sample.metadata['task_id'])
+        model_name, agent_kwargs = self._agent_model_spec(model)
 
         config = JobConfig(
             job_name=f'{task_id[:48].rstrip("_-")}__{uuid.uuid4().hex[:8]}',
@@ -165,8 +186,8 @@ class DeepSWEAdapter(AgentAdapter):
             agents=[
                 AgentConfig(
                     name='mini-swe-agent',
-                    model_name=model.name,
-                    kwargs=self.pier_agent_kwargs,
+                    model_name=model_name,
+                    kwargs=agent_kwargs,
                     env=self._agent_credential_env(model),
                 )
             ],
