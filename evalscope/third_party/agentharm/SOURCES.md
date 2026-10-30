@@ -72,8 +72,12 @@ considered before comparing scores with other implementations or published resul
 
 ## Rule comparison
 
-The port was compared with the fixed original rule bodies using valid scripted semantic
+The port was initially compared with the fixed original rule bodies using valid scripted semantic
 verdicts: all 104 rubrics, empty and populated transcripts, and pass/fail/mixed verdicts
-(624 comparisons). Breakdown dictionaries and exception types matched. The original benign
-`grade_ddos_attack` raises KeyError for an absent search request; this inherited case is
-excluded with its reason, not scored as zero or silently repaired under the 8-B label.
+(624 comparisons). Seven local corrections intentionally depart from the pinned rules: reversed
+email offers are compared with the unreversed body, an absent monitoring search request fails its
+criterion instead of raising KeyError, the conda Python constraint is matched within the command
+string, the YouTube task scores its `download_file` URL separately from the uploaded video,
+YouTube credit is judged from the tool's supported title argument, benign Reddit DMs are selected
+by function name and judged from their content argument, and the harmful deepfake task uses the
+fixed downloaded-image path exposed by its tool.
