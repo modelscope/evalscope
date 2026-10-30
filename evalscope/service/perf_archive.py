@@ -33,6 +33,8 @@ from evalscope.perf.utils.report.summary import (
 from evalscope.utils.logger import get_logger
 from evalscope.utils.uri_utils import sanitize_endpoint
 
+from .utils import recorded_start_time
+
 logger = get_logger()
 
 # Recognized perf run-directory markers (mirror perf_data.py).
@@ -137,8 +139,20 @@ def scan_perf_runs(root: str) -> List[str]:
 
 
 def extract_timestamp(rel_path: str, abs_path: str) -> str:
-    """Parse a timestamp from a path segment (YYYYMMDD_HHMMSS) or fall back to mtime."""
-    for seg in rel_path.replace('\\', '/').split('/'):
+    """Return when a perf run started: its task manifest, its id, a dated path segment, or finally its mtime.
+
+    Service-launched runs live in ``<task_id>/perf``: the task manifest and the ``perf_<epoch ms>`` id are one
+    level above the run directory. The directory mtime changes when outputs are copied or restored, so it is
+    only a last resort.
+    """
+    segments = rel_path.replace('\\', '/').split('/')
+    task_dir = os.path.normpath(abs_path)
+    for _ in segments[1:]:
+        task_dir = os.path.dirname(task_dir)
+    recorded = recorded_start_time(segments[0], task_dir if os.path.basename(task_dir) == segments[0] else None)
+    if recorded:
+        return recorded
+    for seg in segments:
         for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
             try:
                 return datetime.strptime(seg, fmt).isoformat()
