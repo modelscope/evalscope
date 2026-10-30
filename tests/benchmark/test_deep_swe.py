@@ -324,6 +324,55 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     assert captured['config'].environment.type == 'docker'
 
 
+class MockModelAPI:
+
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
+        self.model_name = 'mock-model'
+        self.base_url = base_url
+        self.api_key = api_key
+
+
+class MockModelWithCredentials:
+
+    name = 'mock-model'
+
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
+        self.api = MockModelAPI(base_url=base_url, api_key=api_key)
+
+
+def test_run_pier_job_injects_model_credentials_into_agent_env(monkeypatch: Any, tmp_path: Path) -> None:
+    captured: Dict[str, Any] = {}
+    result = {'trial_results': [{'trial_uri': f'file://{tmp_path / "trial"}', 'verifier_result': {'rewards': {'reward': 1}}}]}
+    install_fake_pier(monkeypatch, captured, result)
+    task_path = tmp_path / 'tasks' / 'task-a'
+    task_path.mkdir(parents=True)
+    adapter = make_adapter(tmp_path)
+    sample = Sample(input='', metadata={'task_id': 'task-a', 'task_path': str(task_path)})
+    model = MockModelWithCredentials(base_url='https://endpoint.example/v1', api_key='sk-secret')
+
+    adapter._run_pier_job(model, sample)
+
+    env = captured['config'].agents[0].env
+    assert env['OPENAI_API_KEY'] == 'sk-secret'
+    assert env['OPENAI_BASE_URL'] == 'https://endpoint.example/v1'
+    assert env['OPENAI_API_BASE'] == 'https://endpoint.example/v1'
+
+
+def test_run_pier_job_omits_credential_env_when_unset(monkeypatch: Any, tmp_path: Path) -> None:
+    captured: Dict[str, Any] = {}
+    result = {'trial_results': [{'trial_uri': f'file://{tmp_path / "trial"}', 'verifier_result': {'rewards': {'reward': 1}}}]}
+    install_fake_pier(monkeypatch, captured, result)
+    task_path = tmp_path / 'tasks' / 'task-a'
+    task_path.mkdir(parents=True)
+    adapter = make_adapter(tmp_path)
+    sample = Sample(input='', metadata={'task_id': 'task-a', 'task_path': str(task_path)})
+    model = MockModelWithCredentials()
+
+    adapter._run_pier_job(model, sample)
+
+    assert captured['config'].agents[0].env == {}
+
+
 @pytest.mark.skipif(
     os.getenv('EVALSCOPE_DEEP_SWE_E2E') != '1' or not os.getenv('OPENAI_API_KEY'),
     reason='Set EVALSCOPE_DEEP_SWE_E2E=1 and OPENAI_API_KEY to run the real Pier DeepSWE smoke test.',
