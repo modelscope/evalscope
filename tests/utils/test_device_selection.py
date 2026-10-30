@@ -54,6 +54,7 @@ def test_update_gpu_usage_reads_npu_when_available(monkeypatch):
     """When NPU is available, update_gpu_usage should query torch.npu,
     not torch.cuda."""
     import torch
+
     from evalscope.perf.utils.benchmark_util import BenchmarkData
 
     _patch_probes(monkeypatch, npu=True, mps=False, cuda=False)
