@@ -142,6 +142,19 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         value_range={'min': 0.0, 'max': 100.0},
         display_multiplier=1.0,
     ),
+    #: Share of successful requests / input tokens that reported cache info; already a percentage.
+    Metrics.CACHE_REQUEST_COVERAGE_PERCENT: MetricEntry(
+        baseline='diagnostic.parse_status.ratio',
+        metric_name=Metrics.CACHE_REQUEST_COVERAGE_PERCENT,
+        value_range={'min': 0.0, 'max': 100.0},
+        display_multiplier=1.0,
+    ),
+    Metrics.CACHE_TOKEN_COVERAGE_PERCENT: MetricEntry(
+        baseline='diagnostic.parse_status.ratio',
+        metric_name=Metrics.CACHE_TOKEN_COVERAGE_PERCENT,
+        value_range={'min': 0.0, 'max': 100.0},
+        display_multiplier=1.0,
+    ),
     Metrics.AVERAGE_DECODED_TOKENS_PER_ITER: MetricEntry(
         baseline='diagnostic.count.items',
         metric_name=Metrics.AVERAGE_DECODED_TOKENS_PER_ITER,

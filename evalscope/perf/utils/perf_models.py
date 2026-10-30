@@ -70,6 +70,8 @@ class BenchmarkSummary(BaseModel):
     # --- Multi-turn (optional) ---
     avg_turns: Optional[float] = Field(None, alias=Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST)
     avg_cached_percent: Optional[float] = Field(None, alias=Metrics.AVERAGE_CACHED_PERCENT)
+    cache_request_coverage_percent: Optional[float] = Field(None, alias=Metrics.CACHE_REQUEST_COVERAGE_PERCENT)
+    cache_token_coverage_percent: Optional[float] = Field(None, alias=Metrics.CACHE_TOKEN_COVERAGE_PERCENT)
     avg_first_turn_ttft: Optional[float] = Field(None, alias=Metrics.AVERAGE_FIRST_TURN_TTFT)
     avg_subsequent_turn_ttft: Optional[float] = Field(None, alias=Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT)
 
@@ -223,6 +225,20 @@ class BenchmarkSummary(BaseModel):
             if self.avg_cached_percent is not None:
                 rows.append(
                     (Metrics.AVERAGE_CACHED_PERCENT, _fmt(Metrics.AVERAGE_CACHED_PERCENT, self.avg_cached_percent))
+                )
+            if self.cache_request_coverage_percent is not None:
+                rows.append(
+                    (
+                        Metrics.CACHE_REQUEST_COVERAGE_PERCENT,
+                        _fmt(Metrics.CACHE_REQUEST_COVERAGE_PERCENT, self.cache_request_coverage_percent),
+                    )
+                )
+            if self.cache_token_coverage_percent is not None:
+                rows.append(
+                    (
+                        Metrics.CACHE_TOKEN_COVERAGE_PERCENT,
+                        _fmt(Metrics.CACHE_TOKEN_COVERAGE_PERCENT, self.cache_token_coverage_percent),
+                    )
                 )
             if self.avg_first_turn_ttft is not None:
                 rows.append(
