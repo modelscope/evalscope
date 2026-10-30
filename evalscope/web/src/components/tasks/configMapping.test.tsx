@@ -47,16 +47,35 @@ describe('Evaluation form → TaskConfig payload', () => {
     change('eval-topP', '.95')
     change('eval-maxTokens', '32')
     change('eval-topK', '-1')
+    change('eval-reasoningEffort', ' high ')
+    change('eval-reasoningTokens', '2048')
     change('eval-datasetArgs', '{"general_qa":{"local_path":"/tmp/qa.jsonl"}}')
     submitEval()
     expect(submit).toHaveBeenCalledWith({
       model: 'same-model', datasets: ['general_qa', 'gsm8k'], api_url: 'http://localhost:18101/v1',
       api_key: 'fake-key', alias: 'server-A', limit: .25, eval_batch_size: 2, repeats: 3,
-      generation_config: { stream: false, timeout: 2.5, temperature: .85, top_p: .95, max_tokens: 32, top_k: -1 },
+      generation_config: {
+        stream: false, timeout: 2.5, temperature: .85, top_p: .95, max_tokens: 32, top_k: -1,
+        reasoning_effort: 'high', reasoning_tokens: 2048,
+      },
       dataset_args: { general_qa: { local_path: '/tmp/qa.jsonl' } },
     })
     expect(submit.mock.calls[0][0]).not.toHaveProperty('timeout')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('stream')
+  })
+  it('routes the thinking switch into generation_config.extra_body', () => {
+    const submit = evalForm()
+    fireEvent.click(screen.getByLabelText('Enable Thinking'))
+    submitEval()
+    expect(submit.mock.calls[0][0].generation_config.extra_body).toEqual({ enable_thinking: true })
+  })
+  it('omits reasoning fields and extra_body when left untouched', () => {
+    const submit = evalForm()
+    submitEval()
+    const generation = submit.mock.calls[0][0].generation_config
+    expect(generation).not.toHaveProperty('reasoning_effort')
+    expect(generation).not.toHaveProperty('reasoning_tokens')
+    expect(generation).not.toHaveProperty('extra_body')
   })
   it('maps both states of the stream switch', () => {
     const submit = evalForm()

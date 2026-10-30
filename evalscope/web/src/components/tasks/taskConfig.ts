@@ -28,6 +28,9 @@ export interface EvalDraft {
   topP: string
   maxTokens: string
   topK: string
+  reasoningEffort: string
+  reasoningTokens: string
+  enableThinking: boolean
   datasetArgs: string
   sandboxEnabled: boolean
   sandboxEngine: 'docker' | 'volcengine'
@@ -60,6 +63,9 @@ export const DEFAULT_EVAL: EvalDraft = {
   topP: '',
   maxTokens: '',
   topK: '',
+  reasoningEffort: '',
+  reasoningTokens: '',
+  enableThinking: false,
   datasetArgs: '',
   sandboxEnabled: false,
   sandboxEngine: 'docker',
@@ -100,6 +106,7 @@ export function validateEvalDraft(draft: EvalDraft): FieldErrors {
     { id: 'topP', value: draft.topP, min: 0, max: 1 },
     { id: 'maxTokens', value: draft.maxTokens, min: 1, step: 1 },
     { id: 'topK', value: draft.topK, step: 1 },
+    { id: 'reasoningTokens', value: draft.reasoningTokens, min: 1, step: 1 },
     ...(draft.sandboxEnabled ? [{ id: 'sandboxPool', value: draft.sandboxPool, min: 1, step: 1 }] : []),
   ])
   if (!draft.datasets.split(',').some((name) => name.trim())) errors.datasets = FORM_MESSAGE_KEYS.required
@@ -166,6 +173,12 @@ export function buildEvalPayload(draft: EvalDraft): Record<string, unknown> {
   ] as const) {
     if (draft[field].trim()) generation[key] = Number(draft[field])
   }
+  // Reasoning / thinking controls are forwarded as-is; the backend GenerateConfig
+  // validates provider-specific values, so the form does not constrain them.
+  if (draft.reasoningEffort.trim()) generation.reasoning_effort = draft.reasoningEffort.trim()
+  if (draft.reasoningTokens.trim()) generation.reasoning_tokens = Number(draft.reasoningTokens)
+  // enable_thinking is a Qwen-style switch delivered through extra_body.
+  if (draft.enableThinking) generation.extra_body = { enable_thinking: true }
   const payload: Record<string, unknown> = {
     datasets: draft.datasets
       .split(',')
