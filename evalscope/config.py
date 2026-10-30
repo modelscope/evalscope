@@ -541,10 +541,24 @@ class TaskConfig(BaseArgument):
             self.model = self.model_task
             self.eval_type = EvalType.MOCK_LLM
 
-        # Set eval_type to openai_api if api_url is provided
+        # Select the matching service API when api_url is provided
         if self.api_url is not None and self.eval_type is None:
-            logger.info("api_url is provided, setting eval_type to 'openai_api'.")
-            self.eval_type = EvalType.OPENAI_API
+            self.eval_type = (
+                EvalType.TEXT2IMAGE if self.model_task == ModelTask.IMAGE_GENERATION else EvalType.OPENAI_API
+            )
+            logger.info(f"api_url is provided, setting eval_type to '{self.eval_type}'.")
+        elif (
+            self.api_url is not None
+            and self.eval_type == EvalType.OPENAI_API
+            and self.model_task == ModelTask.IMAGE_GENERATION
+        ):
+            # openai_api targets Chat Completions, which cannot generate images: the request would
+            # reach /chat/completions on an image endpoint and fail.
+            logger.warning(
+                f"eval_type '{EvalType.OPENAI_API}' cannot serve image generation; "
+                f"using '{EvalType.TEXT2IMAGE}' for the image generation service instead."
+            )
+            self.eval_type = EvalType.TEXT2IMAGE
 
         # Set eval_type to CHECKPOINT if model is a string path and eval_type is not set
         if self.model and self.eval_type is None:
@@ -580,6 +594,10 @@ class TaskConfig(BaseArgument):
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
+            if self.eval_type == EvalType.TEXT2IMAGE and self.api_url is not None:
+                # Diffusion-only knobs are not OpenAI Images API fields; services opt in explicitly.
+                # Other image eval types keep the local pipeline defaults, since they ignore api_url.
+                return {key: DEFAULT_IMAGE_GEN_CONFIG[key] for key in ('height', 'width')}
             return DEFAULT_IMAGE_GEN_CONFIG.copy()
 
         elif self.model_task == ModelTask.TEXT_GENERATION:

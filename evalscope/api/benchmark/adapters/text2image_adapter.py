@@ -16,6 +16,7 @@ from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
+from evalscope.utils.uri_utils import data_uri_to_base64
 
 from .default_data_adapter import DefaultDataAdapter
 
@@ -154,8 +155,8 @@ class Text2ImageAdapter(DefaultDataAdapter):
         else:
             image_id = f'{sample.metadata.get(FileConstants.ID) or sample.id}_{sample.group_id}'
             output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
-            if not os.path.exists(os.path.dirname(output_path)):
-                os.makedirs(os.path.dirname(output_path))
+            # Concurrent workers share this directory, so creation must tolerate a parallel winner.
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
             # get base64 image from model_output
             content = model_output.message.content[0]
 
@@ -163,7 +164,8 @@ class Text2ImageAdapter(DefaultDataAdapter):
 
             image_base64 = content.image
             with open(output_path, 'wb') as f:
-                f.write(base64.b64decode(image_base64))
+                # Image models emit data URIs; strip the header so it is not decoded into the image bytes.
+                f.write(base64.b64decode(data_uri_to_base64(image_base64)))
 
             sample.metadata[FileConstants.IMAGE_PATH] = output_path
             return TaskState(

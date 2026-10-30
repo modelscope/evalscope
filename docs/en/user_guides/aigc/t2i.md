@@ -47,7 +47,57 @@ Users can install the necessary dependencies using the following command:
 pip install evalscope[aigc] -U
 ```
 
-## Benchmark
+## OpenAI-Compatible Image Service
+
+EvalScope supports self-hosted services that implement the OpenAI Images API contract. Set `eval_type` to
+`text2image` and pass the API base URL. Omitting `eval_type` selects `text2image` automatically for an image
+generation task, and `eval_type='openai_api'` is corrected to it with a warning, because the Chat Completions
+API cannot generate images:
+
+```python
+from evalscope import TaskConfig, run_task
+from evalscope.constants import EvalType, ModelTask
+
+task_cfg = TaskConfig(
+    model='YOUR_MODEL_ID',
+    model_task=ModelTask.IMAGE_GENERATION,
+    eval_type=EvalType.TEXT2IMAGE,
+    api_url='http://localhost:8895/v1',
+    api_key='EMPTY',
+    datasets=['tifa160'],
+    limit=5,
+    generation_config={
+        'height': 1024,
+        'width': 1024,
+        'timeout': 120,
+        'retries': 3,
+        'retry_interval': 1,
+    },
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+The service must accept `POST /v1/images/generations` with the OpenAI request fields `model`, `prompt`,
+optional `n`, and optional `size`. Its JSON response must contain a non-empty `data` list. EvalScope evaluates
+the first item, which must have either `b64_json` or an HTTP(S) `url`. Base64 data may be plain or use a data
+URI. You may pass a base URL, a full `/images/generations` URL, or a copied `/chat/completions` URL; EvalScope
+normalizes these forms before calling the Images API.
+
+The returned bytes must decode as an image; an HTML page or other non-image payload fails the sample with an error
+instead of surfacing later at metric time. `generation_config.retries` is the total number of attempts for
+transient failures such as 429 and 5xx responses; client errors such as 400, 401, 403, 404, and 422 are raised
+after the first attempt. Without an explicit `generation_config`, service mode only sends the default `size`
+(`1024x1024`). Set `num_inference_steps` or `guidance_scale` explicitly to forward them in the request body; this
+works only with services that accept these non-OpenAI fields.
+
+`api_key='EMPTY'` first checks `EVALSCOPE_API_KEY`, then `OPENAI_API_KEY`. If neither variable is set, `EMPTY`
+is sent as a placeholder for a local service. Requests are sent one at a time unless you raise
+`eval_batch_size`, which sets the number of concurrent requests. This mode does not cover native provider
+protocols such as the DashScope/Model Studio image-generation API, responses with an `images` field,
+asynchronous submit-and-poll APIs, or image editing. Those protocols need separate adapters.
+
+## Local Model Evaluation
 
 Users can configure text-to-image model evaluation tasks using the command below.
 
@@ -55,7 +105,7 @@ Here is an example code demonstrating the evaluation of the modelscope's Stable 
 
 ```python
 from evalscope import TaskConfig, run_task
-from evalscope.constants import ModelTask
+from evalscope.constants import EvalType, ModelTask
 
 task_cfg = TaskConfig(
     model='stabilityai/stable-diffusion-xl-base-1.0',  # model id on modelscope
