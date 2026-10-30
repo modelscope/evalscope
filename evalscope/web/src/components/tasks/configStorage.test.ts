@@ -44,6 +44,15 @@ describe('Browser configuration storage', () => {
     const result = readWorkspace()
     expect(result).toEqual({ ok: true, value: emptyWorkspace() })
   })
+  it.each(['connection', 'eval', 'perf'] as const)('restores missing %s fields from defaults', (field) => {
+    const expected = emptyWorkspace()
+    for (const key of Object.keys(expected[field])) {
+      const state = emptyWorkspace()
+      delete (state[field] as unknown as Record<string, unknown>)[key]
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(state))
+      expect(readWorkspace()).toEqual({ ok: true, value: expected })
+    }
+  })
   it('only explicitly saved connection keys survive refresh', () => {
     const state = savedWorkspace()
     expect(writeWorkspace(state).ok).toBe(true)
@@ -105,6 +114,16 @@ describe('Browser configuration storage', () => {
     expect(exportLibrary(state, false)).not.toContain('fake-secret')
     expect(parseImport(exportLibrary(state, true)).connections[0].value.apiKey).toBe('fake-secret')
     expect(parseImport(exportLibrary(state, false)).connections[0].rememberKey).toBe(false)
+  })
+  it('imports older eval templates with missing fields', () => {
+    const state = savedWorkspace()
+    const value = { ...DEFAULT_EVAL, datasets: 'gsm8k' }
+    state.evalTemplates = [{ id: 'old', name: 'Old template', value }]
+    const raw = JSON.parse(exportLibrary(state, false))
+    delete raw.evalTemplates[0].value.reasoningEffort
+    delete raw.evalTemplates[0].value.reasoningTokens
+    delete raw.evalTemplates[0].value.enableThinking
+    expect(parseImport(JSON.stringify(raw)).evalTemplates[0].value).toEqual(value)
   })
   it('imports as new ids without overwriting existing names and values', () => {
     const state = savedWorkspace()

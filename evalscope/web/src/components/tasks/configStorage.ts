@@ -69,7 +69,8 @@ function parseDraft<T extends object>(value: unknown, defaults: T): T {
   exactKeys(raw, Object.keys(defaults))
   const result = { ...defaults }
   for (const key of Object.keys(defaults) as (keyof T)[]) {
-    if (!(key in raw) || typeof raw[String(key)] !== typeof defaults[key]) throw new Error('Invalid field')
+    if (!(key in raw)) continue
+    if (typeof raw[String(key)] !== typeof defaults[key]) throw new Error('Invalid field')
     if (typeof raw[String(key)] === 'string' && String(raw[String(key)]).length > MAX_IMPORT_BYTES)
       throw new Error('Field too large')
     result[key] = raw[String(key)] as T[keyof T]
