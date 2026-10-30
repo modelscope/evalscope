@@ -4,6 +4,9 @@ A local checkpoint returns the chat template's ``<tool_call>`` blocks as plain
 text. Before this parser existed the ModelScope generate path ignored them, so
 every tool-calling benchmark scored the model on an empty answer.
 """
+import pytest
+
+import evalscope.models.utils.tool_call_text as tool_call_text
 from evalscope.models.utils.tool_call_text import parse_tool_calls_from_text
 
 CALL = '<tool_call>\n{"name": "get_weather", "arguments": {"city": "Beijing"}}\n</tool_call>'
@@ -77,3 +80,117 @@ def test_block_without_a_name_is_not_a_call():
 
     assert calls is None
     assert content == output
+
+
+block = '<tool_call>'
+close = '</tool_call>'
+
+
+@pytest.fixture(autouse=True)
+def reset_diagnostic():
+    tool_call_text._DIAGNOSTIC_EMITTED = False
+    yield
+    tool_call_text._DIAGNOSTIC_EMITTED = False
+
+
+@pytest.fixture
+def diagnostic_warnings(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    warnings = []
+    monkeypatch.setattr(tool_call_text.logger, 'warning', lambda message: warnings.append(message))
+    return warnings
+
+
+PARAMS_CALL = f'{block}\n{{"name": "get_weather", "parameters": {{"city": "Beijing"}}}}\n{close}'
+
+MISTRAL_ARRAY = '[TOOL_CALLS] [{"name": "get_weather", "arguments": {"city": "Beijing"}}]'
+
+
+
+def test_parameters_key_is_accepted_as_an_alias():
+    _, calls = parse_tool_calls_from_text(PARAMS_CALL)
+
+    assert calls is not None
+    assert calls[0].function.name == 'get_weather'
+    assert calls[0].function.arguments == {'city': 'Beijing'}
+
+
+def test_nested_function_payload_with_parameters_key():
+    call = f'{block}{{"function": {{"name": "search", "parameters": {{"q": "x"}}}}}}{close}'
+    _, calls = parse_tool_calls_from_text(call)
+
+    assert calls is not None
+    assert calls[0].function.arguments == {'q': 'x'}
+
+
+def test_mistral_style_array_is_parsed():
+    content, calls = parse_tool_calls_from_text(MISTRAL_ARRAY)
+
+    assert content == ''
+    assert calls is not None and len(calls) == 1
+    assert calls[0].function.name == 'get_weather'
+    assert calls[0].function.arguments == {'city': 'Beijing'}
+
+
+def test_mistral_array_with_several_calls_keeps_order():
+    output = '[TOOL_CALLS][{"name": "a", "arguments": {"x": 1}}, {"name": "b", "arguments": {"y": 2}}]'
+    _, calls = parse_tool_calls_from_text(output)
+
+    assert calls is not None
+    assert [call.function.name for call in calls] == ['a', 'b']
+    assert calls[0].function.arguments == {'x': 1}
+    assert calls[1].function.arguments == {'y': 2}
+
+
+def test_unclosed_block_emits_a_diagnostic_and_stays_plain_text(diagnostic_warnings: list[str]) -> None:
+    output = block + '{"name": "get_weather"}'
+
+    content, calls = parse_tool_calls_from_text(output)
+
+    assert calls is None
+    assert content == output
+    assert any('tool call' in message.lower() for message in diagnostic_warnings)
+
+
+def test_plain_text_answer_emits_no_diagnostic(diagnostic_warnings: list[str]) -> None:
+    content, calls = parse_tool_calls_from_text('I can help with that.')
+
+    assert calls is None
+    assert content == 'I can help with that.'
+    assert diagnostic_warnings == []
+
+
+def test_diagnostic_is_logged_only_once(diagnostic_warnings: list[str]) -> None:
+    parse_tool_calls_from_text(block + '{"name": "a"}')
+    parse_tool_calls_from_text('[TOOL_CALLS] [{"name": "b"}')
+
+    assert len(diagnostic_warnings) == 1
+
+
+def test_mixed_formats_keep_source_order_and_clean_text():
+    array = '[TOOL_CALLS] [{"name": "first", "arguments": {}}]'
+    block_call = f'{block}{{"name": "second", "arguments": {{}}}}{close}'
+    content, calls = parse_tool_calls_from_text(array + '\n' + block_call)
+
+    assert [call.function.name for call in calls] == ['first', 'second']
+    assert content == ''
+
+
+def test_partially_invalid_array_is_kept_as_text():
+    output = '[TOOL_CALLS] [{"name": "valid", "arguments": {}}, "broken"]'
+    content, calls = parse_tool_calls_from_text(output)
+
+    assert calls is None
+    assert content == output
+
+
+def test_consecutive_arrays_and_trailing_text():
+    output = (
+        '[TOOL_CALLS] [{"name": "a", "arguments": {"x": 1}}]'
+        ' [TOOL_CALLS] [{"name": "b", "arguments": {"y": 2}}] done'
+    )
+    content, calls = parse_tool_calls_from_text(output)
+
+    assert [call.function.name for call in calls] == ['a', 'b']
+    assert calls[0].function.arguments == {'x': 1}
+    assert calls[1].function.arguments == {'y': 2}
+    assert content == 'done'
