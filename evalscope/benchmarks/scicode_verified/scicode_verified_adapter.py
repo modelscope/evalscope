@@ -28,8 +28,11 @@ logger = get_logger()
 # that later steps build on it (same as the SciCode-Verified harness).
 SKIPPED_STEPS = ('13.6', '62.1', '76.3')
 HERE = Path(__file__).parent
-GOLD_DIR = HERE / 'gold'
-OFFICIAL_DIR = HERE / 'official'
+# Reference code of the skipped steps and the official prompt templates, vendored unchanged from SciCode's eval/data
+# (third_party: excluded from formatting hooks, the files must stay byte-identical).
+SCICODE_EVAL_DATA = HERE.parent.parent / 'third_party' / 'scicode' / 'eval_data'
+GOLD_DIR = SCICODE_EVAL_DATA
+OFFICIAL_DIR = SCICODE_EVAL_DATA
 SCICODE_DOCKER_DIR = HERE.parent / 'scicode' / 'docker'
 IMPORT_RE = re.compile(r'^\s*(import .*|from .*\s+import\s+.*)', flags=re.MULTILINE)
 ENV_LINE_RE = re.compile(r'^SCV_ENV (\S+) (PASS|FAIL) ([0-9.]+)s$', flags=re.MULTILINE)
@@ -277,7 +280,7 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         cur = steps[k]
         return self.official_template.format(
             problem_steps_str='\n\n'.join(lines[:-1]) if lines else '',
-            next_step_str=f"{self._step_text(cur)}\n\n{cur['function_header']}\n\n{cur['return_line']}",
+            next_step_str=f'{self._step_text(cur)}\n\n{cur["function_header"]}\n\n{cur["return_line"]}',
             dependencies=sample.metadata['required_dependencies'],
         )
 
@@ -298,7 +301,10 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
                     prompt = ChatMessageUser(content=self._official_prompt(sample, k, prev_codes))
                 else:
                     prompt = ChatMessageUser(content=self.prompt_template.format(**subproblem))
-                history += [prompt, ModelOutput.from_content(model=model.name, content=f'```python\n{code}\n```').message]
+                history += [
+                    prompt,
+                    ModelOutput.from_content(model=model.name, content=f'```python\n{code}\n```').message,
+                ]
                 prev_codes.append(code)
                 continue
             if self.prompt_mode == 'official':
@@ -337,10 +343,13 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
 
         step = subproblem['step_number']
         k = subproblem_str_to_int(step)
-        sections = [state.metadata['required_dependencies'], *self._step_codes(state)[:k],
-                    'from test_util import are_dicts_close, cmp_tuple_or_list',
-                    'from process_data import process_hdf5_to_tuple',
-                    f"targets = process_hdf5_to_tuple('{step}', {len(subproblem['test_cases'])})"]
+        sections = [
+            state.metadata['required_dependencies'],
+            *self._step_codes(state)[:k],
+            'from test_util import are_dicts_close, cmp_tuple_or_list',
+            'from process_data import process_hdf5_to_tuple',
+            f"targets = process_hdf5_to_tuple('{step}', {len(subproblem['test_cases'])})",
+        ]
         for i, test_case in enumerate(subproblem['test_cases']):
             sections += [f'target = targets[{i}]', test_case]
         script = '\n\n'.join(sections)
@@ -366,9 +375,11 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         score.metadata['timed_out_envs'] = [label for label, _, sec in envs if float(sec) >= ENV_TIMEOUT]
         passed = any(score.metadata['per_env'].values())
         score.metadata['timed_out'] = (not passed) and bool(score.metadata['timed_out_envs'])
-        logger.info(f'Graded subproblem {step}: {"PASS" if score.value.get(step) == 1.0 else "FAIL"}, '
-                    f'per_env {score.metadata["per_env"]}, seconds {score.metadata["grading_seconds"]}'
-                    f'{", timed out" if score.metadata["timed_out"] else ""}')
+        logger.info(
+            f'Graded subproblem {step}: {"PASS" if score.value.get(step) == 1.0 else "FAIL"}, '
+            f'per_env {score.metadata["per_env"]}, seconds {score.metadata["grading_seconds"]}'
+            f'{", timed out" if score.metadata["timed_out"] else ""}'
+        )
         return score
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:
