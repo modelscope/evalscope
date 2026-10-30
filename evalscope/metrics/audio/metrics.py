@@ -247,7 +247,8 @@ class MER(Metric):
                 tokens.append(char)
                 i += 1
             else:
-                match = re.match(r"[a-zA-Z']+\w*", text[i:])
+                # Keep word suffixes, but leave Chinese characters for the branch above.
+                match = re.match(r"[a-zA-Z']+[^\W\u4e00-\u9fff]*", text[i:])
                 if match:
                     tokens.append(match.group(0))
                     i += match.end()
