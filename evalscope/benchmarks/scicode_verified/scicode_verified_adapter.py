@@ -2,6 +2,7 @@
 # flake8: noqa: E501
 
 import base64
+import hashlib
 import re
 import shutil
 from pathlib import Path
@@ -34,15 +35,22 @@ IMPORT_RE = re.compile(r'^\s*(import .*|from .*\s+import\s+.*)', flags=re.MULTIL
 ENV_LINE_RE = re.compile(r'^SCV_ENV (\S+) (PASS|FAIL) ([0-9.]+)s$', flags=re.MULTILINE)
 
 # Pinned grading environments of the SciCode-Verified multi-environment OR grading (analysis/or_gain.json):
-# '2024' = numpy 1.26.4 / scipy 1.13.1, '2025' = numpy 2.4.2 / scipy 1.17.1. Both venvs live in one sandbox image
-# (Python 3.11; the reference '2025' env is Python 3.12). matplotlib is installed in both (problem 80).
+# '2024' = sci2024 (Python 3.11, numpy 1.26.4 / scipy 1.13.1), '2025' = cp312 (Python 3.12, numpy 2.4.2 / scipy 1.17.1).
+# Both venvs live in one sandbox image: Python 3.12 base, Python 3.11 copied from the official python:3.11-slim image
+# (versioned files only, no overlap). matplotlib is installed in both (problem 80).
 GRADING_ENVS = (('2024', '/opt/env2024/bin/python'), ('2025', '/opt/env2025/bin/python'))
 ENV_TIMEOUT = 1800  # seconds per environment, as the SciCode-Verified harness
-DOCKERFILE = """FROM python:3.11-slim
+DOCKERFILE = """FROM python:3.11-slim AS py311
 
-RUN python -m venv /opt/env2024 && /opt/env2024/bin/pip install --no-cache-dir \\
+FROM python:3.12-slim
+COPY --from=py311 /usr/local/bin/python3.11 /usr/local/bin/python3.11
+COPY --from=py311 /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=py311 /usr/local/lib/libpython3.11.so.1.0 /usr/local/lib/libpython3.11.so.1.0
+RUN ldconfig
+
+RUN python3.11 -m venv /opt/env2024 && /opt/env2024/bin/pip install --no-cache-dir \\
     numpy==1.26.4 scipy==1.13.1 h5py sympy "matplotlib<3.10"
-RUN python -m venv /opt/env2025 && /opt/env2025/bin/pip install --no-cache-dir \\
+RUN python3.12 -m venv /opt/env2025 && /opt/env2025/bin/pip install --no-cache-dir \\
     numpy==2.4.2 scipy==1.17.1 h5py sympy matplotlib
 
 WORKDIR /workspace
@@ -99,7 +107,7 @@ SciCode-Verified is a human-verified correction of the SciCode test benchmark (a
 - `prompt_mode='official'` (default): one single-turn prompt per subproblem with the official SciCode templates (previous step descriptions + previously extracted code). `prompt_mode='multi_turn'`: evalscope's SciCode conversation (one chat, one turn per subproblem).
 - Steps 13.6, 62.1 and 76.3 are not generated nor scored: their reference code is used (official harness).
 - Extracted code: first ```python block, import lines removed (official harness); dependencies imported once.
-- `grading_envs='or'` (default): each step runs under numpy 1.26.4 / scipy 1.13.1 and, if it fails, numpy 2.4.2 / scipy 1.17.1; it passes if either passes. 1800 s per environment. `grading_envs='2024'` / `'2025'`: one environment only.
+- `grading_envs='or'` (default): each step runs under Python 3.11 / numpy 1.26.4 / scipy 1.13.1 and, if it fails, Python 3.12 / numpy 2.4.2 / scipy 1.17.1; it passes if either passes. 1800 s per environment. `grading_envs='2024'` / `'2025'`: one environment only.
 - The dataset is loaded from the Hugging Face hub (`shhu2001/SciCode-Verified`) unless a local path is given; `problem_ids` restricts the run to some problems.
 
 ## Evaluation Notes
@@ -162,6 +170,7 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
             raise ValueError(f"grading_envs must be 'or', '2024' or '2025', got {mode!r}")
         template = 'multistep_template.txt' if self.provide_background else 'background_comment_template.txt'
         self.official_template = (OFFICIAL_DIR / template).read_text()
+        self.dataset_info: Dict[str, Any] = {}
 
     @property
     def dataset_hub(self) -> str:
@@ -172,6 +181,26 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
     @dataset_hub.setter
     def dataset_hub(self, value: str):
         self._task_config.dataset_hub = value
+
+    @staticmethod
+    def _md5(path: Path) -> str:
+        h = hashlib.md5()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1 << 24), b''):
+                h.update(chunk)
+        return h.hexdigest()
+
+    @staticmethod
+    def _hub_revision(path: str) -> Optional[str]:
+        """Commit of a hub snapshot file (``.../snapshots/<commit>/<file>``), None for a local path."""
+        parts = Path(path).parts
+        return parts[parts.index('snapshots') + 1] if 'snapshots' in parts else None
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        """SciCode sample + the dataset version (hub commit, md5 of the jsonl and h5), recorded in every output line."""
+        sample = super().record_to_sample(record)
+        sample.metadata = {**sample.metadata, 'dataset_info': self.dataset_info}
+        return sample
 
     def sample_filter(self, sample: Sample) -> bool:
         return not self.problem_ids or str(sample.metadata['problem_id']) in self.problem_ids
@@ -186,17 +215,26 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         for name in ('process_data.py', 'test_util.py'):
             shutil.copyfile(SCICODE_DOCKER_DIR / name, self.docker_path / name)
         (self.docker_path / 'Dockerfile').write_text(DOCKERFILE)
-        source_path = DatasetHub(
+        hub = DatasetHub(
             data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
             revision=self.dataset_revision,
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
-        ).download_file('test_data_cleaned.h5')
+        )
+        source_path = hub.download_file('test_data_cleaned.h5')
         target = self.docker_path / 'test_data.h5'
         src = Path(source_path).resolve()
         if not target.exists() or target.stat().st_size != src.stat().st_size:
             shutil.copyfile(src, target)
+        jsonl_path = hub.download_file('data/problems_test.jsonl')
+        self.dataset_info = {
+            'dataset_id': self.dataset_id,
+            'revision': self._hub_revision(source_path),
+            'problems_test_jsonl_md5': self._md5(Path(jsonl_path).resolve()),
+            'test_data_cleaned_h5_md5': self._md5(src),
+        }
+        logger.info(f'SciCode-Verified dataset: {self.dataset_info}')
         # Skip SciCodeAdapter.load (it downloads the original test_data.h5).
         return super(SciCodeAdapter, self).load()
 
@@ -315,6 +353,8 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         """Grade one step (SciCodeAdapter) and record, from the wrapper's output, the verdict and grading time of
         each environment (`per_env`, same shape as SciCode-Verified's score.json), their total, and the environments
         that hit the time limit (`timed_out_envs`; `timed_out`: the step failed and an environment hit the limit)."""
+        step = subproblem['step_number']
+        logger.info(f'Grading subproblem {step} (problem {state.metadata["problem_id"]})...')
         score = super()._verify_subproblem(subproblem=subproblem, state=state)
         result = (score.metadata or {}).get('execution_result') or {}
         output = str(result.get('output') or '') + str(result.get('error') or '')
@@ -326,6 +366,9 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         score.metadata['timed_out_envs'] = [label for label, _, sec in envs if float(sec) >= ENV_TIMEOUT]
         passed = any(score.metadata['per_env'].values())
         score.metadata['timed_out'] = (not passed) and bool(score.metadata['timed_out_envs'])
+        logger.info(f'Graded subproblem {step}: {"PASS" if score.value.get(step) == 1.0 else "FAIL"}, '
+                    f'per_env {score.metadata["per_env"]}, seconds {score.metadata["grading_seconds"]}'
+                    f'{", timed out" if score.metadata["timed_out"] else ""}')
         return score
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:

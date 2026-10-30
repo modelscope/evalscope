@@ -171,6 +171,18 @@ def test_grading_metadata(status, output, passed, per_env, timed_out, monkeypatc
     assert score.metadata['grading_seconds_total'] == round(sum(score.metadata['grading_seconds'].values()), 1)
 
 
+def test_dataset_version_is_recorded_in_every_sample() -> None:
+    adapter = make_adapter()
+    adapter.dataset_info = {'dataset_id': 'shhu2001/SciCode-Verified', 'revision': 'abc123'}
+    record = make_sample('5').metadata
+
+    sample = adapter.record_to_sample(record)
+
+    assert sample.metadata['dataset_info']['revision'] == 'abc123'
+    assert SciCodeVerifiedAdapter._hub_revision('/cache/datasets--x--y/snapshots/eea11a86/data/p.jsonl') == 'eea11a86'
+    assert SciCodeVerifiedAdapter._hub_revision('/local/problems_test.jsonl') is None
+
+
 def test_problem_filter_and_hub() -> None:
     adapter = make_adapter(problem_ids=['12', 62])
     assert adapter.sample_filter(make_sample('62')) and not adapter.sample_filter(make_sample('5'))
