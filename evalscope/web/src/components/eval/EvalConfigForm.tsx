@@ -33,6 +33,9 @@ const IDS = {
   topP: 'eval-topP',
   maxTokens: 'eval-maxTokens',
   topK: 'eval-topK',
+  reasoningEffort: 'eval-reasoningEffort',
+  reasoningTokens: 'eval-reasoningTokens',
+  enableThinking: 'eval-enableThinking',
   datasetArgs: 'eval-datasetArgs',
   sandboxEngine: 'eval-sandboxEngine',
   sandboxUrl: 'eval-sandboxUrl',
@@ -54,6 +57,8 @@ const DOM_ORDER: string[] = [
   IDS.topP,
   IDS.maxTokens,
   IDS.topK,
+  IDS.reasoningEffort,
+  IDS.reasoningTokens,
   IDS.datasetArgs,
   IDS.sandboxUrl,
   IDS.sandboxPool,
@@ -67,6 +72,8 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.topP,
   IDS.maxTokens,
   IDS.topK,
+  IDS.reasoningEffort,
+  IDS.reasoningTokens,
   IDS.datasetArgs,
   IDS.sandboxUrl,
   IDS.sandboxPool,
@@ -85,6 +92,9 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
     topP,
     maxTokens,
     topK,
+    reasoningEffort,
+    reasoningTokens,
+    enableThinking,
     datasetArgs,
     sandboxEnabled,
     sandboxEngine,
@@ -106,6 +116,9 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
   const setTopP = (value: string) => changeField('topP', value)
   const setMaxTokens = (value: string) => changeField('maxTokens', value)
   const setTopK = (value: string) => changeField('topK', value)
+  const setReasoningEffort = (value: string) => changeField('reasoningEffort', value)
+  const setReasoningTokens = (value: string) => changeField('reasoningTokens', value)
+  const setEnableThinking = (value: boolean) => changeField('enableThinking', value)
   const setDatasetArgs = (value: string) => changeField('datasetArgs', value)
   const setSandboxEnabled = (value: boolean) => changeField('sandboxEnabled', value)
   const setSandboxEngine = (value: string) => {
@@ -308,6 +321,62 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
             className={inputClass(errMsg(IDS.topK))}
           />
         )}
+      </Field>
+      <Field
+        id={IDS.reasoningEffort}
+        name="reasoning_effort"
+        labelKey="eval.reasoningEffort"
+        hintKey="eval.reasoningEffortHint"
+      >
+        {(aria) => (
+          <>
+            <input
+              {...aria}
+              type="text"
+              list="eval-reasoning-effort-options"
+              value={reasoningEffort}
+              onChange={(e) => setReasoningEffort(e.target.value)}
+              className={inputClass()}
+              placeholder="low / medium / high"
+            />
+            <datalist id="eval-reasoning-effort-options">
+              <option value="minimal" />
+              <option value="low" />
+              <option value="medium" />
+              <option value="high" />
+            </datalist>
+          </>
+        )}
+      </Field>
+      <Field
+        id={IDS.reasoningTokens}
+        name="reasoning_tokens"
+        labelKey="eval.reasoningTokens"
+        error={errMsg(IDS.reasoningTokens)}
+        hintKey="eval.reasoningTokensHint"
+      >
+        {(aria) => (
+          <input
+            {...aria}
+            type="number"
+            min={1}
+            step={1}
+            value={reasoningTokens}
+            onChange={(e) => {
+              setReasoningTokens(e.target.value)
+              clearErr(IDS.reasoningTokens)
+            }}
+            className={inputClass(errMsg(IDS.reasoningTokens))}
+          />
+        )}
+      </Field>
+      <Field
+        id={IDS.enableThinking}
+        name="enable_thinking"
+        labelKey="eval.enableThinking"
+        hintKey="eval.enableThinkingHint"
+      >
+        {(aria) => <Switch {...aria} checked={enableThinking} onCheckedChange={setEnableThinking} />}
       </Field>
       <Field
         id={IDS.datasetArgs}
