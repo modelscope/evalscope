@@ -15,7 +15,7 @@ from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ContentImage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, get_model, get_model_with_task_config
-from evalscope.config import TaskConfig
+from evalscope.config import DEFAULT_IMAGE_GEN_CONFIG, TaskConfig
 from evalscope.constants import EvalType, FileConstants, ModelTask
 from evalscope.utils.uri_utils import data_uri_to_base64
 
@@ -515,6 +515,24 @@ def test_image_editing_service_keeps_its_eval_type() -> None:
     )
 
     assert task_config.eval_type == EvalType.IMAGE_EDITING
+    # Image editing runs a local pipeline and ignores api_url, so the diffusion defaults must survive.
+    assert task_config.generation_config.num_inference_steps == DEFAULT_IMAGE_GEN_CONFIG['num_inference_steps']
+    assert task_config.generation_config.guidance_scale == DEFAULT_IMAGE_GEN_CONFIG['guidance_scale']
+
+
+def test_image_generation_service_drops_diffusion_defaults() -> None:
+    task_config = TaskConfig(
+        model='test-image-model',
+        model_task=ModelTask.IMAGE_GENERATION,
+        api_url='http://127.0.0.1:1/v1',
+        eval_type=EvalType.TEXT2IMAGE,
+        api_key='EMPTY',
+    )
+
+    assert task_config.generation_config.height == DEFAULT_IMAGE_GEN_CONFIG['height']
+    assert task_config.generation_config.width == DEFAULT_IMAGE_GEN_CONFIG['width']
+    assert task_config.generation_config.num_inference_steps is None
+    assert task_config.generation_config.guidance_scale is None
 
 
 def test_text2image_adapter_saves_data_uri_output(tmp_path: Path) -> None:

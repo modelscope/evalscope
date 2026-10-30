@@ -594,8 +594,9 @@ class TaskConfig(BaseArgument):
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
-            if self.api_url is not None:
+            if self.eval_type == EvalType.TEXT2IMAGE and self.api_url is not None:
                 # Diffusion-only knobs are not OpenAI Images API fields; services opt in explicitly.
+                # Other image eval types keep the local pipeline defaults, since they ignore api_url.
                 return {key: DEFAULT_IMAGE_GEN_CONFIG[key] for key in ('height', 'width')}
             return DEFAULT_IMAGE_GEN_CONFIG.copy()
 
