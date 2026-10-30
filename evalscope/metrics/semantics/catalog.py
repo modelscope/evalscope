@@ -442,6 +442,19 @@ METRIC_DEFINITIONS['attack_success_rate'] = MetricEntry(
 # `targeted_asr` is the share of samples where the injected attacker goal was achieved.
 METRIC_DEFINITIONS['utility'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Utility')
 METRIC_DEFINITIONS['targeted_asr'] = MetricEntry(baseline='quality.error_rate.ratio', metric_name='Targeted ASR')
+
+# AgentHarm measures completion independently of refusal. Direction depends on whether the
+# requested task is harmful or benign; benchmark overrides below express that distinction.
+METRIC_DEFINITIONS['task_completion_score'] = MetricEntry(
+    baseline='quality.score.ratio', metric_name='Task Completion Score'
+)
+METRIC_DEFINITIONS['full_completion_rate'] = MetricEntry(
+    baseline='quality.accuracy.ratio', metric_name='Full Completion Rate'
+)
+METRIC_DEFINITIONS['refusal_rate'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Refusal Rate')
+METRIC_DEFINITIONS['non_refusal_completion_score'] = MetricEntry(
+    baseline='quality.score.ratio', metric_name='Non-refusal Completion Score'
+)
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
 for _registered, _reported in {
     'decision_nll': 'nll',
@@ -473,6 +486,20 @@ AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
 }
 
 BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
+    # Completing an explicitly harmful task is undesirable; refusing a benign task is also
+    # undesirable. Keep these directions separate instead of changing the shared baselines.
+    ('agentharm', 'task_completion_score'): METRIC_DEFINITIONS['task_completion_score'].model_copy(
+        update={'direction': MetricDirection.LOWER_IS_BETTER}
+    ),
+    ('agentharm', 'full_completion_rate'): METRIC_DEFINITIONS['full_completion_rate'].model_copy(
+        update={'direction': MetricDirection.LOWER_IS_BETTER}
+    ),
+    ('agentharm', 'non_refusal_completion_score'): METRIC_DEFINITIONS['non_refusal_completion_score'].model_copy(
+        update={'direction': MetricDirection.LOWER_IS_BETTER}
+    ),
+    ('agentharm_benign', 'refusal_rate'): METRIC_DEFINITIONS['refusal_rate'].model_copy(
+        update={'direction': MetricDirection.LOWER_IS_BETTER}
+    ),
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
     # job_bench, i.e. an intermediate judge value: reassign the collision to a diagnostic.
     ('job_bench', 'judge_score'): MetricEntry(baseline='diagnostic.unspecified'),

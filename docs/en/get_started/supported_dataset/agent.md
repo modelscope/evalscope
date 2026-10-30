@@ -6,6 +6,8 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 |------------|----------|----------|
 | `acebench` | [ACEBench](../../benchmarks/acebench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `agentdojo` | [AgentDojo](../../benchmarks/agentdojo.md) | `Agent`, `FunctionCalling`, `Safety` |
+| `agentharm` | [AgentHarm](../../benchmarks/agentharm.md) | `Agent`, `FunctionCalling`, `Safety` |
+| `agentharm_benign` | [AgentHarm Benign](../../benchmarks/agentharm_benign.md) | `Agent`, `FunctionCalling`, `Safety` |
 | `automation_bench` | [AutomationBench](../../benchmarks/automation_bench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
@@ -45,6 +47,8 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 
 ../../benchmarks/acebench.md
 ../../benchmarks/agentdojo.md
+../../benchmarks/agentharm.md
+../../benchmarks/agentharm_benign.md
 ../../benchmarks/automation_bench.md
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md

@@ -1,0 +1,2 @@
+# AgentHarm fixtures are literal observations; preserve their original bytes and whitespace.
+evalscope/third_party/agentharm/*_tools/content/* -text -whitespace
