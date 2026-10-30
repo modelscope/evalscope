@@ -1,12 +1,14 @@
 from copy import deepcopy
 from dataclasses import InitVar, dataclass, field
-from typing import ClassVar, Dict, TypedDict
+from typing import ClassVar, Dict, Literal, TypedDict
 from unittest import mock
 
 import pytest
 from pydantic import BaseModel
 
+from evalscope.api.tool import ToolCall, ToolFunction, validate_tool_arguments
 from evalscope.api.tool.tool_info import parse_tool_info
+from evalscope.models.utils.openai import openai_chat_tool_param
 from evalscope.utils.json_schema import JSONSchema, json_schema
 
 
@@ -144,3 +146,74 @@ def test_tool_schema_preserves_pydantic_field_defaults() -> None:
     info = parse_tool_info(tool)
 
     assert info.parameters.properties['payload'].properties['options'].default == {'type': 'str'}
+
+
+@pytest.mark.parametrize('value', ['read', 0, False, None, {'type': 'str'}, ['read']])
+def test_schema_preserves_single_value_constraints(value: object) -> None:
+    raw = {'const': value}
+    original = deepcopy(raw)
+
+    schema = JSONSchema.model_validate(raw).model_dump(exclude_none=True)
+
+    assert schema['enum'] == [value]
+    assert raw == original
+
+
+@pytest.mark.parametrize(
+    'nested',
+    [
+        {'properties': {'mode': {'const': 'read'}}},
+        {'items': {'const': 'read'}},
+        {'additionalProperties': {'const': 'read'}},
+        {'anyOf': [{'const': 'read'}, {'type': 'null'}]},
+    ],
+)
+def test_nested_schema_preserves_single_value_constraints(nested: dict) -> None:
+    schema = JSONSchema.model_validate(nested).model_dump(exclude_none=True)
+    child = next(iter(schema.values()))
+    if 'properties' in schema:
+        child = child['mode']
+    elif 'anyOf' in schema:
+        child = child[0]
+
+    assert child == {'enum': ['read']}
+
+
+class LiteralPayload(BaseModel):
+    mode: Literal['read']
+    count: Literal[0]
+    enabled: Literal[False]
+    empty: Literal[None]
+    modes: list[Literal['read']]
+
+
+class NestedLiteralPayload(BaseModel):
+    payload: LiteralPayload
+
+
+@pytest.mark.parametrize(
+    'field, invalid',
+    [('mode', 'write'), ('count', 1), ('enabled', True), ('empty', 'value'), ('modes', ['write'])],
+)
+def test_tool_schema_preserves_pydantic_literal_constraints(field: str, invalid: object) -> None:
+    def tool(value: NestedLiteralPayload) -> str:
+        """Accept a payload with single-value fields."""
+        return value.payload.mode
+
+    info = parse_tool_info(tool)
+    valid = {'mode': 'read', 'count': 0, 'enabled': False, 'empty': None, 'modes': ['read']}
+    arguments = {'value': {'payload': valid}}
+    call = ToolCall(id='call', function=ToolFunction(name=info.name, arguments=arguments))
+
+    assert validate_tool_arguments(call, info) is None
+
+    invalid_arguments = deepcopy(arguments)
+    invalid_arguments['value']['payload'][field] = invalid
+    invalid_call = ToolCall(id='call', function=ToolFunction(name=info.name, arguments=invalid_arguments))
+    assert validate_tool_arguments(invalid_call, info) is not None
+
+    parameters = openai_chat_tool_param(info)['function']['parameters']
+    properties = parameters['properties']['value']['properties']['payload']['properties']
+    for name in ['mode', 'count', 'enabled', 'empty']:
+        assert properties[name]['enum'] == [valid[name]]
+    assert properties['modes']['items']['enum'] == ['read']
