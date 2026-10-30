@@ -182,7 +182,22 @@ def _query_refs() -> List[ReportRef]:
 
 
 def _extract_timestamp(ref: ReportRef, root: str) -> str:
-    """Try to extract a timestamp from the run directory name or fall back to mtime."""
+    """Return when the run started: its task manifest, its id, its directory name, or finally its mtime.
+
+    The directory mtime changes when outputs are copied, restored or rewritten, so it is only a last resort.
+    """
+    run_dir = os.path.join(root, ref.run_id)
+    # Service-launched runs record their start time in the task manifest
+    started_at = (read_task_manifest(run_dir) or {}).get('started_at')
+    if isinstance(started_at, str):
+        try:
+            return datetime.fromisoformat(started_at).isoformat()
+        except ValueError:
+            pass
+    # ... and are named "eval_<epoch milliseconds>"
+    prefix, _, epoch_ms = ref.run_id.rpartition('_')
+    if prefix == 'eval' and epoch_ms.isdigit() and 10**12 <= int(epoch_ms) < 10**13:
+        return datetime.fromtimestamp(int(epoch_ms) / 1000).isoformat()
     # Directory names typically look like "20260423_201338"
     for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
         try:
@@ -190,7 +205,6 @@ def _extract_timestamp(ref: ReportRef, root: str) -> str:
         except ValueError:
             continue
     # Fall back to directory modification time
-    run_dir = os.path.join(root, ref.run_id)
     if os.path.isdir(run_dir):
         return datetime.fromtimestamp(os.path.getmtime(run_dir)).isoformat()
     return ''
