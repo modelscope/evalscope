@@ -116,7 +116,7 @@ class _FakeClient500:
     async def __aexit__(self, exc_type, exc, tb):
         return False
 
-    async def post(self, body):
+    async def post(self, body, **kwargs):
         from evalscope.perf.utils.benchmark_util import BenchmarkData
         type(self).calls += 1
         out = BenchmarkData()
@@ -126,10 +126,12 @@ class _FakeClient500:
         return out
 
 
-class _FakeClient4xx:
-    """AioHttpClient stand-in whose every post() returns a non-retryable 404."""
+class _FakeClientHttpFailure:
+    """AioHttpClient stand-in returning a configurable HTTP failure."""
 
     calls = 0
+    status_code = 404
+    error = 'Not Found'
 
     def __init__(self, args, api_plugin):
         pass
@@ -140,13 +142,36 @@ class _FakeClient4xx:
     async def __aexit__(self, exc_type, exc, tb):
         return False
 
-    async def post(self, body):
+    async def post(self, body, **kwargs):
         from evalscope.perf.utils.benchmark_util import BenchmarkData
         type(self).calls += 1
         out = BenchmarkData()
         out.success = False
-        out.status_code = 404
-        out.error = 'Not Found'
+        out.status_code = type(self).status_code
+        out.error = type(self).error
+        return out
+
+
+class _FakeClient4xx(_FakeClientHttpFailure):
+    pass
+
+
+class _FakeClient302(_FakeClientHttpFailure):
+    status_code = 302
+    error = 'Found'
+
+
+class _FakeClientProgramError(_FakeClientHttpFailure):
+    """Match post()'s default failure conversion and preflight propagation option."""
+
+    async def post(self, body, *, propagate_unexpected_errors: bool = False, **kwargs):
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        type(self).calls += 1
+        if propagate_unexpected_errors:
+            raise ValueError('plugin exploded')
+        out = BenchmarkData()
+        out.success = False
+        out.error = 'plugin exploded'
         return out
 
 
@@ -164,7 +189,7 @@ class _FakeClientHang:
     async def __aexit__(self, exc_type, exc, tb):
         return False
 
-    async def post(self, body):
+    async def post(self, body, **kwargs):
         type(self).calls += 1
         # Sleep far longer than any test deadline so asyncio.wait_for must cancel it.
         await asyncio.sleep(1000)
@@ -230,6 +255,31 @@ class TestConnectionPreflightPolicy:
         assert elapsed < 2
         assert any('non-retryable HTTP 404' in e for e in errors)
 
+    def test_3xx_receives_exactly_one_attempt(self, monkeypatch):
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClient302.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient302)
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        assert _FakeClient302.calls == 1
+        assert any('non-retryable HTTP 302' in e for e in errors)
+
+    def test_unexpected_exception_receives_exactly_one_attempt(self, monkeypatch):
+        args = _args()
+        plugin = OpenaiPlugin(args)
+        _FakeClientProgramError.calls = 0
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClientProgramError)
+        errors = []
+        warnings = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        monkeypatch.setattr(http_client.logger, 'warning', lambda msg, *a, **kw: warnings.append(msg))
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        assert _FakeClientProgramError.calls == 1
+        assert not warnings
+        assert any('non-retryable ValueError: plugin exploded' in e for e in errors)
+
     def test_final_sleep_does_not_exceed_deadline(self, monkeypatch):
         """The retry sleep is clamped to the remaining time, so the last sleep can't push the
         probe past the deadline."""
@@ -252,6 +302,6 @@ class TestConnectionPreflightPolicy:
         start = time.perf_counter()
         assert asyncio.run(http_client.test_connection(args, plugin)) is False
         elapsed = time.perf_counter() - start
-        # Every sleep must be <= remaining time at that point, so total < ~deadline + slop.
-        assert all(s <= 2 for s in slept)
+        # Remaining time never exceeds the one-second deadline; an unclamped two-second sleep fails.
+        assert slept and all(0 < s <= 1 for s in slept)
         assert elapsed < 3

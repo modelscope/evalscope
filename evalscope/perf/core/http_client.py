@@ -79,7 +79,7 @@ class AioHttpClient:
         trace_config.on_response_chunk_received.append(self.on_response_chunk_received)
         return trace_config
 
-    async def post(self, body) -> BenchmarkData:
+    async def post(self, body, *, propagate_unexpected_errors: bool = False) -> BenchmarkData:
         """
         Send POST request and delegate response handling to API plugin.
 
@@ -104,7 +104,12 @@ class AioHttpClient:
                 f'TimeoutError: total_timeout: {self.total_timeout}, connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
             return self._failure_record(body, str(e), start_time)
-        except (aiohttp.ClientConnectorError, Exception) as e:
+        except aiohttp.ClientConnectionError as e:
+            logger.error(e)
+            return self._failure_record(body, str(e), start_time)
+        except Exception as e:
+            if propagate_unexpected_errors:
+                raise
             logger.error(e)
             return self._failure_record(body, str(e), start_time)
 
@@ -179,7 +184,7 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     async def attempt_connection():
         client = AioHttpClient(args, api_plugin)
         async with client:
-            output = await client.post(request)
+            output = await client.post(request, propagate_unexpected_errors=True)
             return output
 
     def _log_failure(reason: str) -> None:
@@ -200,19 +205,19 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
         except asyncio.TimeoutError:
             _log_failure(f'request hung past the {_PREFLIGHT_DEADLINE}s deadline')
             return False
-        except Exception as e:
-            # Network error: retry if attempts and deadline allow.
+        except aiohttp.ClientConnectionError as e:
             logger.warning(f'Retrying... <{e}>')
+        except Exception as e:
+            _log_failure(f'non-retryable {type(e).__name__}: {e}')
+            return False
         else:
             if output.success:
                 logger.info('Test connection successful.')
                 return True
-            # 4xx errors are client-side configuration errors (wrong URL, wrong request format,
-            # auth failure, etc.) and will never succeed on retry — bail out immediately.
-            if output.status_code is not None and 400 <= output.status_code < 500:
+            # Only server-side failures and requests without an HTTP response are retryable.
+            if output.status_code is not None and not 500 <= output.status_code < 600:
                 _log_failure(f'non-retryable HTTP {output.status_code}: {output.error}')
                 return False
-            # Retryable 5xx: retry if attempts and deadline allow.
             logger.warning(f'Retrying... <{output.error}>')
 
         if attempt < _PREFLIGHT_MAX_ATTEMPTS:
