@@ -16,8 +16,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 
 ## Key Features
 
-- 7,093 official samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark; 7,091 are
-  loaded because the dataset repository ships no image for two of them
+- 7,093 samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark
 - **recognition**: multilingual (32 languages) and natural-scene text reading
 - **parsing**: complex tables, general documents, handwritten formulas, molecular structures, and information boards
 - **grounding**: text grounding (single box) and object grounding (multi-box detection with labels)
@@ -28,16 +27,20 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 ## Evaluation Notes
 
 - Every sample yields one `score` in `[0, 1]`; each track uses its official metric:
-  recognition = token-level F1, parsing = edit similarity / TEDS, grounding = IoU,
+  recognition = `token-level F1`, parsing = edit similarity / TEDS, grounding = IoU,
   extraction = field-level F1, qa = substring match with ANLS fallback
 - Subset scores are sample means; the per-track category also reports a macro average over its sub-tasks
-- The grounding prompts ask for boxes on a 0-1000 grid; predictions in absolute pixels are rescaled
-  as if normalized and therefore score close to zero, matching the official leaderboard behavior
+- The grounding prompts require boxes on a 0-1000 coordinate grid. If a model instead returns absolute
+  pixel coordinates, the scorer still interprets them as 0-1000 coordinates and converts them to pixels
+  using the image width and height. This can misplace the boxes and substantially reduce IoU scores
 - Full-page parsing targets are long, so allow a generous `max_tokens` (4096 or more)
 - Requires: `apted`, `distance`, `lxml`, `python-Levenshtein`, `scipy`, `zss`
   (`pip install 'evalscope[cc_ocr_v2]'`)
 - The dataset is a file tree of images and answers (about 5 GB). Only the tracks listed in
   `subset_list` are downloaded, so restricting subsets keeps the download small
+- Incomplete samples are skipped with a warning. A complete run contains 7,093 samples; if fewer are
+  loaded, check the snapshot and missing-file warnings before reporting results. The official Hugging Face
+  source is available with `--dataset-hub huggingface`
 
 
 ## Properties
@@ -57,19 +60,19 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 
 | Metric | Value |
 |--------|-------|
-| Total Samples | 7,091 |
-| Prompt Length (Mean) | 272.16 chars |
+| Total Samples | 7,093 |
+| Prompt Length (Mean) | 272.14 chars |
 | Prompt Length (Min/Max) | 10 / 1330 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
-| `multi_lingual_recognition` | 639 | 101 | 101 | 101 |
+| `multi_lingual_recognition` | 640 | 101 | 101 | 101 |
 | `natural_scene_recognition` | 1,150 | 101.87 | 101 | 103 |
 | `complex_table_parsing` | 300 | 327 | 327 | 327 |
 | `formula_parsing` | 100 | 119 | 119 | 119 |
-| `general_documents_parsing` | 299 | 258 | 258 | 258 |
+| `general_documents_parsing` | 300 | 258 | 258 | 258 |
 | `info_board_parsing` | 26 | 701 | 701 | 701 |
 | `molecular_parsing` | 100 | 232 | 232 | 232 |
 | `object_grounding` | 734 | 491.83 | 306 | 1330 |
@@ -86,7 +89,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 
 | Metric | Value |
 |--------|-------|
-| Total Images | 7,116 |
+| Total Images | 7,118 |
 | Images per Sample | min: 1, max: 3, mean: 1.0 |
 | Resolution Range | 70x71 - 5313x7219 |
 | Formats | jpeg, png |
@@ -100,7 +103,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 {
   "input": [
     {
-      "id": "253834d2",
+      "id": "f971e55d",
       "content": [
         {
           "image": "~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg"

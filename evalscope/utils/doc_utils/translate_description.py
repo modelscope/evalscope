@@ -13,8 +13,10 @@ Usage via CLI:
     evalscope benchmark-info gsm8k --translate     # Translate specific benchmark
 """
 
+import io
 import os
 import re
+import tokenize
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -73,6 +75,32 @@ def _restore_code_blocks(text: str, blocks: List[str]) -> str:
     return text
 
 
+def _localize_usage_comments(block: str) -> str:
+    """Localize fixed usage hints without changing executable code or string literals."""
+    lines = block.splitlines(keepends=True)
+    if lines[0].strip() not in ('```python', '```bash'):
+        return block
+    source = ''.join(lines[1:-1])
+    replacements = {
+        '# Remove this line for formal evaluation': '# 正式评估时请删除此行',
+        '# optional, evaluate specific subsets': '# 可选，用于评估特定子集',
+    }
+    try:
+        comments = [
+            item for item in tokenize.generate_tokens(io.StringIO(source).readline) if item.type == tokenize.COMMENT
+        ]
+    except (tokenize.TokenError, IndentationError):
+        return block
+    for item in comments:
+        for english, chinese in replacements.items():
+            if item.string.endswith(english):
+                row, column = item.start
+                translated = item.string[: -len(english)] + chinese
+                lines[row] = lines[row][:column] + translated + lines[row][item.end[1] :]
+                break
+    return ''.join(lines)
+
+
 def translate_readme(readme_content: str, benchmark_name: str, client=None) -> str:
     """
     Translate English README content to Chinese.
@@ -122,7 +150,7 @@ Example translations:
     try:
         protected, code_blocks = _protect_code_blocks(readme_content)
         completion = client.chat.completions.create(
-            model='qwen-max',
+            model='qwen3.8-flash',
             messages=[
                 {'role': 'system', 'content': system_prompt},
                 {
@@ -133,7 +161,7 @@ Example translations:
             temperature=0.3,
         )
         translated = completion.choices[0].message.content.strip()
-        translated = _restore_code_blocks(translated, code_blocks)
+        translated = _restore_code_blocks(translated, [_localize_usage_comments(block) for block in code_blocks])
 
         # Convert documentation links from English to Chinese
         translated = convert_doc_links(translated)

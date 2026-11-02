@@ -7,10 +7,11 @@ cross-checked against the official ``src/evaluate_*.py`` scripts.
 import json
 import os
 import tempfile
+from pathlib import Path
 
 import pytest
 
-from evalscope.benchmarks.cc_ocr_v2.cc_ocr_v2_adapter import _index_images
+from evalscope.benchmarks.cc_ocr_v2.cc_ocr_v2_adapter import CCOCRV2Adapter, _index_images
 from evalscope.benchmarks.cc_ocr_v2.utils import (
     parse_object_list,
     parse_point_box,
@@ -200,3 +201,37 @@ def test_index_images_handles_single_files_and_page_directories() -> None:
         assert [os.path.basename(path) for path in index['bbb']] == ['page_1.jpg', 'page_2.jpg', 'page_10.jpg']
         assert 'notes' not in index
         assert _index_images(os.path.join(root, 'missing')) == {}
+
+
+@pytest.mark.parametrize(
+    ('track', 'sub_task', 'scenario', 'sample_id'),
+    [
+        ('recognition', 'multi_lingual_recognition',
+         'multi_lan_ocr_Chinese_Traditional_Chinese_Traditional_20', '0913e4fab7c9'),
+        ('parsing', 'general_documents_parsing', 'doc_parsing_doc_doc_scan_150', '4a74943cc5a4'),
+    ],
+)
+def test_scan_restored_mirror_images(
+    tmp_path: Path, track: str, sub_task: str, scenario: str, sample_id: str
+) -> None:
+    """A snapshot missing an image must include the sample once the asset is restored."""
+    from PIL import Image
+
+    task_dir = tmp_path / track / sub_task
+    for folder in ('question', 'answer', 'images'):
+        (task_dir / folder / scenario).mkdir(parents=True)
+    (task_dir / 'question' / scenario / f'{sample_id}.txt').write_text('Read this document.', encoding='utf-8')
+    (task_dir / 'answer' / scenario / f'{sample_id}.txt').write_text('Document text', encoding='utf-8')
+
+    adapter = object.__new__(CCOCRV2Adapter)
+    assert adapter._scan_sub_task(str(tmp_path), sub_task) == []
+
+    image_path = task_dir / 'images' / scenario / f'{sample_id}.jpg'
+    Image.new('RGB', (8, 8), 'white').save(image_path)
+    records = adapter._scan_sub_task(str(tmp_path), sub_task)
+    assert len(records) == 1
+    assert records[0]['id'] == sample_id
+    assert records[0]['image_paths'] == [str(image_path)]
+    sample = adapter.record_to_sample(records[0])
+    assert sample.target == 'Document text'
+    assert sample.metadata['id'] == sample_id
