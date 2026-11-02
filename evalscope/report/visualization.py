@@ -49,6 +49,9 @@ def plot_single_report_sunburst(report_list: List[Report]):
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
 
+    if df.empty:  # NOTE: a report with no metrics yields a frame without columns
+        return None
+
     df = get_quality_metric_df(report_list, df)
     logger.debug(f'df: \n{df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
