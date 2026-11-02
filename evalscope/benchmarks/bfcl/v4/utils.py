@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
 import traceback
 import uuid
 from collections import defaultdict
-from copy import deepcopy
+from contextlib import contextmanager
+from copy import copy, deepcopy
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple
 
 from tqdm import tqdm
 
@@ -86,6 +88,51 @@ DUMMY_MODEL_NO_UNDERSCORE_TO_DOT = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 # ----------------------------
 # Handler compatibility helpers
 # ----------------------------
+
+
+@contextmanager
+def _isolated_execution(entry: Dict[str, Any], *, evaluation: bool) -> Iterator[str]:
+    """Keep BFCL's module-global simulators local to one rollout or scoring call."""
+    from bfcl_eval.eval_checker.multi_turn_eval import multi_turn_utils
+
+    namespace = f'evalscope_{uuid.uuid4().hex}'
+    model_names = (f'{namespace}_eval', f'{namespace}_ground_truth_eval') if evaluation else (namespace,)
+    # The pinned harness caches all involved classes, including stateless ones,
+    # under these exact names. Never clear another invocation's live instances.
+    keys = [
+        re.sub(r'[-./]', '_', f'{model_name}_{entry["id"]}_{class_name}_instance')
+        for model_name in model_names
+        for class_name in entry.get('involved_classes', [])
+    ]
+    try:
+        yield namespace
+    finally:
+        for key in keys:
+            vars(multi_turn_utils).pop(key, None)
+
+
+def run_isolated_inference(
+    handler: Any,
+    entry: Dict[str, Any],
+    *,
+    include_input_log: bool,
+    exclude_state_log: bool,
+) -> Any:
+    """Run BFCL inference with independent simulator state and original checkpoint IDs."""
+    from bfcl_eval.utils import contain_multi_turn_interaction
+
+    entry = deepcopy(entry)
+    if not contain_multi_turn_interaction(entry['id']):
+        return handler.inference(entry, include_input_log=include_input_log, exclude_state_log=exclude_state_log)
+
+    # Only the backend instance name changes. The API model/client, registry and
+    # memory snapshot paths retain their original identity on this shallow copy.
+    isolated_handler = copy(handler)
+    with _isolated_execution(entry, evaluation=False) as namespace:
+        isolated_handler.model_name_underline_replaced = namespace
+        return isolated_handler.inference(
+            entry, include_input_log=include_input_log, exclude_state_log=exclude_state_log
+        )
 
 
 def patch_openai_completions_handler_empty_tool_calls(handler_cls: type[Any]) -> None:
@@ -269,7 +316,7 @@ def run_prereq_inference(
                 if (entry['id'] + '.json') in existing_filenames:
                     logger.info(f'Skipping prereq inference for entry ID {entry["id"]} as result already exists.')
                 else:
-                    handler.inference(deepcopy(entry), include_input_log=False, exclude_state_log=False)
+                    run_isolated_inference(handler, entry, include_input_log=False, exclude_state_log=False)
             except Exception as e:
                 logger.error(f'Error during prereq inference for entry ID {entry.get("id")}: {e}')
                 logger.error(traceback.format_exc())
@@ -452,15 +499,20 @@ def compute_entry_result(
         )
 
     elif is_multi_turn(test_category):
-        return _evaluate_single_multi_turn_entry(
-            handler=handler,
-            test_entry_id=index,
-            model_result_list=model_result,
-            ground_truth_list=ground_truth,
-            prompt_entry=prompt_entry,
-            model_name=model_name,
-            test_category=test_category,
-        )
+        with _isolated_execution(prompt_entry, evaluation=True) as namespace:
+            result = _evaluate_single_multi_turn_entry(
+                handler=handler,
+                test_entry_id=index,
+                model_result_list=model_result,
+                ground_truth_list=ground_truth,
+                prompt_entry=deepcopy(prompt_entry),
+                model_name=namespace,
+                test_category=test_category,
+            )
+        # Keep diagnostics stable; the private simulator identity is not a model.
+        if 'model_name' in result:
+            result['model_name'] = model_name
+        return result
 
     elif is_agentic(test_category):
         return _evaluate_single_agentic_entry(

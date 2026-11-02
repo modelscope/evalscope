@@ -1,7 +1,6 @@
 import json
 import os
 import traceback
-from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -27,6 +26,7 @@ from .utils import (
     load_bfcl_data,
     patch_openai_completions_handler_empty_tool_calls,
     process_test_entries,
+    run_isolated_inference,
     run_prereq_inference,
     synthesize_agent_messages,
 )
@@ -45,6 +45,7 @@ def _normalize_openai_base_url(api_url: Optional[str]) -> str:
     BenchmarkMeta(
         name='bfcl_v4',
         pretty_name='BFCL-v4',
+        evaluation_version='v1.1',
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
         description="""
 ## Overview
@@ -215,8 +216,8 @@ class BFCLV4Adapter(AgentAdapter):
         try:
             self._init_handler()
 
-            result, metadata = self.handler.inference(
-                deepcopy(sample.metadata), include_input_log=False, exclude_state_log=True
+            result, metadata = run_isolated_inference(
+                self.handler, sample.metadata, include_input_log=False, exclude_state_log=True
             )
 
             output = ModelOutput.from_content(
