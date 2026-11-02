@@ -65,7 +65,7 @@ from evalscope.utils.logger import get_logger
 from evalscope.utils.uri_utils import sanitize_endpoint
 
 from ..responses import json_response
-from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest
+from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, recorded_start_time
 
 logger = get_logger()
 
@@ -182,7 +182,14 @@ def _query_refs() -> List[ReportRef]:
 
 
 def _extract_timestamp(ref: ReportRef, root: str) -> str:
-    """Try to extract a timestamp from the run directory name or fall back to mtime."""
+    """Return when the run started: its task manifest, its id, its directory name, or finally its mtime.
+
+    The directory mtime changes when outputs are copied, restored or rewritten, so it is only a last resort.
+    """
+    run_dir = os.path.join(root, ref.run_id)
+    recorded = recorded_start_time(ref.run_id, run_dir)
+    if recorded:
+        return recorded
     # Directory names typically look like "20260423_201338"
     for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
         try:
@@ -190,7 +197,6 @@ def _extract_timestamp(ref: ReportRef, root: str) -> str:
         except ValueError:
             continue
     # Fall back to directory modification time
-    run_dir = os.path.join(root, ref.run_id)
     if os.path.isdir(run_dir):
         return datetime.fromtimestamp(os.path.getmtime(run_dir)).isoformat()
     return ''

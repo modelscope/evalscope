@@ -202,3 +202,21 @@ def read_task_manifest(run_dir: str) -> Optional[dict]:
     except (OSError, ValueError):
         return None
     return manifest if isinstance(manifest, dict) else None
+
+
+def recorded_start_time(run_id: str, run_dir: Optional[str]) -> Optional[str]:
+    """Return when a service-launched run started, or ``None`` when the run does not record it.
+
+    Uses ``started_at`` from the task manifest in *run_dir*, else the epoch milliseconds in an
+    ``eval_<ms>`` or ``perf_<ms>`` run id.
+    """
+    started_at = (read_task_manifest(run_dir) or {}).get('started_at') if run_dir else None
+    if isinstance(started_at, str):
+        try:
+            return datetime.fromisoformat(started_at).isoformat()
+        except ValueError:
+            pass
+    prefix, _, epoch_ms = run_id.rpartition('_')
+    if prefix in ('eval', 'perf') and epoch_ms.isdigit() and 10**12 <= int(epoch_ms) < 10**13:
+        return datetime.fromtimestamp(int(epoch_ms) / 1000).isoformat()
+    return None
