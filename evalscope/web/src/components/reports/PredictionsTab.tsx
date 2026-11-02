@@ -28,7 +28,7 @@ interface Props {
 const EMPTY_SUBSETS: string[] = []
 const EMPTY_PREDICTIONS: PredictionRow[] = []
 
-export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset }: Props) {
+export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset, report }: Props) {
   const { t } = useLocale()
   const [mode, setMode] = useState('All')
   const [threshold, setThreshold] = useState(0.99)
@@ -301,7 +301,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   {t('prediction.messageLocated', { id: highlightMsgId })}
                 </p>
               )}
-              <ChatView prediction={row} threshold={threshold} highlightMsgId={highlightMsgId} />
+              <ChatView prediction={row} threshold={threshold} highlightMsgId={highlightMsgId} metrics={report?.metrics} />
             </div>
           )}
         </>

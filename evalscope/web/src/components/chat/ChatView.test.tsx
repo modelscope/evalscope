@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { PredictionRow, PredictionsResponse } from '@/api/types'
@@ -109,6 +109,17 @@ function renderChatView(prediction: PredictionRow) {
 afterEach(cleanup)
 
 describe('ChatView rendering modes', () => {
+  it('keeps full event payloads available beyond timeline previews', () => {
+    const prediction = structuredClone(tracedPrediction)
+    prediction.AgentTrace!.events[0].payload.raw_stdout = 'x'.repeat(1200) + 'trace tail retained'
+    renderChatView(prediction)
+    const disclosure = screen.getByRole('button', { name: 'Full Trace (JSON)' })
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false')
+    expect(document.body.textContent).not.toContain('trace tail retained')
+    fireEvent.click(disclosure)
+    expect(document.body.textContent).toContain('trace tail retained')
+  })
+
   it('keeps agent traces in the step-by-step chat timeline', () => {
     renderChatView(tracedPrediction)
 

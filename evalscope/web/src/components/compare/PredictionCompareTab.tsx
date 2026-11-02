@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp } from 'lucide-react'
 import { parseReportRef } from '@/domain/report/reportRef'
 import { formatMetric } from '@/domain/metric'
 import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import type { ReportMetric } from '@/domain/report/primaryMetrics'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -24,6 +25,7 @@ import {
 
 export default function PredictionCompareTab({
   reportNames,
+  metricsByReport,
   displayNames,
   displayLabels,
   predCommonDatasets,
@@ -50,6 +52,7 @@ export default function PredictionCompareTab({
   t,
 }: {
   reportNames: string[]
+  metricsByReport?: Record<string, ReportMetric[]>
   displayNames: Record<string, string>
   displayLabels: Record<string, string>
   predCommonDatasets: string[]
@@ -311,7 +314,7 @@ export default function PredictionCompareTab({
                   ) : (
                     <ScoreBadge
                       score={modelRow.NScore}
-                      semantics={RATIO_PERCENT_SEMANTICS}
+                      semantics={metricsByReport?.[name]?.find(m => m.identity.name === modelRow.Score.main_score_name)?.semantics ?? RATIO_PERCENT_SEMANTICS}
                       className="ml-2 shrink-0 !font-mono"
                     />
                   )}
@@ -322,7 +325,7 @@ export default function PredictionCompareTab({
                   className="overflow-y-auto p-3"
                   style={{ maxHeight: 'calc(100vh - 380px)', minHeight: '280px' }}
                 >
-                  <ChatView prediction={modelRow} threshold={threshold} />
+                  <ChatView prediction={modelRow} threshold={threshold} metrics={metricsByReport?.[name]} />
                 </div>
               </div>
             )

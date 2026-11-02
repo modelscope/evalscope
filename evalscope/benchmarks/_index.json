@@ -70,6 +70,7 @@
  "copious": "evalscope.benchmarks.ner.copious_adapter",
  "count_qa": "evalscope.benchmarks.count_qa.count_qa_adapter",
  "cross_ner": "evalscope.benchmarks.ner.cross_ner_adapter",
+ "cybench": "evalscope.benchmarks.cybench.cybench_adapter",
  "data_collection": "evalscope.benchmarks.data_collection.data_collection_adapter",
  "deep_swe": "evalscope.benchmarks.deep_swe.deep_swe_adapter",
  "deepsearchqa": "evalscope.benchmarks.deepsearchqa.deepsearchqa_adapter",

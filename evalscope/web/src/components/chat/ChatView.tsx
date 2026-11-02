@@ -1,13 +1,15 @@
 import { useState, useCallback, useMemo } from 'react'
+import { useLocale } from '@/contexts/LocaleContext'
 import type { PredictionRow } from '@/api/types'
 import { hasSystemPrompt, parseSystemUser } from '@/domain/chat/messageText'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
 import { StructuredMessages, TracedTimeline } from './AgentTraceView'
 import { buildStepGroups } from '@/domain/trace/stepGroups'
-import { EvalResultPanel } from './EvalResultPanel'
+import { CollapsibleJson, EvalResultPanel } from './EvalResultPanel'
 import { JudgeReviewPanel } from './JudgeReviewPanel'
 import { selectJudgeReview, scoreWithoutJudgeAttempts } from '@/domain/chat/judgeReview'
 import DecisionPanel from './DecisionPanel'
+import type { ReportMetric } from '@/domain/report/primaryMetrics'
 
 type ChatPresentation = 'traced' | 'structured' | 'legacy'
 
@@ -23,6 +25,7 @@ interface Props {
   prediction: PredictionRow
   threshold?: number
   highlightMsgId?: string
+  metrics?: ReportMetric[]
 }
 
 /** Plain input/output rendering when no structured Messages or AgentTrace are available. */
@@ -53,7 +56,8 @@ function LegacyMessages({ prediction }: { prediction: PredictionRow }) {
   )
 }
 
-export default function ChatView({ prediction, threshold = 0.99, highlightMsgId }: Props) {
+export default function ChatView({ prediction, threshold = 0.99, highlightMsgId, metrics }: Props) {
+  const { t } = useLocale()
   const showPred =
     prediction.Pred &&
     prediction.Pred !== '*Same as Generated*' &&
@@ -98,6 +102,8 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
         <LegacyMessages prediction={prediction} />
       )}
 
+      {agentTrace && <CollapsibleJson label={t('trace.rawTrace')} value={agentTrace} maxHeight={320} />}
+
       <div className="border-t border-[var(--border)]" />
 
       <DecisionPanel metadata={prediction.Score.metadata} />
@@ -111,6 +117,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
         metadata={prediction.Metadata}
         threshold={threshold}
         showPred={!!showPred}
+        metrics={metrics}
       />
 
       {judgeReview && <JudgeReviewPanel review={judgeReview} />}

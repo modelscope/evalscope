@@ -91,6 +91,11 @@ export default function ComparePage() {
     { enabled: reportNames.length >= 2, fallbackMessage: t('common.loadError') },
   )
   const reports = scores.data ?? EMPTY_REPORT_LIST
+  const predictionMetricsByReport = useMemo(() => Object.fromEntries(
+    reports.filter(r => r.dataset_name === selectedDs).map(r => [
+      (r as ReportData & { _reportRef?: string })._reportRef ?? r.model_name, r.metrics,
+    ]),
+  ), [reports, selectedDs])
   // Resolved either way: a failure is still an answer, and the view stops waiting.
   const dataLoaded = !scores.loading && (scores.data !== undefined || Boolean(scores.error))
   const scoreLoadError = scores.error
@@ -474,6 +479,7 @@ export default function ComparePage() {
               ) : (
                 <PredictionCompareTab
                   reportNames={predictionReportNames}
+                  metricsByReport={predictionMetricsByReport}
                   displayNames={displayNames}
                   displayLabels={displayLabels}
                   predCommonDatasets={predCommonDatasets}
