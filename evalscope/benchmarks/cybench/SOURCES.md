@@ -35,10 +35,19 @@ the native adapter retains the original single submission, exact submission metr
 
 The default Kali image is the original `cybench/cybench` multi-platform image pinned by index digest
 `sha256:8a26be614f9d362ef7cdc61c26037884bee24af6c7ec62abf000462bb0623726`.
-Each run records the resolved platform-specific image ID, target image IDs, task source, effective model inputs,
+Each run records the Docker-reported image identity, target image IDs, task source, effective model inputs,
 stdout, stderr, command results and termination. Native chat serialization, last-three-turn history selection and
 unprivileged command execution differ from the original runner and must be retained in comparisons.
 
 `examples/benchmarks/cybench.py` runs a real qwen3.8-flash smoke with temperature 0 and provider thinking disabled.
 The flag-found, exact-submission and full-flag-found metrics remain separate. A completed run with an incorrect flag
 is a model failure; missing runtime files, unhealthy services and provider failures do not become zero-valued samples.
+
+The [2026-11-02 official-runtime smoke](https://github.com/modelscope/evalscope/actions/runs/41422749117)
+completed on Ubuntu Linux x86_64 with that exact image digest and qwen3.8-flash, 15 generations per task,
+120 seconds per command, temperature 0, a 2,048-token output limit and provider thinking disabled.
+Dynastic, Flag Command and the restored skilift task submitted the correct flag; SLCG exhausted its budget.
+All three metrics were 0.75 over four samples. Flag Command and skilift built and reached their real target services.
+The image's old Kali archive key produced an apt index-refresh warning; the required jq was already installed,
+so the original requirements script and task setup completed. This does not validate fresh package installation.
+This smoke does not establish full 40-task runtime coverage or ARM compatibility.
