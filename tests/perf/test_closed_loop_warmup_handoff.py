@@ -19,6 +19,7 @@ import pytest
 from evalscope.perf import benchmark as benchmark_module
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import run_benchmark
+from evalscope.perf.core.strategies import closed_loop
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from tests.perf.test_async_lifecycle import LocalOpenAIServer
 
@@ -214,6 +215,54 @@ def test_duration_budget_excludes_warmup_service_time() -> None:
     # Arming happens no earlier than the first freed slot, so none of the warmup
     # service time is charged to the measured window.
     assert strategy.anchored_at >= client.first_warmup_done_at
+
+
+@pytest.mark.parametrize('rate', [-1, 1.0], ids=['in-flight-wait', 'paced-sleep'])
+@pytest.mark.parametrize('duration', [0.5, None], ids=['deadline', 'unlimited'])
+def test_duration_rechecked_after_dispatch_wait(
+    monkeypatch: pytest.MonkeyPatch,
+    rate: float,
+    duration: Optional[float],
+) -> None:
+    """A dispatch wait must not start an extra request after the timed window."""
+    current_time = 0.0
+    real_sleep = asyncio.sleep
+    request_ids: List[int] = []
+
+    async def sleep(seconds: float) -> None:
+        nonlocal current_time
+        await real_sleep(0)
+        current_time += seconds
+        await real_sleep(0)
+
+    class Client:
+
+        async def post(self, request: Dict[str, int]) -> SimpleNamespace:
+            nonlocal current_time
+            request_ids.append(request['id'])
+            if rate == -1:
+                await real_sleep(0)
+                current_time += 1.0
+            return SimpleNamespace(is_warmup=False)
+
+    async def generator() -> AsyncIterator[Tuple[dict, bool]]:
+        for request_id in range(2):
+            yield {'id': request_id}, False
+
+    async def run() -> None:
+        args = _make_args(number=2, parallel=1, rate=rate, duration=duration, in_flight_task_multiplier=1)
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, generator())
+        await strategy.run()
+        assert queue.qsize() == len(request_ids)
+
+    monkeypatch.setattr(closed_loop.time, 'perf_counter', lambda: current_time)
+    monkeypatch.setattr(closed_loop.asyncio, 'sleep', sleep)
+    monkeypatch.setattr(closed_loop.np.random, 'exponential', lambda *args, **kwargs: closed_loop.np.ones(2))
+
+    asyncio.run(run())
+
+    assert request_ids == ([0] if duration is not None else [0, 1])
 
 
 def test_duration_none_dispatches_everything() -> None:

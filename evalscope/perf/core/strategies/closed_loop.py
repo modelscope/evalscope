@@ -149,6 +149,13 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     in_flight = pending
                     await asyncio.gather(*done)
 
+                if deadline is not None and time.perf_counter() >= deadline:
+                    logger.info(
+                        f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
+                        'stopping further dispatches.'
+                    )
+                    break
+
                 task = asyncio.create_task(
                     _send_request(
                         semaphore,
