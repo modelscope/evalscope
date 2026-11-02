@@ -563,6 +563,7 @@ class Arguments(BaseArgument):
         # Set the URL based on the dataset type.
         self._resolve_local_url()
         self._resolve_openai_compatible_url()
+        self._resolve_speed_benchmark_url()
 
         # Resolve apply_chat_template before tokenize_prompt redirects chat/completions to completions.
         if self.apply_chat_template is None:
@@ -662,6 +663,7 @@ class Arguments(BaseArgument):
         """Resolve URL based on api, dataset, port, and tokenize_prompt settings."""
         self._resolve_local_url()
         self._resolve_openai_compatible_url()
+        self._resolve_speed_benchmark_url()
         self._resolve_tokenize_prompt_url()
 
     def _resolve_local_url(self) -> None:
@@ -699,11 +701,20 @@ class Arguments(BaseArgument):
             raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
         if not self.tokenizer_path:
             raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
+        self._redirect_chat_to_completions('--tokenize-prompt is set')
+
+    def _resolve_speed_benchmark_url(self) -> None:
+        # These datasets send raw-text prompts, which the chat endpoint rejects. Resolved here because
+        # the HTTP client reads the URL before the dataset plugin is built.
+        if self.dataset.startswith('speed_benchmark'):
+            self._redirect_chat_to_completions(f'--dataset {self.dataset} sends raw-text prompts')
+
+    def _redirect_chat_to_completions(self, reason: str) -> None:
         parsed = urlsplit(self.url)
         stripped_url = parsed.path.rstrip('/')
         if stripped_url.endswith('chat/completions'):
             self.url = parsed._replace(path=stripped_url[: -len('chat/completions')] + 'completions').geturl()
-            logger.warning('--tokenize-prompt is set: URL auto-adjusted to completions endpoint')
+            logger.warning(f'{reason}: URL auto-adjusted to completions endpoint')
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
