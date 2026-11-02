@@ -3,6 +3,7 @@ from .lazy_model import LazyModel
 from .model import Model, ModelAPI, get_model, get_model_with_task_config
 from .model_output import (
     ChatCompletionChoice,
+    GenerationFailure,
     Logprob,
     Logprobs,
     ModelOutput,

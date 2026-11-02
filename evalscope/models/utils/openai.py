@@ -7,7 +7,16 @@ from collections.abc import AsyncIterable, Iterable
 from copy import copy
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
-from openai import APIStatusError, OpenAIError
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AuthenticationError,
+    BadRequestError,
+    OpenAIError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionAssistantMessageParam,
@@ -58,12 +67,26 @@ from evalscope.api.model import (
     StopReason,
     as_stop_reason,
 )
+from evalscope.api.model.model_output import GenerationFailure
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
+from evalscope.constants import GenerationFailureCategory
 from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.media_utils import guess_video_format, video_as_data_uri
 from evalscope.utils.uri_utils import data_uri_to_base64, file_as_data_uri, is_data_uri, is_http_url
 
 logger = get_logger()
+
+# Suggested fix per failure category, shown to the user next to the category code.
+_CATEGORY_HINTS = {
+    GenerationFailureCategory.CONTEXT_OVERFLOW: 'lower --generation-config max_tokens or use a model with a larger context',  # noqa: E501
+    GenerationFailureCategory.AUTH_FAILED: 'check the API key and its permissions',
+    GenerationFailureCategory.RATE_LIMITED: 'lower --eval-batch-size or retry later',
+    GenerationFailureCategory.CONNECTION_FAILED: 'check the API base URL and network reachability',
+    GenerationFailureCategory.TIMEOUT: 'raise generation_config timeout or lower --eval-batch-size',
+    GenerationFailureCategory.CONTENT_FILTERED: 'rephrase the prompt or adjust the content filter policy',
+    GenerationFailureCategory.EMPTY_RESPONSE: 'retry the sample; persistent empty completions may indicate a deployment issue',  # noqa: E501
+    GenerationFailureCategory.UNKNOWN: '',
+}
 
 ReasoningFormat = Literal['think_tag', 'reasoning_field', 'none']
 
@@ -741,6 +764,49 @@ def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) ->
     ]
 
 
+def classify_openai_error(e: Exception) -> GenerationFailure:
+    """Classify a failed OpenAI-compatible generation call into a :class:`GenerationFailure`.
+
+    Categories are derived from the exception type (which maps to the HTTP status) and the
+    machine-readable error code — never from matching error message text. Anything that
+    cannot be derived stays ``UNKNOWN``.
+    """
+    if isinstance(e, _NonRetryableEmptyCompletionError):
+        return GenerationFailure(
+            category=GenerationFailureCategory.EMPTY_RESPONSE,
+            message=str(e),
+            hint=_CATEGORY_HINTS[GenerationFailureCategory.EMPTY_RESPONSE],
+        )  # noqa: E501
+    if isinstance(e, APITimeoutError):
+        return _failure(GenerationFailureCategory.TIMEOUT, e)
+    if isinstance(e, APIConnectionError):
+        return _failure(GenerationFailureCategory.CONNECTION_FAILED, e)
+    if isinstance(e, AuthenticationError):
+        return _failure(GenerationFailureCategory.AUTH_FAILED, e)
+    if isinstance(e, PermissionDeniedError):
+        return _failure(GenerationFailureCategory.AUTH_FAILED, e)
+    if isinstance(e, RateLimitError):
+        return _failure(GenerationFailureCategory.RATE_LIMITED, e)
+    if isinstance(e, BadRequestError):
+        code = getattr(e, 'code', None)
+        if code == 'context_length_exceeded':
+            return _failure(GenerationFailureCategory.CONTEXT_OVERFLOW, e)
+        if code in ('content_policy_violation', 'content_filter'):
+            return _failure(GenerationFailureCategory.CONTENT_FILTERED, e)
+    return GenerationFailure(category=GenerationFailureCategory.UNKNOWN, message=_error_message(e))
+
+
+def _error_message(e: Exception) -> str:
+    """Provider message, preferring the machine-readable body over the exception text."""
+    if isinstance(e, APIStatusError) and isinstance(e.body, dict) and 'message' in e.body:
+        return str(e.body.get('message'))
+    return str(e)
+
+
+def _failure(category: GenerationFailureCategory, e: Exception) -> GenerationFailure:
+    return GenerationFailure(category=category, message=_error_message(e), hint=_CATEGORY_HINTS[category])
+
+
 def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[ModelOutput, Exception]:
     # extract message
     if isinstance(e.body, dict) and 'message' in e.body.keys():
@@ -776,7 +842,8 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
             stop_reason = 'model_length'
 
     if stop_reason:
-        return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)
+        failure = classify_openai_error(e)
+        return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason, error_info=failure)
     else:
         raise e
 

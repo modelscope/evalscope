@@ -168,6 +168,34 @@ class ScoreStatus(str, Enum):
         return self in (ScoreStatus.SUCCESS, ScoreStatus.FALLBACK, ScoreStatus.DEGRADED)
 
 
+class GenerationFailureCategory(str, Enum):
+    """Why a generation call failed.
+
+    Sibling of :class:`ScoreStatus`: ``ScoreStatus`` answers "is this score usable" on the
+    judge path; this enum answers "why did this call fail" on the generation path. Values
+    are derived from HTTP status codes and machine-readable error codes only — never from
+    matching error message text; anything that cannot be derived stays ``UNKNOWN``.
+    """
+
+    CONTEXT_OVERFLOW = 'context_overflow'
+    AUTH_FAILED = 'auth_failed'
+    RATE_LIMITED = 'rate_limited'
+    CONNECTION_FAILED = 'connection_failed'
+    TIMEOUT = 'timeout'
+    CONTENT_FILTERED = 'content_filtered'
+    EMPTY_RESPONSE = 'empty_response'
+    UNKNOWN = 'unknown'
+
+    @property
+    def is_retryable(self) -> bool:
+        """Recorded attribute of the failure, not a retry decision."""
+        return self in (
+            GenerationFailureCategory.RATE_LIMITED,
+            GenerationFailureCategory.TIMEOUT,
+            GenerationFailureCategory.CONNECTION_FAILED,
+        )
+
+
 class ModelTask:
     TEXT_GENERATION = 'text_generation'
     IMAGE_GENERATION = 'image_generation'

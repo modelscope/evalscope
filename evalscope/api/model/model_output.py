@@ -6,6 +6,30 @@ from pydantic import BaseModel, Field, JsonValue, computed_field, model_validato
 from evalscope.api.messages import ChatMessageAssistant, Content
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolCall, ToolFunction
+from evalscope.constants import GenerationFailureCategory
+
+
+class GenerationFailure(BaseModel):
+    """Structured classification of a failed generation call.
+
+    Categories come from HTTP status codes and machine-readable error codes, never from
+    matching error message text; ``UNKNOWN`` is the explicit fallback. ``is_retryable`` is
+    a recorded attribute of the failure category, not a retry decision.
+    """
+
+    category: GenerationFailureCategory = GenerationFailureCategory.UNKNOWN
+    """Failure category derived from the API response."""
+
+    message: str = Field(default='')
+    """Original error message from the provider."""
+
+    hint: str = Field(default='')
+    """Suggested fix for the user, per category."""
+
+    @property
+    def is_retryable(self) -> bool:
+        """Recorded attribute of the failure category, not a retry decision."""
+        return self.category.is_retryable
 
 
 class ModelUsage(BaseModel):
@@ -152,6 +176,11 @@ class ModelOutput(BaseModel):
     error: Optional[str] = Field(default=None)
     """Error message in the case of content moderation refusals."""
 
+    error_info: Optional[GenerationFailure] = Field(default=None)
+    """Structured classification of a failed generation call. Sibling of ``error`` (which
+    stays a plain string for compatibility); ``None`` on successful outputs and on older
+    result files."""
+
     @model_validator(mode='before')
     @classmethod
     def _absorb_legacy_perf_metrics(cls, data: Any) -> Any:
@@ -241,6 +270,7 @@ class ModelOutput(BaseModel):
         content: Union[str, List[Content]],
         stop_reason: StopReason = 'stop',
         error: Optional[str] = None,
+        error_info: Optional[GenerationFailure] = None,
     ) -> 'ModelOutput':
         """Create ModelOutput from simple text content.
 
@@ -249,6 +279,7 @@ class ModelOutput(BaseModel):
            content: Text content from generation.
            stop_reason: Stop reason for generation.
            error: Error message.
+           error_info: Structured classification of the failure, when known.
         """
         return ModelOutput(
             model=model,
@@ -259,6 +290,7 @@ class ModelOutput(BaseModel):
                 )
             ],
             error=error,
+            error_info=error_info,
         )
 
     @staticmethod
