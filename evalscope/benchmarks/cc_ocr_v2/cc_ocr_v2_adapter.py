@@ -71,11 +71,12 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 ## Evaluation Notes
 
 - Every sample yields one `score` in `[0, 1]`; each track uses its official metric:
-  recognition = token-level F1, parsing = edit similarity / TEDS, grounding = IoU,
+  recognition = `token-level F1`, parsing = edit similarity / TEDS, grounding = IoU,
   extraction = field-level F1, qa = substring match with ANLS fallback
 - Subset scores are sample means; the per-track category also reports a macro average over its sub-tasks
-- The grounding prompts ask for boxes on a 0-1000 grid; predictions in absolute pixels are rescaled
-  as if normalized and therefore score close to zero, matching the official leaderboard behavior
+- The grounding prompts require boxes on a 0-1000 coordinate grid. If a model instead returns absolute
+  pixel coordinates, the scorer still interprets them as 0-1000 coordinates and converts them to pixels
+  using the image width and height. This can misplace the boxes and substantially reduce IoU scores
 - Full-page parsing targets are long, so allow a generous `max_tokens` (4096 or more)
 - Requires: `apted`, `distance`, `lxml`, `python-Levenshtein`, `scipy`, `zss`
   (`pip install 'evalscope[cc_ocr_v2]'`)
