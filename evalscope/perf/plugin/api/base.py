@@ -38,7 +38,7 @@ class ApiPluginBase:
 
         Per-request headers from trace data are merged with CLI headers using
         fill semantics: CLI-set headers (e.g. Authorization from --api-key)
-        take precedence; trace headers only fill in keys not already present.
+        take precedence case-insensitively; trace headers only fill in keys not already present.
         Hop-by-hop headers from trace data are stripped.
 
         Returns:
@@ -47,7 +47,8 @@ class ApiPluginBase:
         extra_headers = body.pop(BODY_META_HEADERS, None)
         request_id = body.pop(BODY_META_REQUEST_ID, None)
         if extra_headers:
-            extra_headers = {k: v for k, v in extra_headers.items() if k.lower() not in _HOP_BY_HOP_HEADERS}
+            excluded_headers = _HOP_BY_HOP_HEADERS | {key.lower() for key in headers}
+            extra_headers = {k: v for k, v in extra_headers.items() if k.lower() not in excluded_headers}
             headers = {**extra_headers, **headers}
         for k in [k for k in body if k.startswith(BODY_META_PREFIX)]:
             body.pop(k)
