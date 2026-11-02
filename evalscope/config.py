@@ -11,7 +11,7 @@ from pydantic import ConfigDict, Field, SecretStr, field_validator, model_valida
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.api.dataset.dataset import validate_dataset_limit
+from evalscope.api.dataset.dataset import validate_dataset_limit, validate_dataset_repeats
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -386,6 +386,11 @@ class TaskConfig(BaseArgument):
     """EvalScope version used for the evaluation."""
 
     # --- Field validators (single-field logic) ---
+
+    @field_validator('repeats', mode='before')
+    @classmethod
+    def _validate_repeats(cls, v: Any) -> int:
+        return validate_dataset_repeats(v)
 
     @field_validator('limit', mode='before')
     @classmethod

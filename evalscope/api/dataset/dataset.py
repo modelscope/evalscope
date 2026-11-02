@@ -13,6 +13,7 @@ from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
 
 _LIMIT_ERROR = 'Limit must be a non-negative integer or a finite float between 0 and 1.'
+_REPEATS_ERROR = 'Repeats must be a positive integer.'
 
 
 def validate_dataset_limit(limit: Optional[Union[int, float]]) -> Optional[Union[int, float]]:
@@ -28,6 +29,13 @@ def validate_dataset_limit(limit: Optional[Union[int, float]]) -> Optional[Union
             raise ValueError(_LIMIT_ERROR)
         return limit
     raise ValueError(_LIMIT_ERROR)
+
+
+def validate_dataset_repeats(repeats: int) -> int:
+    """Validate a dataset repeat count without changing its value."""
+    if isinstance(repeats, bool) or not isinstance(repeats, int) or repeats < 1:
+        raise ValueError(_REPEATS_ERROR)
+    return repeats
 
 
 def resolve_dataset_limit(limit: Optional[Union[int, float]], dataset_size: int) -> Optional[int]:

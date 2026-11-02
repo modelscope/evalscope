@@ -254,6 +254,12 @@ def test_invalid_limits_are_rejected(limit: float | int) -> None:
         TaskConfig.from_dict({'model': 'x', 'limit': limit})
 
 
+@pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])
+def test_invalid_repeats_are_rejected(repeats: object) -> None:
+    with pytest.raises(ValueError, match='Repeats must be a positive integer'):
+        TaskConfig.from_dict({'model': 'x', 'repeats': repeats})
+
+
 @pytest.mark.parametrize(
     'limit, expected',
     [

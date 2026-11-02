@@ -1,5 +1,7 @@
 from typing import Any, ClassVar, Dict
 
+import pytest
+
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import (
     MemoryDataset,
@@ -35,6 +37,21 @@ def test_build_dataset_from_records_applies_limit_repeats_and_reindex() -> None:
     assert [sample.group_id for sample in dataset] == [0, 0, 1, 1]
     assert dataset.name == 'subset'
     assert dataset.location == 'source'
+
+
+@pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])
+def test_build_dataset_from_records_rejects_invalid_repeats(repeats: object) -> None:
+    with pytest.raises(ValueError, match='Repeats must be a positive integer'):
+        build_dataset_from_records(
+            records=[{'value': 1}],
+            sample_fields=record_to_sample,
+            name='subset',
+            location='source',
+            limit=None,
+            repeats=repeats,
+            shuffle=False,
+            seed=None,
+        )
 
 
 def test_build_dataset_from_records_filter_runs_before_reindex() -> None:

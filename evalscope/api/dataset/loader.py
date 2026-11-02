@@ -28,7 +28,15 @@ from evalscope.utils.io_utils import (
     undecode_media,
 )
 
-from .dataset import Dataset, FieldSpec, MemoryDataset, Sample, resolve_dataset_limit, validate_dataset_limit
+from .dataset import (
+    Dataset,
+    FieldSpec,
+    MemoryDataset,
+    Sample,
+    resolve_dataset_limit,
+    validate_dataset_limit,
+    validate_dataset_repeats,
+)
 from .hub import DatasetHub, _resolve_data_source
 from .utils import data_to_samples, shuffle_choices_if_requested
 
@@ -200,7 +208,7 @@ class DataLoader(ABC):
         self.shuffle_choices = shuffle_choices
         self.seed = seed
         self.auto_id = auto_id
-        self.repeats = repeats
+        self.repeats = validate_dataset_repeats(repeats)
         self.trust_remote = trust_remote
         self.force_redownload = force_redownload
         self.dataset_dir = dataset_dir
@@ -344,7 +352,7 @@ class RemoteDataLoader(DataLoader):
 
         # assign ids and group_ids if requested
         if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats if self.repeats > 0 else 1)
+            memory_dataset.reindex(group_size=self.repeats)
 
         shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
@@ -439,7 +447,7 @@ class LocalDataLoader(DataLoader):
 
         # assign ids and group_ids if requested
         if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats if self.repeats > 0 else 1)
+            memory_dataset.reindex(group_size=self.repeats)
 
         shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
@@ -477,7 +485,7 @@ class DictDataLoader(DataLoader):
 
         # assign ids and group_ids if requested
         if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats if self.repeats > 0 else 1)
+            memory_dataset.reindex(group_size=self.repeats)
 
         shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
