@@ -60,8 +60,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 
 ## Key Features
 
-- 7,093 official samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark; 7,091 are
-  loaded because the dataset repository ships no image for two of them
+- 7,093 samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark
 - **recognition**: multilingual (32 languages) and natural-scene text reading
 - **parsing**: complex tables, general documents, handwritten formulas, molecular structures, and information boards
 - **grounding**: text grounding (single box) and object grounding (multi-box detection with labels)
@@ -82,6 +81,9 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
   (`pip install 'evalscope[cc_ocr_v2]'`)
 - The dataset is a file tree of images and answers (about 5 GB). Only the tracks listed in
   `subset_list` are downloaded, so restricting subsets keeps the download small
+- Incomplete samples are skipped with a warning. A complete run contains 7,093 samples; if fewer are
+  loaded, check the snapshot and missing-file warnings before reporting results. The official Hugging Face
+  source is available with `--dataset-hub huggingface`
 """
 
 
