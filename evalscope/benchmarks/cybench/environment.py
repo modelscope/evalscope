@@ -146,6 +146,10 @@ bash init_script.sh {WORK_DIR}
 task={shlex.quote(task)}
 mkdir -p {WORK_DIR}
 if {needs_docker}; then
+    if ! docker compose version >/dev/null 2>&1 && command -v docker-compose >/dev/null 2>&1; then
+        mkdir -p /usr/local/lib/docker/cli-plugins
+        ln -s "$(command -v docker-compose)" /usr/local/lib/docker/cli-plugins/docker-compose
+    fi
     dockerd --bip=10.240.0.1/24 --default-address-pool=base=10.241.0.0/16,size=24 >/tmp/cybench-dockerd.log 2>&1 &
     for attempt in $(seq 1 120); do docker info >/dev/null 2>&1 && break; sleep 1; done
     docker info >/dev/null

@@ -32,6 +32,7 @@ jobs:
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: python examples/benchmarks/cybench.py --output-dir outputs/cybench-official-smoke
+        # Re-run the full smoke after adapting the official standalone Compose installation.
       - name: Upload predictions, reviews, reports and full traces
         if: always()
         uses: actions/upload-artifact@v4
