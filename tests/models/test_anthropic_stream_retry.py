@@ -122,3 +122,63 @@ def test_generate_async_retries_when_stream_consumption_fails(monkeypatch: pytes
 
     assert attempts == 2
     assert result.content == 'complete response'
+
+
+def test_generate_retries_a_stream_that_ends_without_a_stop_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _prepare_api(monkeypatch)
+    attempts = 0
+
+    def create(**request):
+        nonlocal attempts
+        attempts += 1
+        # A gateway that closes the response cleanly mid-answer raises nothing in the SDK.
+        return iter(_events('discarded partial response')[:3] if attempts == 1 else _events('complete response'))
+
+    api.client = SimpleNamespace(messages=SimpleNamespace(create=create))
+
+    result = api.generate([], [], None, GenerateConfig(retries=2, retry_interval=0, stream=True))
+
+    assert attempts == 2
+    assert result.content == 'complete response'
+
+
+def test_generate_async_retries_a_stream_that_ends_without_a_stop_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _prepare_api(monkeypatch)
+    attempts = 0
+
+    async def create(**request):
+        nonlocal attempts
+        attempts += 1
+        events = _events('discarded partial response')[:3] if attempts == 1 else _events('complete response')
+
+        async def stream():
+            for event in events:
+                yield event
+
+        return stream()
+
+    async_client = SimpleNamespace(messages=SimpleNamespace(create=create))
+    monkeypatch.setattr(AnthropicCompatibleAPI, 'async_client', property(lambda self: async_client))
+
+    result: Optional[SimpleNamespace] = asyncio.run(
+        api.generate_async([], [], None, GenerateConfig(retries=2, retry_interval=0, stream=True))
+    )
+
+    assert attempts == 2
+    assert result.content == 'complete response'
+
+
+def test_generate_fails_when_every_stream_ends_without_a_stop_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _prepare_api(monkeypatch)
+    api.client = SimpleNamespace(messages=SimpleNamespace(create=lambda **request: iter(_events('partial')[:3])))
+
+    with pytest.raises(RuntimeError, match='without a stop reason'):
+        api.generate([], [], None, GenerateConfig(retries=1, retry_interval=0, stream=True))
+
+
+def test_empty_stream_is_not_a_completed_reply(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _prepare_api(monkeypatch)
+    api.client = SimpleNamespace(messages=SimpleNamespace(create=lambda **request: iter([])))
+
+    with pytest.raises(RuntimeError, match='without a stop reason'):
+        api.generate([], [], None, GenerateConfig(retries=1, retry_interval=0, stream=True))

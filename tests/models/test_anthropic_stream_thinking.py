@@ -7,6 +7,8 @@ from anthropic.types import (
     ContentBlockDeltaEvent,
     ContentBlockStartEvent,
     Message,
+    MessageDeltaEvent,
+    MessageDeltaUsage,
     MessageStartEvent,
     RedactedThinkingBlock,
     TextBlock,
@@ -14,6 +16,7 @@ from anthropic.types import (
     ToolUseBlock,
     Usage,
 )
+from anthropic.types.raw_message_delta_event import Delta
 
 from evalscope.api.messages import ChatMessageAssistant, ContentReasoning
 from evalscope.models.utils.anthropic import (
@@ -34,7 +37,16 @@ def _start() -> MessageStartEvent:
     )
 
 
+def _stop() -> MessageDeltaEvent:
+    return MessageDeltaEvent(
+        type='message_delta',
+        delta=Delta(stop_reason='end_turn', stop_sequence=None),
+        usage=MessageDeltaUsage(output_tokens=5),
+    )
+
+
 def _collect(events: List[Any], asynchronous: bool) -> Any:
+    events = [*events, _stop()]
     if not asynchronous:
         return collect_stream_response(iter(events), request_start=10.0)
 
