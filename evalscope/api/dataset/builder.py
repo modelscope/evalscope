@@ -1,7 +1,7 @@
 import copy
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Union
 
-from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample
+from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample, validate_dataset_repeats
 from .hub import DatasetHub
 from .loader import LocalDataLoader, _shuffle_in_place
 from .utils import data_to_samples, record_to_sample_fn
@@ -32,6 +32,7 @@ def build_dataset_from_records(
         record to multiple samples, the per-sample duplication order differs from record
         level duplication, which callers relying on k-metric grouping should be aware of.
     """
+    repeats = validate_dataset_repeats(repeats)
     record_list = list(records)
     if shuffle:
         _shuffle_in_place(record_list, seed)
@@ -54,7 +55,7 @@ def build_dataset_from_records(
     if filter_func is not None:
         dataset = dataset.filter(filter_func)
     if auto_id:
-        dataset.reindex(group_size=repeats if repeats > 0 else 1)
+        dataset.reindex(group_size=repeats)
     return dataset
 
 

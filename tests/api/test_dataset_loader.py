@@ -144,6 +144,7 @@ def _make_direct_loader(
     tmp_path: Path,
     monkeypatch: Any,
     limit: Optional[float | int],
+    repeats: Any = 1,
 ) -> RemoteDataLoader | LocalDataLoader | DictDataLoader:
     records = [{'text': f'row-{index}'} for index in range(4)]
     if loader_kind == 'remote':
@@ -155,6 +156,7 @@ def _make_direct_loader(
             data_source=HubType.LOCAL,
             dataset_dir=str(tmp_path),
             limit=limit,
+            repeats=repeats,
         )
     if loader_kind == 'local':
         local_path = tmp_path / 'records.jsonl'
@@ -164,8 +166,9 @@ def _make_direct_loader(
             split='train',
             sample_fields=_sample_from_record,
             limit=limit,
+            repeats=repeats,
         )
-    return DictDataLoader(dict_list=records, sample_fields=_sample_from_record, limit=limit)
+    return DictDataLoader(dict_list=records, sample_fields=_sample_from_record, limit=limit, repeats=repeats)
 
 
 @pytest.mark.parametrize('loader_kind', ['remote', 'local', 'dict'])
@@ -279,6 +282,18 @@ def test_repeats_group_the_samples_of_a_multi_sample_record_by_question() -> Non
     for sample in dataset:
         groups.setdefault(sample.group_id, []).append(sample.metadata['question'])
     assert groups == {0: ['a', 'a'], 1: ['b', 'b']}
+
+
+@pytest.mark.parametrize('loader_kind', ['remote', 'local', 'dict'])
+@pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])
+def test_direct_loaders_reject_invalid_repeats(
+    loader_kind: str,
+    repeats: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match='Repeats must be a positive integer'):
+        _make_direct_loader(loader_kind, tmp_path, monkeypatch, limit=None, repeats=repeats)
 
 
 @pytest.mark.parametrize('seed', [0, 42])
