@@ -584,7 +584,7 @@ def message_stop_reason(message: Message) -> StopReason:
         case 'tool_use':
             return 'tool_calls'
         case 'max_tokens':
-            return 'model_length'
+            return 'max_tokens'
         case 'refusal':
             return 'content_filter'
         case _:
