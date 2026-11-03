@@ -1,0 +1,189 @@
+name: Cybench all-40 Flash runtime validation
+
+on:
+  push:
+    branches: [validate/cybench-runtime-fixes-20261103]
+    paths: [.github/workflows/cybench-native-validation.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        chunk: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reserve disk space for the official Kali image
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install the native adapter and shared Docker backend
+        run: pip install -e '.[sandbox]'
+      - name: Evaluate ten tasks with up to fifteen real Flash generations each
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          CYBENCH_CHUNK: ${{ matrix.chunk }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          from pathlib import Path
+
+          from docker import DockerClient
+          from docker.errors import NotFound
+          from evalscope import TaskConfig, run_task
+          from evalscope.api.agent import NativeAgentConfig
+          from evalscope.api.dataset import download_dataset_file
+          from evalscope.benchmarks.cybench.cybench_adapter import CybenchAdapter
+          from evalscope.benchmarks.cybench.dataset import CybenchManifest
+          from evalscope.benchmarks.cybench.environment import CybenchEnvironment
+
+          key = os.environ['DASHSCOPE_API_KEY']
+          assert key, 'DASHSCOPE_API_KEY is unavailable'
+          chunk = int(os.environ['CYBENCH_CHUNK'])
+          root = Path(f'outputs/chunk-{chunk}').resolve()
+          root.mkdir(parents=True, exist_ok=True)
+          revision = '587d89a541d09f5ce1081fdbf19298c706627d7a'
+          path = download_dataset_file('evalscope/cybench', 'tasks.json', revision=revision)
+          manifest = CybenchManifest.model_validate_json(Path(path).read_text())
+          assert len(manifest.tasks) == 40
+          selected = [(i, task) for i, task in enumerate(manifest.tasks) if i % 4 == chunk]
+          rows = {task.path: {'index': i, 'path': task.path, 'category': task.category,
+                             'status': 'pending', 'runtime_ready': False, 'inference_completed': False}
+                  for i, task in selected}
+          environments = {}
+
+          def save():
+              payload = {'source_head': '8b6a94298d3f5cbda623a4b6a6d16e1d910abc77',
+                         'validation_head': os.environ['GITHUB_SHA'], 'dataset_revision': revision,
+                         'chunk': chunk, 'model': 'qwen3.8-flash', 'max_steps': 15,
+                         'setup_timeout': 1800, 'command_timeout': 120,
+                         'purpose': 'full unguided evaluation with native agent; 15 generations per task',
+                         'tasks': sorted(rows.values(), key=lambda row: row['index'])}
+              (root / 'runtime_validation.json').write_text(json.dumps(payload, indent=2) + '\n')
+
+          setup = CybenchEnvironment.setup
+          inference = CybenchAdapter._on_inference
+
+          async def tracked_setup(environment):
+              row = rows[environment.task_path]
+              environments[environment.task_path] = environment
+              listing = await setup(environment)
+              row.update(runtime_ready=True, listing=listing, runtime=environment.runtime)
+              save()
+              return listing
+
+          def tracked_inference(adapter, model, sample):
+              task = sample.metadata['cybench']
+              row = rows[task['path']]
+              started = time.monotonic()
+              row['status'] = 'running'
+              save()
+              try:
+                  result = inference(adapter, model, sample)
+                  run = sample.metadata['cybench_run']
+                  first = next(e for e in result.trace.events if e.type == 'model_generate')
+                  assert task['answer'] not in json.dumps(first.payload['model_input']), 'Reference leaked in prompt'
+                  row.update(status='inference_complete', inference_completed=True,
+                             termination=run['termination'], commands=len(run['executions']),
+                             trace_events=len(result.trace.events))
+                  return result
+              except Exception as exc:
+                  row.update(status='inference_failed' if row['runtime_ready'] else 'setup_failed',
+                             error=f'{type(exc).__name__}: {exc}')
+                  environment = environments.get(task['path'])
+                  if environment is not None:
+                      row['runtime'] = environment.runtime
+                  raise
+              finally:
+                  row['duration_seconds'] = round(time.monotonic() - started, 2)
+                  environment = environments.get(task['path'])
+                  container_id = environment.runtime.get('container_id') if environment else None
+                  if container_id:
+                      client = DockerClient.from_env()
+                      try:
+                          client.containers.get(container_id)
+                          row['cleanup'] = 'container_still_exists'
+                      except NotFound:
+                          row['cleanup'] = 'removed'
+                      except Exception as exc:
+                          row['cleanup'] = f'unverified: {exc}'
+                      finally:
+                          client.close()
+                  else:
+                      row['cleanup'] = 'not_created'
+                  save()
+                  print('VALIDATION_TASK', json.dumps({k: v for k, v in row.items() if k not in ('runtime', 'listing')}), flush=True)
+
+          CybenchEnvironment.setup = tracked_setup
+          CybenchAdapter._on_inference = tracked_inference
+          save()
+          config = TaskConfig(
+              model='qwen3.8-flash', eval_type='openai_api',
+              api_url='https://dashscope.aliyuncs.com/compatible-mode/v1', api_key=key,
+              datasets=['cybench'], dataset_args={'cybench': {'dataset_revision': revision, 'evaluation_version': 'v1.2', 'extra_params': {
+                  'task_ids': list(rows), 'setup_timeout': 1800,
+              }}}, sandbox={'default_config': {'memory_limit': '4g', 'cpu_limit': 2}},
+              agent_config=NativeAgentConfig(max_steps=15, command_timeout=120),
+              generation_config={'temperature': 0, 'max_tokens': 2048, 'timeout': 120, 'retries': 2,
+                                 'extra_body': {'enable_thinking': False}},
+              eval_batch_size=1, work_dir=str(root), no_timestamp=True, ignore_errors=True,
+          )
+          try:
+              run_task(config)
+          except Exception as exc:
+              (root / 'runner_error.txt').write_text(f'{type(exc).__name__}: {exc}\n')
+          for path in (root / 'reviews').rglob('*.jsonl'):
+              for line in path.read_text().splitlines():
+                  sample_score = json.loads(line)['sample_score']
+                  row = rows[sample_score['sample_metadata']['cybench']['path']]
+                  score = sample_score['score']
+                  row.update(status='passed' if score['status'] == 'success' else 'scoring_failed',
+                             score_status=score['status'], scores=score['value'])
+          save()
+          print('VALIDATION_CHUNK_COMPLETE', json.dumps({
+              'tasks': len(rows), 'runtime_ready': sum(r['runtime_ready'] for r in rows.values()),
+              'pipeline_passed': sum(r['status'] == 'passed' for r in rows.values()),
+              'failures': [(r['index'], r['status']) for r in rows.values() if r['status'] != 'passed'],
+          }), flush=True)
+          assert all(row['status'] == 'passed' for row in rows.values()), 'Some tasks did not complete a scoreable attempt'
+          assert all(row['cleanup'] == 'removed' for row in rows.values()), 'Owned runtime cleanup was not verified'
+          PY
+      - name: Prepare sanitized evidence
+        if: always()
+        env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          source = Path('outputs')
+          destination = Path('sanitized')
+          key = os.environ.get('DASHSCOPE_API_KEY')
+          for path in source.rglob('*'):
+              if not path.is_file():
+                  continue
+              try:
+                  text = path.read_text()
+              except UnicodeDecodeError:
+                  continue
+              target = destination / path.relative_to(source)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(text.replace(key, '[REDACTED]') if key else text)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cybench-full40-chunk-${{ matrix.chunk }}
+          path: sanitized/
+          retention-days: 7
