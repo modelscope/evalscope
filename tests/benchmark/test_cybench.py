@@ -220,7 +220,10 @@ def test_invalid_replay_records_are_excluded(damage: str) -> None:
     assert not score.value
 
 
-def test_native_loop_keeps_full_outputs_and_one_submission(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('timed_out', [False, True])
+def test_native_loop_keeps_full_outputs_and_one_submission(
+    monkeypatch: pytest.MonkeyPatch, timed_out: bool
+) -> None:
     benchmark = adapter()
     sample = benchmark.load_dataset()['crypto'][0]
     flag = sample.target
@@ -234,7 +237,7 @@ def test_native_loop_keeps_full_outputs_and_one_submission(monkeypatch: pytest.M
             return 'output.txt\nsource.py\n'
 
         async def exec(self, cmd: list, **kwargs: Any) -> ExecResult:
-            return ExecResult(stdout=f'{flag}\n' + 'x' * 12000, stderr='diagnostic', returncode=0)
+            return ExecResult(stdout=f'{flag}\n' + 'x' * 12000, stderr='diagnostic', timed_out=timed_out)
 
         async def close(self) -> None:
             self.closed = True
@@ -255,6 +258,8 @@ def test_native_loop_keeps_full_outputs_and_one_submission(monkeypatch: pytest.M
     assert result.output.completion == 'wrong'
     assert len([e for e in result.trace.events if e.type == EventType.SUBMIT]) == 1
     assert len(sample.metadata['cybench_run']['executions'][0]['stdout']) > 12000
+    scoring_stdout = sample.metadata['cybench_run']['executions'][0]['scoring_stdout']
+    assert (flag in scoring_stdout) is not timed_out
     assert any(e.payload.get('model_input') for e in result.trace.events)
     assert any(e.payload.get('execution', {}).get('stderr') == 'diagnostic' for e in result.trace.events)
     assert result.messages[-1].text == 'Answer: wrong\n<END>'
@@ -287,7 +292,8 @@ def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPat
     assert closed == [True]
 
 
-def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('timed_out', [False, True])
+def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyPatch, timed_out: bool) -> None:
     pytest.importorskip('ms_enclave')
     environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
     assert isinstance(environment, EnclaveAgentEnvironment)
@@ -299,14 +305,14 @@ def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyP
 
     async def execute(self: Any, cmd: list, **kwargs: Any) -> ExecResult:
         calls.append((cmd, kwargs))
-        return ExecResult(stdout='public result', stderr='diagnostic', returncode=124)
+        return ExecResult(stdout='public result', stderr='diagnostic', returncode=124, timed_out=timed_out)
 
     monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
     result = asyncio.run(environment.exec(['bash', '-c', 'sleep 30'], input='payload', timeout=1, env={'X': 'value'}))
     command, kwargs = calls[0]
     assert command[:4] == ['runuser', '-u', 'cybench-agent', '--']
-    assert kwargs == {'cwd': '/tmp/cyber-bench', 'input': 'payload', 'timeout': 16, 'env': {'X': 'value'}}
-    assert result.timed_out and result.stdout == 'public result' and result.stderr == 'diagnostic'
+    assert kwargs == {'cwd': '/tmp/cyber-bench', 'input': 'payload', 'timeout': 1, 'env': {'X': 'value'}}
+    assert result.timed_out is timed_out and result.stdout == 'public result' and result.stderr == 'diagnostic'
 
 
 @pytest.mark.parametrize('reply', ['No executable command', '[ERROR] transport unavailable'])

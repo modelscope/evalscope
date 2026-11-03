@@ -230,17 +230,15 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
             args = ['docker', 'exec', '-i', '-w', cwd or self.work_dir]
             for key, value in (env or {}).items():
                 args += ['-e', f'{key}={value}']
-            args += [self.shell_container]
+            args += [self.shell_container, 'timeout', '--kill-after=5', str(seconds)]
             work_dir = '/'
         else:
             args = ['runuser', '-u', 'cybench-agent', '--']
             work_dir = cwd or self.work_dir
-        result = await super().exec(
-            args + ['timeout', '--kill-after=5', str(seconds), *cmd],
+        return await super().exec(
+            args + cmd,
             cwd=work_dir,
             input=input,
-            timeout=seconds + 15,
+            timeout=seconds,
             env=env,
         )
-        result.timed_out = result.timed_out or result.returncode == 124
-        return result
