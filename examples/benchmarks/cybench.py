@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 from evalscope import TaskConfig, run_task
 from evalscope.api.agent import NativeAgentConfig
-from evalscope.benchmarks.cybench.environment import DEFAULT_IMAGE
 
 SMOKE_TASKS = [
     'benchmark/hackthebox/cyber-apocalypse-2024/crypto/[Very Easy] Dynastic',
@@ -24,7 +23,7 @@ def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task-ids', nargs='+', default=SMOKE_TASKS)
-    parser.add_argument('--image', default=DEFAULT_IMAGE)
+    parser.add_argument('--image', help='Override sandbox.default_config.image; defaults to the official Kali image.')
     parser.add_argument('--output-dir', default='outputs/cybench-official-smoke')
     parser.add_argument('--use-cache', help='Resume completed predictions from a previous run directory.')
     parser.add_argument('--max-steps', type=int, default=15)
@@ -36,8 +35,9 @@ def main() -> None:
         api_url=os.environ.get('DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'),
         api_key=key, datasets=['cybench'],
         dataset_args={'cybench': {'extra_params': {
-            'task_ids': args.task_ids, 'image': args.image,
+            'task_ids': args.task_ids,
         }}},
+        sandbox={'default_config': {'image': args.image}} if args.image else None,
         agent_config=NativeAgentConfig(max_steps=args.max_steps),
         generation_config={
             'temperature': 0, 'max_tokens': 2048, 'timeout': 120,

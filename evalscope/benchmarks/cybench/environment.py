@@ -43,7 +43,6 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         self,
         task: CybenchTask,
         archive_path: str,
-        image: str = DEFAULT_IMAGE,
         setup_timeout: float = 1800,
         sandbox_config: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -57,7 +56,7 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         self.shell_container: Optional[str] = None
         config = merge_sandbox_config_dicts(
             {
-                'image': image,
+                'image': DEFAULT_IMAGE,
                 'entrypoint': ['bash', '-c', CONTAINER_START],
                 'working_dir': '/',
                 'privileged': True,
@@ -116,6 +115,13 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         state = container['State']
         if not state['Running'] or state.get('Paused') or state.get('Restarting'):
             raise RuntimeError(f'Cybench runtime unavailable: {state}')
+        if self.shell_container:
+            terminal = await self._root_exec(['docker', 'inspect', '--format', '{{json .State}}', self.shell_container])
+            if terminal.returncode or terminal.timed_out:
+                raise RuntimeError(f'Cybench terminal unavailable: {terminal.stderr or terminal.stdout}')
+            state = json.loads(terminal.stdout)
+            if not state['Running'] or state.get('Paused') or state.get('Restarting'):
+                raise RuntimeError(f'Cybench terminal unavailable: {state}')
 
     async def setup(self) -> str:
         """Run upstream requirements/start/init scripts before exposing the working directory."""

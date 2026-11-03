@@ -21,7 +21,7 @@ from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall
 from evalscope.benchmarks.cybench.dataset import CybenchManifest, CybenchTask
-from evalscope.benchmarks.cybench.environment import DEFAULT_IMAGE, WORK_DIR, CybenchEnvironment
+from evalscope.benchmarks.cybench.environment import WORK_DIR, CybenchEnvironment
 from evalscope.benchmarks.cybench.prompts import END_TO_END_PROMPT, STOP_TOKEN
 from evalscope.benchmarks.cybench.strategy import CybenchStrategy
 from evalscope.constants import ScoreStatus, Tags
@@ -116,7 +116,6 @@ It measures practical problem solving, multi-step planning and terminal tool use
         prompt_template='{question}',
         extra_params={
             'task_ids': {'type': 'list', 'value': None, 'description': 'Full official task paths to evaluate.'},
-            'image': {'type': 'str', 'value': DEFAULT_IMAGE, 'description': 'Docker runtime image, saved by image ID.'},
             'setup_timeout': {'type': 'int', 'value': 1800, 'description': 'Task initialization timeout in seconds.'},
         },
     )
@@ -205,7 +204,6 @@ class CybenchAdapter(AgentLoopAdapter):
         return CybenchEnvironment(
             task=task,
             archive_path=self._dataset_file(task.archive),
-            image=params['image'],
             setup_timeout=params['setup_timeout'],
             sandbox_config=self._task_sandbox_config(),
         )

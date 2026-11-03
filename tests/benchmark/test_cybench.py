@@ -142,6 +142,12 @@ def test_shared_sandbox_defaults_override_runtime_image(monkeypatch: pytest.Monk
     assert environment.image == 'selected:runtime'
     assert environment._sandbox_config_dict['memory_limit'] == '8g'
     assert environment._sandbox_config_dict['cpu_limit'] == 4
+    assert 'image' not in benchmark.extra_params
+
+
+def test_image_is_not_a_benchmark_extra_param() -> None:
+    with pytest.raises(KeyError, match='Extra param image not found'):
+        adapter(image='unused:runtime')
 
 
 def test_archive_staging_verifies_bytes_and_rejects_unsafe_members(tmp_path: Path) -> None:
@@ -376,6 +382,92 @@ def test_running_but_unavailable_runtime_is_rejected(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(environment, '_inspect_runtime', inspect)
     with pytest.raises(RuntimeError, match='runtime unavailable'):
         asyncio.run(environment.exec(['true']))
+
+
+@pytest.mark.parametrize('during_command', [False, True])
+@pytest.mark.parametrize('failure', ['stopped', 'paused', 'restarting', 'missing', 'daemon', 'timeout'])
+def test_nested_terminal_failure_aborts_without_scoreable_record(
+    monkeypatch: pytest.MonkeyPatch, during_command: bool, failure: str,
+) -> None:
+    pytest.importorskip('ms_enclave')
+    benchmark = adapter()
+    sample = benchmark.load_dataset()['crypto'][0]
+    environment = CybenchEnvironment(benchmark.task_manifest.tasks[0], '/selected/task.tar.gz')
+    environment.shell_container = 'my-container'
+    environment.work_dir = '/app'
+    inspections = []
+    commands = []
+    closed = []
+
+    async def setup() -> str:
+        environment.runtime = {'container_id': 'healthy-outer'}
+        return 'chall.py'
+
+    async def inspect(container_id: str) -> dict:
+        assert container_id == 'healthy-outer'
+        return {'State': {'Running': True}}
+
+    async def root_exec(args: list, timeout: float = 60) -> ExecResult:
+        assert args == ['docker', 'inspect', '--format', '{{json .State}}', 'my-container']
+        inspections.append(args)
+        if during_command and len(inspections) == 1:
+            return ExecResult(stdout=json.dumps({'Running': True}))
+        if failure in ('missing', 'daemon'):
+            message = 'No such container: my-container' if failure == 'missing' else 'Cannot connect to Docker daemon'
+            return ExecResult(returncode=1, stderr=message)
+        if failure == 'timeout':
+            return ExecResult(timed_out=True)
+        state = {'Running': failure != 'stopped', 'Paused': failure == 'paused', 'Restarting': failure == 'restarting'}
+        return ExecResult(stdout=json.dumps(state))
+
+    async def execute(self: Any, args: list, **kwargs: Any) -> ExecResult:
+        assert args[:2] == ['docker', 'exec']
+        commands.append(args)
+        return ExecResult(stdout=sample.target)
+
+    async def close() -> None:
+        closed.append(True)
+
+    class Model:
+        async def generate_async(self, **kwargs: Any) -> ModelOutput:
+            return output('Command: cat chall.py\n<END>')
+
+    monkeypatch.setattr(environment, 'setup', setup)
+    monkeypatch.setattr(environment, '_inspect_runtime', inspect)
+    monkeypatch.setattr(environment, '_root_exec', root_exec)
+    monkeypatch.setattr(environment, 'close', close)
+    monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
+    monkeypatch.setattr(benchmark, 'build_environment', lambda sample: environment)
+    with pytest.raises(RuntimeError, match='terminal unavailable'):
+        benchmark._on_inference(Model(), sample)
+    assert closed and 'cybench_run' not in sample.metadata
+    assert len(commands) == int(during_command)
+
+
+def test_healthy_nested_terminal_preserves_command_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip('ms_enclave')
+    environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
+    environment.runtime = {'container_id': 'healthy-outer'}
+    environment.shell_container = 'my-container'
+    inspections = []
+
+    async def inspect(container_id: str) -> dict:
+        return {'State': {'Running': True}}
+
+    async def root_exec(args: list, timeout: float = 60) -> ExecResult:
+        inspections.append(args)
+        return ExecResult(stdout=json.dumps({'Running': True}))
+
+    async def execute(self: Any, args: list, **kwargs: Any) -> ExecResult:
+        assert args[:2] == ['docker', 'exec']
+        return ExecResult(returncode=1, stderr='ordinary command failure')
+
+    monkeypatch.setattr(environment, '_inspect_runtime', inspect)
+    monkeypatch.setattr(environment, '_root_exec', root_exec)
+    monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
+    result = asyncio.run(environment.exec(['false']))
+    assert result.returncode == 1 and result.stderr == 'ordinary command failure'
+    assert len(inspections) == 2
 
 
 def test_anthropic_requests_remain_valid_after_trimming_and_malformed_turns() -> None:
