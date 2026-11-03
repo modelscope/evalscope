@@ -21,6 +21,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='live_code_bench',
+        evaluation_version='v1.1',
         pretty_name='Live-Code-Bench',
         tags=[Tags.CODING],
         description="""
