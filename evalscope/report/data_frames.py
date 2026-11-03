@@ -212,6 +212,9 @@ def get_compare_report_df(acc_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_single_dataset_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
+    # A report with no metrics yields a frame without columns.
+    if df.empty:
+        return df
     return df[df[ReportKey.dataset_name] == dataset_name]
 
 
