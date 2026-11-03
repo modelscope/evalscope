@@ -705,6 +705,9 @@ def collect_stream_response(
           from function entry when ``request_start`` is ``None``) until the first chunk
           carrying non-empty content or tool-call data arrives.
           ``None`` if no content chunk was observed.
+
+    Raises:
+        RuntimeError: If the stream ends without a stop reason, so the reply may be partial.
     """
     from anthropic.types import (
         ContentBlockDeltaEvent,
@@ -809,6 +812,9 @@ def collect_stream_response(
                     event.usage,
                     'cache_read_input_tokens',
                 )
+
+    if stop_reason is None:
+        raise RuntimeError('Stream ended without a stop reason')
 
     # Append the last block
     if current_block_index >= 0:
@@ -998,6 +1004,9 @@ async def async_collect_stream_response(
                     event.usage,
                     'cache_read_input_tokens',
                 )
+
+    if stop_reason is None:
+        raise RuntimeError('Stream ended without a stop reason')
 
     # Append the last block
     if current_block_index >= 0:
