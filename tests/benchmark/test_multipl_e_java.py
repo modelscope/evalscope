@@ -16,7 +16,138 @@ from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.multipl_e.utils import build_full_code
 from evalscope.config import TaskConfig
 
-FIXTURES = json.loads((Path(__file__).parent / 'fixtures' / 'multipl_e_java' / 'cases.json').read_text())
+# Official MultiPL-E Java rows, unchanged from revision 28441b6024e71d4a1c1c0f6bf171c935cd5a43f2.
+# Source: https://huggingface.co/datasets/nuprl/MultiPL-E/tree/28441b6024e71d4a1c1c0f6bf171c935cd5a43f2
+# HumanEval source: https://github.com/openai/human-eval
+# MBPP source: https://github.com/google-research/google-research/tree/master/mbpp
+# MBPP attribution: Austin et al., Program Synthesis with Large Language Models (2021), CC BY 4.0.
+# License: https://creativecommons.org/licenses/by/4.0/
+# The upstream license notices below apply to the copied fixtures, not to EvalScope as a whole.
+#
+# The MIT License
+#
+# Copyright (c) OpenAI (https://openai.com)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# BSD 3-Clause License with Machine Learning Restriction
+#
+# Copyright (c) 2022, Northeastern University, Oberlin College, Roblox Inc,
+# Stevens Institute of Technology, University of Massachusetts Amherst, and
+# Wellesley College.
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# 4.  The contents of this repository may not be used as training data for any
+#     machine learning model, including but not limited to neural networks.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+FIXTURES = {
+    'humaneval_53_add': {
+        'name': 'HumanEval_53_add',
+        'language': 'java',
+        'prompt': (
+            'import java.util.*;\n'
+            'import java.lang.reflect.*;\n'
+            'import org.javatuples.*;\n'
+            'import java.security.*;\n'
+            'import java.math.*;\n'
+            'import java.io.*;\n'
+            'import java.util.stream.*;\n'
+            'class Problem {\n'
+            '    // Add two numbers x and y\n'
+            '    // >>> add((2l), (3l))\n'
+            '    // (5l)\n'
+            '    // >>> add((5l), (7l))\n'
+            '    // (12l)\n'
+            '    public static long add(long x, long y) {\n'
+        ),
+        'doctests': 'transform',
+        'original': (
+            '/work/arjunguha-research-group/arjun/repos/nuprl/MultiPL-E/datasets/../datasets/originals-'
+            'with-cleaned-doctests/HumanEval_53_add.py'
+        ),
+        'prompt_terminology': 'reworded',
+        'tests': (
+            '    }\n'
+            '    public static void main(String[] args) {\n'
+            '    assert(add((0l), (1l)) == (1l));\n'
+            '    assert(add((1l), (0l)) == (1l));\n'
+            '    assert(add((2l), (3l)) == (5l));\n'
+            '    assert(add((5l), (7l)) == (12l));\n'
+            '    assert(add((7l), (5l)) == (12l));\n'
+            '    }\n'
+            '\n'
+            '}\n'
+        ),
+        'stop_tokens': ['\n    }\n'],
+    },
+    'mbpp_3_is_not_prime': {
+        'name': 'mbpp_3_is_not_prime',
+        'language': 'java',
+        'prompt': (
+            'import java.util.*;\n'
+            'import java.lang.reflect.*;\n'
+            'import org.javatuples.*;\n'
+            'import java.security.*;\n'
+            'import java.math.*;\n'
+            'import java.io.*;\n'
+            'import java.util.stream.*;\n'
+            'class Problem {\n'
+            '    // Write a javathon function to identify non-prime numbers.\n'
+            '    public static boolean isNotPrime(long n) {\n'
+        ),
+        'doctests': 'transform',
+        'original': '/Users/arjun/repos/nuprl/MultiPL-E/datasets/../datasets/mbpp-typed/mbpp_3_is_not_prime.py',
+        'prompt_terminology': 'reworded',
+        'tests': (
+            '    }\n'
+            '    public static void main(String[] args) {\n'
+            '    assert(isNotPrime((2l)) == (false));\n'
+            '    assert(isNotPrime((10l)) == (true));\n'
+            '    assert(isNotPrime((35l)) == (true));\n'
+            '    assert(isNotPrime((37l)) == (false));\n'
+            '    }\n'
+            '\n'
+            '}\n'
+        ),
+        'stop_tokens': ['\n    }\n'],
+    },
+}
 TASKS = ['humaneval_53_add', 'mbpp_3_is_not_prime']
 METHODS = {
     'humaneval_53_add': (
