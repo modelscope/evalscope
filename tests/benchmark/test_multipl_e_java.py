@@ -2,23 +2,28 @@
 
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
 
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.multipl_e.utils import build_full_code
-from tests.benchmark.multipl_e_java_test_utils import java_major_version, run_java
+from evalscope.config import TaskConfig
 
-FIXTURES = Path(__file__).parent / 'fixtures' / 'multipl_e_java'
-TASKS = ['humaneval_53_add.json', 'mbpp_3_is_not_prime.json']
+FIXTURES = json.loads((Path(__file__).parent / 'fixtures' / 'multipl_e_java' / 'cases.json').read_text())
+TASKS = ['humaneval_53_add', 'mbpp_3_is_not_prime']
 METHODS = {
-    'humaneval_53_add.json': (
+    'humaneval_53_add': (
         'public static long add(long x, long y)',
         'return x + y;',
     ),
-    'mbpp_3_is_not_prime.json': (
+    'mbpp_3_is_not_prime': (
         'public static boolean isNotPrime(long n)',
         'for (long i = 2; i * i <= n; i++) if (n % i == 0) return true; return n < 2;',
     ),
@@ -26,7 +31,7 @@ METHODS = {
 # Hand-written expected class members, checked against the unchanged official rows.
 # These expectations do not call any production parsing or assembly helper.
 EXPECTED_MAINS = {
-    'humaneval_53_add.json': '''
+    'humaneval_53_add': '''
     public static void main(String[] args) {
         assert(add((0l), (1l)) == (1l));
         assert(add((1l), (0l)) == (1l));
@@ -35,7 +40,7 @@ EXPECTED_MAINS = {
         assert(add((7l), (5l)) == (12l));
     }
 ''',
-    'mbpp_3_is_not_prime.json': '''
+    'mbpp_3_is_not_prime': '''
     public static void main(String[] args) {
         assert(isNotPrime((2l)) == (false));
         assert(isNotPrime((10l)) == (true));
@@ -49,8 +54,48 @@ EXPECTED_ENTRY_POINT = '''class Main {
 }'''
 
 
-def _assemble(code: str, fixture_name: str = 'humaneval_53_add.json') -> str:
-    record = json.loads((FIXTURES / fixture_name).read_text(encoding='utf-8'))
+@lru_cache(maxsize=1)
+def _java_major_version() -> int:
+    if not shutil.which('javac') or not shutil.which('java'):
+        pytest.skip('Java integration requires local javac and java; assembly tests still run.')
+    result = subprocess.run(['javac', '-version'], capture_output=True, text=True, timeout=10)
+    if result.returncode:
+        pytest.skip('Java integration requires a working local JDK; assembly tests still run.')
+    match = re.search(r'javac (\d+)(?:\.(\d+))?', result.stdout + result.stderr)
+    assert match is not None, result.stdout + result.stderr
+    return int(match.group(2) if match.group(1) == '1' else match.group(1))
+
+
+def _run_java(code: str) -> dict:
+    """Run fixed arithmetic fixtures with native assertions, without a sandbox service.
+
+    An unused package marker resolves the javatuples import; it provides no tuple API.
+    """
+    _java_major_version()
+    with tempfile.TemporaryDirectory(prefix='evalscope-multipl-java-') as directory:
+        workdir = Path(directory)
+        source = workdir / 'Main.java'
+        source.write_text(code, encoding='utf-8')
+        marker = workdir / 'org' / 'javatuples' / 'UnusedImport.java'
+        marker.parent.mkdir(parents=True)
+        marker.write_text('package org.javatuples; public final class UnusedImport {}\n', encoding='utf-8')
+        compiled = subprocess.run(
+            ['javac', '-cp', str(workdir), '-d', str(workdir), str(marker), str(source)],
+            capture_output=True, text=True, timeout=20,
+        )
+        if compiled.returncode:
+            return {'status': 'error', 'stage': 'compile', 'stdout': compiled.stdout, 'stderr': compiled.stderr}
+        result = subprocess.run(
+            ['java', '-ea', '-cp', str(workdir), 'Main'], capture_output=True, text=True, timeout=20
+        )
+        return {
+            'status': 'success' if result.returncode == 0 else 'error',
+            'stage': 'run', 'stdout': result.stdout, 'stderr': result.stderr,
+        }
+
+
+def _assemble(code: str, fixture_name: str = 'humaneval_53_add') -> str:
+    record = FIXTURES[fixture_name]
     return build_full_code(f'```java\n{code}\n```', record['language'], record['stop_tokens'], record['tests'])
 
 
@@ -93,7 +138,7 @@ def test_complete_class_receives_tests_before_its_closing_brace(fixture_name: st
 def test_official_assertions_pass_for_every_format(fixture_name: str, style: str) -> None:
     source, _ = _solution(fixture_name, style)
 
-    result = run_java(_assemble(source, fixture_name))
+    result = _run_java(_assemble(source, fixture_name))
 
     assert result['status'] == 'success', result
 
@@ -101,12 +146,12 @@ def test_official_assertions_pass_for_every_format(fixture_name: str, style: str
 @pytest.mark.parametrize(
     'fixture_name,source',
     [
-        ('humaneval_53_add.json', 'class Problem { public static long add(long x, long y) { return x - y; } }'),
-        ('mbpp_3_is_not_prime.json', 'class Problem { public static boolean isNotPrime(long n) { return false; } }'),
+        ('humaneval_53_add', 'class Problem { public static long add(long x, long y) { return x - y; } }'),
+        ('mbpp_3_is_not_prime', 'class Problem { public static boolean isNotPrime(long n) { return false; } }'),
     ],
 )
 def test_wrong_algorithm_still_fails_official_assertions(fixture_name: str, source: str) -> None:
-    result = run_java(_assemble(source, fixture_name))
+    result = _run_java(_assemble(source, fixture_name))
 
     assert result['stage'] == 'run', result
     assert result['status'] == 'error', result
@@ -143,7 +188,7 @@ def test_nested_blocks_and_helpers_after_target_method_are_preserved() -> None:
 
 
 def test_preserved_helpers_compile_and_pass() -> None:
-    result = run_java(_assemble(HELPER_SOLUTION))
+    result = _run_java(_assemble(HELPER_SOLUTION))
 
     assert result['status'] == 'success', result
 
@@ -160,7 +205,7 @@ def test_problem_constructor_and_type_references_are_preserved() -> None:
     assert 'class Main {' in assembled
     assert 'Problem() {}' in assembled
     assert 'return new Problem().sum(x, y);' in assembled
-    result = run_java(assembled)
+    result = _run_java(assembled)
     assert result['status'] == 'success', result
 
 
@@ -173,7 +218,7 @@ def test_existing_public_main_class_name_is_preserved() -> None:
 
     assert 'public class Main {' in assembled
     assert 'class Solution' not in assembled
-    result = run_java(assembled)
+    result = _run_java(assembled)
     assert result['status'] == 'success', result
 
 
@@ -186,7 +231,7 @@ def test_a_generated_main_is_not_silently_removed_to_make_the_solution_pass() ->
     assembled = _assemble(source)
 
     assert 'throw new AssertionError("model main");' in assembled
-    result = run_java(assembled)
+    result = _run_java(assembled)
     assert result['status'] == 'error', result
 
 
@@ -203,7 +248,7 @@ class Problem {
     assert 'class Problem$Helper {' in assembled
     assert 'return Problem$Helper.sum(x, y);' in assembled
     assert 'class Main$Helper' not in assembled
-    result = run_java(assembled)
+    result = _run_java(assembled)
     assert result['status'] == 'success', result
 
 
@@ -239,7 +284,7 @@ def test_comments_and_literals_do_not_change_class_boundary_or_get_renamed() -> 
 
 
 def test_comments_and_literals_still_compile_and_pass() -> None:
-    result = run_java(_assemble(LEXICAL_SOLUTION))
+    result = _run_java(_assemble(LEXICAL_SOLUTION))
 
     assert result['status'] == 'success', result
 
@@ -263,10 +308,10 @@ def test_text_block_contents_are_ignored_when_locating_class_boundary() -> None:
 
 
 def test_text_blocks_compile_and_pass_when_supported_by_local_jdk() -> None:
-    if java_major_version() < 15:
+    if _java_major_version() < 15:
         pytest.skip('Java text-block integration requires JDK 15 or newer; its assembly check still runs.')
 
-    result = run_java(_assemble(TEXT_BLOCK_SOLUTION))
+    result = _run_java(_assemble(TEXT_BLOCK_SOLUTION))
 
     assert result['status'] == 'success', result
 
@@ -287,7 +332,7 @@ def test_unicode_escape_strings_are_preserved_and_structural_escapes_are_recogni
 
 
 def test_legal_unicode_escape_source_compiles_and_passes() -> None:
-    result = run_java(_assemble(UNICODE_SOLUTION))
+    result = _run_java(_assemble(UNICODE_SOLUTION))
 
     assert result['status'] == 'success', result
 
@@ -298,7 +343,7 @@ def test_unicode_newline_cannot_hide_a_premature_class_closure_in_a_comment() ->
     public static long add(long x, long y) { return x + y; }
 }'''
 
-    result = run_java(_assemble(source))
+    result = _run_java(_assemble(source))
 
     assert result['status'] == 'error', result
     assert result['stage'] == 'compile', result
@@ -308,7 +353,7 @@ def test_incomplete_completion_keeps_the_official_method_closure() -> None:
     assembled = _assemble('class Problem {\n    public static long add(long x, long y) {\n        return x + y;')
 
     expected = 'class Problem { public static long add(long x, long y) { return x + y; }'
-    expected += EXPECTED_MAINS['humaneval_53_add.json'] + '}' + EXPECTED_ENTRY_POINT
+    expected += EXPECTED_MAINS['humaneval_53_add'] + '}' + EXPECTED_ENTRY_POINT
     assert _compact(assembled).endswith(_compact(expected))
 
 
@@ -342,7 +387,7 @@ def test_malformed_dataset_test_suffix_is_reported_as_a_data_error(tests: str) -
     ids=['trailing-garbage', 'unterminated-trailing-comment', 'unfinished-nested-block'],
 )
 def test_malformed_output_is_not_truncated_into_a_passing_program(source: str) -> None:
-    result = run_java(_assemble(source))
+    result = _run_java(_assemble(source))
 
     assert result['status'] == 'error', result
     assert result['stage'] == 'compile', result
@@ -371,7 +416,7 @@ def test_non_java_stop_token_and_test_suffix_behavior_is_unchanged() -> None:
     ids=['local-identifier-collision', 'reflective-class-name'],
 )
 def test_solution_identifier_and_class_name_semantics_are_preserved(source: str) -> None:
-    result = run_java(_assemble(source))
+    result = _run_java(_assemble(source))
 
     assert result['status'] == 'success', result
 
@@ -391,13 +436,13 @@ def test_solution_identifier_and_class_name_semantics_are_preserved(source: str)
     ids=['public-class-and-constructor', 'nested-main-name', 'public-before-annotation-array'],
 )
 def test_problem_class_can_keep_its_name_with_a_main_executor_entry_point(source: str) -> None:
-    result = run_java(_assemble(source))
+    result = _run_java(_assemble(source))
 
     assert result['status'] == 'success', result
 
 
 def test_repeated_public_modifier_is_not_repaired_into_a_passing_program() -> None:
-    result = run_java(_assemble(
+    result = _run_java(_assemble(
         'public public class Problem { public static long add(long x, long y) { return x + y; } }'
     ))
 
@@ -406,18 +451,20 @@ def test_repeated_public_modifier_is_not_repaired_into_a_passing_program() -> No
 
 
 def test_unterminated_text_block_with_backslashes_finishes_assembly() -> None:
-    record = json.loads((FIXTURES / 'humaneval_53_add.json').read_text(encoding='utf-8'))
+    record = FIXTURES['humaneval_53_add']
     source = 'class Problem { static String text = """\n' + '\\' * 64
     script = (
         'import json, sys; from evalscope.benchmarks.multipl_e.utils import build_full_code; '
-        'source, tests = json.load(sys.stdin); '
-        'code = build_full_code("```java\\n" + source + "\\n```", "java", [], tests); '
+        'from evalscope.utils.code_utils import default_extract_helper; '
+        'prediction, source, tests = json.load(sys.stdin); '
+        'assert default_extract_helper(prediction, "java") == source; '
+        'code = build_full_code(prediction, "java", [], tests); '
         'assert "#error" in code'
     )
     try:
         completed = subprocess.run(
             [sys.executable, '-c', script],
-            input=json.dumps([source, record['tests']]),
+            input=json.dumps([f'```java\n{source}\n```', source, record['tests']]),
             text=True,
             capture_output=True,
             timeout=20,
@@ -427,3 +474,38 @@ def test_unterminated_text_block_with_backslashes_finishes_assembly() -> None:
         pytest.fail('Malformed model output must not hang assembly before sandbox execution.')
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.parametrize('benchmark', ['multiple_humaneval', 'multiple_mbpp'])
+@pytest.mark.parametrize('correct', [True, False], ids=['correct', 'wrong'])
+def test_adapters_grade_complete_java_solutions(
+    benchmark: str, correct: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = TaskConfig(model='mock', datasets=[benchmark], sandbox={'enabled': True})
+    adapter = get_benchmark(benchmark, config)
+    fixture = 'humaneval_53_add' if benchmark == 'multiple_humaneval' else 'mbpp_3_is_not_prime'
+    sample = adapter.record_to_sample(FIXTURES[fixture])
+    assert 'Write the complete code and wrap it in markdown fenced code.' in adapter.format_prompt_template(sample)
+    assert adapter.benchmark_meta.evaluation_version == 'v1.1'
+    source, _ = _solution(fixture, 'one_line_class')
+    if not correct:
+        wrong_body = 'return 0;' if benchmark == 'multiple_humaneval' else 'return false;'
+        source = source.replace(METHODS[fixture][1], wrong_body)
+    prediction = f'```java\n{source}\n```'
+
+    def execute(code: str, timeout: int, language: str) -> dict:
+        assert language == 'java'
+        assert timeout == 30
+        return _run_java(code)
+
+    # Execute fixed fixtures natively; no sandbox service or model endpoint is used.
+    monkeypatch.setattr(adapter, 'execute_code_in_sandbox', execute)
+    state = TaskState(model='mock', sample=sample)
+    score = adapter.match_score(prediction, adapter.extract_answer(prediction, state), '', state)
+    assert score.value == {'acc': correct}
+    assert score.metadata['run_language'] == 'java'
+    assert score.metadata['task_id'] == FIXTURES[fixture]['name']
+    execution = score.metadata['execution_result']
+    assert execution['stage'] == 'run', execution
+    if not correct:
+        assert 'AssertionError' in execution['stderr']
