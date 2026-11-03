@@ -76,6 +76,7 @@ MultiPL-E MBPP is a multilingual code generation benchmark derived from MBPP (Mo
         aggregation='mean_and_pass_at_k',
         primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template='{prompt}',
         review_timeout=30,
         sandbox_config={

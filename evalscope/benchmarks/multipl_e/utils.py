@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 
 from evalscope.utils.code_utils import (
     END_TOKENS,
@@ -171,16 +171,173 @@ def postprocess_full_code(code: str, language: str) -> str:
     return code
 
 
+class _JavaToken(NamedTuple):
+    text: str
+    start: int
+    end: int
+
+
+_JAVA_LEXEME = re.compile(
+    r'//[^\r\n]*|/\*.*?\*/|'  # Comments.
+    r'"""(?:\\.|(?!""")[^\\])*"""|'  # Text blocks.
+    r'"(?:\\.|[^"\\\r\n])*"|\'(?:\\.|[^\'\\\r\n])*\'|'  # String and character literals.
+    r'[\w$]+|[^\s]',  # Identifiers and punctuation.
+    re.DOTALL,
+)
+_JAVA_UNICODE_ESCAPE = re.compile(r'\\u+([0-9a-fA-F]{4})')
+
+
+def _translate_java_unicode(source: str) -> Tuple[str, List[Tuple[int, int]]]:
+    # Java translates eligible Unicode escapes before recognizing comments or literals (JLS 3.3).
+    # Keep raw spans so editing structural tokens never rewrites literal contents.
+    characters: List[str] = []
+    spans: List[Tuple[int, int]] = []
+    index = backslashes = 0
+    previous_was_escape = False
+    while index < len(source):
+        start = index
+        character = source[index]
+        eligible = previous_was_escape or backslashes % 2 == 0
+        previous_was_escape = False
+        if character == '\\' and eligible and source[index + 1 : index + 2] == 'u':
+            match = _JAVA_UNICODE_ESCAPE.match(source, index)
+            if match is None:
+                raise ValueError('Invalid Java Unicode escape')
+            character = chr(int(match[1], 16))
+            index = match.end()
+            previous_was_escape = True
+        else:
+            index += 1
+        backslashes = backslashes + 1 if character == '\\' else 0
+        characters.append(character)
+        spans.append((start, index))
+    return ''.join(characters), spans
+
+
+def _tokenize_java(source: str) -> List[_JavaToken]:
+    """Read structural tokens with offsets into the original, untranslated source."""
+    translated, spans = _translate_java_unicode(source)
+    tokens = []
+    for match in _JAVA_LEXEME.finditer(translated):
+        text = match[0]
+        if text.startswith(('//', '/*', '"', "'")):
+            if text in {'"', "'"} or (text == '""' and translated.startswith('"""', match.start())):
+                raise ValueError('Unterminated Java literal')
+            continue
+        if translated.startswith('/*', match.start()):
+            raise ValueError('Unterminated Java comment')
+        tokens.append(_JavaToken(text, spans[match.start()][0], spans[match.end() - 1][1]))
+    return tokens
+
+
+def _match_java_braces(tokens: List[_JavaToken]) -> Tuple[Dict[int, int], List[int], List[int]]:
+    """Return brace pairs, unclosed openings, and the depth before each token."""
+    pairs = {}
+    stack = []
+    depths = []
+    for index, token in enumerate(tokens):
+        depths.append(len(stack))
+        if token.text == '{':
+            stack.append(index)
+        elif token.text == '}':
+            if not stack:
+                raise ValueError('Unmatched Java closing brace')
+            pairs[stack.pop()] = index
+    return pairs, stack, depths
+
+
+def _extract_java_test_body(tests: str) -> str:
+    tokens = _tokenize_java(tests)
+    if not tokens or tokens[0].text != '}' or tokens[-1].text != '}':
+        raise ValueError('Expected a MultiPL-E Java method/class test suffix')
+    middle = tokens[1:-1]
+    _, stack, depths = _match_java_braces(middle)
+    names = [token.text for token in middle]
+    has_main = any(
+        depth == 0 and names[index : index + 5] == ['public', 'static', 'void', 'main', '(']
+        for index, depth in enumerate(depths)
+    )
+    if stack or not has_main:
+        raise ValueError('MultiPL-E Java tests must contain a complete test main')
+    return tests[tokens[0].end : tokens[-1].start]
+
+
+def _assemble_java(code: str, tests: str) -> str:
+    """Insert official tests into the solution class without trimming complete methods.
+
+    Complete ``Problem``/``Main`` classes retain their methods and helper types. A legacy
+    completion may leave just its class or its final method and class open. Other malformed
+    structures remain a compile failure, rather than being truncated into a passing program.
+    A separate ``Main`` entry point keeps ``Problem`` identifiers and class identity intact.
+    This only locates class boundaries; javac remains responsible for Java syntax validation.
+    """
+    body = _extract_java_test_body(tests)
+    try:
+        tokens = _tokenize_java(code)
+        pairs, stack, depths = _match_java_braces(tokens)
+        targets = []
+        for index, token in enumerate(tokens[:-1]):
+            if token.text != 'class' or depths[index] != 0 or tokens[index + 1].text not in {'Problem', 'Main'}:
+                continue
+            # Annotation arguments in a class header can themselves contain brace pairs.
+            parentheses = brackets = 0
+            for opening in range(index + 2, len(tokens)):
+                text = tokens[opening].text
+                if text == '{' and parentheses == brackets == 0:
+                    targets.append((tokens[index + 1].text, index, opening))
+                    break
+                parentheses += (text == '(') - (text == ')')
+                brackets += (text == '[') - (text == ']')
+        if len(targets) != 1:
+            raise ValueError('Expected one top-level Problem or Main class')
+        name, declaration, opening = targets[0]
+        if opening in pairs:
+            if stack:
+                raise ValueError('Unclosed Java structure outside the solution class')
+            insertion = tokens[pairs[opening]].start
+            addition = f'\n{body}\n'
+        else:
+            if not stack or stack[0] != opening or len(stack) > 2:
+                raise ValueError('Incomplete Java solution has unclosed nested blocks')
+            # The official suffix supplies one method brace. Omit it when the method is closed.
+            ending = ('}\n' if len(stack) == 2 else '') + body + '\n}'
+            insertion = len(code)
+            addition = f'\n{ending}\n'
+        result = code[:insertion] + addition + code[insertion:]
+        if name == 'Main':
+            return result
+
+        # The executor compiles Main.java. Keep Problem's name, including constructors and
+        # references, but make its top-level declaration package-private if needed.
+        header_start = parentheses = 0
+        for index, token in enumerate(tokens[:declaration]):
+            parentheses += (token.text == '(') - (token.text == ')')
+            if parentheses == 0 and (
+                (token.text == ';' and depths[index] == 0) or (token.text == '}' and depths[index] == 1)
+            ):
+                header_start = index + 1
+        public = [token for token in tokens[header_start:declaration] if token.text == 'public']
+        if len(public) > 1:
+            raise ValueError('Repeated public modifier on the solution class')
+        if public:
+            modifier = public[0]
+            # This modifier precedes the insertion, so its original offsets still apply.
+            result = result[: modifier.start] + result[modifier.end :]
+        return (
+            result + '\nclass Main {\n'
+            '    public static void main(String[] args) throws Exception { Problem.main(args); }\n'
+            '}\n'
+        )
+    except ValueError:
+        # Keep malformed model output in the normal compilation-failure scoring path.
+        return f'#error Invalid MultiPL-E Java solution structure\n{code}\n{tests}'
+
+
 def build_full_code(prediction: str, language: str, stop_tokens: List[str], tests: str) -> str:
     """
     Build executable full code from a model prediction:
-    - Extract fenced code by language.
-    - Trim with stop tokens.
-    - Remove language-specific main entrypoints.
-    - Prepend import helpers.
-    - Language-specific post-processing.
-    - Append dataset tests.
-    - Java: rename Problem to Main.
+    Java solutions retain complete methods and receive tests inside their solution class.
+    Other languages use the existing extraction, stop-token, and test-suffix rules.
 
     Args:
         prediction: Raw model output.
@@ -192,6 +349,10 @@ def build_full_code(prediction: str, language: str, stop_tokens: List[str], test
         Full code string ready for sandbox execution.
     """
     extract_lang, _ = normalize_languages(language)
+
+    if extract_lang == 'java':
+        code = default_extract_helper(prediction, extract_lang)
+        return '\n'.join(IMPORT_HELPER.get(extract_lang, [])) + '\n' + _assemble_java(code, tests or '')
 
     use_func_extractor_langs = {'typescript', 'go', 'perl', 'racket', 'lua', 'julia', 'd', 'js', 'php', 'r', 'ruby'}
     if extract_lang in use_func_extractor_langs:
@@ -207,8 +368,5 @@ def build_full_code(prediction: str, language: str, stop_tokens: List[str], test
 
     full_code = postprocess_full_code(full_code, extract_lang)
     full_code = f'{full_code}\n{tests or ""}'
-
-    if extract_lang == 'java':
-        full_code = full_code.replace('class Problem', 'class Main')
 
     return full_code
