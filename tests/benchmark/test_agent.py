@@ -1188,7 +1188,7 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
     """Persist a complete native run, serve it to WebUI, then regrade without model or Docker calls."""
     from evalscope.api.agent.types import ExecResult
     from evalscope.benchmarks.cybench.cybench_adapter import CybenchAdapter
-    from tests.benchmark.test_cybench import DYN
+    from tests.benchmark.test_cybench import DYN, write_dataset
 
     class Environment:
         name = 'cybench'
@@ -1210,7 +1210,10 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
             ModelOutput.from_content('scripted', 'Command: cat output.txt\n<END>'),
             ModelOutput.from_content('scripted', 'Answer: wrong\n<END>'),
         ]},
-        dataset_args={'cybench': {'subset_list': ['crypto'], 'extra_params': {'task_ids': [DYN]}}},
+        dataset_args={'cybench': {
+            'local_path': str(write_dataset(tmp_path / 'dataset')),
+            'subset_list': ['crypto'], 'extra_params': {'task_ids': [DYN]},
+        }},
         work_dir=str(tmp_path / 'run'), no_timestamp=True, eval_batch_size=1,
     )
     report = run_task(config)['cybench']

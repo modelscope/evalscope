@@ -1,17 +1,15 @@
 """Sample-owned Docker runtime for the official Cybench task scripts."""
 
 import asyncio
-import hashlib
 import json
 import shlex
 import time
 import uuid
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
-from evalscope.benchmarks.cybench.sources import GLACIER_REPO, GlacierTask, stage_glacier_task
+from evalscope.benchmarks.cybench.dataset import CybenchTask, stage_task_archive
 
 WORK_DIR = '/tmp/cyber-bench'
 DEFAULT_IMAGE = 'cybench/cybench@sha256:8a26be614f9d362ef7cdc61c26037884bee24af6c7ec62abf000462bb0623726'
@@ -24,28 +22,22 @@ class CybenchEnvironment(AgentEnvironment):
 
     def __init__(
         self,
-        task_path: str,
-        metadata_sha256: str,
+        task: CybenchTask,
+        archive_path: str,
         image: str = DEFAULT_IMAGE,
-        source_root: Optional[str] = None,
         setup_timeout: float = 1800,
-        glacier: Optional[GlacierTask] = None,
-        glacier_source_root: Optional[str] = None,
-        cache_dir: Optional[str] = None,
     ) -> None:
-        self.task_path = task_path
-        self.metadata_sha256 = metadata_sha256
+        self.task_path = task.path
+        self.metadata_sha256 = task.metadata_sha256
+        self.archive_sha256 = task.archive_sha256
+        self.archive_path = archive_path
         self.image = image
-        self.source_root = source_root
         self.setup_timeout = setup_timeout
         self.container = f'evalscope-cybench-{uuid.uuid4().hex}'
         self.started = False
         self.runtime: dict = {}
         self.work_dir = WORK_DIR
         self.shell_container: Optional[str] = None
-        self.glacier = glacier
-        self.glacier_source_root = glacier_source_root
-        self.cache_dir = cache_dir or str(Path.home() / '.cache/evalscope')
 
     async def _docker(self, args: List[str], timeout: float = 60, input: Optional[str] = None) -> ExecResult:
         started = time.monotonic()
@@ -99,49 +91,21 @@ class CybenchEnvironment(AgentEnvironment):
             self.runtime = json.loads(await self._checked(['inspect', self.container]))[0]
             self.runtime = {'image': self.runtime['Image'], 'requested_image': self.image}
             task = f'/app/{self.task_path}'
-            if self.glacier:
-                staging = await asyncio.to_thread(
-                    stage_glacier_task,
-                    self.glacier,
-                    self.cache_dir,
-                    self.glacier_source_root,
-                )
-                try:
-                    await self._checked(['exec', self.container, 'mkdir', '-p', task])
-                    await self._checked(['cp', f'{staging.name}/.', f'{self.container}:{task}'], self.setup_timeout)
-                finally:
-                    staging.cleanup()
-                self.runtime['task_source'] = {
-                    'repository': GLACIER_REPO,
-                    'revision': self.glacier.revision,
-                    'reference': self.glacier.reference.model_dump(mode='json'),
-                    'files': [file.model_dump(mode='json') for file in self.glacier.files],
-                }
-            elif self.source_root:
-                source = (Path(self.source_root) / self.task_path).resolve()
-                if not source.is_relative_to(Path(self.source_root).resolve()):
-                    raise ValueError('Cybench task path escapes the source checkout.')
-                if hashlib.sha256((source / 'metadata/metadata.json').read_bytes()).hexdigest() != self.metadata_sha256:
-                    raise ValueError('Cybench task metadata differs from the pinned source.')
+            staging = await asyncio.to_thread(stage_task_archive, self.archive_path, self.archive_sha256)
+            try:
+                # Do not let files embedded in the runtime image mask an incomplete dataset package.
+                await self._checked(['exec', self.container, 'rm', '-rf', '--', task])
                 await self._checked(['exec', self.container, 'mkdir', '-p', task])
-                await self._checked(['cp', f'{source}/.', f'{self.container}:{task}'], self.setup_timeout)
-            if self.glacier:
-                preparation = ''
-                if self.glacier.service:
-                    preparation += 'docker compose up --build -d\n'
-                for file in self.glacier.files:
-                    if file.target:
-                        destination = f'{WORK_DIR}/{file.target}'
-                        preparation += f'mkdir -p {shlex.quote(str(Path(destination).parent))}\n'
-                        preparation += f'cp -- {shlex.quote(file.path)} {shlex.quote(destination)}\n'
-                needs_docker = 'true' if self.glacier.service else 'false'
-            else:
-                preparation = f"""test "$(sha256sum metadata/metadata.json | cut -d ' ' -f1)" = {shlex.quote(self.metadata_sha256)}
+                await self._checked(['cp', f'{staging.name}/.', f'{self.container}:{task}'], self.setup_timeout)
+            finally:
+                staging.cleanup()
+            self.runtime['archive_sha256'] = self.archive_sha256
+            preparation = f"""test "$(sha256sum metadata/metadata.json | cut -d ' ' -f1)" = {shlex.quote(self.metadata_sha256)}
 if test -f metadata/requirements.sh; then (cd metadata && bash requirements.sh); fi
 if test -f start_docker.sh; then bash start_docker.sh; fi
 bash init_script.sh {WORK_DIR}
 """
-                needs_docker = 'test -f "$task/start_docker.sh" || grep -q docker "$task/init_script.sh"'
+            needs_docker = 'test -f "$task/start_docker.sh" || grep -q docker "$task/init_script.sh"'
             script = f"""set -e
 task={shlex.quote(task)}
 mkdir -p {WORK_DIR}

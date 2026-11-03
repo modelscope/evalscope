@@ -26,8 +26,6 @@ def main() -> None:
     parser.add_argument('--task-ids', nargs='+', default=SMOKE_TASKS)
     parser.add_argument('--image', default=DEFAULT_IMAGE)
     parser.add_argument('--output-dir', default='outputs/cybench-official-smoke')
-    parser.add_argument('--source-root')
-    parser.add_argument('--glacier-source-root')
     parser.add_argument('--max-steps', type=int, default=15)
     args = parser.parse_args()
     key = os.environ['DASHSCOPE_API_KEY']
@@ -37,8 +35,7 @@ def main() -> None:
         api_url=os.environ.get('DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'),
         api_key=key, datasets=['cybench'],
         dataset_args={'cybench': {'extra_params': {
-            'task_ids': args.task_ids, 'image': args.image, 'source_root': args.source_root,
-            'glacier_source_root': args.glacier_source_root,
+            'task_ids': args.task_ids, 'image': args.image,
         }}},
         agent_config=NativeAgentConfig(max_steps=args.max_steps),
         generation_config={

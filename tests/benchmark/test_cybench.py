@@ -2,7 +2,9 @@
 
 import asyncio
 import hashlib
+import io
 import json
+import tarfile
 from pathlib import Path
 from typing import Any, Optional
 
@@ -14,14 +16,47 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.cybench.cybench_adapter import MANIFEST, CybenchRun
+from evalscope.benchmarks.cybench.cybench_adapter import SOURCE_SHA, CybenchRun
+from evalscope.benchmarks.cybench.dataset import stage_task_archive
 from evalscope.benchmarks.cybench.environment import CybenchEnvironment
-from evalscope.benchmarks.cybench.sources import GLACIER_SHA, GlacierTask, stage_glacier_task
 from evalscope.benchmarks.cybench.strategy import CybenchStrategy
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
 
 DYN = 'benchmark/hackthebox/cyber-apocalypse-2024/crypto/[Very Easy] Dynastic'
+FLAG = 'HTB{scripted_flag}'
+
+
+def write_dataset(root: Path) -> Path:
+    """Build a tiny local dataset instead of depending on network or redistributing the official catalog."""
+    root.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for index, (path, category, statement) in enumerate([
+        (DYN, 'crypto', ''), ('benchmark/restored/crypto/example', 'crypto', 'Original competition statement'),
+        ('benchmark/restored/web/example', 'web', 'Original service statement'),
+    ]):
+        rows.append({
+            'path': path, 'category': category, 'difficulty': 'unrated', 'target_host': '',
+            'answer': FLAG, 'answer_format': 'HTB{...}', 'metadata_sha256': '0' * 64,
+            'archive': f'tasks/{index:02d}.tar.gz', 'archive_sha256': '1' * 64, 'statement': statement,
+        })
+    (root / 'tasks.json').write_text(json.dumps({'source_sha': SOURCE_SHA, 'tasks': rows}))
+    return root
+
+
+@pytest.fixture(autouse=True)
+def local_dataset(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.api.dataset import download_dataset_file
+    from evalscope.benchmarks.cybench import cybench_adapter
+
+    root = write_dataset(tmp_path / 'dataset')
+
+    def download(dataset_id: str, path: str, **kwargs: Any) -> str:
+        assert dataset_id == 'evalscope/cybench'
+        assert kwargs['data_source'] == 'modelscope'
+        return download_dataset_file(str(root), path)
+
+    monkeypatch.setattr(cybench_adapter, 'download_dataset_file', download)
 
 
 def adapter(**extra: Any) -> Any:
@@ -42,45 +77,64 @@ def test_loading_and_missing_upstream_tasks() -> None:
     sample = datasets['crypto'][0]
     assert sample.metadata['cybench']['path'] == DYN
     assert sample.target not in str(sample.input)
-    assert len(MANIFEST['tasks']) == 40
-    assert not MANIFEST['unavailable_tasks']
-    restored = [row for row in MANIFEST['tasks'] if row.get('glacier')]
-    assert len(restored) == 9
-    for row in restored:
-        source = GlacierTask.model_validate(row['glacier'])
-        assert source.revision == GLACIER_SHA
-        assert source.reference.path not in [file.path for file in source.files]
-        assert not any(part in ('solution', 'solve', 'metadata') for file in source.files for part in file.path.split('/'))
+    assert len(benchmark.task_manifest.tasks) == 3
+    assert benchmark.task_manifest.tasks[1].statement == 'Original competition statement'
     with pytest.raises(ValueError, match='unavailable'):
-        adapter(task_ids=['benchmark/not-an-official-task'])
+        adapter(task_ids=['benchmark/not-an-official-task']).load_dataset()
 
 
 def test_all_task_filters_support_restored_source_without_downloading() -> None:
     config = TaskConfig(model='scripted', eval_type='mock_llm', datasets=['cybench'])
     benchmark = get_benchmark('cybench', config=config)
     datasets = benchmark.load_dataset()
-    assert sum(len(dataset) for dataset in datasets.values()) == 40
+    assert sum(len(dataset) for dataset in datasets.values()) == 3
     for dataset in datasets.values():
         for sample in dataset:
             assert sample.metadata['cybench']['answer'] not in str(sample.input)
 
 
-def test_author_staging_verifies_bytes_and_excludes_reference_files(tmp_path: Path) -> None:
-    task_root = tmp_path / 'author/task'
-    task_root.mkdir(parents=True)
-    (task_root / 'public.txt').write_bytes(b'public handout')
-    (task_root / 'challenge.yml').write_text('flags: [grader-only-answer]')
-    task = GlacierTask(
-        path='task', description='CTF', service=False,
-        reference={'path': 'challenge.yml', 'sha256': hashlib.sha256((task_root/'challenge.yml').read_bytes()).hexdigest()},
-        files=[{'path': 'public.txt', 'target': 'public.txt', 'sha256': hashlib.sha256(b'public handout').hexdigest()}],
-    )
-    with stage_glacier_task(task, str(tmp_path/'cache'), str(task_root.parent)) as staged:
-        assert [path.name for path in Path(staged).iterdir()] == ['public.txt']
-        assert (Path(staged)/'public.txt').read_bytes() == b'public handout'
-    (task_root/'public.txt').write_bytes(b'tampered handout')
+def test_hub_downloads_catalog_once_and_only_the_selected_task(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from evalscope.benchmarks.cybench import cybench_adapter
+
+    download = cybench_adapter.download_dataset_file
+    calls = []
+
+    def tracked_download(dataset_id: str, path: str, **kwargs: Any) -> str:
+        calls.append(path)
+        if path == 'tasks.json':
+            return download(dataset_id, path, **kwargs)
+        return str(tmp_path / 'selected.tar.gz')
+
+    monkeypatch.setattr(cybench_adapter, 'download_dataset_file', tracked_download)
+    benchmark = adapter()
+    sample = benchmark.load_dataset()['crypto'][0]
+    environment = benchmark.build_environment(sample)
+    assert calls == ['tasks.json', sample.metadata['cybench']['archive']]
+    assert environment.archive_path == str(tmp_path / 'selected.tar.gz')
+
+
+def test_archive_staging_verifies_bytes_and_rejects_unsafe_members(tmp_path: Path) -> None:
+    path = tmp_path / 'task.tar.gz'
+    with tarfile.open(path, 'w:gz') as archive:
+        item = tarfile.TarInfo('public.txt')
+        item.size = len(b'public handout')
+        archive.addfile(item, io.BytesIO(b'public handout'))
+    checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+    with stage_task_archive(str(path), checksum) as staged:
+        assert (Path(staged) / 'public.txt').read_bytes() == b'public handout'
     with pytest.raises(ValueError, match='checksum mismatch'):
-        stage_glacier_task(task, str(tmp_path/'cache'), str(task_root.parent))
+        stage_task_archive(str(path), 'wrong')
+    for name in ('../escape', '/absolute', 'symlink'):
+        with tarfile.open(path, 'w:gz') as archive:
+            item = tarfile.TarInfo(name)
+            if name == 'symlink':
+                item.type = tarfile.SYMTYPE
+                item.linkname = '/grader'
+            archive.addfile(item)
+        with pytest.raises(ValueError, match='Unsafe'):
+            stage_task_archive(str(path), hashlib.sha256(path.read_bytes()).hexdigest())
 
 
 @pytest.mark.parametrize('text,expected', [
@@ -118,7 +172,7 @@ def scoring_state(benchmark: Any, stdout: str, submission: Optional[str]) -> Tas
 
 def test_official_stdout_and_exact_submission_are_distinct() -> None:
     benchmark = adapter()
-    flag = next(r['answer'] for r in MANIFEST['tasks'] if r['path'] == DYN)
+    flag = FLAG
     state = scoring_state(benchmark, flag[4:-1], 'wrong')
     score = benchmark.match_score('wrong', 'wrong', flag, state)
     assert score.value == {'flag_found': 1, 'correct_submission': 0, 'full_flag_found': 0}
@@ -189,8 +243,13 @@ def test_native_loop_keeps_full_outputs_and_one_submission(monkeypatch: pytest.M
     assert result.messages[-1].text == 'Answer: wrong\n<END>'
 
 
-def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPatch) -> None:
-    environment = CybenchEnvironment(DYN, 'checksum')
+def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    task = adapter().task_manifest.tasks[0]
+    path = tmp_path / 'task.tar.gz'
+    with tarfile.open(path, 'w:gz'):
+        pass
+    task.archive_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    environment = CybenchEnvironment(task, str(path))
     calls = []
 
     async def docker(args: list, *pos: Any, **kwargs: Any) -> ExecResult:

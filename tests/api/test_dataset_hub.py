@@ -906,6 +906,22 @@ def test_download_file_modelscope_uses_single_file_api(tmp_path: Path, monkeypat
 
     assert result == str(image_path)
     assert calls == [
-        ('remote-dataset', 'images/page_[1].png', {'revision': 'v1', 'local_files_only': True}),
         ('remote-dataset', 'images/page_[1].png', {'revision': 'v1'}),
     ]
+
+
+def test_modelscope_pinned_file_does_not_reuse_another_revision(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    old = tmp_path / 'old.json'
+    new = tmp_path / 'new.json'
+    old.write_text('old manifest')
+    new.write_text('new manifest')
+    fake_modelscope = types.ModuleType('modelscope')
+
+    def download(dataset_id: str, file_path: str, **kwargs: Any) -> str:
+        assert kwargs['revision'] == 'new-revision'
+        return str(old if kwargs.get('local_files_only') else new)
+
+    fake_modelscope.dataset_file_download = download
+    monkeypatch.setitem(sys.modules, 'modelscope', fake_modelscope)
+    path = download_dataset_file('owner/data', 'tasks.json', revision='new-revision')
+    assert Path(path).read_text() == 'new manifest'
