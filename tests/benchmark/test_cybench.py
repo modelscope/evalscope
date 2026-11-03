@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 import pytest
 
+from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.api.agent import AgentContext, AgentTrace, EventType
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.evaluator import TaskState
@@ -96,6 +97,7 @@ def test_all_task_filters_support_restored_source_without_downloading() -> None:
 def test_hub_downloads_catalog_once_and_only_the_selected_task(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    pytest.importorskip('ms_enclave')
     from evalscope.benchmarks.cybench import cybench_adapter
 
     download = cybench_adapter.download_dataset_file
@@ -113,6 +115,21 @@ def test_hub_downloads_catalog_once_and_only_the_selected_task(
     environment = benchmark.build_environment(sample)
     assert calls == ['tasks.json', sample.metadata['cybench']['archive']]
     assert environment.archive_path == str(tmp_path / 'selected.tar.gz')
+
+
+def test_shared_sandbox_defaults_override_runtime_image(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip('ms_enclave')
+    config = TaskConfig(
+        model='scripted', eval_type='mock_llm', datasets=['cybench'],
+        sandbox={'default_config': {'image': 'selected:runtime', 'memory_limit': '8g', 'cpu_limit': 4}},
+    )
+    benchmark = get_benchmark('cybench', config=config)
+    sample = benchmark.load_dataset()['crypto'][0]
+    monkeypatch.setattr(benchmark, '_dataset_file', lambda path: '/selected/task.tar.gz')
+    environment = benchmark.build_environment(sample)
+    assert environment.image == 'selected:runtime'
+    assert environment._sandbox_config_dict['memory_limit'] == '8g'
+    assert environment._sandbox_config_dict['cpu_limit'] == 4
 
 
 def test_archive_staging_verifies_bytes_and_rejects_unsafe_members(tmp_path: Path) -> None:
@@ -244,27 +261,52 @@ def test_native_loop_keeps_full_outputs_and_one_submission(monkeypatch: pytest.M
 
 
 def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    pytest.importorskip('ms_enclave')
     task = adapter().task_manifest.tasks[0]
     path = tmp_path / 'task.tar.gz'
     with tarfile.open(path, 'w:gz'):
         pass
     task.archive_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
     environment = CybenchEnvironment(task, str(path))
-    calls = []
+    closed = []
 
-    async def docker(args: list, *pos: Any, **kwargs: Any) -> ExecResult:
-        calls.append(args)
-        if args[0] == 'inspect':
-            return ExecResult(stdout=json.dumps([{'Image': 'fixture'}]))
-        if args[0] == 'exec':
-            return ExecResult(returncode=1, stderr='setup failure')
-        return ExecResult()
+    async def identity() -> dict:
+        return {'image': 'fixture', 'manager': 'ms-enclave'}
 
-    monkeypatch.setattr(environment, '_docker', docker)
+    async def fail(args: list, *pos: Any, **kwargs: Any) -> ExecResult:
+        return ExecResult(returncode=1, stderr='setup failure')
+
+    async def close() -> None:
+        closed.append(True)
+
+    monkeypatch.setattr(environment, '_runtime_identity', identity)
+    monkeypatch.setattr(environment, '_root_exec', fail)
+    monkeypatch.setattr(environment, 'close', close)
     with pytest.raises(RuntimeError, match='setup failure'):
         asyncio.run(environment.setup())
-    assert ['rm', '-f', '-v', environment.container] in calls
-    assert not any('prune' in arg for args in calls for arg in args)
+    assert closed == [True]
+
+
+def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip('ms_enclave')
+    environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
+    assert isinstance(environment, EnclaveAgentEnvironment)
+    config = environment._sandbox_config_dict
+    assert config['image'] == environment.image and config['privileged']
+    assert config['tools_config'] == ['shell_executor']
+    assert not config.get('volumes')
+    calls = []
+
+    async def execute(self: Any, cmd: list, **kwargs: Any) -> ExecResult:
+        calls.append((cmd, kwargs))
+        return ExecResult(stdout='public result', stderr='diagnostic', returncode=124)
+
+    monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
+    result = asyncio.run(environment.exec(['bash', '-c', 'sleep 30'], input='payload', timeout=1, env={'X': 'value'}))
+    command, kwargs = calls[0]
+    assert command[:4] == ['runuser', '-u', 'cybench-agent', '--']
+    assert kwargs == {'cwd': '/tmp/cyber-bench', 'input': 'payload', 'timeout': 16, 'env': {'X': 'value'}}
+    assert result.timed_out and result.stdout == 'public result' and result.stderr == 'diagnostic'
 
 
 @pytest.mark.parametrize('reply', ['No executable command', '[ERROR] transport unavailable'])

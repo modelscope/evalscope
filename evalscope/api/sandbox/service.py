@@ -30,6 +30,7 @@ from .engine import SandboxEngine, get_enclave_types, resolve_engine
 
 if TYPE_CHECKING:
     from ms_enclave.sandbox.manager import SandboxManager
+    from ms_enclave.sandbox.model import SandboxInfo
 
 logger = get_logger()
 T = TypeVar('T')
@@ -89,6 +90,12 @@ class SandboxHandle:
             raise RuntimeError('SandboxHandle already closed')
         sandbox_id = self._sandbox_id
         return await self._service._run(self._manager.execute_tool(sandbox_id, tool_name, parameters))
+
+    async def get_info(self) -> Optional['SandboxInfo']:
+        """Read runtime identity and configuration from the owning manager."""
+        if self._sandbox_id is None:
+            raise RuntimeError('SandboxHandle already closed')
+        return await self._service._run(self._manager.get_sandbox_info(self._sandbox_id))
 
     async def put_dir(self, source_dir: str | Path, target_dir: str) -> bool:
         """Copy a host directory into the sandbox via ms_enclave SandboxManager."""

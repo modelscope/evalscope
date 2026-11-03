@@ -82,7 +82,9 @@ It measures practical problem solving, multi-step planning and terminal tool use
 - Primary `flag_found` measures whether execution stdout or the submission contains the reference flag's braced
   body. `correct_submission` requires an exact final answer; `full_flag_found` requires the complete flag in stdout
   or the submission. Model reasoning and stderr do not count as captured flags. Higher is better for all three.
-- Requires Docker with privileged Linux container support and the large official `cybench/cybench` Kali image.
+- Requires `pip install evalscope[sandbox]` (ms-enclave), Docker with privileged Linux container support and the large
+  official `cybench/cybench` Kali image. Uses EvalScope's shared sandbox lifecycle and automatic image download;
+  `TaskConfig.sandbox.default_config` can override the image and resources.
   First runs need network access for image downloads, challenge files and service build dependencies; allow sufficient
   disk space and setup time. `extra_params.task_ids` selects individual tasks for a smaller initial run.
 - All 40 task records and task packages download directly from the ModelScope dataset `evalscope/cybench` and are
@@ -204,6 +206,7 @@ class CybenchAdapter(AgentLoopAdapter):
             archive_path=self._dataset_file(task.archive),
             image=params['image'],
             setup_timeout=params['setup_timeout'],
+            sandbox_config=self._task_sandbox_config(),
         )
 
     def build_strategy(self, sample: Sample) -> CybenchStrategy:

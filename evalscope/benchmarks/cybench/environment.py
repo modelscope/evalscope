@@ -3,20 +3,39 @@
 import asyncio
 import json
 import shlex
-import time
-import uuid
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from evalscope.api.agent import AgentEnvironment
+from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.api.agent.types import ExecResult
+from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.benchmarks.cybench.dataset import CybenchTask, stage_task_archive
 
 WORK_DIR = '/tmp/cyber-bench'
 DEFAULT_IMAGE = 'cybench/cybench@sha256:8a26be614f9d362ef7cdc61c26037884bee24af6c7ec62abf000462bb0623726'
 
+# Enable nested service limits inside the sample's private cgroup namespace.
+# See https://github.com/moby/moby/blob/master/hack/dind.
+CONTAINER_START = r"""
+set -e
+if test -f /sys/fs/cgroup/cgroup.controllers && test "$(cut -d: -f3 /proc/self/cgroup)" = /; then
+    mkdir -p /sys/fs/cgroup/init
+    ready=0
+    for attempt in $(seq 1 30); do
+        while read -r pid; do echo "$pid" > /sys/fs/cgroup/init/cgroup.procs 2>/dev/null || true; done \
+            < /sys/fs/cgroup/cgroup.procs
+        if sed 's/ / +/g; s/^/+/' /sys/fs/cgroup/cgroup.controllers > /sys/fs/cgroup/cgroup.subtree_control; then
+            ready=1
+            break
+        fi
+    done
+    test "$ready" = 1
+fi
+exec sleep infinity
+""".strip()
 
-class CybenchEnvironment(AgentEnvironment):
-    """Use a private Docker daemon per sample; never mount the host Docker socket or credentials."""
+
+class CybenchEnvironment(EnclaveAgentEnvironment):
+    """Reuse ms-enclave lifecycle and image management; keep official targets sample-local."""
 
     name = 'cybench'
 
@@ -26,79 +45,79 @@ class CybenchEnvironment(AgentEnvironment):
         archive_path: str,
         image: str = DEFAULT_IMAGE,
         setup_timeout: float = 1800,
+        sandbox_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.task_path = task.path
         self.metadata_sha256 = task.metadata_sha256
         self.archive_sha256 = task.archive_sha256
         self.archive_path = archive_path
-        self.image = image
         self.setup_timeout = setup_timeout
-        self.container = f'evalscope-cybench-{uuid.uuid4().hex}'
-        self.started = False
         self.runtime: dict = {}
         self.work_dir = WORK_DIR
         self.shell_container: Optional[str] = None
+        config = merge_sandbox_config_dicts(
+            {
+                'image': image,
+                'entrypoint': ['bash', '-c', CONTAINER_START],
+                'working_dir': '/',
+                'privileged': True,
+                'tools_config': ['shell_executor'],
+            },
+            sandbox_config,
+        )
+        self.image = config['image']
+        super().__init__(engine='docker', sandbox_config=config)
 
-    async def _docker(self, args: List[str], timeout: float = 60, input: Optional[str] = None) -> ExecResult:
-        started = time.monotonic()
-        process = await asyncio.create_subprocess_exec(
-            'docker',
-            *args,
-            stdin=asyncio.subprocess.PIPE if input is not None else None,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        try:
-            stdout, stderr = await asyncio.wait_for(
-                process.communicate(input.encode() if input is not None else None),
-                timeout=timeout,
-            )
-        except asyncio.TimeoutError:
-            process.kill()
-            await process.communicate()
-            raise TimeoutError(f'Docker operation timed out after {timeout}s: {args[:2]}')
-        return ExecResult(
-            stdout=stdout.decode('utf-8', errors='replace'),
-            stderr=stderr.decode('utf-8', errors='replace'),
-            returncode=process.returncode,
-            duration=time.monotonic() - started,
-        )
+    async def _root_exec(self, args: List[str], timeout: float = 60) -> ExecResult:
+        return await super().exec(args, timeout=timeout)
 
     async def _checked(self, args: List[str], timeout: float = 60) -> str:
-        result = await self._docker(args, timeout)
+        result = await self._root_exec(args, timeout)
         if result.returncode:
-            raise RuntimeError(f'Cybench Docker operation failed: {result.stderr}\n{result.stdout}')
+            raise RuntimeError(f'Cybench initialization failed: {result.stderr}\n{result.stdout}')
         return result.stdout
+
+    async def _runtime_identity(self) -> dict:
+        handle = await self._ensure_sandbox()
+        info = await handle.get_info()
+        if info is None:
+            raise RuntimeError('Cybench sandbox information is unavailable')
+
+        def inspect_identity() -> dict:
+            # Read only: ms-enclave owns all host image/container lifecycle operations.
+            from docker import DockerClient
+
+            client = DockerClient.from_env()
+            try:
+                container = client.containers.get(info.metadata['container_id'])
+                return {
+                    'image': container.attrs['Image'],
+                    'cgroupns': container.attrs['HostConfig'].get('CgroupnsMode'),
+                    'container_id': container.id,
+                }
+            finally:
+                client.close()
+
+        identity = await asyncio.to_thread(inspect_identity)
+        return {
+            **identity,
+            'requested_image': self.image,
+            'manager': 'ms-enclave',
+            'sandbox_id': info.id,
+            'memory_limit': info.config.get('memory_limit'),
+            'cpu_limit': info.config.get('cpu_limit'),
+        }
 
     async def setup(self) -> str:
         """Run upstream requirements/start/init scripts before exposing the working directory."""
         try:
-            self.started = True
-            await self._checked(
-                [
-                    'run',
-                    '-d',
-                    '--name',
-                    self.container,
-                    '--privileged',
-                    '--cgroupns',
-                    'host',
-                    '--entrypoint',
-                    'sleep',
-                    self.image,
-                    'infinity',
-                ],
-                self.setup_timeout,
-            )
-            self.runtime = json.loads(await self._checked(['inspect', self.container]))[0]
-            self.runtime = {'image': self.runtime['Image'], 'requested_image': self.image, 'cgroupns': 'host'}
+            self.runtime = await self._runtime_identity()
             task = f'/app/{self.task_path}'
             staging = await asyncio.to_thread(stage_task_archive, self.archive_path, self.archive_sha256)
             try:
                 # Do not let files embedded in the runtime image mask an incomplete dataset package.
-                await self._checked(['exec', self.container, 'rm', '-rf', '--', task])
-                await self._checked(['exec', self.container, 'mkdir', '-p', task])
-                await self._checked(['cp', f'{staging.name}/.', f'{self.container}:{task}'], self.setup_timeout)
+                await self._checked(['rm', '-rf', '--', task])
+                await super().put_dir(staging.name, task)
             finally:
                 staging.cleanup()
             self.runtime['archive_sha256'] = self.archive_sha256
@@ -124,23 +143,21 @@ fi
 cd "$task"
 {preparation}
 """
-            setup = await self._docker(
-                ['exec', self.container, 'bash', '-c', script],
+            setup = await self._root_exec(
+                ['bash', '-c', script],
                 self.setup_timeout,
             )
             self.runtime['setup'] = setup.model_dump(mode='json')
             if setup.returncode:
                 raise RuntimeError(f'Cybench initialization failed: {setup.stderr}\n{setup.stdout}')
             # Resolve task aliases from the private daemon into the agent container's hosts file.
-            nested = await self._docker(['exec', self.container, 'docker', 'ps', '-aq'])
+            nested = await self._root_exec(['docker', 'ps', '-aq'])
             if nested.returncode == 0:
                 containers = nested.stdout.split()
                 details = (
                     json.loads(
                         await self._checked(
                             [
-                                'exec',
-                                self.container,
                                 'docker',
                                 'inspect',
                                 *containers,
@@ -158,8 +175,6 @@ cd "$task"
                         names = [value['Name'].lstrip('/'), *(endpoint.get('Aliases') or [])]
                         await self._checked(
                             [
-                                'exec',
-                                self.container,
                                 'bash',
                                 '-c',
                                 f'printf "\\n%s %s\\n" {shlex.quote(ip)} {shlex.quote(" ".join(names))} >> /etc/hosts',
@@ -177,8 +192,6 @@ cd "$task"
             # Keep service bind mounts alive, but make annotations and all source material inaccessible to the agent.
             await self._checked(
                 [
-                    'exec',
-                    self.container,
                     'bash',
                     '-c',
                     f"""
@@ -214,25 +227,20 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
         """Execute a command in the task's public shell with a process timeout."""
         seconds = timeout or 120
         if self.shell_container:
-            args = ['exec', '-i', self.container, 'docker', 'exec', '-i', '-w', cwd or self.work_dir]
-            target = self.shell_container
+            args = ['docker', 'exec', '-i', '-w', cwd or self.work_dir]
+            for key, value in (env or {}).items():
+                args += ['-e', f'{key}={value}']
+            args += [self.shell_container]
+            work_dir = '/'
         else:
-            args = ['exec', '-i', '-u', 'cybench-agent', '-w', cwd or self.work_dir]
-            target = self.container
-        for key, value in (env or {}).items():
-            args += ['-e', f'{key}={value}']
-        result = await self._docker(
-            args + [target, 'timeout', '--kill-after=5', str(seconds), *cmd],
-            seconds + 15,
-            input,
+            args = ['runuser', '-u', 'cybench-agent', '--']
+            work_dir = cwd or self.work_dir
+        result = await super().exec(
+            args + ['timeout', '--kill-after=5', str(seconds), *cmd],
+            cwd=work_dir,
+            input=input,
+            timeout=seconds + 15,
+            env=env,
         )
-        result.timed_out = result.returncode == 124
+        result.timed_out = result.timed_out or result.returncode == 124
         return result
-
-    async def close(self) -> None:
-        """Remove only this sample's container, including its private target containers and networks."""
-        if self.started:
-            result = await self._docker(['rm', '-f', '-v', self.container])
-            if result.returncode and 'No such container' not in result.stderr:
-                raise RuntimeError(f'Cybench cleanup failed: {result.stderr}')
-            self.started = False

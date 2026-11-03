@@ -598,6 +598,21 @@ class TestHandles:
         assert asyncio.run(_run()) is True
         manager.put_dir.assert_awaited_once_with('sb-1', '/host/skills', '/skills')
 
+    def test_sandbox_info_uses_owner_and_rejects_closed_handle(self, service) -> None:
+        manager = MagicMock()
+        manager.get_sandbox_info = AsyncMock(return_value='runtime identity')
+        manager.delete_sandbox = AsyncMock()
+        handle = SandboxHandle(manager, 'sb-1', service)
+
+        async def inspect() -> None:
+            assert await handle.get_info() == 'runtime identity'
+            await handle.close()
+            with pytest.raises(RuntimeError, match='already closed'):
+                await handle.get_info()
+
+        asyncio.run(inspect())
+        manager.get_sandbox_info.assert_awaited_once_with('sb-1')
+
 
 # ===========================================================================
 # TaskConfig.sandbox ← legacy fields (legacy → nested one-way fold)
