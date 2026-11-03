@@ -687,8 +687,9 @@ def model_output_from_openai(
         metadata={'finish_reasons': finish_reasons} if finish_reasons else None,
         usage=(
             ModelUsage(
-                input_tokens=completion.usage.prompt_tokens,
-                output_tokens=completion.usage.completion_tokens,
+                # Some providers omit a count (Gemini's completion_tokens when max_tokens is hit during reasoning).
+                input_tokens=completion.usage.prompt_tokens or 0,
+                output_tokens=completion.usage.completion_tokens or 0,
                 input_tokens_cache_read=(
                     completion.usage.prompt_tokens_details.cached_tokens
                     if completion.usage.prompt_tokens_details is not None
@@ -699,7 +700,7 @@ def model_output_from_openai(
                     if completion.usage.completion_tokens_details is not None
                     else None
                 ),
-                total_tokens=completion.usage.total_tokens,
+                total_tokens=completion.usage.total_tokens or 0,
             )
             if completion.usage
             else None
