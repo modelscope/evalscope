@@ -39,7 +39,7 @@ logger = get_logger()
 
 # Recognized perf run-directory markers (mirror perf_data.py).
 _PARALLEL_RE = re.compile(r'^parallel_(\d+)_number_(\d+)$')
-_RATE_RE = re.compile(r'^rate_([\d.]+)_number_(\d+)$')
+_RATE_RE = re.compile(r'^rate_(-?[\d.]+)_number_(\d+)$')
 # Bound recursive scan depth so large output trees stay cheap to walk.
 MAX_SCAN_DEPTH = 3
 

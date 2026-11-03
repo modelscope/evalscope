@@ -148,6 +148,27 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(cli_run['api_host'], 'dashscope.aliyuncs.com')
         self.assertEqual(cli_run['concurrency'], [1])
 
+    def test_open_loop_run_without_fixed_rate_is_served(self):
+        # `--open-loop` trace replay runs with --rate -1, so its sub-run is named rate_-1_number_<N>.
+        rel = os.path.join('20260104_120000', 'trace-model')
+        sub_name = 'rate_-1_number_2'
+        _make_run(os.path.join(self.tmp, rel), with_html=False, sub_name=sub_name)
+        _make_db(os.path.join(self.tmp, rel, sub_name), n_success=2, n_failed=0)
+        query = {'root_path': self.tmp, 'path': rel, 'run': sub_name}
+
+        listed = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp}).get_json()
+        self.assertIn(rel, {run['path'] for run in listed['runs']})
+
+        runs = self.client.get('/api/v1/perf/runs', query_string=query).get_json()
+        self.assertEqual([run['dir_name'] for run in runs['runs']], [sub_name])
+
+        requests = self.client.get('/api/v1/perf/requests', query_string=query)
+        self.assertEqual(requests.status_code, 200)
+        self.assertEqual(requests.get_json()['total'], 2)
+
+        chart = self.client.get('/api/v1/perf/chart', query_string={**query, 'chart_type': 'req_latency'})
+        self.assertEqual(chart.status_code, 200)
+
     def test_detail_returns_summary_fields(self):
         res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': self.cli_rel})
         self.assertEqual(res.status_code, 200)
