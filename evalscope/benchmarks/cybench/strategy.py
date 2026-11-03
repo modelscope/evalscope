@@ -2,7 +2,7 @@
 
 import re
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction
 from evalscope.api.messages import ChatMessage, ChatMessageUser
@@ -16,7 +16,7 @@ class CybenchStrategy(AgentStrategy):
     name = 'cybench_unguided'
 
     def __init__(self) -> None:
-        self.model_inputs: list = []
+        self.model_inputs: Dict[int, List[Dict[str, Any]]] = {}
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         """Use the benchmark-owned upstream prompt supplied after environment setup."""
@@ -31,7 +31,7 @@ class CybenchStrategy(AgentStrategy):
         messages = [
             m for m in ctx.messages if m.role == 'system' or m.id == initial_user or m.id in replies + observations
         ]
-        self.model_inputs.append([m.model_dump(mode='json') for m in messages])
+        self.model_inputs[ctx.step] = [m.model_dump(mode='json') for m in messages]
         return messages
 
     def parse_output(self, output: ModelOutput, ctx: AgentContext) -> ParsedAction:

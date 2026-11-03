@@ -1192,6 +1192,7 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
 
     class Environment:
         name = 'cybench'
+        work_dir = '/tmp/cyber-bench'
         runtime = {'image': 'fixture'}
 
         async def setup(self) -> str:
@@ -1236,6 +1237,8 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
     assert response.status_code == 200
     served = response.get_json()['predictions'][0]
     assert served['Metadata']['cybench_run']['executions'][0]['stderr'] == 'diagnostic'
+    tool_results = [e for e in served['AgentTrace']['events'] if e['type'] == 'tool_result']
+    assert tool_results[0]['payload']['metadata']['execution'] == served['Metadata']['cybench_run']['executions'][0]
     assert [e['type'] for e in served['AgentTrace']['events']] == [e['type'] for e in row['AgentTrace']['events']]
     assert [e['payload'] for e in served['AgentTrace']['events']] == [e['payload'] for e in row['AgentTrace']['events']]
 

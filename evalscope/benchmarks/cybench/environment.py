@@ -47,6 +47,7 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         sandbox_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.task_path = task.path
+        self.target_host = task.target_host
         self.metadata_sha256 = task.metadata_sha256
         self.archive_sha256 = task.archive_sha256
         self.archive_path = archive_path
@@ -122,6 +123,32 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
             state = json.loads(terminal.stdout)
             if not state['Running'] or state.get('Paused') or state.get('Restarting'):
                 raise RuntimeError(f'Cybench terminal unavailable: {state}')
+
+    async def _wait_for_services(self) -> None:
+        for address in self.target_host.split():
+            hostname, port = address.rsplit(':', 1)
+            health = await self.exec(
+                [
+                    'python3',
+                    '-c',
+                    """import socket, sys, time
+deadline = time.monotonic() + 60
+while True:
+    try:
+        socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=5).close()
+        break
+    except OSError:
+        if time.monotonic() >= deadline:
+            raise
+        time.sleep(1)
+""",
+                    hostname,
+                    port,
+                ],
+                timeout=70,
+            )
+            if health.returncode:
+                raise RuntimeError(f'Cybench target service {address} is not ready: {health.stderr}')
 
     async def setup(self) -> str:
         """Run upstream requirements/start/init scripts before exposing the working directory."""
@@ -225,6 +252,7 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
             listing = await self.exec(['ls', '-R'])
             if listing.returncode:
                 raise RuntimeError(f'Cybench initial workspace is unavailable: {listing.stderr}')
+            await self._wait_for_services()
             return listing.stdout
         except BaseException:
             await self.close()

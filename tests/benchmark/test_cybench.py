@@ -220,7 +220,7 @@ def test_official_stdout_and_exact_submission_are_distinct() -> None:
     }
 
 
-@pytest.mark.parametrize('damage', ['record', 'source', 'identity', 'trace'])
+@pytest.mark.parametrize('damage', ['record', 'source', 'identity', 'trace', 'loaded_task'])
 def test_invalid_replay_records_are_excluded(damage: str) -> None:
     benchmark = adapter()
     state = scoring_state(benchmark, '', None)
@@ -231,6 +231,11 @@ def test_invalid_replay_records_are_excluded(damage: str) -> None:
         state.metadata['cybench_run']['source_sha'] = 'other'
     elif damage == 'identity':
         state.metadata['cybench']['answer'] = 'other'
+    elif damage == 'loaded_task':
+        other = benchmark.task_manifest.tasks[1].model_dump()
+        assert other['answer'] == flag
+        state.metadata['cybench'] = other
+        state.metadata['cybench_run']['task'] = other
     else:
         state.agent_trace = None
     score = benchmark.match_score('', '', flag, state)
@@ -248,8 +253,9 @@ def test_native_loop_keeps_full_outputs_and_one_submission(
 
     class Environment:
         name = 'cybench'
+        work_dir = '/tmp/cyber-bench'
         runtime = {'image': 'fixture'}
-        closed = False
+        closed = 0
 
         async def setup(self) -> str:
             return 'output.txt\nsource.py\n'
@@ -258,10 +264,11 @@ def test_native_loop_keeps_full_outputs_and_one_submission(
             return ExecResult(stdout=f'{flag}\n' + 'x' * 12000, stderr='diagnostic', timed_out=timed_out)
 
         async def close(self) -> None:
-            self.closed = True
+            self.closed += 1
 
     environment = Environment()
     monkeypatch.setattr(benchmark, 'build_environment', lambda sample: environment)
+    requests = []
 
     class Model:
         calls = 0
@@ -269,21 +276,44 @@ def test_native_loop_keeps_full_outputs_and_one_submission(
         async def generate_async(self, **kwargs: Any) -> ModelOutput:
             self.calls += 1
             messages = kwargs['input']
+            requests.append([m.model_dump(mode='json') for m in messages])
             assert messages[0].role == 'system'
             assert messages[1].role == 'user' and messages[1].text
             return output('Command: cat output.txt\n<END>' if self.calls == 1 else 'Answer: wrong\n<END>')
 
     model = Model()
     result = benchmark._on_inference(model, sample)
-    assert model.calls == 2 and environment.closed
+    assert model.calls == 2 and environment.closed == 1
     assert result.output.completion == 'wrong'
     assert len([e for e in result.trace.events if e.type == EventType.SUBMIT]) == 1
     assert len(sample.metadata['cybench_run']['executions'][0]['stdout']) > 12000
     scoring_stdout = sample.metadata['cybench_run']['executions'][0]['scoring_stdout']
     assert (flag in scoring_stdout) is not timed_out
-    assert any(e.payload.get('model_input') for e in result.trace.events)
-    assert any(e.payload.get('execution', {}).get('stderr') == 'diagnostic' for e in result.trace.events)
+    assert [e.payload['model_input'] for e in result.trace.events if e.type == EventType.MODEL_GENERATE] == requests
+    tool_results = [e for e in result.trace.events if e.type == EventType.TOOL_RESULT]
+    assert tool_results[0].payload['metadata']['execution'] == sample.metadata['cybench_run']['executions'][0]
+    assert any(m.metadata and m.metadata.get('execution', {}).get('stderr') == 'diagnostic' for m in result.messages)
     assert result.messages[-1].text == 'Answer: wrong\n<END>'
+
+
+@pytest.mark.parametrize('ready', [True, False])
+def test_environment_requires_all_target_services_ready(monkeypatch: pytest.MonkeyPatch, ready: bool) -> None:
+    pytest.importorskip('ms_enclave')
+    environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
+    environment.target_host = 'first:1234 second:5678'
+    checked = []
+
+    async def execute(cmd: list, **kwargs: Any) -> ExecResult:
+        checked.append(cmd[-2:])
+        return ExecResult(returncode=int(not ready and len(checked) == 2), stderr='not listening')
+
+    monkeypatch.setattr(environment, 'exec', execute)
+    if ready:
+        asyncio.run(environment._wait_for_services())
+    else:
+        with pytest.raises(RuntimeError, match='second:5678 is not ready'):
+            asyncio.run(environment._wait_for_services())
+    assert checked == [['first', '1234'], ['second', '5678']]
 
 
 def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -498,6 +528,7 @@ def test_runtime_failure_aborts_without_scoreable_record(monkeypatch: pytest.Mon
 
     class Environment:
         name = 'cybench'
+        work_dir = '/tmp/cyber-bench'
         runtime = {'image': 'fixture'}
         closed = False
 
@@ -529,6 +560,7 @@ def test_malformed_turn_budget_and_provider_failure(monkeypatch: pytest.MonkeyPa
 
     class Environment:
         name = 'cybench'
+        work_dir = '/tmp/cyber-bench'
         runtime = {'image': 'fixture'}
         closed = False
 
