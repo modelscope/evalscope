@@ -1,27 +1,36 @@
 name: Cybench all-40 Flash runtime validation
 
 on:
-  push:
-    branches: [validate/cybench-runtime-fixes-20261103]
-    paths: [.github/workflows/cybench-native-validation.yml]
   workflow_dispatch:
+    inputs:
+      chunks:
+        description: JSON array of task chunks to run
+        required: true
+        default: '[0, 1, 2, 3]'
 
 permissions:
   contents: read
 
 jobs:
   full-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
-        chunk: [0, 1, 2, 3]
+        chunk: ${{ fromJSON(inputs.chunks) }}
     steps:
       - uses: actions/checkout@v4
       - name: Reserve disk space for the official Kali image
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/powershell /usr/share/swift
+          df -h / /mnt /var/lib/docker
+          python3 - <<'PY_DISK'
+          import shutil
+          free = shutil.disk_usage('/var/lib/docker').free
+          assert free >= 45 * 1024 ** 3, f'Official Kali runtime needs more free disk space; available {free / 1024 ** 3:.1f} GiB'
+          PY_DISK
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
