@@ -491,16 +491,19 @@ def anthropic_completion_params(model: str, config: GenerateConfig) -> Dict[str,
         max_tokens=max_tokens,
     )
 
+    # Extended thinking rejects temperature != 1 and top_k, so both are left out when it is enabled.
+    thinking_enabled = config.reasoning_tokens is not None
+
     # Temperature (not compatible with extended thinking)
-    if config.temperature is not None:
+    if config.temperature is not None and not thinking_enabled:
         params['temperature'] = config.temperature
 
     # Top P
     if config.top_p is not None:
         params['top_p'] = config.top_p
 
-    # Top K
-    if config.top_k is not None:
+    # Top K (not compatible with extended thinking)
+    if config.top_k is not None and not thinking_enabled:
         params['top_k'] = config.top_k
 
     # Stop sequences
@@ -512,7 +515,7 @@ def anthropic_completion_params(model: str, config: GenerateConfig) -> Dict[str,
         params['timeout'] = config.timeout
 
     # Extended thinking / reasoning
-    if config.reasoning_tokens is not None:
+    if thinking_enabled:
         params['thinking'] = dict(type='enabled', budget_tokens=config.reasoning_tokens)
 
     # Anthropic top-level automatic prompt caching.
