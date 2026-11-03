@@ -85,7 +85,7 @@ def parse_mixed_data(data_string):
     for line in lines:
         if line.strip():  # skip empty line
             try:
-                parsed_value = ast.literal_eval(line.strip())
+                parsed_value = json.loads(line.strip())
                 result.append(parsed_value)
             except (ValueError, SyntaxError):
                 result.append(line.strip()) # Keep as string if parse failed
