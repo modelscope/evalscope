@@ -3,6 +3,7 @@
 import asyncio
 import json
 import threading
+import time
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -122,3 +123,59 @@ def test_completed_and_token_limited_responses_remain_successes(provider: str, m
     assert output.cached_tokens == 2
     assert accumulator.total_cached_tokens == 2
     assert result.avg_cached_percent == pytest.approx(2 / 7 * 100)
+
+
+@pytest.fixture
+def tool_call_provider() -> Iterator[str]:
+    """Stream a reply made only of a function call, as the Responses API sends it."""
+    events = [
+        {'type': 'response.function_call_arguments.delta', 'delta': '{"city":', 'sequence_number': 0},
+        {'type': 'response.function_call_arguments.delta', 'delta': '"Paris"}', 'sequence_number': 1},
+        {
+            'type': 'response.completed',
+            'sequence_number': 2,
+            'response': {
+                'id': 'resp_fixture',
+                'object': 'response',
+                'status': 'completed',
+                'output': [{'type': 'function_call', 'name': 'weather', 'call_id': 'c', 'arguments': '{}'}],
+                'usage': {'input_tokens': 7, 'output_tokens': 3},
+            },
+        },
+    ]
+
+    class Provider(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            self.rfile.read(int(self.headers['Content-Length']))
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.end_headers()
+            for event in events:
+                self.wfile.write(f'event: {event["type"]}\ndata: {json.dumps(event)}\n\n'.encode())
+                self.wfile.flush()
+                time.sleep(0.01)
+
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Provider)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        yield f'http://127.0.0.1:{server.server_port}/v1/responses'
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()
+
+
+def test_streamed_tool_call_counts_as_output_for_timing(tool_call_provider: str) -> None:
+    plugin = OpenAIResponsesPlugin(Arguments(model='test-model', api='openai_responses'))
+
+    output = _request(plugin, tool_call_provider, 'test-model')
+
+    assert output.success is True
+    assert 0 < output.first_chunk_latency < output.query_latency
+    assert len(output.inter_chunk_latency) == 1
+    # Argument fragments time the reply; they are not text the model returned.
+    assert output.generated_text == ''
