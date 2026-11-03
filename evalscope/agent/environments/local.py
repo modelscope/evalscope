@@ -7,6 +7,7 @@ No container isolation - suitable only for development and CI tests.
 import asyncio
 import os
 import shutil
+import signal
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -69,10 +70,12 @@ class LocalAgentEnvironment(AgentEnvironment):
             stderr=asyncio.subprocess.PIPE,
             cwd=effective_cwd,
             env=merged_env,
+            start_new_session=os.name == 'posix',
         )
+        communication = asyncio.create_task(proc.communicate(input.encode('utf-8') if input is not None else None))
         try:
             stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                proc.communicate(input.encode('utf-8') if input is not None else None),
+                asyncio.shield(communication),
                 timeout=timeout,
             )
             duration = loop.time() - started
@@ -83,13 +86,66 @@ class LocalAgentEnvironment(AgentEnvironment):
                 duration=duration,
             )
         except asyncio.TimeoutError:
-            proc.terminate()
-            try:
-                await asyncio.wait_for(proc.wait(), timeout=3.0)
-            except asyncio.TimeoutError:
-                proc.kill()
-                await proc.wait()
+            await self._stop_process(proc, communication)
             return ExecResult(returncode=-1, timed_out=True)
+        except BaseException:
+            await self._stop_process(proc, communication)
+            raise
+
+    @staticmethod
+    async def _stop_process(proc: asyncio.subprocess.Process, communication: asyncio.Task[tuple[bytes, bytes]]) -> None:
+        def stop(force: bool = False) -> None:
+            try:
+                if os.name == 'posix':
+                    # The shell may have exited while descendants still hold its pipes open.
+                    os.killpg(proc.pid, signal.SIGKILL if force else signal.SIGTERM)
+                elif proc.returncode is None:
+                    proc.kill() if force else proc.terminate()
+            except ProcessLookupError:
+                pass
+
+        async def cleanup() -> None:
+            if os.name != 'posix':
+                # Preserve direct-process cleanup where process groups are unavailable.
+                # Descendants can retain the pipes, so do not wait for their EOF.
+                communication.cancel()
+                await asyncio.gather(communication, return_exceptions=True)
+                stop()
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    stop(force=True)
+                    await proc.wait()
+                return
+
+            stop()
+            try:
+                # Keep draining output: waiting only for the parent can deadlock on full pipes.
+                await asyncio.wait_for(asyncio.shield(communication), timeout=3.0)
+            except (asyncio.TimeoutError, OSError):
+                pass
+            finally:
+                # Also stop descendants that closed their pipes but ignored SIGTERM.
+                stop(force=True)
+                try:
+                    await communication
+                except OSError:
+                    pass
+                finally:
+                    await proc.wait()
+
+        cleanup_task = asyncio.create_task(cleanup())
+        cancelled = False
+        while True:
+            try:
+                await asyncio.shield(cleanup_task)
+                break
+            except asyncio.CancelledError:
+                if cleanup_task.cancelled():
+                    raise
+                cancelled = True
+        if cancelled:
+            raise asyncio.CancelledError
 
     async def close(self) -> None:
         """No external resources to release."""
