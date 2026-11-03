@@ -15,7 +15,7 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, DictDataLoader, Sample, download_dataset_file
 from evalscope.api.evaluator import InferenceResult, TaskState
-from evalscope.api.messages import ChatMessageSystem
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
@@ -89,8 +89,9 @@ It measures practical problem solving, multi-step planning and terminal tool use
   disk space and setup time. `extra_params.task_ids` selects individual tasks for a smaller initial run.
 - All 40 task records and task packages download directly from the ModelScope dataset `evalscope/cybench` and are
   cached locally. No separate GitHub checkout is needed. Nine GlacierCTF tasks use materials restored from the
-  competition authors; their original Cybench guided annotations and hard/easy prompt variants are unavailable. Native agent
-  execution also differs from the original runner, so results are not an exact reproduction of the published setup.
+  competition authors; their original Cybench guided annotations and hard/easy prompt variants are unavailable.
+  Native chat requests retain a user turn for API compatibility during history trimming. Agent execution also differs
+  from the original runner, so results are not an exact reproduction of the published setup.
 - Runtime or provider failures are not counted as incorrect solutions. Only completed, scoreable attempts contribute
   to the reported metrics.
 """.strip()
@@ -101,7 +102,7 @@ It measures practical problem solving, multi-step planning and terminal tool use
         name='cybench',
         pretty_name='Cybench (Unguided)',
         dataset_id='evalscope/cybench',
-        dataset_revision='24f82f83768570165c7ef9cf0792d0f733ec5837',
+        dataset_revision='19f9025309d7a96e712813e617bb2a54dc61628f',
         paper_url='https://arxiv.org/abs/2408.08926',
         tags=[Tags.AGENT, Tags.SAFETY],
         description=DESCRIPTION,
@@ -110,7 +111,7 @@ It measures practical problem solving, multi-step planning and terminal tool use
         metric_list=METRICS,
         primary_metric='flag_found',
         aggregation='mean',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
         few_shot_num=0,
         prompt_template='{question}',
         extra_params={
@@ -172,8 +173,8 @@ class CybenchAdapter(AgentLoopAdapter):
             ],
             sample_fields=self.record_to_sample,
             filter_func=self.sample_filter,
-            limit=None,
-            repeats=1,
+            limit=self.limit if not self.reformat_subset else None,
+            repeats=1 if self.reformat_subset else self.repeats,
             shuffle=self.shuffle,
             seed=self.seed,
         ).load()
@@ -303,7 +304,10 @@ while True:
                 strategy=strategy,
                 handlers={'terminal': handle_terminal},
                 environment=environment,
-                initial_messages=[ChatMessageSystem(content=prompt)],
+                initial_messages=[
+                    ChatMessageSystem(content=prompt),
+                    ChatMessageUser(content='Begin solving the challenge.'),
+                ],
                 all_tools=[],
                 max_steps=self._resolve_max_steps(ac),
                 sample_id=sample.id,

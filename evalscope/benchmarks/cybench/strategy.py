@@ -24,10 +24,13 @@ class CybenchStrategy(AgentStrategy):
 
     def prepare_messages(self, ctx: AgentContext) -> List[ChatMessage]:
         """Record effective inputs while retaining the complete untrimmed transcript."""
-        # Upstream keeps the system prompt and the last three replies/observations independently.
+        # Keep the seed user turn so trimmed requests remain valid for native chat backends.
+        initial_user = next((m.id for m in ctx.messages if m.role == 'user' and m.text), None)
         replies = [m.id for m in ctx.messages if m.role == 'assistant'][-3:]
-        observations = [m.id for m in ctx.messages if m.role == 'user' and m.text][-3:]
-        messages = [m for m in ctx.messages if m.role == 'system' or m.id in replies + observations]
+        observations = [m.id for m in ctx.messages if m.role == 'user' and m.id != initial_user and m.text][-3:]
+        messages = [
+            m for m in ctx.messages if m.role == 'system' or m.id == initial_user or m.id in replies + observations
+        ]
         self.model_inputs.append([m.model_dump(mode='json') for m in messages])
         return messages
 
@@ -80,8 +83,6 @@ class CybenchStrategy(AgentStrategy):
         """Match the upstream observation envelope without counting stderr as scoring stdout."""
         if error:
             raise RuntimeError(f'Cybench terminal infrastructure failed: {error.message}')
-        if call.function.arguments['command'] is None:
-            return ChatMessageUser(content='')
         return ChatMessageUser(
             content=f'Observation:\n{observation}\nThis is the end of assistant message. Agent, please provide your next response.'
         )

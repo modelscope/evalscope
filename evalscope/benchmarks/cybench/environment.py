@@ -83,30 +83,39 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         if info is None:
             raise RuntimeError('Cybench sandbox information is unavailable')
 
-        def inspect_identity() -> dict:
-            # Read only: ms-enclave owns all host image/container lifecycle operations.
-            from docker import DockerClient
-
-            client = DockerClient.from_env()
-            try:
-                container = client.containers.get(info.metadata['container_id'])
-                return {
-                    'image': container.attrs['Image'],
-                    'cgroupns': container.attrs['HostConfig'].get('CgroupnsMode'),
-                    'container_id': container.id,
-                }
-            finally:
-                client.close()
-
-        identity = await asyncio.to_thread(inspect_identity)
+        container = await self._inspect_runtime(info.metadata['container_id'])
         return {
-            **identity,
+            'image': container['Image'],
+            'cgroupns': container['HostConfig'].get('CgroupnsMode'),
+            'container_id': container['Id'],
             'requested_image': self.image,
             'manager': 'ms-enclave',
             'sandbox_id': info.id,
             'memory_limit': info.config.get('memory_limit'),
             'cpu_limit': info.config.get('cpu_limit'),
         }
+
+    async def _inspect_runtime(self, container_id: str) -> dict:
+        def inspect() -> dict:
+            # Read only: ms-enclave owns all host image/container lifecycle operations.
+            from docker import DockerClient
+
+            client = DockerClient.from_env()
+            try:
+                return client.containers.get(container_id).attrs
+            finally:
+                client.close()
+
+        return await asyncio.to_thread(inspect)
+
+    async def _check_runtime(self) -> None:
+        container_id = self.runtime.get('container_id')
+        if not container_id:
+            raise RuntimeError('Cybench runtime is not initialized')
+        container = await self._inspect_runtime(container_id)
+        state = container['State']
+        if not state['Running'] or state.get('Paused') or state.get('Restarting'):
+            raise RuntimeError(f'Cybench runtime unavailable: {state}')
 
     async def setup(self) -> str:
         """Run upstream requirements/start/init scripts before exposing the working directory."""
@@ -225,6 +234,7 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
         env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         """Execute a command in the task's public shell with a process timeout."""
+        await self._check_runtime()
         seconds = timeout or 120
         if self.shell_container:
             args = ['docker', 'exec', '-i', '-w', cwd or self.work_dir]
@@ -235,10 +245,12 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
         else:
             args = ['runuser', '-u', 'cybench-agent', '--']
             work_dir = cwd or self.work_dir
-        return await super().exec(
+        result = await super().exec(
             args + cmd,
             cwd=work_dir,
             input=input,
             timeout=seconds,
             env=env,
         )
+        await self._check_runtime()
+        return result

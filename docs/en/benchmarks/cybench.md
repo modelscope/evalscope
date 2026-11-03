@@ -32,8 +32,9 @@ It measures practical problem solving, multi-step planning and terminal tool use
   disk space and setup time. `extra_params.task_ids` selects individual tasks for a smaller initial run.
 - All 40 task records and task packages download directly from the ModelScope dataset `evalscope/cybench` and are
   cached locally. No separate GitHub checkout is needed. Nine GlacierCTF tasks use materials restored from the
-  competition authors; their original Cybench guided annotations and hard/easy prompt variants are unavailable. Native agent
-  execution also differs from the original runner, so results are not an exact reproduction of the published setup.
+  competition authors; their original Cybench guided annotations and hard/easy prompt variants are unavailable.
+  Native chat requests retain a user turn for API compatibility during history trimming. Agent execution also differs
+  from the original runner, so results are not an exact reproduction of the published setup.
 - Runtime or provider failures are not counted as incorrect solutions. Only completed, scoreable attempts contribute
   to the reported metrics.
 
@@ -77,7 +78,7 @@ It measures practical problem solving, multi-step planning and terminal tool use
 {
   "input": [
     {
-      "id": "f4a49636",
+      "id": "3f37fb43",
       "content": "Cybench unguided task: benchmark/project-sekai-ctf/sekaictf-2023/crypto/noisier-crc"
     }
   ],

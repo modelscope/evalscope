@@ -14,7 +14,7 @@ from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.api.agent import AgentContext, AgentTrace, EventType
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageAssistant
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.cybench.cybench_adapter import SOURCE_SHA, CybenchRun
@@ -92,6 +92,18 @@ def test_all_task_filters_support_restored_source_without_downloading() -> None:
     for dataset in datasets.values():
         for sample in dataset:
             assert sample.metadata['cybench']['answer'] not in str(sample.input)
+
+
+@pytest.mark.parametrize('limit,repeats,expected', [(1, 1, 1), (1, 3, 3), (0.5, 2, 2), (None, 2, 4)])
+def test_standard_limits_and_repeat_groups(limit: Any, repeats: int, expected: int) -> None:
+    config = TaskConfig(
+        model='scripted', eval_type='mock_llm', datasets=['cybench'], limit=limit, repeats=repeats,
+        dataset_args={'cybench': {'subset_list': ['crypto']}},
+    )
+    dataset = get_benchmark('cybench', config=config).load_dataset()['crypto']
+    assert len(dataset) == expected
+    assert [s.id for s in dataset] == list(range(expected))
+    assert [s.group_id for s in dataset] == [i // repeats for i in range(expected)]
 
 
 def test_hub_downloads_catalog_once_and_only_the_selected_task(
@@ -250,6 +262,9 @@ def test_native_loop_keeps_full_outputs_and_one_submission(
 
         async def generate_async(self, **kwargs: Any) -> ModelOutput:
             self.calls += 1
+            messages = kwargs['input']
+            assert messages[0].role == 'system'
+            assert messages[1].role == 'user' and messages[1].text
             return output('Command: cat output.txt\n<END>' if self.calls == 1 else 'Answer: wrong\n<END>')
 
     model = Model()
@@ -293,7 +308,10 @@ def test_setup_failure_cleans_only_owned_resources(monkeypatch: pytest.MonkeyPat
 
 
 @pytest.mark.parametrize('timed_out', [False, True])
-def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyPatch, timed_out: bool) -> None:
+@pytest.mark.parametrize('returncode', [124, 137])
+def test_ms_enclave_owns_runtime_and_public_commands(
+    monkeypatch: pytest.MonkeyPatch, timed_out: bool, returncode: int
+) -> None:
     pytest.importorskip('ms_enclave')
     environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
     assert isinstance(environment, EnclaveAgentEnvironment)
@@ -305,14 +323,110 @@ def test_ms_enclave_owns_runtime_and_public_commands(monkeypatch: pytest.MonkeyP
 
     async def execute(self: Any, cmd: list, **kwargs: Any) -> ExecResult:
         calls.append((cmd, kwargs))
-        return ExecResult(stdout='public result', stderr='diagnostic', returncode=124, timed_out=timed_out)
+        return ExecResult(stdout='public result', stderr='diagnostic', returncode=returncode, timed_out=timed_out)
+
+    async def healthy() -> None:
+        pass
 
     monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
+    monkeypatch.setattr(environment, '_check_runtime', healthy)
     result = asyncio.run(environment.exec(['bash', '-c', 'sleep 30'], input='payload', timeout=1, env={'X': 'value'}))
     command, kwargs = calls[0]
     assert command[:4] == ['runuser', '-u', 'cybench-agent', '--']
     assert kwargs == {'cwd': '/tmp/cyber-bench', 'input': 'payload', 'timeout': 1, 'env': {'X': 'value'}}
     assert result.timed_out is timed_out and result.stdout == 'public result' and result.stderr == 'diagnostic'
+
+
+@pytest.mark.parametrize('running', [[False], [True, False], [True, True]])
+def test_runtime_failure_is_not_a_command_failure(monkeypatch: pytest.MonkeyPatch, running: list) -> None:
+    pytest.importorskip('ms_enclave')
+    environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
+    environment.runtime = {'container_id': 'owned-container'}
+    states = iter(running)
+    calls = []
+
+    async def inspect(container_id: str) -> dict:
+        assert container_id == 'owned-container'
+        return {'State': {'Running': next(states)}}
+
+    async def execute(self: Any, cmd: list, **kwargs: Any) -> ExecResult:
+        calls.append(cmd)
+        return ExecResult(returncode=1, stderr='ordinary command failure')
+
+    monkeypatch.setattr(environment, '_inspect_runtime', inspect)
+    monkeypatch.setattr(EnclaveAgentEnvironment, 'exec', execute)
+    if all(running):
+        result = asyncio.run(environment.exec(['false']))
+        assert result.returncode == 1 and result.stderr == 'ordinary command failure'
+    else:
+        with pytest.raises(RuntimeError, match='runtime unavailable'):
+            asyncio.run(environment.exec(['false']))
+    assert len(calls) == int(running[0])
+
+
+@pytest.mark.parametrize('flag', ['Paused', 'Restarting'])
+def test_running_but_unavailable_runtime_is_rejected(monkeypatch: pytest.MonkeyPatch, flag: str) -> None:
+    pytest.importorskip('ms_enclave')
+    environment = CybenchEnvironment(adapter().task_manifest.tasks[0], '/selected/task.tar.gz')
+    environment.runtime = {'container_id': 'owned-container'}
+
+    async def inspect(container_id: str) -> dict:
+        return {'State': {'Running': True, flag: True}}
+
+    monkeypatch.setattr(environment, '_inspect_runtime', inspect)
+    with pytest.raises(RuntimeError, match='runtime unavailable'):
+        asyncio.run(environment.exec(['true']))
+
+
+def test_anthropic_requests_remain_valid_after_trimming_and_malformed_turns() -> None:
+    pytest.importorskip('anthropic')
+    from evalscope.models.utils.anthropic import anthropic_chat_messages
+
+    seed = ChatMessageUser(content='Begin solving the challenge.')
+    context = AgentContext(sample_id=0, messages=[ChatMessageSystem(content='official prompt'), seed])
+    strategy = CybenchStrategy()
+    for index in range(9):
+        _, request = anthropic_chat_messages(strategy.prepare_messages(context))
+        assert request and request[0]['role'] == request[-1]['role'] == 'user'
+        assert all(m['content'] for m in request)
+        assert seed.id in [m.id for m in strategy.prepare_messages(context)]
+        text = f'Command: step-{index}\n<END>' if index % 2 else 'No executable command'
+        generated = output(text)
+        parsed = strategy.parse_output(generated, context)
+        context.messages.append(generated.message)
+        context.messages.append(strategy.format_observation(parsed.tool_calls[0], '', None, parsed, context))
+    messages = strategy.prepare_messages(context)
+    assert len([m for m in messages if m.role == 'assistant']) == 3
+    assert len([m for m in messages if m.role == 'user']) == 4
+
+
+def test_runtime_failure_aborts_without_scoreable_record(monkeypatch: pytest.MonkeyPatch) -> None:
+    benchmark = adapter()
+    sample = benchmark.load_dataset()['crypto'][0]
+
+    class Environment:
+        name = 'cybench'
+        runtime = {'image': 'fixture'}
+        closed = False
+
+        async def setup(self) -> str:
+            return 'output.txt'
+
+        async def exec(self, cmd: list, **kwargs: Any) -> ExecResult:
+            raise RuntimeError('Cybench runtime stopped')
+
+        async def close(self) -> None:
+            self.closed = True
+
+    class Model:
+        async def generate_async(self, **kwargs: Any) -> ModelOutput:
+            return output('Command: cat output.txt\n<END>')
+
+    environment = Environment()
+    monkeypatch.setattr(benchmark, 'build_environment', lambda sample: environment)
+    with pytest.raises(RuntimeError, match='runtime stopped'):
+        benchmark._on_inference(Model(), sample)
+    assert environment.closed and 'cybench_run' not in sample.metadata
 
 
 @pytest.mark.parametrize('reply', ['No executable command', '[ERROR] transport unavailable'])
