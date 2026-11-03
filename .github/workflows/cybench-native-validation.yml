@@ -131,7 +131,7 @@ jobs:
           config = TaskConfig(
               model='qwen3.8-flash', eval_type='openai_api',
               api_url='https://dashscope.aliyuncs.com/compatible-mode/v1', api_key=key,
-              datasets=['cybench'], dataset_args={'cybench': {'dataset_revision': revision, 'evaluation_version': 'v1.2', 'extra_params': {
+              datasets=['cybench'], dataset_args={'cybench': {'dataset_revision': revision, 'extra_params': {
                   'task_ids': list(rows), 'setup_timeout': 1800,
               }}}, sandbox={'default_config': {'memory_limit': '4g', 'cpu_limit': 2}},
               agent_config=NativeAgentConfig(max_steps=15, command_timeout=120),
@@ -143,6 +143,7 @@ jobs:
               run_task(config)
           except Exception as exc:
               (root / 'runner_error.txt').write_text(f'{type(exc).__name__}: {exc}\n')
+              print('VALIDATION_RUNNER_ERROR', type(exc).__name__, str(exc), flush=True)
           for path in (root / 'reviews').rglob('*.jsonl'):
               for line in path.read_text().splitlines():
                   sample_score = json.loads(line)['sample_score']
