@@ -22,7 +22,7 @@ from evalscope.backend.rag_eval.ragas import RAGASEvalConfig, rag_eval
 eval_config = RAGASEvalConfig(
     testset_file=str(Path(__file__).parent / 'ragas_mini_testset.json'),
     critic_llm={
-        'model_name': 'qwen-plus',
+        'model_name': 'qwen3.8-flash',
         'provider': 'openai',
         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.environ.get('DASHSCOPE_API_KEY', ''),

@@ -53,7 +53,8 @@ class TestPerfMultiTurn(PerfTestBase):
         task_cfg = Arguments(
             parallel=2,
             number=8,
-            model='qwen-plus',
+            model='qwen3.8-flash',
+            extra_args={'enable_thinking': False},
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
             api='openai',
@@ -78,7 +79,7 @@ class TestPerfMultiTurn(PerfTestBase):
         task_cfg = Arguments(
             parallel=4,
             number=8,
-            model='qwen-plus',
+            model='qwen3.8-flash',
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
             api='openai',
@@ -95,7 +96,7 @@ class TestPerfMultiTurn(PerfTestBase):
                 num_workers=4,
             ),
             seed=42,
-            extra_args={'ignore_eos': True},
+            extra_args={'ignore_eos': True, 'enable_thinking': False},
         )
         result = run_perf_benchmark(task_cfg)
         print(result)

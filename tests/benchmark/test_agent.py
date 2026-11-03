@@ -430,19 +430,19 @@ class TestAgentBenchmark(TestBenchmark):
         )
 
     def test_wide_search(self):
-        """Test WideSearch with real qwen-plus, bash, Fetch MCP, and LLM judging."""
+        """Test WideSearch with real qwen3.8-flash, bash, Fetch MCP, and LLM judging."""
         if not env.get('DASHSCOPE_API_KEY'):
             self.skipTest('DASHSCOPE_API_KEY is required for the WideSearch real-API smoke test.')
 
         self._run_dataset_test(
             'wide_search',
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=1,
             eval_batch_size=1,
             collect_perf=False,
             debug=False,
             judge={'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {

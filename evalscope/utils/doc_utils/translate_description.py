@@ -122,7 +122,7 @@ Example translations:
     try:
         protected, code_blocks = _protect_code_blocks(readme_content)
         completion = client.chat.completions.create(
-            model='qwen-max',
+            model='qwen3.8-flash',
             messages=[
                 {'role': 'system', 'content': system_prompt},
                 {
@@ -131,6 +131,7 @@ Example translations:
                 },
             ],
             temperature=0.3,
+            extra_body={'enable_thinking': False},
         )
         translated = completion.choices[0].message.content.strip()
         translated = _restore_code_blocks(translated, code_blocks)

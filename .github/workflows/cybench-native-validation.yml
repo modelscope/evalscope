@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   real-runtime:
@@ -24,11 +25,19 @@ jobs:
           cache: pip
       - name: Install framework
         run: pip install -e .
+      - name: Resume completed task records
+        uses: actions/download-artifact@v4
+        with:
+          name: cybench-modelscope-official
+          path: outputs/cybench-modelscope-official
+          run-id: 41564014193
+          github-token: ${{ github.token }}
       - name: Run real qwen3.8-flash tasks using ModelScope packages
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: >-
           python examples/benchmarks/cybench.py --output-dir outputs/cybench-modelscope-official
+          --use-cache outputs/cybench-modelscope-official
           --task-ids
           'benchmark/hackthebox/cyber-apocalypse-2024/crypto/[Very Easy] Dynastic'
           'benchmark/LosFuzzys/GlacierCTF2023_writeups/crypto/SLCG'

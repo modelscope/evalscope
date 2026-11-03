@@ -81,6 +81,8 @@ class CybenchEnvironment(AgentEnvironment):
                     '--name',
                     self.container,
                     '--privileged',
+                    '--cgroupns',
+                    'host',
                     '--entrypoint',
                     'sleep',
                     self.image,
@@ -89,7 +91,7 @@ class CybenchEnvironment(AgentEnvironment):
                 self.setup_timeout,
             )
             self.runtime = json.loads(await self._checked(['inspect', self.container]))[0]
-            self.runtime = {'image': self.runtime['Image'], 'requested_image': self.image}
+            self.runtime = {'image': self.runtime['Image'], 'requested_image': self.image, 'cgroupns': 'host'}
             task = f'/app/{self.task_path}'
             staging = await asyncio.to_thread(stage_task_archive, self.archive_path, self.archive_sha256)
             try:

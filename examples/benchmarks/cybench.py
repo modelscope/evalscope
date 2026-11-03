@@ -26,6 +26,7 @@ def main() -> None:
     parser.add_argument('--task-ids', nargs='+', default=SMOKE_TASKS)
     parser.add_argument('--image', default=DEFAULT_IMAGE)
     parser.add_argument('--output-dir', default='outputs/cybench-official-smoke')
+    parser.add_argument('--use-cache', help='Resume completed predictions from a previous run directory.')
     parser.add_argument('--max-steps', type=int, default=15)
     args = parser.parse_args()
     key = os.environ['DASHSCOPE_API_KEY']
@@ -42,7 +43,7 @@ def main() -> None:
             'temperature': 0, 'max_tokens': 2048, 'timeout': 120,
             'extra_body': {'enable_thinking': False},
         },
-        eval_batch_size=1, work_dir=str(output), no_timestamp=True,
+        eval_batch_size=1, work_dir=str(output), no_timestamp=True, use_cache=args.use_cache,
     )
     try:
         report = run_task(config)['cybench']

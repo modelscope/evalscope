@@ -137,7 +137,7 @@ dataset_args={
     },
     'tau_bench': {
         'extra_params': {
-            'user_model': 'qwen-plus',
+            'user_model': 'qwen3.8-flash',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         },
@@ -165,7 +165,7 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
             },
             judge={'strategy': JudgeStrategy.AUTO, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }}
@@ -210,7 +210,7 @@ class TestRun(unittest.TestCase):
                 'image_num': 2,
             },
             judge={'strategy': JudgeStrategy.AUTO, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }}
@@ -224,7 +224,7 @@ class TestRun(unittest.TestCase):
         api_key = env.get('DASHSCOPE_API_KEY')
 
         task_cfg = TaskConfig(
-            model='qwen-plus',
+            model='qwen3.8-flash',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key=api_key,
             eval_type=EvalType.OPENAI_API if api_key else EvalType.MOCK_LLM,
@@ -255,7 +255,7 @@ class TestRun(unittest.TestCase):
                 'max_tokens': 4096,
             },
             judge={'strategy': JudgeStrategy.AUTO, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
             }}
