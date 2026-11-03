@@ -1,0 +1,12 @@
+{
+  "name": "mbpp_3_is_not_prime",
+  "language": "java",
+  "prompt": "import java.util.*;\nimport java.lang.reflect.*;\nimport org.javatuples.*;\nimport java.security.*;\nimport java.math.*;\nimport java.io.*;\nimport java.util.stream.*;\nclass Problem {\n    // Write a javathon function to identify non-prime numbers.\n    public static boolean isNotPrime(long n) {\n",
+  "doctests": "transform",
+  "original": "/Users/arjun/repos/nuprl/MultiPL-E/datasets/../datasets/mbpp-typed/mbpp_3_is_not_prime.py",
+  "prompt_terminology": "reworded",
+  "tests": "    }\n    public static void main(String[] args) {\n    assert(isNotPrime((2l)) == (false));\n    assert(isNotPrime((10l)) == (true));\n    assert(isNotPrime((35l)) == (true));\n    assert(isNotPrime((37l)) == (false));\n    }\n\n}\n",
+  "stop_tokens": [
+    "\n    }\n"
+  ]
+}

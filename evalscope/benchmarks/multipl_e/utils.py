@@ -8,6 +8,8 @@ from evalscope.utils.code_utils import (
     extract_code_from_freeform_completion,
 )
 
+from .java import assemble_java
+
 
 def normalize_languages(base: str) -> Tuple[str, str]:
     """
@@ -180,7 +182,7 @@ def build_full_code(prediction: str, language: str, stop_tokens: List[str], test
     - Prepend import helpers.
     - Language-specific post-processing.
     - Append dataset tests.
-    - Java: rename Problem to Main.
+    - Java: insert the official tests structurally and supply the Main entrypoint.
 
     Args:
         prediction: Raw model output.
@@ -192,6 +194,10 @@ def build_full_code(prediction: str, language: str, stop_tokens: List[str], test
         Full code string ready for sandbox execution.
     """
     extract_lang, _ = normalize_languages(language)
+
+    if extract_lang == 'java':
+        code = default_extract_helper(prediction, extract_lang)
+        return '\n'.join(IMPORT_HELPER.get(extract_lang, [])) + '\n' + assemble_java(code, tests or '')
 
     use_func_extractor_langs = {'typescript', 'go', 'perl', 'racket', 'lua', 'julia', 'd', 'js', 'php', 'r', 'ruby'}
     if extract_lang in use_func_extractor_langs:
@@ -207,8 +213,5 @@ def build_full_code(prediction: str, language: str, stop_tokens: List[str], test
 
     full_code = postprocess_full_code(full_code, extract_lang)
     full_code = f'{full_code}\n{tests or ""}'
-
-    if extract_lang == 'java':
-        full_code = full_code.replace('class Problem', 'class Main')
 
     return full_code
