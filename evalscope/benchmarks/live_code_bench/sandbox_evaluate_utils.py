@@ -100,7 +100,7 @@ try:
     test_input = {repr(test_input)}
     expected_output = {repr(expected_output)}
 
-    if 'class Solution' in '''{code}''':
+    if 'class Solution' in {code!r}:
         # LeetCode style
         solution = Solution()
         method = getattr(solution, '{fn_name}')
