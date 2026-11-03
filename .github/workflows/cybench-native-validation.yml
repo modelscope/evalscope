@@ -7,6 +7,16 @@ on:
         description: JSON array of task chunks to run
         required: true
         default: '[0, 1, 2, 3]'
+      task_indices:
+        description: Optional JSON array of exact task indices
+        default: '[]'
+      max_tokens:
+        description: Output token limit per generation
+        default: '8192'
+      cleanup_probe:
+        description: Verify WalkingToTheSeaSide setup and cleanup without model inference
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -37,10 +47,13 @@ jobs:
           cache: pip
       - name: Install the native adapter and shared Docker backend
         run: pip install -e '.[sandbox]'
-      - name: Evaluate ten tasks with up to fifteen real Flash generations each
+      - name: Evaluate selected tasks with up to fifteen real Flash generations each
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
           CYBENCH_CHUNK: ${{ matrix.chunk }}
+          CYBENCH_TASK_INDICES: ${{ inputs.task_indices }}
+          CYBENCH_MAX_TOKENS: ${{ inputs.max_tokens }}
+          CYBENCH_CLEANUP_PROBE: ${{ inputs.cleanup_probe }}
         run: |
           python - <<'PY'
           import json
@@ -66,7 +79,9 @@ jobs:
           path = download_dataset_file('evalscope/cybench', 'tasks.json', revision=revision)
           manifest = CybenchManifest.model_validate_json(Path(path).read_text())
           assert len(manifest.tasks) == 40
-          selected = [(i, task) for i, task in enumerate(manifest.tasks) if i % 4 == chunk]
+          exact = json.loads(os.environ.get('CYBENCH_TASK_INDICES') or '[]')
+          max_tokens = int(os.environ.get('CYBENCH_MAX_TOKENS') or 8192)
+          selected = [(i, task) for i, task in enumerate(manifest.tasks) if (i in exact if exact else i % 4 == chunk)]
           rows = {task.path: {'index': i, 'path': task.path, 'category': task.category,
                              'status': 'pending', 'runtime_ready': False, 'inference_completed': False}
                   for i, task in selected}
@@ -76,7 +91,7 @@ jobs:
               payload = {'source_head': '8b6a94298d3f5cbda623a4b6a6d16e1d910abc77',
                          'validation_head': os.environ['GITHUB_SHA'], 'dataset_revision': revision,
                          'chunk': chunk, 'model': 'qwen3.8-flash', 'max_steps': 15,
-                         'setup_timeout': 1800, 'command_timeout': 120,
+                         'setup_timeout': 1800, 'command_timeout': 120, 'max_tokens': max_tokens,
                          'purpose': 'full unguided evaluation with native agent; 15 generations per task',
                          'tasks': sorted(rows.values(), key=lambda row: row['index'])}
               (root / 'runtime_validation.json').write_text(json.dumps(payload, indent=2) + '\n')
@@ -144,7 +159,7 @@ jobs:
                   'task_ids': list(rows), 'setup_timeout': 1800,
               }}}, sandbox={'default_config': {'memory_limit': '4g', 'cpu_limit': 2}},
               agent_config=NativeAgentConfig(max_steps=15, command_timeout=120),
-              generation_config={'temperature': 0, 'max_tokens': 2048, 'timeout': 120, 'retries': 2,
+              generation_config={'temperature': 0, 'max_tokens': max_tokens, 'timeout': 120, 'retries': 2,
                                  'extra_body': {'enable_thinking': False}},
               eval_batch_size=1, work_dir=str(root), no_timestamp=True, ignore_errors=True,
           )
@@ -160,7 +175,67 @@ jobs:
                   score = sample_score['score']
                   row.update(status='passed' if score['status'] == 'success' else 'scoring_failed',
                              score_status=score['status'], scores=score['value'])
+          for row in rows.values():
+              container_id = row.get('runtime', {}).get('container_id')
+              if not container_id:
+                  continue
+              client = DockerClient.from_env()
+              row['cleanup_initial'] = row.get('cleanup')
+              try:
+                  deadline = time.monotonic() + 300
+                  while True:
+                      try:
+                          container = client.containers.get(container_id)
+                          row['cleanup_last_state'] = container.attrs.get('State')
+                      except NotFound:
+                          row['cleanup'] = 'removed'
+                          break
+                      if time.monotonic() >= deadline:
+                          break
+                      time.sleep(5)
+              finally:
+                  client.close()
           save()
+          if os.environ.get('CYBENCH_CLEANUP_PROBE') == 'true':
+              from evalscope.api.registry import get_benchmark
+              from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
+              CybenchEnvironment.setup = setup
+              task = manifest.tasks[33]
+              probe_config = TaskConfig(model='qwen3.8-flash', eval_type='mock_llm', datasets=['cybench'],
+                  dataset_args={'cybench': {'dataset_revision': revision, 'extra_params': {
+                      'task_ids': [task.path], 'setup_timeout': 1800}}},
+                  sandbox={'default_config': {'memory_limit': '4g', 'cpu_limit': 2}})
+              adapter = get_benchmark('cybench', config=probe_config)
+              sample = next(sample for data in adapter.load_dataset().values() for sample in data)
+              environment = adapter.build_environment(sample)
+              probe = {'task': task.path, 'model_inference': False, 'states': [], 'runtime_ready': False}
+              started = time.monotonic()
+              try:
+                  AsyncioLoopRunner.run(environment.setup())
+                  probe.update(runtime_ready=True, runtime=environment.runtime, setup_duration_seconds=round(time.monotonic() - started, 2))
+              finally:
+                  close_started = time.monotonic()
+                  AsyncioLoopRunner.run(environment.close())
+                  probe['close_duration_seconds'] = round(time.monotonic() - close_started, 2)
+                  (root / 'walking_cleanup_probe.json').write_text(json.dumps(probe, indent=2) + '\n')
+              client = DockerClient.from_env()
+              try:
+                  deadline = time.monotonic() + 300
+                  while True:
+                      try:
+                          container = client.containers.get(environment.runtime['container_id'])
+                          probe['states'].append(container.attrs.get('State'))
+                      except NotFound:
+                          probe['cleanup'] = 'removed'
+                          break
+                      if time.monotonic() >= deadline:
+                          probe['cleanup'] = 'still_exists'
+                          break
+                      time.sleep(5)
+              finally:
+                  client.close()
+                  (root / 'walking_cleanup_probe.json').write_text(json.dumps(probe, indent=2) + '\n')
+              assert probe.get('cleanup') == 'removed', 'Walking runtime did not finish cleanup'
           print('VALIDATION_CHUNK_COMPLETE', json.dumps({
               'tasks': len(rows), 'runtime_ready': sum(r['runtime_ready'] for r in rows.values()),
               'pipeline_passed': sum(r['status'] == 'passed' for r in rows.values()),
@@ -194,6 +269,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cybench-full40-chunk-${{ matrix.chunk }}
+          name: cybench-final-check-${{ matrix.chunk }}
           path: sanitized/
           retention-days: 7
