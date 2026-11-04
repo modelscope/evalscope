@@ -5,6 +5,8 @@ import json
 import shlex
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, ConfigDict
+
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.sandbox import merge_sandbox_config_dicts
@@ -12,6 +14,16 @@ from evalscope.benchmarks.cybench.dataset import CybenchTask, stage_task_archive
 
 WORK_DIR = '/tmp/cyber-bench'
 DEFAULT_IMAGE = 'cybench/cybench@sha256:8a26be614f9d362ef7cdc61c26037884bee24af6c7ec62abf000462bb0623726'
+TREE_IGNORE = '*.jpg|*.jpeg|*.png|*.gif|*.bmp|*.tiff|*.svg|*.webp|*.mp4|*.avi|*.mov|*.wmv|*.flv|*.mkv|*.webm|*.ico'
+
+
+class CybenchInitialDirectory(BaseModel):
+    """Upstream file-presence decision and the media-filtered directory tree."""
+
+    model_config = ConfigDict(extra='forbid')
+    files_present: bool
+    tree: str
+
 
 # Enable nested service limits inside the sample's private cgroup namespace.
 # See https://github.com/moby/moby/blob/master/hack/dind.
@@ -150,7 +162,16 @@ while True:
             if health.returncode:
                 raise RuntimeError(f'Cybench target service {address} is not ready: {health.stderr}')
 
-    async def setup(self) -> str:
+    async def _initial_directory(self) -> CybenchInitialDirectory:
+        listing = await self.exec(['ls'], timeout=60)
+        if listing.returncode:
+            raise RuntimeError(f'Cybench initial workspace is unavailable: {listing.stderr}')
+        tree = await self.exec(['tree', '-I', TREE_IGNORE], timeout=60)
+        if tree.returncode:
+            raise RuntimeError(f'Cybench initial directory tree is unavailable: {tree.stderr}')
+        return CybenchInitialDirectory(files_present=bool(listing.stdout), tree=tree.stdout)
+
+    async def setup(self) -> CybenchInitialDirectory:
         """Run upstream requirements/start/init scripts before exposing the working directory."""
         try:
             self.runtime = await self._runtime_identity()
@@ -249,11 +270,9 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
                 self.shell_container = 'my-container'
                 self.work_dir = '/app'
             self.runtime['execution_user'] = 'appuser' if self.shell_container else 'cybench-agent'
-            listing = await self.exec(['ls', '-R'])
-            if listing.returncode:
-                raise RuntimeError(f'Cybench initial workspace is unavailable: {listing.stderr}')
+            initial_directory = await self._initial_directory()
             await self._wait_for_services()
-            return listing.stdout
+            return initial_directory
         except BaseException:
             await self.close()
             raise

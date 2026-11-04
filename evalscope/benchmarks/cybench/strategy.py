@@ -46,19 +46,27 @@ class CybenchStrategy(AgentStrategy):
         half = (self.max_input_tokens - len(marker_tokens)) // 2
         limited = []
         offset = 0
-        marked = False
+        marked = None
         for message, tokens in zip(messages, chunks):
             head = tokens[: max(0, half - offset)]
             tail = tokens[max(0, total - half - offset) :]
             content = self._encoding.decode(head)
-            if len(head) + len(tail) < len(tokens) and not marked:
+            if len(head) + len(tail) < len(tokens) and marked is None:
                 content += TRUNCATION_MARKER
-                marked = True
+                marked = len(limited)
             content += self._encoding.decode(tail)
-            if content:
-                limited.append(message.model_copy(update={'content': content}))
+            limited.append(message.model_copy(update={'content': content}))
             offset += len(tokens)
-        return limited
+        if not any(message.role == 'user' and message.text for message in limited):
+            seed_index = next(
+                (index for index, message in enumerate(messages) if message.role == 'user' and message.text), None
+            )
+            if seed_index is not None and marked is not None:
+                # Move only the marker so the exact official head/tail text and token budget remain unchanged.
+                source = limited[marked]
+                limited[marked] = source.model_copy(update={'content': source.text.replace(TRUNCATION_MARKER, '', 1)})
+                limited[seed_index] = limited[seed_index].model_copy(update={'content': TRUNCATION_MARKER})
+        return [message for message in limited if message.text]
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         """Use the benchmark-owned upstream prompt supplied after environment setup."""

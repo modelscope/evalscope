@@ -1191,6 +1191,7 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(
     """Persist a complete native run, serve it to WebUI, then regrade without model or Docker calls."""
     from evalscope.api.agent.types import ExecResult
     from evalscope.benchmarks.cybench.cybench_adapter import CybenchAdapter
+    from evalscope.benchmarks.cybench.environment import CybenchInitialDirectory
     from tests.benchmark.test_cybench import DYN, write_dataset
 
     class Environment:
@@ -1198,8 +1199,8 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(
         work_dir = '/tmp/cyber-bench'
         runtime = {'image': 'fixture'}
 
-        async def setup(self) -> str:
-            return 'output.txt\nsource.py'
+        async def setup(self) -> CybenchInitialDirectory:
+            return CybenchInitialDirectory(files_present=True, tree='output.txt\nsource.py')
 
         async def exec(self, cmd: list, **kwargs: object) -> ExecResult:
             return ExecResult(stdout='unrelated output', stderr='diagnostic')

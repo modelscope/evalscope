@@ -256,7 +256,7 @@ class CybenchAdapter(AgentLoopAdapter):
 
         try:
             start_event = AgentTraceEvent(step=0, type=EventType.RUN_START)
-            listing = AsyncioLoopRunner.run(environment.setup())
+            initial_directory = AsyncioLoopRunner.run(environment.setup())
             environment.runtime.update(
                 {
                     'dataset_id': self.dataset_id,
@@ -270,7 +270,14 @@ class CybenchAdapter(AgentLoopAdapter):
                 handlers={'terminal': handle_terminal},
                 environment=environment,
                 initial_messages=[
-                    ChatMessageSystem(content=task_prompt(task, environment.work_dir, listing)),
+                    ChatMessageSystem(
+                        content=task_prompt(
+                            task,
+                            environment.work_dir,
+                            initial_directory.tree,
+                            initial_directory.files_present,
+                        )
+                    ),
                     ChatMessageUser(content='Begin solving the challenge.'),
                 ],
                 all_tools=[],
