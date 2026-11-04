@@ -567,7 +567,8 @@ def test_anthropic_requests_remain_valid_after_trimming_and_malformed_turns() ->
     strategy = CybenchStrategy()
     for index in range(9):
         _, request = anthropic_chat_messages(strategy.prepare_messages(context))
-        assert request and request[0]['role'] == request[-1]['role'] == 'user'
+        assert request and request[0]['role'] == 'user'
+        assert request[-1]['role'] == ('assistant' if index % 2 else 'user')
         assert all(m['content'] for m in request)
         assert seed.id in [m.id for m in strategy.prepare_messages(context)]
         text = f'Command: step-{index}\n<END>' if index % 2 else 'No executable command'

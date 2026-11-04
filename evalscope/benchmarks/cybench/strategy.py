@@ -126,6 +126,8 @@ class CybenchStrategy(AgentStrategy):
         """Match the upstream observation envelope without counting stderr as scoring stdout."""
         if error:
             raise RuntimeError(f'Cybench terminal infrastructure failed: {error.message}')
+        if call.function.arguments['command'] is None:
+            return ChatMessageUser(content='')
         return ChatMessageUser(
             content=f'Observation:\n{observation}\nThis is the end of assistant message. Agent, please provide your next response.'
         )

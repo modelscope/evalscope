@@ -1184,7 +1184,10 @@ class TestAgentBenchmark(TestBenchmark):
         )
 
 
-def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('malformed_turns', [0, 3])
+def test_cybench_native_run_task_web_contract_and_cached_regrade(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, malformed_turns: int
+) -> None:
     """Persist a complete native run, serve it to WebUI, then regrade without model or Docker calls."""
     from evalscope.api.agent.types import ExecResult
     from evalscope.benchmarks.cybench.cybench_adapter import CybenchAdapter
@@ -1209,6 +1212,7 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
         model=f'cybench-{tmp_path.name}', eval_type='mock_llm', datasets=['cybench'],
         model_args={'custom_outputs': [
             ModelOutput.from_content('scripted', 'Command: cat output.txt\n<END>'),
+            *[ModelOutput.from_content('scripted', 'Thought: still considering') for _ in range(malformed_turns)],
             ModelOutput.from_content('scripted', 'Answer: wrong\n<END>'),
         ]},
         dataset_args={'cybench': {
@@ -1227,6 +1231,15 @@ def test_cybench_native_run_task_web_contract_and_cached_regrade(tmp_path: Path,
     assert row['Score']['value'] == {'flag_found': 0, 'correct_submission': 0, 'full_flag_found': 0}
     assert row['Messages'][-1]['content'] == 'Answer: wrong\n<END>'
     assert row['AgentTrace']['events'][-1]['payload']['termination'] == 'submitted'
+    generations = [event for event in row['AgentTrace']['events'] if event['type'] == 'model_generate']
+    assert len(generations) == malformed_turns + 2
+    assert len([message for message in row['Messages'] if message['role'] == 'assistant']) == len(generations)
+    for event in generations[1:]:
+        request = event['payload']['model_input']
+        assert all(message['content'] for message in request)
+        observations = [message['content'] for message in request if message['role'] == 'user'][1:]
+        assert len(observations) == 1 and 'unrelated output' in observations[0]
+    assert len(row['Metadata']['cybench_run']['executions']) == 1
 
     from evalscope.service.app import create_app
 
