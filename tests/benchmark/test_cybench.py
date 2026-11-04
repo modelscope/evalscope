@@ -20,7 +20,7 @@ from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.cybench.cybench_adapter import SOURCE_SHA, CybenchRun
 from evalscope.benchmarks.cybench.dataset import stage_task_archive
 from evalscope.benchmarks.cybench.environment import CybenchEnvironment
-from evalscope.benchmarks.cybench.strategy import CybenchStrategy
+from evalscope.benchmarks.cybench.strategy import TRUNCATION_MARKER, CybenchStrategy
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
 
@@ -187,6 +187,64 @@ def test_official_text_parsing(text: str, expected: Optional[str]) -> None:
     else:
         assert parsed.tool_calls[0].function.arguments['command'] == expected
         assert parsed.final_answer is None
+
+
+def test_input_budget_preserves_official_head_tail_and_full_trace(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Encoding:
+        def encode(self, text: str, **kwargs: Any) -> list[str]:
+            return list(text)
+
+        def decode(self, tokens: list[str]) -> str:
+            return ''.join(tokens)
+
+    monkeypatch.setattr(CybenchStrategy, '_encoding', Encoding())
+    observation = ChatMessageUser(content='Observation:\n' + '1234567890, ' * 10000 + '\nTAIL')
+    messages = [
+        ChatMessageSystem(content='Official prompt'), ChatMessageUser(content='Begin'),
+        ChatMessageAssistant(content='Command: cat output.txt\n<END>'), observation,
+    ]
+    originals = [message.model_dump(mode='json') for message in messages]
+    strategy = CybenchStrategy(max_input_tokens=128)
+    effective = strategy.prepare_messages(AgentContext(sample_id=0, messages=messages, step=4))
+    transcript = ''.join(message.text for message in messages)
+    half = (128 - len(TRUNCATION_MARKER)) // 2
+    assert ''.join(message.text for message in effective) == (
+        transcript[:half] + TRUNCATION_MARKER + transcript[-half:]
+    )
+    assert sum(len(message.text) for message in effective) <= 128
+    assert effective[0].role == 'system' and effective[-1].role == 'user'
+    assert [message.model_dump(mode='json') for message in messages] == originals
+    assert strategy.model_inputs[4] == [message.model_dump(mode='json') for message in effective]
+    assert observation.text.endswith('TAIL') and len(observation.text) > 100000
+
+
+def test_input_budget_discards_middle_messages_without_empty_roles(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Encoding:
+        def encode(self, text: str, **kwargs: Any) -> list[str]:
+            return list(text)
+
+        def decode(self, tokens: list[str]) -> str:
+            return ''.join(tokens)
+
+    monkeypatch.setattr(CybenchStrategy, '_encoding', Encoding())
+    messages = [
+        ChatMessageSystem(content='HEAD' + 'a' * 500), ChatMessageUser(content='Begin'),
+        ChatMessageAssistant(content='b' * 500), ChatMessageUser(content='c' * 500 + 'TAIL'),
+    ]
+    effective = CybenchStrategy(max_input_tokens=128).prepare_messages(AgentContext(sample_id=0, messages=messages))
+    assert [message.role for message in effective] == ['system', 'user']
+    assert all(message.text for message in effective)
+    assert effective[0].text.startswith('HEAD') and effective[-1].text.endswith('TAIL')
+    assert ''.join(message.text for message in effective).count(TRUNCATION_MARKER) == 1
+
+
+@pytest.mark.parametrize('budget', [0, -1, '32768'])
+def test_invalid_input_budget_fails_before_runtime_creation(budget: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    benchmark = adapter(max_input_tokens=budget)
+    sample = benchmark.load_dataset()['crypto'][0]
+    monkeypatch.setattr(benchmark, 'build_environment', lambda sample: pytest.fail('Invalid budget created a runtime'))
+    with pytest.raises(ValueError, match='max_input_tokens'):
+        benchmark._on_inference(None, sample)
 
 
 def scoring_state(benchmark: Any, stdout: str, submission: Optional[str]) -> TaskState:

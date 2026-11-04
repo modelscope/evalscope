@@ -46,7 +46,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - name: Install the native adapter and shared Docker backend
-        run: pip install -e '.[sandbox]'
+        run: pip install -e '.[cybench]'
       - name: Evaluate selected tasks with up to fifteen real Flash generations each
         env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
@@ -75,7 +75,7 @@ jobs:
           chunk = int(os.environ['CYBENCH_CHUNK'])
           root = Path(f'outputs/chunk-{chunk}').resolve()
           root.mkdir(parents=True, exist_ok=True)
-          revision = '587d89a541d09f5ce1081fdbf19298c706627d7a'
+          revision = 'dc40b8249da3b9669e6952c75290b2e5fc0175f7'
           path = download_dataset_file('evalscope/cybench', 'tasks.json', revision=revision)
           manifest = CybenchManifest.model_validate_json(Path(path).read_text())
           assert len(manifest.tasks) == 40
@@ -88,10 +88,10 @@ jobs:
           environments = {}
 
           def save():
-              payload = {'source_head': '8b6a94298d3f5cbda623a4b6a6d16e1d910abc77',
+              payload = {'source_head': os.environ['GITHUB_SHA'],
                          'validation_head': os.environ['GITHUB_SHA'], 'dataset_revision': revision,
                          'chunk': chunk, 'model': 'qwen3.8-flash', 'max_steps': 15,
-                         'setup_timeout': 1800, 'command_timeout': 120, 'max_tokens': max_tokens,
+                         'setup_timeout': 1800, 'command_timeout': 120, 'max_tokens': max_tokens, 'max_input_tokens': 32768,
                          'purpose': 'full unguided evaluation with native agent; 15 generations per task',
                          'tasks': sorted(rows.values(), key=lambda row: row['index'])}
               (root / 'runtime_validation.json').write_text(json.dumps(payload, indent=2) + '\n')
@@ -269,6 +269,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cybench-final-check-${{ matrix.chunk }}
+          name: cybench-bounded-final-${{ matrix.chunk }}
           path: sanitized/
           retention-days: 7

@@ -2,12 +2,17 @@
 
 import re
 import uuid
+from functools import cached_property
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
+from evalscope.utils.import_utils import check_import
+
+DEFAULT_MAX_INPUT_TOKENS = 32768
+TRUNCATION_MARKER = '\n...TRUNCATED...\n'
 
 
 class CybenchStrategy(AgentStrategy):
@@ -15,8 +20,45 @@ class CybenchStrategy(AgentStrategy):
 
     name = 'cybench_unguided'
 
-    def __init__(self) -> None:
+    def __init__(self, max_input_tokens: int = DEFAULT_MAX_INPUT_TOKENS) -> None:
+        if not isinstance(max_input_tokens, int) or max_input_tokens < 16:
+            raise ValueError('Cybench max_input_tokens must be an integer of at least 16.')
+        self.max_input_tokens = max_input_tokens
         self.model_inputs: Dict[int, List[Dict[str, Any]]] = {}
+
+    @cached_property
+    def _encoding(self) -> Any:
+        check_import('tiktoken', extra='cybench', raise_error=True, feature_name='Cybench input token budget')
+        import tiktoken
+
+        return tiktoken.get_encoding('cl100k_base')
+
+    def _limit_messages(self, messages: List[ChatMessage]) -> List[ChatMessage]:
+        # Each BPE token consumes at least one UTF-8 byte; short requests need no tokenizer.
+        if sum(len(m.text.encode('utf-8')) for m in messages) < self.max_input_tokens - len(TRUNCATION_MARKER):
+            return messages
+        chunks = [self._encoding.encode(m.text, disallowed_special=()) for m in messages]
+        total = sum(len(tokens) for tokens in chunks)
+        marker_tokens = self._encoding.encode(TRUNCATION_MARKER, disallowed_special=())
+        if total < self.max_input_tokens - len(marker_tokens):
+            return messages
+        # Match the official head/tail rule while retaining native message roles.
+        half = (self.max_input_tokens - len(marker_tokens)) // 2
+        limited = []
+        offset = 0
+        marked = False
+        for message, tokens in zip(messages, chunks):
+            head = tokens[: max(0, half - offset)]
+            tail = tokens[max(0, total - half - offset) :]
+            content = self._encoding.decode(head)
+            if len(head) + len(tail) < len(tokens) and not marked:
+                content += TRUNCATION_MARKER
+                marked = True
+            content += self._encoding.decode(tail)
+            if content:
+                limited.append(message.model_copy(update={'content': content}))
+            offset += len(tokens)
+        return limited
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         """Use the benchmark-owned upstream prompt supplied after environment setup."""
@@ -31,6 +73,7 @@ class CybenchStrategy(AgentStrategy):
         messages = [
             m for m in ctx.messages if m.role == 'system' or m.id == initial_user or m.id in replies + observations
         ]
+        messages = self._limit_messages(messages)
         self.model_inputs[ctx.step] = [m.model_dump(mode='json') for m in messages]
         return messages
 
