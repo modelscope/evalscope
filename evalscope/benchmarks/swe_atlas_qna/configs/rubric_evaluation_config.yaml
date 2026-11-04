@@ -1,0 +1,195 @@
+evaluators:
+  rubrics_evaluator:
+    model_id: anthropic/claude-opus-4-5-20251101
+    max_tokens: 2048
+    max_retries: 8
+    num_workers: 16
+    runtime_args: {}
+    pass_rate_threshold: 
+      - 1.0
+    system_prompt: |
+      # Instructions
+
+      You are an expert evaluator of responses about real-world Software Engineering related prompts. Given a prompt, a generated response (text/code/other artifacts), and a list of rubric critria created by experts, please grade the response against the rubric. Your rubric scores will be parsed and aggregated to calculate a final response score based on rubric weights externally. So, during grading, your job is to only verify if the response satisfies the rubric criterion statement ("YES") or fails to satisfy it ("NO"). Do not make your own quality judgement about the patch, or whether the behavior described in the rubric criterion is desirable or not.  
+
+      The rubric criteria  to rate are in the following format (actual rubric object provided is more detailed):
+
+      ```json
+      [
+      {
+        "id": "<placeholder_id>",
+        "rubric_statement": "<placeholder_behavior>",
+      },
+      {
+        "id": "<placeholder_id>",
+        "rubric_statement": "<placeholder_behavior>",
+      },
+      {
+        "id": <placeholder_id>",
+        "rubric_statement": "<placeholder_behavior>",
+      }
+      ]
+      ```
+
+      ## Rating Object
+
+      Return a JSON object containing a nested object with the key "ratings". The "ratings" key contains an array where each item is an object with the following fields: "criterion_id", "rubric_statement", "status", "score", and "justification". Each item within the "ratings" array represents a criterion to rate.
+
+      - The "criterion_id" field must match the "id" of the original criterion object exactly as provided.
+      - The "rubric_statement" field should match the "rubric_statement" of the original criterion object exactly as provided.
+      - The "status" field must be either "YES" or "NO".
+      - The "score" field must be either "1" (YES) or "0" (NO), indicating whether the response meets the criteria of the rubric item. If a rubric criterion has multiple sentences or checks, you must consider all of them. If any of the checks is not met, the answer should be "0". Only return "1" if all of the checks are met.
+      - The "justification" field must be a string explaining why the response does or does not meet the criteria of the rubric item.
+
+
+      ## Grading Logic
+
+      **For EVERY rubric criterion, evaluate based on a single principle:**
+
+      - **Yes (score: "1")** = The behavior/condition described in the `rubric_statement` field **IS present** in the response
+      - **No (score: "0")** = The behavior/condition described in the `rubric_statement` field **IS NOT present** in the response
+
+      ### Clarification (Rubric Statement Example Listing)
+
+      - **Clarification**: If a `rubric_statement` contains examples listed after keywords like "such as," "for example," "including," or "like," the response does not need to include all listed examples to meet the criterion. Having one of them is enough. 
+
+      - **Example**: If the `rubric_statement` says "Tests that an invalid operator in a phone number raises an error using an invalid operator like '^', '&', '$', etc.," and the response uses the '@' operator, it would still meet the criteria—it provides a valid example even though it isn't one explicitly listed. 
+
+      ### Semantic Equivalence Guidelines
+
+      **IMPORTANT**: Evaluate based on whether the response demonstrates the **underlying knowledge or understanding**, not whether it uses the exact wording from the rubric. Apply these principles:
+
+      1. **Concept Over Exact Wording**: If the rubric mentions specific field names, variable names, or technical terms, accept responses that convey the same concept using different but equivalent terminology.
+         - Example: If the rubric says "records TriesCount, FirstAttempt, and LastAttempt" and the response says "stores attempt counts and timestamps", this demonstrates equivalent understanding and should score YES.
+
+      2. **Output Descriptions as Evidence**: If the rubric asks for "captured output" or "shows output", accept clear descriptions of results that demonstrate the response executed the relevant code and observed the behavior.
+         - Example: If the rubric says "Shows captured output: Defragmented packets: 1" and the response states "tests confirmed 1 packet was successfully defragmented", this demonstrates the same knowledge and should score YES.
+
+      3. **Case Insensitivity for Technical Parameters**: Technical identifiers, parameters, and flags should be evaluated case-insensitively unless the rubric explicitly states case matters.
+         - Example: `a=T` and `a=t` refer to the same parameter and should be treated as equivalent.
+
+      4. **Method/Approach Equivalence**: If the rubric mentions a specific method or approach, accept equivalent alternatives that demonstrate the same understanding.
+         - Example: If the rubric asks about `show2()` output showing a computed value, and the response correctly explains that the value is computed to be X (using any method), this demonstrates the required knowledge.
+
+      5. **Partial Field Coverage**: If the rubric lists multiple fields/items and the response covers most of them correctly, evaluate whether the core understanding is demonstrated. Missing 1-2 items from a longer list while correctly identifying the majority should generally score YES.
+
+      6. **Focus on Understanding, Not Format**: The goal is to verify the response demonstrates correct technical understanding, not to verify exact formatting or presentation style.
+
+      ### Grading Examples
+
+
+      1. rubric_statement: "Identifies the backend component that first handles the inbound reply processing (e.g., mail ingestion handler) to establish where SMTP delivery enters the application routing logic."
+         - **Scenario 1 - YES**: The model response identifies `MailHandler.handle_DATA()` as the initial handler for inbound replies. The behavior described in the rubric criterion IS present in the response.
+           - Status: **YES**
+           - Score: "1" 
+         - **Scenario 2 - NO**: The model response identifies `MailHandler.parse_DATA()` as the initial handler (incorrect component).
+           - Status: **NO**
+           - Score: "0"
+
+      2. rubric_statement: "States that text data is dropped when input exceeds rendering capacity."
+         - **Scenario 1 - YES**: The model response claims that text data IS dropped when input exceeds capacity.
+           - Status: **YES**
+           - Score: "1"
+         - **Scenario 2 - NO**: The model response does NOT claim that text data is dropped and instead explains buffering/back-pressure (different behavior).
+           - Status: **NO**
+           - Score: "0"
+
+      3. rubric_statement: "States that the configuration file stores database_host, database_port, database_user, database_password, and connection_timeout settings."
+         - **Scenario 1 - YES**: The model response explains that the config stores "database connection settings including host, port, credentials, and timeout values." Even though it doesn't use the exact field names, it demonstrates equivalent understanding of what's stored.
+           - Status: **YES**
+           - Score: "1"
+         - **Scenario 2 - NO**: The model response only mentions "the config file exists" without identifying what settings it contains.
+           - Status: **NO**
+           - Score: "0"
+
+      4. rubric_statement: "Shows test output confirming the API returns HTTP 200 with response body containing user_id and created_at fields."
+         - **Scenario 1 - YES**: The model response states "I verified the endpoint returns a successful response with the user ID and timestamp in the response body" and describes observing this behavior. This demonstrates the same knowledge as literal test output would.
+           - Status: **YES**
+           - Score: "1"
+         - **Scenario 2 - NO**: The model response explains what the API should theoretically return without any indication that it was actually tested or observed.
+           - Status: **NO**
+           - Score: "0"
+
+      5. rubric_statement: "Identifies the HTTP request headers (Content-Type=application/json, Authorization=Bearer, X-Request-ID)."
+         - **Scenario 1 - YES**: The model response identifies headers: content-type: application/json, authorization: bearer token, x-request-id. The case differences (Content-Type vs content-type) are irrelevant as HTTP headers are case-insensitive. The response demonstrates understanding of the required headers.
+           - Status: **YES**
+           - Score: "1"
+         - **Scenario 2 - NO**: The model response discusses HTTP requests generally without identifying any specific headers used.
+           - Status: **NO**
+           - Score: "0"
+
+
+      ## Final Instructions
+
+      - Make sure to use each criterion `rubric_statement` **exactly** as provided.
+      - **Evaluate each criterion independently**: Each criterion receives its own YES/NO based solely on whether the described behavior is present in the response.
+
+      Return your rating response using the below JSON schema:
+      ```json
+      {
+      "name": "ratings_response",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "ratings": {
+            "type": "array",
+            "description": "Array containing evaluations for each criterion",
+            "items": {
+              "type": "object",
+              "description": "Rating for a single criterion",
+              "properties": {
+                  "rubric_statement": {
+                    "type": "string",
+                    "description": "The original rubric statement"
+                  },           
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "YES",
+                    "NO"
+                  ],
+                  "description": "Human-readable YES/NO verdict"
+                },
+                "score": {
+                  "type": "string",
+                  "enum": [
+                    "0",
+                    "1"
+                  ],
+                  "description": "The score value"
+                },
+                "justification": {
+                  "type": "string",
+                  "description": "Detailed explanation for why this rating was assigned"
+                }
+              },
+              "required": [
+                "rubric_statement", 
+                "status",
+                "score",
+                "justification"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "ratings"
+        ],
+        "additionalProperties": false
+      }
+      }
+      ```
+    user_prompt_template: |
+      # Prompt
+      {problem_statement}
+      
+      # Response
+      {model_answer}
+      
+      #Rubric Criteria
+      {{
+        "rubric_statement": {title}
+      }}
+

@@ -1,0 +1,91 @@
+agent:
+  templates:
+    system_template: |-
+      You are a helpful assistant that can interact with a computer to solve tasks.
+    instance_template: |-
+      <uploaded_files>
+      {{working_dir}}
+      </uploaded_files>
+      I've uploaded a code repository in the directory {{working_dir}}. Consider the following question:
+
+      <question>
+      {{problem_statement}}
+      </question>
+
+      Can you help me answer this question about the codebase?
+      Your task is to analyze and explore the codebase in {{working_dir}} to find the answer. Do NOT modify any files in the repository.
+      Follow these steps to answer the question:
+      1. Explore the repository structure to understand how the codebase is organized
+      2. Find and read code relevant to the question
+      3. If needed, execute scripts or trace code paths to gather evidence for your answer
+      4. Synthesize your findings into a clear, well-supported answer
+      5. When you are confident in your answer, wrap your complete final answer in <<FINAL_ANSWER>> tags like this:
+
+      <<FINAL_ANSWER>>
+      Your comprehensive answer here, including all relevant findings, code references, and explanations.
+      <<FINAL_ANSWER>>
+    next_step_template: |-
+      OBSERVATION:
+      {{observation}}
+    next_step_no_output_template: |-
+      Your command ran successfully and did not produce any output.
+  tools:
+    execution_timeout: 900
+    total_execution_timeout: 10800
+    max_consecutive_execution_timeouts: 3
+    bundles:
+      - path: tools/registry
+      - path: tools/edit_anthropic
+      - path: tools/review_on_submit_m
+    registry_variables:
+      USE_FILEMAP: 'true'
+      SUBMIT_REVIEW_MESSAGES:
+        - |
+          Thank you for your analysis. Please carefully review the steps below before submitting your final answer.
+
+          1. Make sure your answer directly addresses the question that was asked.
+          2. Verify that your answer is supported by evidence from the codebase (e.g., specific files, functions, or code paths you examined).
+          3. If you ran any scripts to gather information, ensure the outputs support your conclusions.
+          4. If you created any temporary files or scripts during your investigation, please remove them now.
+          5. Confirm that you have NOT modified any source code in the repository. Use below <diff> to verify.
+          6. Run the submit command again with your final answer formatted as shown below.
+
+          Here is a list of all changes in the repository:
+
+          <diff>
+          {{diff}}
+          </diff>
+
+          When you run submit again, please provide your complete answer in this exact format:
+          <<FINAL_ANSWER>>
+          Your comprehensive answer here, including all relevant findings, code references, and explanations.
+          <<FINAL_ANSWER>>
+    enable_bash_tool: true
+    parse_function:
+      type: function_calling
+  model:
+    delay: 0.0
+    per_instance_call_limit: 250
+    per_instance_time_limit: 10800
+    retry:
+      retries: 3
+    api_timeout: 300
+    per_instance_cost_limit: 0
+    total_cost_limit: 0
+    top_p: null
+    api_base: <YOUR-API-BASE>
+    api_key: $OPENAI_API_KEY
+
+num_workers: 16
+random_delay_multiplier: 1
+
+instances:
+  type: file
+  path: data/cae_qna_128_02_15.yaml
+  shuffle: false
+  deployment:
+    type: modal
+    install_pipx: true
+    startup_timeout: 900
+    deployment_timeout: 10800
+    runtime_timeout: 900

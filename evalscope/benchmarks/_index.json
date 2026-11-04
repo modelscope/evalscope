@@ -240,6 +240,7 @@
  "stsb": "evalscope.benchmarks.stsb.stsb_adapter",
  "super_gpqa": "evalscope.benchmarks.super_gpqa.super_gpqa_adapter",
  "surds": "evalscope.benchmarks.surds.surds_adapter",
+ "swe_atlas_qna": "evalscope.benchmarks.swe_atlas_qna.swe_atlas_qna_adapter",
  "swe_bench_lite": "evalscope.benchmarks.swe_bench.swe_bench_adapter",
  "swe_bench_lite_agentic": "evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter",
  "swe_bench_multilingual_agentic": "evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter",
