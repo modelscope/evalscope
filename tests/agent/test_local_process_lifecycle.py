@@ -6,7 +6,7 @@ import signal
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -94,12 +94,14 @@ def test_non_posix_cleanup_does_not_wait_for_descendant_pipes(monkeypatch: pytes
 
         communication = asyncio.create_task(communicate())
         proc = AsyncMock(spec=asyncio.subprocess.Process)
+        proc._transport = Mock()
         proc.returncode = 0
         with monkeypatch.context() as patch:
             patch.setattr(local.os, 'name', 'nt')
             await asyncio.wait_for(LocalAgentEnvironment._stop_process(proc, communication), timeout=0.5)
         assert communication.cancelled()
         proc.wait.assert_awaited_once()
+        proc._transport.close.assert_called_once_with()
 
     asyncio.run(run())
 
@@ -122,6 +124,7 @@ def test_cleanup_always_reaps_parent(monkeypatch: pytest.MonkeyPatch, cancel_dra
 
         communication = asyncio.create_task(communicate())
         proc = AsyncMock(spec=asyncio.subprocess.Process)
+        proc._transport = Mock()
         proc.pid = 123
 
         def signal_group(pid: int, sig: int) -> None:
@@ -146,3 +149,101 @@ def test_cleanup_always_reaps_parent(monkeypatch: pytest.MonkeyPatch, cancel_dra
         proc.wait.assert_awaited_once()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize('platform', ['posix', 'nt'])
+def test_final_process_wait_is_bounded(platform: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.agent.environments import local
+
+    async def run() -> None:
+        release = asyncio.Event()
+        proc = AsyncMock(spec=asyncio.subprocess.Process)
+        proc._transport = Mock()
+        proc.pid = 123
+        proc.returncode = None
+
+        async def wait() -> int:
+            if platform == 'nt' and not proc.kill.called:
+                raise asyncio.TimeoutError
+            await release.wait()
+            return 0
+
+        proc.wait.side_effect = wait
+        communication = asyncio.create_task(asyncio.sleep(0, result=(b'', b'')))
+        with monkeypatch.context() as patch:
+            patch.setattr(local.os, 'name', platform)
+            patch.setattr(local.os, 'killpg', Mock())
+            cleanup = asyncio.create_task(LocalAgentEnvironment._stop_process(proc, communication))
+            try:
+                # Cancelling cleanup would wait for the shielded task and could hang the test.
+                done, _ = await asyncio.wait({cleanup}, timeout=2)
+                assert cleanup in done, 'Cleanup did not return while the final process wait was pending'
+                cleanup.result()
+            finally:
+                release.set()
+                await cleanup
+        assert proc.wait.await_count == (2 if platform == 'nt' else 1)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize('stop', ['timeout', 'cancel'])
+def test_stopping_exec_is_bounded_when_descendant_escapes_process_group(tmp_path: Path, stop: str) -> None:
+    ready = tmp_path / 'ready'
+    escaped_ready = tmp_path / 'escaped-ready'
+    child = (
+        'import os, time; from pathlib import Path; '
+        'os.setsid(); '
+        f'Path({str(escaped_ready)!r}).write_text(str(os.getpid())); time.sleep(60)'
+    )
+    parent = (
+        'import os, subprocess, sys, time; from pathlib import Path; '
+        f'p = subprocess.Popen([sys.executable, "-c", {child!r}]); '
+        f'escaped_ready = Path({str(escaped_ready)!r}); '
+        '\nwhile not escaped_ready.exists(): time.sleep(0.01)\n'
+        f'Path({str(ready)!r}).write_text(str(os.getpid()) + " " + str(p.pid)); time.sleep(60)'
+    )
+
+    async def run() -> None:
+        task = asyncio.create_task(
+            LocalAgentEnvironment().exec([sys.executable, '-c', parent], timeout=1 if stop == 'timeout' else None)
+        )
+        pids: list[int] = []
+        try:
+            pids = await _wait_ready(ready)
+            if stop == 'cancel':
+                task.cancel()
+            done, _ = await asyncio.wait({task}, timeout=7)
+            assert task in done, 'Cleanup waited for the escaped process to close its pipes'
+            if stop == 'cancel':
+                with pytest.raises(asyncio.CancelledError):
+                    task.result()
+            else:
+                result = task.result()
+                assert result.timed_out
+                assert result.returncode == -1
+        finally:
+            for pid in pids:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(run())
+
+
+def test_invalid_unicode_input_is_rejected_before_process_start(monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.agent.environments import local
+
+    create_process = AsyncMock()
+    monkeypatch.setattr(local.asyncio, 'create_subprocess_exec', create_process)
+
+    async def run() -> None:
+        with pytest.raises(UnicodeEncodeError):
+            await LocalAgentEnvironment().exec([sys.executable, '-c', 'pass'], input='\ud800')
+
+    asyncio.run(run())
+    create_process.assert_not_awaited()

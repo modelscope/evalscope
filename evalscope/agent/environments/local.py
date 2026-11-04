@@ -57,6 +57,7 @@ class LocalAgentEnvironment(AgentEnvironment):
 
         loop = asyncio.get_running_loop()
         started = loop.time()
+        input_bytes = input.encode('utf-8') if input is not None else None
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -72,7 +73,7 @@ class LocalAgentEnvironment(AgentEnvironment):
             env=merged_env,
             start_new_session=os.name == 'posix',
         )
-        communication = asyncio.create_task(proc.communicate(input.encode('utf-8') if input is not None else None))
+        communication = asyncio.create_task(proc.communicate(input_bytes))
         try:
             stdout_bytes, stderr_bytes = await asyncio.wait_for(
                 asyncio.shield(communication),
@@ -104,6 +105,12 @@ class LocalAgentEnvironment(AgentEnvironment):
             except ProcessLookupError:
                 pass
 
+        async def wait_for_exit() -> None:
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=1.0)
+            except asyncio.TimeoutError:
+                logger.warning(f'Timed out waiting for local command process {proc.pid} to exit after cleanup')
+
         async def cleanup() -> None:
             if os.name != 'posix':
                 # Preserve direct-process cleanup where process groups are unavailable.
@@ -115,7 +122,10 @@ class LocalAgentEnvironment(AgentEnvironment):
                     await asyncio.wait_for(proc.wait(), timeout=3.0)
                 except asyncio.TimeoutError:
                     stop(force=True)
-                    await proc.wait()
+                finally:
+                    proc._transport.close()
+                if proc.returncode is None:
+                    await wait_for_exit()
                 return
 
             stop()
@@ -127,12 +137,15 @@ class LocalAgentEnvironment(AgentEnvironment):
             finally:
                 # Also stop descendants that closed their pipes but ignored SIGTERM.
                 stop(force=True)
+                # communicate() does not close pipe transports when cancelled.
+                proc._transport.close()
                 try:
-                    await communication
-                except OSError:
-                    pass
+                    await asyncio.wait_for(asyncio.shield(communication), timeout=1.0)
+                except (asyncio.TimeoutError, OSError):
+                    communication.cancel()
+                    await asyncio.gather(communication, return_exceptions=True)
                 finally:
-                    await proc.wait()
+                    await wait_for_exit()
 
         cleanup_task = asyncio.create_task(cleanup())
         cancelled = False
