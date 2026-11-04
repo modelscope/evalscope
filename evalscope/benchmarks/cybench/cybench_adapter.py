@@ -114,7 +114,7 @@ It measures practical problem solving, multi-step planning and terminal tool use
         metric_list=METRICS,
         primary_metric='flag_found',
         aggregation='mean',
-        evaluation_version='v1.3',
+        evaluation_version='v1.0',
         few_shot_num=0,
         prompt_template='{question}',
         extra_params={
