@@ -22,7 +22,7 @@ from evalscope.api.tool import ToolCall
 from evalscope.benchmarks.cybench.dataset import CybenchManifest, CybenchTask
 from evalscope.benchmarks.cybench.environment import CybenchEnvironment
 from evalscope.benchmarks.cybench.prompts import task_prompt
-from evalscope.benchmarks.cybench.strategy import CybenchStrategy
+from evalscope.benchmarks.cybench.strategy import DEFAULT_MAX_INPUT_TOKENS, CybenchStrategy
 from evalscope.constants import ScoreStatus, Tags
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.download_utils import file_sha256
@@ -42,6 +42,7 @@ class CybenchRun(BaseModel):
     runtime: Dict[str, Any]
     max_steps: int
     command_timeout: float
+    max_input_tokens: Optional[int] = None
     termination: Literal['submitted', 'max_steps']
     submission: Optional[str] = None
     executions: List['CybenchExecution'] = Field(default_factory=list)
@@ -76,18 +77,22 @@ It measures practical problem solving, multi-step planning and terminal tool use
 ## Evaluation Notes
 
 - Supports unguided evaluation with one answer submission. Defaults to 15 model generations and 120 seconds per
-  command. Compare models under the same agent, runtime and generation settings.
+  command. The default input-text budget is 32,768 tokens using `cl100k_base`, the official fallback tokenizer.
+  Input trimming retains the beginning and end with the official truncation marker; raw traces remain complete.
+  Compare models under the same agent, runtime and generation settings.
 - Primary `flag_found` measures whether execution stdout or the submission contains the reference flag's braced
   body. `correct_submission` requires an exact final answer; `full_flag_found` requires the complete flag in stdout
   or the submission. Model reasoning and stderr do not count as captured flags. Higher is better for all three.
-- Requires `pip install evalscope[sandbox]` (ms-enclave), Docker with privileged Linux container support and the large
-  official `cybench/cybench` Kali image. Uses EvalScope's shared sandbox lifecycle and automatic image download;
-  `TaskConfig.sandbox.default_config` can override the image and resources.
+- Requires `pip install 'evalscope[cybench]'` (ms-enclave and tiktoken), Docker with privileged Linux container support
+  and the large official `cybench/cybench` Kali image. Uses EvalScope's shared sandbox lifecycle and automatic
+  image download; `TaskConfig.sandbox.default_config` can override the image and resources.
   First runs need network access for image downloads, challenge files and service build dependencies; allow sufficient
   disk space and setup time. `extra_params.task_ids` selects individual tasks for a smaller initial run.
 - All 40 task records and task packages download directly from the ModelScope dataset `evalscope/cybench` and are
-  cached locally. No separate GitHub checkout is needed. Nine GlacierCTF tasks use materials restored from the
-  competition authors; their original Cybench guided annotations and hard/easy prompt variants are unavailable.
+  cached locally. No separate GitHub checkout is needed. Build-dependency compatibility fixes are documented in
+  the dataset README; challenge application sources and scoring rules are preserved. Nine GlacierCTF tasks use
+  materials restored from the competition authors; their original Cybench guided annotations and hard/easy prompt
+  variants are unavailable.
   Native chat requests retain a user turn for API compatibility during history trimming. Agent execution also differs
   from the original runner, so results are not an exact reproduction of the published setup.
 - Runtime or provider failures are not counted as incorrect solutions. Only completed, scoreable attempts contribute
@@ -100,7 +105,7 @@ It measures practical problem solving, multi-step planning and terminal tool use
         name='cybench',
         pretty_name='Cybench (Unguided)',
         dataset_id='evalscope/cybench',
-        dataset_revision='19f9025309d7a96e712813e617bb2a54dc61628f',
+        dataset_revision='dc40b8249da3b9669e6952c75290b2e5fc0175f7',
         paper_url='https://arxiv.org/abs/2408.08926',
         tags=[Tags.AGENT, Tags.SAFETY],
         description=DESCRIPTION,
@@ -109,12 +114,17 @@ It measures practical problem solving, multi-step planning and terminal tool use
         metric_list=METRICS,
         primary_metric='flag_found',
         aggregation='mean',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         few_shot_num=0,
         prompt_template='{question}',
         extra_params={
             'task_ids': {'type': 'list', 'value': None, 'description': 'Full official task paths to evaluate.'},
             'setup_timeout': {'type': 'int', 'value': 1800, 'description': 'Task initialization timeout in seconds.'},
+            'max_input_tokens': {
+                'type': 'int',
+                'value': DEFAULT_MAX_INPUT_TOKENS,
+                'description': 'Input-text token budget for official head/tail trimming (cl100k_base).',
+            },
         },
     )
 )
@@ -208,7 +218,7 @@ class CybenchAdapter(AgentLoopAdapter):
 
     def build_strategy(self, sample: Sample) -> CybenchStrategy:
         """Use the fixed upstream text protocol."""
-        return CybenchStrategy()
+        return CybenchStrategy(max_input_tokens=self.extra_params['max_input_tokens'])
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         task = CybenchTask.model_validate(sample.metadata['cybench'])
@@ -224,6 +234,7 @@ class CybenchAdapter(AgentLoopAdapter):
             raise ValueError(
                 'Cybench owns its native protocol and terminal; only max_steps/command_timeout may change.'
             )
+        strategy = self.build_strategy(sample)
         environment = self.build_environment(sample)
         executions = []
         seconds = self._resolve_command_timeout(ac) or self.command_timeout_default
@@ -253,7 +264,6 @@ class CybenchAdapter(AgentLoopAdapter):
                     'manifest_sha256': self._manifest_sha256,
                 }
             )
-            strategy = self.build_strategy(sample)
             result = run_agent_loop(
                 model=model,
                 strategy=strategy,
@@ -279,6 +289,7 @@ class CybenchAdapter(AgentLoopAdapter):
                 runtime=environment.runtime,
                 max_steps=self._resolve_max_steps(ac),
                 command_timeout=seconds,
+                max_input_tokens=strategy.max_input_tokens,
                 submission=answer if submitted else None,
                 termination='submitted' if submitted else 'max_steps',
                 executions=executions,
@@ -345,6 +356,7 @@ class CybenchAdapter(AgentLoopAdapter):
                 'runtime': run.runtime,
                 'max_steps': run.max_steps,
                 'command_timeout': run.command_timeout,
+                'max_input_tokens': run.max_input_tokens,
                 'protocol': 'native_chat_last_3',
                 'execution_user': run.runtime.get('execution_user', 'cybench-agent'),
             }
