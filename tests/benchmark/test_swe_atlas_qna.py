@@ -14,16 +14,24 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
+from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+from evalscope.agent.tools.bash import BASH_TOOL_INFO
+from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import CaseVerdict, JudgeContext
+from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
+from evalscope.api.tool import ToolCall, ToolFunction
+from evalscope.benchmarks.swe_atlas_qna.prompts import JUDGE_SYSTEM_PROMPT
 from evalscope.benchmarks.swe_atlas_qna.swe_atlas_qna_adapter import (
     RUBRIC_CONTRACT,
     RubricResponse,
     RubricVerdict,
+    SweAtlasEnclaveEnvironment,
     SweAtlasQnAAdapter,
     SweAtlasSandboxMixin,
+    SweAtlasSandboxState,
 )
 from evalscope.benchmarks.swe_atlas_qna.utils import (
     dirty_check_command,
@@ -33,6 +41,7 @@ from evalscope.benchmarks.swe_atlas_qna.utils import (
     rubric_item_passed,
 )
 from evalscope.config import TaskConfig
+from evalscope.report.generator import ReportGenerator
 
 
 def make_adapter(tmp_path, **extra_params: Any) -> SweAtlasQnAAdapter:
@@ -66,6 +75,11 @@ def test_parse_rubric_accepts_json_string_and_defaults_ids() -> None:
     assert len(items) == 1
     assert items[0]['id'] == 'rubric_0'
     assert items[0]['negated'] is False
+
+
+def test_parse_rubric_rejects_unknown_verifier_type() -> None:
+    with pytest.raises(ValueError, match='unknown rubric verifier type'):
+        parse_rubric([{'title': 'weighted result', 'annotations': {'type': 'weighted hli verifier'}}])
 
 
 def test_rubric_item_passed_honours_polarity() -> None:
@@ -115,6 +129,46 @@ def test_record_to_sample_carries_task_metadata(tmp_path) -> None:
     assert sample.metadata['repository_base_commit'] == 'abc123'
     assert sample.metadata['rubric'][0]['id'] == 'r1'
     assert sample.metadata['rubric'][0]['negated'] is False
+
+
+def test_build_environment_requires_base_commit_when_reset_is_enabled(tmp_path) -> None:
+    adapter = make_adapter(tmp_path)
+    sample = Sample(input='q', metadata={'task_id': 'missing-commit', 'docker_image': 'unused'})
+    with pytest.raises(RuntimeError, match='repository_base_commit missing'):
+        adapter.build_environment(sample)
+
+
+def test_build_environment_uses_static_class_and_shared_typed_state(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(EnclaveAgentEnvironment, '__init__', lambda self, **kwargs: None)
+    adapter = make_adapter(tmp_path)
+    sample = adapter.record_to_sample(_record())
+
+    env = adapter.build_environment(sample)
+
+    assert isinstance(env, SweAtlasEnclaveEnvironment)
+    state = sample.metadata['_sandbox_state']
+    assert isinstance(state, SweAtlasSandboxState)
+    assert env.state is state
+    assert sample.model_dump()['metadata']['_sandbox_state']['setup_returncode'] is None
+
+
+def test_bash_timeout_uses_benchmark_default_and_native_override(tmp_path) -> None:
+    adapter = make_adapter(tmp_path, command_timeout=123)
+    sample = Sample(input='q', tools=[BASH_TOOL_INFO])
+    timeouts = []
+
+    async def exec_command(cmd, **kwargs):
+        timeouts.append(kwargs['timeout'])
+        return SimpleNamespace(stdout='', stderr='', returncode=0, timed_out=False)
+
+    env = SimpleNamespace(exec=exec_command)
+    for agent_config, expected in [(None, 123), (NativeAgentConfig(command_timeout=45), 45)]:
+        handlers, tools = adapter._resolve_tools(sample, agent_config)
+        assert tools[0].parameters.properties['timeout'].default == expected
+        call = ToolCall(id='1', function=ToolFunction(name='bash', arguments={'command': 'pwd'}))
+        asyncio.run(handlers['bash'](call, env))
+
+    assert timeouts == [123, 45]
 
 
 # ---------------------------------------------------------------------------
@@ -168,10 +222,26 @@ def test_reduce_partial_pass_is_not_resolved(tmp_path) -> None:
     assert reduced.metadata['failed_rubric_item_ids'] == ['r2']
 
 
+def test_report_resolves_primary_metric_semantics(tmp_path) -> None:
+    adapter = make_adapter(tmp_path)
+    sample_score = SampleScore(
+        sample_id='task-1',
+        score=Score(value={'resolved': 0.0, 'rubric_pass_rate': 3 / 7}, main_score_name='resolved'),
+    )
+    scores = adapter.aggregate_scores([sample_score])
+
+    report = ReportGenerator.generate_report({'default': scores}, 'mock', adapter)
+
+    assert report.primary_metric_identity.name == 'resolve_rate'
+    assert report.score == 0.0
+    assert report.num == 1
+    assert {metric.identity.name for metric in report.metrics} == {'resolve_rate', 'rubric_pass_rate'}
+
+
 def test_reduce_fails_task_when_source_tree_is_dirty(tmp_path) -> None:
     adapter = make_adapter(tmp_path)
     rubric = [{'id': 'r1', 'title': 't1', 'negated': False}]
-    dirty = {'tree_status': ' M keys.c'}
+    dirty = {'setup_returncode': 0, 'check_returncode': 0, 'tree_status': ' M keys.c'}
     definition = adapter.judge_definition(_context(rubric, dirty))
     verdicts = [_verdict('r1', 'YES', False)]
     reduced = definition.reduce_verdicts(verdicts, _context(rubric, dirty))
@@ -186,6 +256,7 @@ def test_reduce_fails_task_when_source_tree_is_dirty(tmp_path) -> None:
     [
         {'setup_returncode': 1, 'setup_error': 'reset failed'},
         {'check_returncode': 1, 'check_error': 'status failed'},
+        {'check_returncode': 0, 'tree_status': ''},
         {},
     ],
 )
@@ -197,6 +268,29 @@ def test_reduce_excludes_unverified_environment(tmp_path, sandbox_state: Dict[st
     reduced = definition.reduce_verdicts([_verdict('r1', 'YES', False)], context)
     assert reduced.value == {}
     assert reduced.metadata['environment_error']
+
+
+def test_reduce_excludes_missing_reset_when_dirty_check_is_disabled(tmp_path) -> None:
+    adapter = make_adapter(tmp_path, fail_on_source_modification=False)
+    rubric = [{'id': 'r1', 'title': 't1', 'negated': False}]
+    context = _context(rubric, {})
+    definition = adapter.judge_definition(context)
+    reduced = definition.reduce_verdicts([_verdict('r1', 'YES', False)], context)
+    assert reduced.value == {}
+    assert reduced.metadata['environment_error'] == 'repository reset did not complete'
+
+
+def test_reduce_allows_unverified_environment_when_both_checks_are_disabled(tmp_path) -> None:
+    adapter = make_adapter(tmp_path, reset_to_base_commit=False, fail_on_source_modification=False)
+    rubric = [{'id': 'r1', 'title': 't1', 'negated': False}]
+    context = _context(rubric, {})
+    definition = adapter.judge_definition(context)
+    reduced = definition.reduce_verdicts([_verdict('r1', 'YES', False)], context)
+    assert reduced.value == {'resolved': 1.0, 'rubric_pass_rate': 1.0}
+
+
+def test_judge_prompt_does_not_request_fields_forbidden_by_the_contract() -> None:
+    assert 'criterion_id' not in JUDGE_SYSTEM_PROMPT
 
 
 def test_official_ratings_envelope_parses_through_output_contract() -> None:
@@ -214,6 +308,8 @@ def test_official_ratings_envelope_parses_through_output_contract() -> None:
     [
         '{"status":"YES","justification":"missing envelope"}',
         '{"ratings":[]}',
+        '{"ratings":[{"rubric_statement":"a","status":"YES","score":"1","justification":"a"}],"extra":true}',
+        '{"ratings":[{"criterion_id":"1.2","rubric_statement":"a","status":"YES","score":"1","justification":"a"}]}',
         '{"ratings":['
         '{"rubric_statement":"a","status":"YES","score":"1","justification":"a"},'
         '{"rubric_statement":"b","status":"NO","score":"0","justification":"b"}'
@@ -248,39 +344,57 @@ class _FakeEnvironment:
         self.closed = True
 
 
-def _sandbox_environment(results: List[Any], sink: Dict[str, Any]):
+def _sandbox_environment(results: List[Any], state: SweAtlasSandboxState):
     environment_cls = type('TestSweAtlasEnvironment', (SweAtlasSandboxMixin, _FakeEnvironment), {})
     return environment_cls(
-        setup_command='reset', check_command='check', sink=sink, results=results
+        setup_command='reset', check_command='check', state=state, results=results
     )
 
 
 def test_setup_failure_stops_agent_and_skips_dirty_check() -> None:
-    sink: Dict[str, Any] = {}
+    state = SweAtlasSandboxState()
     env = _sandbox_environment(
-        [SimpleNamespace(returncode=1, stdout='', stderr='unknown revision')], sink
+        [SimpleNamespace(returncode=1, stdout='', stderr='unknown revision')], state
     )
     with pytest.raises(RuntimeError, match='unknown revision'):
         asyncio.run(env.exec(['bash']))
     asyncio.run(env.close())
     assert env.commands == [['bash', '-c', 'reset']]
-    assert sink['setup_returncode'] == 1
-    assert sink['setup_error'] == 'unknown revision'
+    assert state.setup_returncode == 1
+    assert state.setup_error == 'unknown revision'
     assert env.closed
 
 
+def test_bash_tool_terminates_agent_when_setup_fails(tmp_path) -> None:
+    adapter = make_adapter(tmp_path)
+    state = SweAtlasSandboxState()
+    env = _sandbox_environment(
+        [SimpleNamespace(returncode=1, stdout='', stderr='unknown revision')], state
+    )
+    handler = adapter.build_tools(Sample(input='q'))['bash']
+    call = ToolCall(id='1', function=ToolFunction(name='bash', arguments={'command': 'pwd'}))
+
+    result = asyncio.run(handler(call, env))
+    asyncio.run(env.close())
+
+    assert result.terminate is True
+    assert result.final_answer == ''
+    assert result.text == 'unknown revision'
+    assert env.commands == [['bash', '-c', 'reset']]
+
+
 def test_dirty_check_nonzero_returncode_is_an_error() -> None:
-    sink: Dict[str, Any] = {}
+    state = SweAtlasSandboxState()
     env = _sandbox_environment(
         [
             SimpleNamespace(returncode=0, stdout='', stderr=''),
             SimpleNamespace(returncode=0, stdout='agent output', stderr=''),
             SimpleNamespace(returncode=128, stdout='', stderr='not a git repository'),
         ],
-        sink,
+        state,
     )
     asyncio.run(env.exec(['bash']))
     asyncio.run(env.close())
-    assert sink['check_returncode'] == 128
-    assert sink['check_error'] == 'not a git repository'
-    assert 'tree_status' not in sink
+    assert state.check_returncode == 128
+    assert state.check_error == 'not a git repository'
+    assert state.tree_status is None

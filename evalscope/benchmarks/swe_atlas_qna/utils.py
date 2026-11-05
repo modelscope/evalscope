@@ -29,12 +29,13 @@ def parse_rubric(raw: Any) -> List[Dict[str, Any]]:
     for index, item in enumerate(items):
         annotations = item.get('annotations') or {}
         item_type = (annotations.get('type') or POSITIVE_TYPE).strip().lower()
+        if item_type not in {POSITIVE_TYPE, NEGATIVE_TYPE}:
+            raise ValueError(f'unknown rubric verifier type {item_type!r} at index {index}')
         parsed.append(
             {
                 'id': item.get('id') or f'rubric_{index}',
                 'title': item.get('title') or '',
                 'negated': item_type == NEGATIVE_TYPE,
-                'importance': annotations.get('importance') or 'must have',
             }
         )
     return parsed

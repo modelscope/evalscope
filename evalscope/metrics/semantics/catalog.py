@@ -307,6 +307,8 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'pass_at_k',
         'pass_hat_k',
         'pass_rate',
+        'resolve_rate',
+        'rubric_pass_rate',
         'simple_pass_rate',
         'strict_pass',
         'subproblem_pass_rate',
