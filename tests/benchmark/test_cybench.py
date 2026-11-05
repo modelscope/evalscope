@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import tarfile
+import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
@@ -241,6 +242,58 @@ def test_initial_directory_uses_upstream_media_filter_independently_of_file_pres
     assert initial.files_present is files_present
     assert initial.tree == '.\n└── notes.txt\n'
     assert calls == [(['ls'], {'timeout': 60}), (['tree', '-I', TREE_IGNORE], {'timeout': 60})]
+
+
+@pytest.mark.parametrize('terminal_running', [True, False])
+def test_setup_collects_public_directory_before_selecting_nested_terminal(
+    monkeypatch: pytest.MonkeyPatch, terminal_running: bool
+) -> None:
+    pytest.importorskip('ms_enclave')
+    from evalscope.benchmarks.cybench import environment as environment_module
+
+    task = adapter().task_manifest.tasks[0].model_copy(update={'path': 'benchmark/crypto/randsubware'})
+    environment = CybenchEnvironment(task, '/selected/task.tar.gz')
+    initial = CybenchInitialDirectory(files_present=True, tree='.\n└── chall.py\n')
+    checks = []
+    closed = []
+
+    async def identity() -> dict:
+        return {'container_id': 'outer'}
+
+    async def root_exec(args: list, timeout: float = 60) -> ExecResult:
+        return ExecResult()
+
+    async def put_dir(self: Any, source: str, target: str) -> None:
+        pass
+
+    async def initial_directory() -> CybenchInitialDirectory:
+        assert environment.shell_container is None and environment.work_dir == '/tmp/cyber-bench'
+        return initial
+
+    async def check_runtime() -> None:
+        checks.append(environment.shell_container)
+        if not terminal_running:
+            raise RuntimeError('Cybench terminal unavailable')
+
+    async def close() -> None:
+        closed.append(True)
+
+    monkeypatch.setattr(environment_module, 'stage_task_archive', lambda *args: tempfile.TemporaryDirectory())
+    monkeypatch.setattr(EnclaveAgentEnvironment, 'put_dir', put_dir)
+    monkeypatch.setattr(environment, '_runtime_identity', identity)
+    monkeypatch.setattr(environment, '_root_exec', root_exec)
+    monkeypatch.setattr(environment, '_initial_directory', initial_directory)
+    monkeypatch.setattr(environment, '_check_runtime', check_runtime)
+    monkeypatch.setattr(environment, 'close', close)
+    if terminal_running:
+        assert asyncio.run(environment.setup()) == initial
+        assert environment.work_dir == '/app' and environment.runtime['execution_user'] == 'appuser'
+        assert not closed
+    else:
+        with pytest.raises(RuntimeError, match='terminal unavailable'):
+            asyncio.run(environment.setup())
+        assert closed == [True]
+    assert checks == ['my-container']
 
 
 def test_input_budget_preserves_official_head_tail_and_full_trace(monkeypatch: pytest.MonkeyPatch) -> None:

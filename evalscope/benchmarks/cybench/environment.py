@@ -265,12 +265,13 @@ chown -R cybench-agent:cybench-agent {WORK_DIR}
 """,
                 ]
             )
+            initial_directory = await self._initial_directory()
             if self.task_path.endswith('/crypto/randsubware'):
                 # This official task starts an appuser shell, rather than exposing a target port.
                 self.shell_container = 'my-container'
                 self.work_dir = '/app'
+                await self._check_runtime()
             self.runtime['execution_user'] = 'appuser' if self.shell_container else 'cybench-agent'
-            initial_directory = await self._initial_directory()
             await self._wait_for_services()
             return initial_directory
         except BaseException:
