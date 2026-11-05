@@ -86,7 +86,10 @@ def test_unlisted_files_do_not_change_prompt(corpus: Path, record: dict[str, Any
     assert adapter.record_to_sample(record).input[0].content == expected
 
 
-@pytest.mark.parametrize('manifest', [None, '', '  ', 123, 'a.txt;', ';b.txt', 'a.txt;;b.txt'])
+@pytest.mark.parametrize(
+    'manifest',
+    [None, '', '  ', 123, 'a.txt;', ';b.txt', 'a.txt;;b.txt', '.', '..', '../a.txt', 'nested/a.txt', '/tmp/a.txt'],
+)
 def test_invalid_manifest_is_rejected(corpus: Path, record: dict[str, Any], manifest: Any) -> None:
     record['data_source_filenames'] = manifest
 

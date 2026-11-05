@@ -209,12 +209,13 @@ class AALCRAdapter(DefaultDataAdapter):
                 f'AA-LCR data_source_filenames must be a non-empty semicolon-separated string: {doc_folder}'
             )
         filenames = manifest.split(';')
-        if any(not filename.strip() for filename in filenames):
-            raise ValueError(f'AA-LCR data_source_filenames contains an empty filename: {doc_folder}')
-
         doc_blocks = []
         # The official per-question manifest defines both membership and order.
         for filename in filenames:
+            if not filename.strip():
+                raise ValueError(f'AA-LCR data_source_filenames contains an empty filename: {doc_folder}')
+            if filename in ('.', '..') or Path(filename).name != filename:
+                raise ValueError(f'AA-LCR data_source_filenames must contain filenames without paths: {doc_folder}')
             file_path = doc_folder / filename
             try:
                 doc_blocks.append(_read_document(file_path).strip())
