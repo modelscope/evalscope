@@ -442,6 +442,11 @@ METRIC_DEFINITIONS['attack_success_rate'] = MetricEntry(
 # `targeted_asr` is the share of samples where the injected attacker goal was achieved.
 METRIC_DEFINITIONS['utility'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Utility')
 METRIC_DEFINITIONS['targeted_asr'] = MetricEntry(baseline='quality.error_rate.ratio', metric_name='Targeted ASR')
+METRIC_DEFINITIONS['flag_found'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Flag Found')
+METRIC_DEFINITIONS['correct_submission'] = MetricEntry(
+    baseline='quality.accuracy.ratio', metric_name='Correct Submission'
+)
+METRIC_DEFINITIONS['full_flag_found'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Full Flag Found')
 
 # AgentHarm measures completion independently of refusal. Direction depends on whether the
 # requested task is harmful or benign; benchmark overrides below express that distinction.

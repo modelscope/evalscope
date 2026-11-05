@@ -159,6 +159,7 @@ Example translations:
                 },
             ],
             temperature=0.3,
+            extra_body={'enable_thinking': False},
         )
         translated = completion.choices[0].message.content.strip()
         translated = _restore_code_blocks(translated, [_localize_usage_comments(block) for block in code_blocks])

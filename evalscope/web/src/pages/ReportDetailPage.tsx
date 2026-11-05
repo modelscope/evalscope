@@ -251,6 +251,7 @@ export default function ReportDetailPage() {
               datasetName={activeDataset}
               rootPath={rootPath}
               initialSubset={initialSubset}
+              report={reportList.find((r) => r.dataset_name === activeDataset)}
             />,
           ),
         }}

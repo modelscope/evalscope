@@ -44,7 +44,7 @@ class TestRAGAS(unittest.TestCase):
                     'test_size': 5,
                     'output_file': 'outputs/testset.json',
                     'generator_llm': {
-                        'model_name': 'qwen-plus',  # 自定义聊天模型名称
+                        'model_name': 'qwen3.8-flash',  # 自定义聊天模型名称
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',  # 自定义基础URL
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },
@@ -98,7 +98,7 @@ class TestRAGAS(unittest.TestCase):
                 eval=RAGASEvalConfig(
                     testset_file='outputs/testset_chinese_with_answer_small.json',
                     critic_llm={
-                        'model_name': 'qwen-plus',  # 自定义聊天模型名称
+                        'model_name': 'qwen3.8-flash',  # 自定义聊天模型名称
                         'api_base': 'https://dashscope.aliyuncs.com/compatible-mode/v1',  # 自定义基础URL
                         'api_key': env.get('DASHSCOPE_API_KEY', 'EMPTY'),  # 自定义API密钥
                     },

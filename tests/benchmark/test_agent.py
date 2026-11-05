@@ -430,19 +430,19 @@ class TestAgentBenchmark(TestBenchmark):
         )
 
     def test_wide_search(self):
-        """Test WideSearch with real qwen-plus, bash, Fetch MCP, and LLM judging."""
+        """Test WideSearch with real qwen3.8-flash, bash, Fetch MCP, and LLM judging."""
         if not env.get('DASHSCOPE_API_KEY'):
             self.skipTest('DASHSCOPE_API_KEY is required for the WideSearch real-API smoke test.')
 
         self._run_dataset_test(
             'wide_search',
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=1,
             eval_batch_size=1,
             collect_perf=False,
             debug=False,
             judge={'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -1182,6 +1182,89 @@ class TestAgentBenchmark(TestBenchmark):
             limit=1,
             agent_config=NativeAgentConfig(strategy='swe_bench_backticks'),
         )
+
+
+@pytest.mark.parametrize('malformed_turns', [0, 3])
+def test_cybench_native_run_task_web_contract_and_cached_regrade(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, malformed_turns: int
+) -> None:
+    """Persist a complete native run, serve it to WebUI, then regrade without model or Docker calls."""
+    from evalscope.api.agent.types import ExecResult
+    from evalscope.benchmarks.cybench.cybench_adapter import CybenchAdapter
+    from evalscope.benchmarks.cybench.environment import CybenchInitialDirectory
+    from tests.benchmark.test_cybench import DYN, write_dataset
+
+    class Environment:
+        name = 'cybench'
+        work_dir = '/tmp/cyber-bench'
+        runtime = {'image': 'fixture'}
+
+        async def setup(self) -> CybenchInitialDirectory:
+            return CybenchInitialDirectory(files_present=True, tree='output.txt\nsource.py')
+
+        async def exec(self, cmd: list, **kwargs: object) -> ExecResult:
+            return ExecResult(stdout='unrelated output', stderr='diagnostic')
+
+        async def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(CybenchAdapter, 'build_environment', lambda self, sample: Environment())
+    config = TaskConfig(
+        model=f'cybench-{tmp_path.name}', eval_type='mock_llm', datasets=['cybench'],
+        model_args={'custom_outputs': [
+            ModelOutput.from_content('scripted', 'Command: cat output.txt\n<END>'),
+            *[ModelOutput.from_content('scripted', 'Thought: still considering') for _ in range(malformed_turns)],
+            ModelOutput.from_content('scripted', 'Answer: wrong\n<END>'),
+        ]},
+        dataset_args={'cybench': {
+            'local_path': str(write_dataset(tmp_path / 'dataset')),
+            'subset_list': ['crypto'], 'extra_params': {'task_ids': [DYN]},
+        }},
+        work_dir=str(tmp_path / 'run'), no_timestamp=True, eval_batch_size=1,
+    )
+    report = run_task(config)['cybench']
+    values = {m.identity.name: (m.score, m.num) for m in report.metrics}
+    assert values == {'flag_found': (0, 1), 'correct_submission': (0, 1), 'full_flag_found': (0, 1)}
+    prediction = next((tmp_path / 'run').glob('predictions/*/*.jsonl'))
+    original = prediction.read_bytes()
+    frame = get_model_prediction(str(tmp_path / 'run'), config.model, 'cybench', 'crypto')
+    row = frame.iloc[0]
+    assert row['Score']['value'] == {'flag_found': 0, 'correct_submission': 0, 'full_flag_found': 0}
+    assert row['Messages'][-1]['content'] == 'Answer: wrong\n<END>'
+    assert row['AgentTrace']['events'][-1]['payload']['termination'] == 'submitted'
+    generations = [event for event in row['AgentTrace']['events'] if event['type'] == 'model_generate']
+    assert len(generations) == malformed_turns + 2
+    assert len([message for message in row['Messages'] if message['role'] == 'assistant']) == len(generations)
+    for event in generations[1:]:
+        request = event['payload']['model_input']
+        assert all(message['content'] for message in request)
+        observations = [message['content'] for message in request if message['role'] == 'user'][1:]
+        assert len(observations) == 1 and 'unrelated output' in observations[0]
+    assert len(row['Metadata']['cybench_run']['executions']) == 1
+
+    from evalscope.service.app import create_app
+
+    client = create_app(outputs=str(tmp_path)).test_client()
+    response = client.get(
+        f'/api/v1/reports/runs/run/models/{config.model}/predictions?dataset_name=cybench&subset_name=crypto'
+    )
+    assert response.status_code == 200
+    served = response.get_json()['predictions'][0]
+    assert served['Metadata']['cybench_run']['executions'][0]['stderr'] == 'diagnostic'
+    tool_results = [e for e in served['AgentTrace']['events'] if e['type'] == 'tool_result']
+    assert tool_results[0]['payload']['metadata']['execution'] == served['Metadata']['cybench_run']['executions'][0]
+    assert [e['type'] for e in served['AgentTrace']['events']] == [e['type'] for e in row['AgentTrace']['events']]
+    assert [e['payload'] for e in served['AgentTrace']['events']] == [e['payload'] for e in row['AgentTrace']['events']]
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError('Cached regrading must not call the model or Docker.')
+
+    monkeypatch.setattr(CybenchAdapter, '_on_inference', forbidden)
+    config.use_cache = str(tmp_path / 'run')
+    config.rerun_review = True
+    regraded = run_task(config)['cybench']
+    assert {m.identity.name: (m.score, m.num) for m in regraded.metrics} == values
+    assert prediction.read_bytes() == original
 
 
 def test_agentharm_native_run_task_and_cached_regrade(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

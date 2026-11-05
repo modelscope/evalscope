@@ -385,8 +385,10 @@ def download_dataset_file(
             download_kwargs['revision'] = revision
         if cache_dir:
             download_kwargs['cache_dir'] = cache_dir
-        if not force_redownload:
-            # Cache probe: any failure falls through to the real download below.
+        if not force_redownload and revision is None:
+            # The SDK's offline lookup can return another revision at the same file path.
+            # Explicit revisions must go through its version-aware resolution and content cache.
+            # Any cache-probe failure falls through to the real download below.
             try:
                 return dataset_file_download(data_id_or_path, file_path, local_files_only=True, **download_kwargs)
             except Exception:

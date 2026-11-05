@@ -28,7 +28,7 @@ class TestPerfVisualizer(PerfTestBase):
         task_cfg = Arguments(
             parallel=1,
             number=2,
-            model='qwen-plus',
+            model='qwen3.8-flash',
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
             api='openai',
@@ -37,7 +37,7 @@ class TestPerfVisualizer(PerfTestBase):
             max_tokens=512,
             stream=True,
             visualizer='swanlab',
-            extra_args={'ignore_eos': True},
+            extra_args={'ignore_eos': True, 'enable_thinking': False},
         )
         run_perf_benchmark(task_cfg)
 
@@ -54,7 +54,7 @@ class TestPerfVisualizer(PerfTestBase):
         task_cfg = Arguments(
             parallel=[1, 2],
             number=[2, 4],
-            model='qwen-plus',
+            model='qwen3.8-flash',
             url=DASHSCOPE_CHAT_URL,
             api_key=self.api_key,
             api='openai',
@@ -63,7 +63,7 @@ class TestPerfVisualizer(PerfTestBase):
             max_tokens=512,
             stream=True,
             visualizer='clearml',
-            extra_args={'ignore_eos': True},
+            extra_args={'ignore_eos': True, 'enable_thinking': False},
         )
         run_perf_benchmark(task_cfg)
 

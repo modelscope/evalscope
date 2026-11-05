@@ -33,7 +33,7 @@ def _load_env_file() -> None:
 _load_env_file()
 DASHSCOPE_BASE_URL = os.environ.get('DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
 DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
-TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen-plus')
+TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3.8-flash')
 
 
 class FakeEnvironment:
@@ -107,7 +107,7 @@ def test_supports_dsh_node(version: str, supported: bool) -> None:
 
 
 def test_run_writes_isolated_openai_provider_settings() -> None:
-    runner = DeepSeekHarnessRunner(model_name='qwen-plus', home_override='/tmp/evalscope-dsh')
+    runner = DeepSeekHarnessRunner(model_name='qwen3.8-flash', home_override='/tmp/evalscope-dsh')
     env = FakeEnvironment([ExecResult(), ExecResult(stdout='42\n', duration=1.25)])
 
     result = _run(runner.run(_task(), env, _bridge()))

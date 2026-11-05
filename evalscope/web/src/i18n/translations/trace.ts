@@ -1,6 +1,7 @@
 import type { Dict } from './types'
 
 export const en: Dict = {
+  rawTrace: 'Full Trace (JSON)',
   modelGenerate: 'Model Generate',
   toolCall: 'Tool Call',
   toolResult: 'Tool Result',
@@ -34,6 +35,7 @@ export const en: Dict = {
 }
 
 export const zh: Dict = {
+  rawTrace: '完整轨迹（JSON）',
   modelGenerate: '模型生成',
   toolCall: '工具调用',
   toolResult: '工具结果',

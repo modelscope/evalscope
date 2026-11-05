@@ -1,4 +1,4 @@
-"""End-to-end: opencode run → bridge (OpenAI Responses API) → DashScope qwen-plus.
+"""End-to-end: opencode run → bridge (OpenAI Responses API) → DashScope qwen3.8-flash.
 
 Skipped by default — opt-in with ``EVALSCOPE_REAL_QWEN=1`` plus a valid
 ``DASHSCOPE_API_KEY`` so CI never depends on the network.
@@ -17,7 +17,7 @@ OpenCode speaks the OpenAI **Responses API** (``/openai/v1/responses``),
 not Chat Completions.  The bridge's Responses route translates the request
 to ``ChatMessage[]`` for the upstream model, so this test proves the
 complete cross-protocol chain:
-``opencode (Responses API) → bridge → DashScope (OpenAI compat) → qwen-plus``.
+``opencode (Responses API) → bridge → DashScope (OpenAI compat) → qwen3.8-flash``.
 """
 
 import os
@@ -48,7 +48,7 @@ DASHSCOPE_BASE_URL = os.environ.get(
     'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 )
 DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
-TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen-plus')
+TARGET_MODEL = os.environ.get('EVALSCOPE_QWEN_MODEL', 'qwen3.8-flash')
 
 
 def _has_opencode_cli() -> bool:
@@ -116,7 +116,7 @@ def _build_qwen_model() -> Model:
 @_REQUIRES_REAL
 @pytest.mark.skipif(not _has_opencode_cli(), reason='opencode CLI not installed')
 def test_opencode_local_through_bridge_to_qwen():
-    """End-to-end: opencode run → bridge /openai/v1/chat/completions → qwen-plus."""
+    """End-to-end: opencode run → bridge /openai/v1/chat/completions → qwen3.8-flash."""
     model = _build_qwen_model()
     sample = Sample(input='What is 6 * 7? Reply with just the number.', target='42', id=1)
     config = ExternalAgentConfig(
@@ -153,7 +153,7 @@ def test_opencode_local_through_bridge_to_qwen():
            '-t evalscope-opencode:latest .',
 )
 def test_opencode_docker_through_bridge_to_qwen():
-    """Docker container (pre-built image) → bridge → qwen-plus via DashScope.
+    """Docker container (pre-built image) → bridge → qwen3.8-flash via DashScope.
 
     Validates the full production path: container sandbox → bridge →
     DashScope → trajectory capture, with a real LLM response.

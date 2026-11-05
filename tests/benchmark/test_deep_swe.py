@@ -433,7 +433,7 @@ def test_deep_swe_real_e2e(tmp_path: Path) -> None:
 
     result = run_task(
         TaskConfig(
-            model=os.getenv('EVALSCOPE_DEEP_SWE_MODEL', 'qwen-plus'),
+            model=os.getenv('EVALSCOPE_DEEP_SWE_MODEL', 'qwen3.8-flash'),
             eval_type='mock_llm',
             datasets=['deep_swe'],
             limit=1,
