@@ -37,6 +37,7 @@ const IDS = {
   reasoningTokens: 'eval-reasoningTokens',
   enableThinking: 'eval-enableThinking',
   datasetArgs: 'eval-datasetArgs',
+  extraConfig: 'eval-extraConfig',
   sandboxEngine: 'eval-sandboxEngine',
   sandboxUrl: 'eval-sandboxUrl',
   sandboxImage: 'eval-sandboxImage',
@@ -60,6 +61,7 @@ const DOM_ORDER: string[] = [
   IDS.reasoningEffort,
   IDS.reasoningTokens,
   IDS.datasetArgs,
+  IDS.extraConfig,
   IDS.sandboxUrl,
   IDS.sandboxPool,
 ]
@@ -96,6 +98,7 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
     reasoningTokens,
     enableThinking,
     datasetArgs,
+    extraConfig,
     sandboxEnabled,
     sandboxEngine,
     sandboxUrl,
@@ -120,6 +123,7 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
   const setReasoningTokens = (value: string) => changeField('reasoningTokens', value)
   const setEnableThinking = (value: boolean) => changeField('enableThinking', value)
   const setDatasetArgs = (value: string) => changeField('datasetArgs', value)
+  const setExtraConfig = (value: string) => changeField('extraConfig', value)
   const setSandboxEnabled = (value: boolean) => changeField('sandboxEnabled', value)
   const setSandboxEngine = (value: string) => {
     if (value === 'docker' || value === 'volcengine') changeField('sandboxEngine', value)
@@ -396,6 +400,28 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
             className={inputClass(errMsg(IDS.datasetArgs), 'h-20 resize-y')}
             style={{ fontFamily: 'var(--font-mono)' }}
             placeholder='{"gsm8k": {"few_shot_num": 4}}'
+          />
+        )}
+      </Field>
+      <Field
+        id={IDS.extraConfig}
+        name="extra_config"
+        labelKey="eval.extraConfig"
+        error={errMsg(IDS.extraConfig)}
+        hintKey="eval.extraConfigHint"
+        className="md:col-span-2"
+      >
+        {(aria) => (
+          <textarea
+            {...aria}
+            value={extraConfig}
+            onChange={(e) => {
+              setExtraConfig(e.target.value)
+              clearErr(IDS.extraConfig)
+            }}
+            className={inputClass(errMsg(IDS.extraConfig), 'h-20 resize-y')}
+            style={{ fontFamily: 'var(--font-mono)' }}
+            placeholder='{"agent_config": {"max_turns": 20}}'
           />
         )}
       </Field>

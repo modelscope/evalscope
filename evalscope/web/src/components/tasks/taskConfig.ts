@@ -32,12 +32,30 @@ export interface EvalDraft {
   reasoningTokens: string
   enableThinking: boolean
   datasetArgs: string
+  extraConfig: string
   sandboxEnabled: boolean
   sandboxEngine: 'docker' | 'volcengine'
   sandboxUrl: string
   sandboxImage: string
   sandboxPool: string
 }
+
+/**
+ * Top-level TaskConfig keys the Extra Config field may set. Each is a real
+ * TaskConfig field with no dedicated form input, so this field is the only way
+ * to reach them from the console (e.g. agent_config for tau-bench / widesearch).
+ * Keys outside this list are ignored rather than forwarded, since TaskConfig
+ * rejects unknown fields.
+ */
+export const EXTRA_CONFIG_TOP_LEVEL_KEYS = [
+  'agent_config',
+  'judge',
+  'sandbox',
+  'generation_config',
+  'model_args',
+  'dataset_args',
+  'eval_config',
+] as const
 
 export interface PerfDraft {
   parallel: string
@@ -67,6 +85,7 @@ export const DEFAULT_EVAL: EvalDraft = {
   reasoningTokens: '',
   enableThinking: false,
   datasetArgs: '',
+  extraConfig: '',
   sandboxEnabled: false,
   sandboxEngine: 'docker',
   sandboxUrl: '',
@@ -120,6 +139,13 @@ export function validateEvalDraft(draft: EvalDraft): FieldErrors {
   if (draft.datasetArgs.trim()) {
     const result = validateDatasetArgs(draft.datasetArgs)
     if (!result.ok) errors.datasetArgs = result.messageKey
+  }
+  if (draft.extraConfig.trim()) {
+    // Same JSON-object contract as dataset_args: every recognized top-level
+    // TaskConfig key it may set (agent_config, generation_config, ...) is itself
+    // an object, so the shared validator fits.
+    const result = validateDatasetArgs(draft.extraConfig)
+    if (!result.ok) errors.extraConfig = result.messageKey
   }
   return errors
 }
@@ -201,6 +227,17 @@ export function buildEvalPayload(draft: EvalDraft): Record<string, unknown> {
     }
     if (draft.sandboxPool.trim()) sandbox.pool_size = Number(draft.sandboxPool)
     payload.sandbox = sandbox
+  }
+  // Extra Config hoists recognized top-level TaskConfig keys to the payload,
+  // overriding anything the form already built for the same key. Applied last
+  // so the JSON wins; unrecognized keys are dropped (TaskConfig forbids them).
+  if (draft.extraConfig.trim()) {
+    const parsed = validateDatasetArgs(draft.extraConfig)
+    if (parsed.ok) {
+      for (const key of EXTRA_CONFIG_TOP_LEVEL_KEYS) {
+        if (key in parsed.value) payload[key] = parsed.value[key]
+      }
+    }
   }
   return payload
 }

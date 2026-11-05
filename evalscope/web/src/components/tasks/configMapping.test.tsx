@@ -77,6 +77,27 @@ describe('Evaluation form → TaskConfig payload', () => {
     expect(generation).not.toHaveProperty('reasoning_tokens')
     expect(generation).not.toHaveProperty('extra_body')
   })
+  it('hoists recognized Extra Config keys to the payload top level', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{"agent_config":{"max_turns":20},"model_args":{"revision":"v2"}}')
+    submitEval()
+    expect(submit.mock.calls[0][0].agent_config).toEqual({ max_turns: 20 })
+    expect(submit.mock.calls[0][0].model_args).toEqual({ revision: 'v2' })
+  })
+  it('lets Extra Config override a form-built top-level key', () => {
+    const submit = evalForm()
+    change('eval-temperature', '.85')
+    change('eval-extraConfig', '{"generation_config":{"temperature":0.1}}')
+    submitEval()
+    // JSON wins wholesale for the overridden key (shallow override, not merge).
+    expect(submit.mock.calls[0][0].generation_config).toEqual({ temperature: 0.1 })
+  })
+  it('ignores Extra Config keys outside the allowed top-level set', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{"not_a_task_field":{"x":1}}')
+    submitEval()
+    expect(submit.mock.calls[0][0]).not.toHaveProperty('not_a_task_field')
+  })
   it('maps both states of the stream switch', () => {
     const submit = evalForm()
     const toggle = screen.getByRole('switch', { name: 'Stream Output' })
