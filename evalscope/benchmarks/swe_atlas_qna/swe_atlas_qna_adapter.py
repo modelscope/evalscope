@@ -1,7 +1,7 @@
 """SWE-Atlas QnA adapter.
 
 Drives a read-only AgentLoop per sample inside the task's own image
-(``ghcr.io/scaleapi/swe-atlas:*``). The model explores the repository at
+(``ghcr.io/scaleapi/swe-atlas:...``). The model explores the repository at
 ``/app`` with a ``bash`` tool and answers in prose; an LLM judge then scores
 the answer against each expert-written rubric item independently.
 
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment
@@ -64,17 +64,25 @@ _DIRTY_KEY = '_sandbox_state'
 
 
 class RubricVerdict(BaseModel):
-    """One rubric item's verdict, in the shape the official judge prompt asks for."""
+    """One rating in the official judge response."""
 
-    model_config = ConfigDict(extra='ignore')
+    model_config = ConfigDict(extra='forbid')
 
+    rubric_statement: str
     status: Literal['YES', 'NO']
-    justification: str = ''
+    score: Literal['0', '1']
+    justification: str
+
+
+class RubricResponse(BaseModel):
+    """The official single-criterion response envelope."""
+
+    ratings: List[RubricVerdict] = Field(min_length=1, max_length=1)
 
 
 # The official system prompt already dictates this JSON shape, so no extra
 # instruction() is appended to it.
-RUBRIC_CONTRACT = OutputContract(schema_model=RubricVerdict)
+RUBRIC_CONTRACT = OutputContract(schema_model=RubricResponse)
 
 
 class SweAtlasSandboxMixin:
@@ -105,22 +113,37 @@ class SweAtlasSandboxMixin:
         if not self._setup_done:
             self._setup_done = True
             if self._setup_command:
-                result = await super().exec(['bash', '-c', self._setup_command])
+                try:
+                    result = await super().exec(['bash', '-c', self._setup_command])
+                except Exception as exc:
+                    self._sink['setup_error'] = str(exc)
+                    raise
                 self._sink['setup_returncode'] = result.returncode
                 if result.returncode != 0:
-                    # A failed reset leaves the agent reading a tree the rubric
-                    # was not written against; record it rather than scoring a
-                    # task that never had the right starting point.
                     detail = (result.stderr or result.stdout or '').strip()[:2000]
-                    self._sink['setup_error'] = detail
-                    logger.warning('SWE-Atlas QnA repo reset failed: %s', detail)
+                    self._sink['setup_error'] = detail or f'reset exited with code {result.returncode}'
+                    logger.warning('SWE-Atlas QnA repo reset failed: %s', self._sink['setup_error'])
+                    raise RuntimeError(self._sink['setup_error'])
         return await super().exec(cmd, **kwargs)
 
     async def close(self) -> None:
-        if self._check_command and self._setup_done and 'tree_status' not in self._sink:
+        should_check = (
+            self._check_command
+            and self._setup_done
+            and 'setup_error' not in self._sink
+            and 'check_returncode' not in self._sink
+            and 'check_error' not in self._sink
+        )
+        if should_check:
             try:
                 result = await super().exec(['bash', '-c', self._check_command])
-                self._sink['tree_status'] = (result.stdout or '').strip()
+                self._sink['check_returncode'] = result.returncode
+                if result.returncode != 0:
+                    detail = (result.stderr or result.stdout or '').strip()[:2000]
+                    self._sink['check_error'] = detail or f'dirty-tree check exited with code {result.returncode}'
+                    logger.warning('SWE-Atlas QnA dirty-tree check failed: %s', self._sink['check_error'])
+                else:
+                    self._sink['tree_status'] = (result.stdout or '').strip()
             except Exception as e:  # noqa: BLE001 - teardown must not mask the run
                 self._sink['check_error'] = str(e)
                 logger.warning('SWE-Atlas QnA dirty-tree check failed: %s', e)
@@ -156,9 +179,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
         super().__init__(**kwargs)
         self.working_dir: str = self.extra_params.get('working_dir', WORKING_DIR)
         self.reset_to_base_commit: bool = bool(self.extra_params.get('reset_to_base_commit', True))
-        self.fail_on_source_modification: bool = bool(
-            self.extra_params.get('fail_on_source_modification', True)
-        )
+        self.fail_on_source_modification: bool = bool(self.extra_params.get('fail_on_source_modification', True))
         self.command_timeout: float = float(self.extra_params.get('command_timeout', 900.0))
         self.pass_threshold: float = float(self.extra_params.get('pass_threshold', 1.0))
 
@@ -215,9 +236,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
 
         base_commit = metadata.get('repository_base_commit') or ''
         setup_command = (
-            reset_repo_command(self.working_dir, base_commit)
-            if self.reset_to_base_commit and base_commit
-            else None
+            reset_repo_command(self.working_dir, base_commit) if self.reset_to_base_commit and base_commit else None
         )
         check_command = dirty_check_command(self.working_dir) if self.fail_on_source_modification else None
 
@@ -304,6 +323,18 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
         metadata = context.task_state.metadata
         rubric = metadata.get('rubric') or []
         question = metadata.get('prompt') or ''
+        sandbox_state = metadata.get(_DIRTY_KEY) or {}
+        environment_error = sandbox_state.get('setup_error')
+        setup_returncode = sandbox_state.get('setup_returncode')
+        if not environment_error and setup_returncode not in (None, 0):
+            environment_error = f'repository reset exited with code {setup_returncode}'
+        if self.fail_on_source_modification and not environment_error:
+            environment_error = sandbox_state.get('check_error')
+            check_returncode = sandbox_state.get('check_returncode')
+            if not environment_error and check_returncode not in (None, 0):
+                environment_error = f'dirty-tree check exited with code {check_returncode}'
+            if not environment_error and 'tree_status' not in sandbox_state:
+                environment_error = 'dirty-tree check did not complete'
 
         cases = [
             JudgeCase(
@@ -311,7 +342,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
                 output_contract=RUBRIC_CONTRACT,
                 metadata={'title': item['title'], 'negated': item['negated']},
             )
-            for item in rubric
+            for item in (rubric if not environment_error else [])
         ]
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
@@ -331,7 +362,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
             passed = 0
             failed_items: List[str] = []
             for verdict in case_verdicts:
-                claim_met = verdict.value.status == 'YES'
+                claim_met = verdict.value.ratings[0].status == 'YES'
                 negated = bool((verdict.metadata or {}).get('negated'))
                 if rubric_item_passed(claim_met, negated):
                     passed += 1
@@ -342,7 +373,6 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
             rubric_pass_rate = passed / total if total else 0.0
             resolved = 1.0 if total and rubric_pass_rate >= self.pass_threshold else 0.0
 
-            sandbox_state = metadata.get(_DIRTY_KEY) or {}
             tree_status = (sandbox_state.get('tree_status') or '').strip()
             modified_source = bool(tree_status)
             if self.fail_on_source_modification and modified_source:
@@ -351,7 +381,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
                 resolved = 0.0
 
             return ReducedVerdict(
-                value={'resolved': resolved, 'rubric_pass_rate': rubric_pass_rate},
+                value={} if environment_error else {'resolved': resolved, 'rubric_pass_rate': rubric_pass_rate},
                 metadata={
                     'total_rubric_items': total,
                     'passed_rubric_items': passed,
@@ -361,10 +391,22 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
                     'tree_status': tree_status[:2000],
                     'setup_returncode': sandbox_state.get('setup_returncode'),
                     'setup_error': sandbox_state.get('setup_error'),
+                    'check_returncode': sandbox_state.get('check_returncode'),
+                    'check_error': sandbox_state.get('check_error'),
+                    'environment_error': environment_error,
                 },
             )
 
-        return JudgeDefinition.workflow(cases=cases, request=request, reduce=reduce, main_score_name='resolved')
+        def finalize(score, review, judge_context):
+            if environment_error:
+                review.error = environment_error
+                score.explanation = environment_error
+                score.metadata = {**(score.metadata or {}), 'excluded_reason': environment_error}
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=cases, request=request, reduce=reduce, main_score_name='resolved', finalize=finalize
+        )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         # A sample whose judge review was unusable carries an empty value dict;

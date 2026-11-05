@@ -9,10 +9,10 @@ JUDGE_PASS_RATE_THRESHOLD = 1.0
 AGENT_CALL_LIMIT = 250
 AGENT_EXECUTION_TIMEOUT = 900
 
-AGENT_SYSTEM_TEMPLATE = '''\
-You are a helpful assistant that can interact with a computer to solve tasks.'''
+AGENT_SYSTEM_TEMPLATE = """\
+You are a helpful assistant that can interact with a computer to solve tasks."""
 
-AGENT_INSTANCE_TEMPLATE = '''\
+AGENT_INSTANCE_TEMPLATE = """\
 <uploaded_files>
 {{working_dir}}
 </uploaded_files>
@@ -33,12 +33,12 @@ Follow these steps to answer the question:
 
 <<FINAL_ANSWER>>
 Your comprehensive answer here, including all relevant findings, code references, and explanations.
-<<FINAL_ANSWER>>'''
+<<FINAL_ANSWER>>"""
 
-JUDGE_SYSTEM_PROMPT = '''\
+JUDGE_SYSTEM_PROMPT = """\
 # Instructions
 
-You are an expert evaluator of responses about real-world Software Engineering related prompts. Given a prompt, a generated response (text/code/other artifacts), and a list of rubric critria created by experts, please grade the response against the rubric. Your rubric scores will be parsed and aggregated to calculate a final response score based on rubric weights externally. So, during grading, your job is to only verify if the response satisfies the rubric criterion statement ("YES") or fails to satisfy it ("NO"). Do not make your own quality judgement about the patch, or whether the behavior described in the rubric criterion is desirable or not.  
+You are an expert evaluator of responses about real-world Software Engineering related prompts. Given a prompt, a generated response (text/code/other artifacts), and a list of rubric critria created by experts, please grade the response against the rubric. Your rubric scores will be parsed and aggregated to calculate a final response score based on rubric weights externally. So, during grading, your job is to only verify if the response satisfies the rubric criterion statement ("YES") or fails to satisfy it ("NO"). Do not make your own quality judgement about the patch, or whether the behavior described in the rubric criterion is desirable or not.
 
 The rubric criteria  to rate are in the following format (actual rubric object provided is more detailed):
 
@@ -79,9 +79,9 @@ Return a JSON object containing a nested object with the key "ratings". The "rat
 
 ### Clarification (Rubric Statement Example Listing)
 
-- **Clarification**: If a `rubric_statement` contains examples listed after keywords like "such as," "for example," "including," or "like," the response does not need to include all listed examples to meet the criterion. Having one of them is enough. 
+- **Clarification**: If a `rubric_statement` contains examples listed after keywords like "such as," "for example," "including," or "like," the response does not need to include all listed examples to meet the criterion. Having one of them is enough.
 
-- **Example**: If the `rubric_statement` says "Tests that an invalid operator in a phone number raises an error using an invalid operator like '^', '&', '$', etc.," and the response uses the '@' operator, it would still meet the criteria—it provides a valid example even though it isn't one explicitly listed. 
+- **Example**: If the `rubric_statement` says "Tests that an invalid operator in a phone number raises an error using an invalid operator like '^', '&', '$', etc.," and the response uses the '@' operator, it would still meet the criteria—it provides a valid example even though it isn't one explicitly listed.
 
 ### Semantic Equivalence Guidelines
 
@@ -109,7 +109,7 @@ Return a JSON object containing a nested object with the key "ratings". The "rat
 1. rubric_statement: "Identifies the backend component that first handles the inbound reply processing (e.g., mail ingestion handler) to establish where SMTP delivery enters the application routing logic."
    - **Scenario 1 - YES**: The model response identifies `MailHandler.handle_DATA()` as the initial handler for inbound replies. The behavior described in the rubric criterion IS present in the response.
      - Status: **YES**
-     - Score: "1" 
+     - Score: "1"
    - **Scenario 2 - NO**: The model response identifies `MailHandler.parse_DATA()` as the initial handler (incorrect component).
      - Status: **NO**
      - Score: "0"
@@ -170,7 +170,7 @@ Return your rating response using the below JSON schema:
             "rubric_statement": {
               "type": "string",
               "description": "The original rubric statement"
-            },           
+            },
           "status": {
             "type": "string",
             "enum": [
@@ -193,7 +193,7 @@ Return your rating response using the below JSON schema:
           }
         },
         "required": [
-          "rubric_statement", 
+          "rubric_statement",
           "status",
           "score",
           "justification"
@@ -209,9 +209,9 @@ Return your rating response using the below JSON schema:
 }
 }
 ```
-'''
+"""
 
-JUDGE_USER_PROMPT_TEMPLATE = '''\
+JUDGE_USER_PROMPT_TEMPLATE = """\
 # Prompt
 {problem_statement}
 
@@ -222,5 +222,4 @@ JUDGE_USER_PROMPT_TEMPLATE = '''\
 {{
   "rubric_statement": {title}
 }}
-'''
-
+"""

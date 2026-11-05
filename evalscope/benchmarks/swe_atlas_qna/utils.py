@@ -29,12 +29,14 @@ def parse_rubric(raw: Any) -> List[Dict[str, Any]]:
     for index, item in enumerate(items):
         annotations = item.get('annotations') or {}
         item_type = (annotations.get('type') or POSITIVE_TYPE).strip().lower()
-        parsed.append({
-            'id': item.get('id') or f'rubric_{index}',
-            'title': item.get('title') or '',
-            'negated': item_type == NEGATIVE_TYPE,
-            'importance': annotations.get('importance') or 'must have',
-        })
+        parsed.append(
+            {
+                'id': item.get('id') or f'rubric_{index}',
+                'title': item.get('title') or '',
+                'negated': item_type == NEGATIVE_TYPE,
+                'importance': annotations.get('importance') or 'must have',
+            }
+        )
     return parsed
 
 
@@ -54,7 +56,6 @@ def reset_repo_command(working_dir: str, base_commit: str) -> str:
     return (
         f'cd {quoted_dir} && '
         f'git config --global --add safe.directory {quoted_dir} && '
-        'git restore . 2>/dev/null; '
         f'git reset --hard {commit} && '
         'git clean -fdq'
     )
@@ -67,7 +68,7 @@ def dirty_check_command(working_dir: str) -> str:
     inspected before the sandbox is torn down.
     """
     quoted_dir = shlex.quote(working_dir)
-    return f'cd {quoted_dir} && git status --porcelain 2>/dev/null; git diff --stat 2>/dev/null'
+    return f'cd {quoted_dir} && git status --porcelain'
 
 
 def extract_final_answer(text: str) -> str:
