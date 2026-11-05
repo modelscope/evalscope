@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
-from math import isfinite
+from math import isfinite, sqrt
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
@@ -385,4 +385,143 @@ class MeanPassHatK(Aggregator):
                     )
                 )
 
+        return aggregated_scores
+
+
+# --- Confidence interval support (issue: report score confidence intervals) ---
+
+_WILSON_Z = 1.959963984540054
+"""Two-sided 95% normal quantile for the Wilson score interval."""
+
+_BOOTSTRAP_B = 2000
+"""Resample count for the percentile bootstrap; the 2.5% tail is noisy at B=1000."""
+
+_BOOTSTRAP_SEED = 0
+"""Fixed seed so repeated aggregations of the same scores are bit-identical."""
+
+_LOW_CONFIDENCE_N = 30
+"""Below this sample count no interval is meaningful: flagged, not trusted."""
+
+_WIDE_INTERVAL_PTS = 15.0
+"""Interval width (in percentage points) above which a metric is flagged high-variance.
+
+Distinct from ``_LOW_CONFIDENCE_N``: the first flag means "too little data", this one means
+"enough data, but the metric itself is high-variance" — at p=0.5, n=30 already gives a
+~34pt width, so this flag only has independent meaning at n >= 30."""
+
+
+def _wilson_interval(values: List[float]) -> Tuple[float, float]:
+    """Wilson score interval for 0/1 values, on the same 0-1 scale as the mean.
+
+    Analytic (no resampling) and valid at p->0 and p->1, where the normal approximation
+    collapses to a zero-width interval. The interval is asymmetric; render as ``[lo, hi]``.
+    """
+    n = len(values)
+    p = sum(values) / n
+    denom = 1 + _WILSON_Z * _WILSON_Z / n
+    center = (p + _WILSON_Z * _WILSON_Z / (2 * n)) / denom
+    margin = _WILSON_Z * sqrt(p * (1 - p) / n + _WILSON_Z * _WILSON_Z / (4 * n * n)) / denom
+    return max(0.0, center - margin), min(1.0, center + margin)
+
+
+def _bootstrap_interval(values: List[float]) -> Tuple[float, float]:
+    """Percentile bootstrap interval for a continuous metric, same scale as the mean.
+
+    Fixed seed and batched resampling keep memory bounded and results reproducible.
+    """
+    import numpy as np
+
+    rng = np.random.default_rng(_BOOTSTRAP_SEED)
+    n = len(values)
+    array = np.asarray(values, dtype=float)
+    means = np.empty(_BOOTSTRAP_B, dtype=float)
+    batch_size = 250
+    start = 0
+    while start < _BOOTSTRAP_B:
+        count = min(batch_size, _BOOTSTRAP_B - start)
+        index = rng.integers(0, n, size=(count, n))
+        means[start : start + count] = array[index].mean(axis=1)
+        start += count
+    return float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5))
+
+
+@register_aggregation(name='mean_and_ci')
+class MeanAndCI(Mean):
+    """Mean plus a 95% confidence interval and representativeness flags.
+
+    Ratio metrics (every sample value is 0 or 1) get the analytic Wilson interval;
+    continuous metrics get a percentile bootstrap. The resampling unit is the unit the
+    mean is taken over — the samples passed to this aggregator, i.e. one reported subset;
+    a reported mean-of-subset-means must be bootstrapped at that layer instead.
+
+    Two ``AggScore`` entries are emitted per metric: a plain ``mean`` (identical to what
+    :class:`Mean` emits, so consumers looking up ``aggregation == 'mean'`` keep working)
+    and a ``mean_and_ci`` one carrying ``metadata['ci_*']`` plus the flags. Metadata only —
+    old report JSON loads unchanged. ``n`` counts scored samples (post fail-closed);
+    exclusions are assumed ignorable and their count is a report-layer concern.
+    """
+
+    name = 'mean_and_ci'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        if not scores:
+            return []
+
+        metric_values: Dict[str, List[float]] = defaultdict(list)
+        metric_sample_ids: Dict[str, List[Any]] = defaultdict(list)
+        for score in scores:
+            for metric_name, value in score.score.value.items():
+                metric_values[metric_name].append(value)
+                metric_sample_ids[metric_name].append(score.sample_id)
+
+        aggregated_scores: List[AggScore] = []
+        for metric_name, values in metric_values.items():
+            if not values:
+                continue
+            n = len(values)
+            is_ratio = all(v in (0, 1) for v in values)
+            num_correct = int(sum(values)) if is_ratio else None
+            if is_ratio:
+                ci_low, ci_high = _wilson_interval(values)
+                ci_method = 'wilson'
+            else:
+                ci_low, ci_high = _bootstrap_interval(values)
+                ci_method = 'bootstrap'
+
+            flags: List[str] = []
+            if n < _LOW_CONFIDENCE_N:
+                flags.append('low_confidence')
+            if (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
+                flags.append('wide_interval')
+
+            # Plain mean: byte-for-byte what Mean emits, so `aggregation == 'mean'` lookups
+            # in report renderers and downstream consumers keep working unchanged.
+            aggregated_scores.append(
+                AggScore(
+                    score=self.agg_func(values),
+                    metric_name=metric_name,
+                    aggregation='mean',
+                    num=n,
+                    num_correct=num_correct,
+                    ids=metric_sample_ids[metric_name],
+                )
+            )
+            aggregated_scores.append(
+                AggScore(
+                    score=self.agg_func(values),
+                    metric_name=metric_name,
+                    aggregation=self.name,
+                    num=n,
+                    num_correct=num_correct,
+                    ids=metric_sample_ids[metric_name],
+                    dimensions={'method': 'ci'},
+                    metadata={
+                        'ci_low': ci_low,
+                        'ci_high': ci_high,
+                        'ci_level': 0.95,
+                        'ci_method': ci_method,
+                        'flags': flags,
+                    },
+                )
+            )
         return aggregated_scores
