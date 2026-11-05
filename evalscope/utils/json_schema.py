@@ -69,6 +69,11 @@ class JSONSchema(BaseModel):
     def convert_type_before_validation(cls, values: Any) -> Any:
         values = deepcopy(values)
 
+        # Pydantic emits const for single-value Literals. Use the existing enum
+        # representation, as json_schema() does for direct Literal annotations.
+        if isinstance(values, dict) and 'const' in values and 'enum' not in values:
+            values['enum'] = [values['const']]
+
         # Nested schema fields are validated as JSONSchema instances themselves.
         # Recursing through arbitrary dictionaries would also rewrite literal
         # values in defaults and enums that happen to contain a 'type' key.
