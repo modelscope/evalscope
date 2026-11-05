@@ -59,7 +59,7 @@ code-comprehension tasks over 11 production repositories in Go, Python, C, and T
 {
   "input": [
     {
-      "id": "5496e73f",
+      "id": "75d7e494",
       "content": "I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\n\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\n\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion."
     }
   ],
@@ -101,44 +101,37 @@ code-comprehension tasks over 11 production repositories in Go, Python, C, and T
       {
         "id": "a33fc01cba19849aaf3b55e6b801001c",
         "title": "1.1: States that kitty's remote control system uses two communication mechanisms: Unix sockets (when --listen-on or KITTY_LISTEN_ON is configured) and TTY-based DCS escape sequences (when running inside a kitty window).",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "298d7e5d6d67565d4e30882f238e337c",
         "title": "1.2: Reports that socket paths include the kitty process ID (e.g., /tmp/kitty-12345 for PID 12345).",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "30679eccb21e3251eff3613326ff77f4",
         "title": "1.3: Shows captured protocol bytes demonstrating the DCS escape sequence format: \\\\x1bP@kitty-cmd{JSON}\\\\x1b\\\\\\\\ where \\\\x1bP is the DCS introducer, @kitty-cmd is the marker, and \\\\x1b\\\\\\\\ is the String Terminator.",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "7e48e77ebe24788711fcdb7b38d5105b",
         "title": "1.4: States that for remote commands, kitty produces no log output - only error conditions trigger log_error() calls.\n",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "42b89782d679568bcbe34f9415716cab",
         "title": "1.5: States that command processing flows through these key functions: boss._handle_remote_command() as entry point, parse_cmd() for JSON extraction, handle_cmd() for dispatch, command_for_name() for handler lookup, and the specific command's response_from_kitty() method.",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "1782ba2037d6b244f646e31af2e9e12a",
         "title": "1.6: Shows the JSON response structure for the kitten @ ls command with fields (e.g., id, pid, cwd, cmdline, tabs, windows, foreground_processes).\n",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       },
       {
         "id": "4ca20ef4bbf52c6414a7478d688d08c3",
         "title": "1.7: States that shell integration works through environment variables KITTY_PID, KITTY_LISTEN_ON, and KITTY_WINDOW_ID that kitty sets for child processes.",
-        "negated": false,
-        "importance": "must have"
+        "negated": false
       }
     ]
   }
