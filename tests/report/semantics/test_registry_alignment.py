@@ -120,6 +120,19 @@ class TestAggregationAxisVocabulary:
             f'KNOWN_AGGREGATIONS in evalscope/api/metric/semantics.py'
         )
 
+    @pytest.mark.parametrize(
+        ('expression', 'expected'),
+        [
+            ('self.aggregation', True),
+            ('self._benchmark_meta.aggregation', True),
+            ('group[0].aggregation', False),
+        ],
+    )
+    def test_only_self_aggregation_is_treated_as_declared(self, tmp_path, expression: str, expected: bool) -> None:
+        path = tmp_path / 'aggregation_probe.py'
+        path.write_text(f'AggScore(aggregation={expression})\n', encoding='utf-8')
+        assert _agg_score_aggregations(path)[1] is expected
+
     def test_benchmarks_forwarding_their_declared_aggregation_emit_a_known_name(self) -> None:
         """``BenchmarkMeta.aggregation`` is a free-form aggregator label, so forwarding it into an
         ``AggScore`` turns it into an identity axis that must be declared."""
@@ -239,7 +252,7 @@ def _agg_score_aggregations(path: Path) -> Tuple[Tuple[str, ...], bool]:
 
     Returns:
         The string literals passed as ``aggregation``, and whether any call forwards an
-        ``*.aggregation`` attribute instead of a literal.
+        ``aggregation`` attribute rooted at ``self`` instead of a literal.
     """
     literals: List[str] = []
     forwards_declared = False
@@ -259,7 +272,11 @@ def _agg_score_aggregations(path: Path) -> Tuple[Tuple[str, ...], bool]:
             if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
                 literals.append(keyword.value.value)
             elif isinstance(keyword.value, ast.Attribute) and keyword.value.attr == 'aggregation':
-                forwards_declared = True
+                owner = keyword.value.value
+                while isinstance(owner, (ast.Attribute, ast.Subscript)):
+                    owner = owner.value
+                if isinstance(owner, ast.Name) and owner.id == 'self':
+                    forwards_declared = True
     return tuple(literals), forwards_declared
 
 
