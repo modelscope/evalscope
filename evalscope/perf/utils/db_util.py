@@ -6,7 +6,7 @@ import pickle
 import re
 import sqlite3
 from statistics import median
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 from tabulate import tabulate
 
@@ -56,9 +56,11 @@ def write_json_file(data, output_path):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def create_result_table(cursor):
+def create_result_table(cursor: sqlite3.Cursor, *, table: Literal['result', 'transition'] = 'result') -> None:
+    if table not in ('result', 'transition'):
+        raise ValueError(f'Unsupported benchmark table: {table}')
     cursor.execute(
-        f"""CREATE TABLE IF NOT EXISTS result(
+        f"""CREATE TABLE IF NOT EXISTS {table}(
                       {DatabaseColumns.REQUEST} TEXT,
                       {DatabaseColumns.START_TIME} REAL,
                       {DatabaseColumns.INTER_TOKEN_LATENCIES} TEXT,
@@ -77,7 +79,11 @@ def create_result_table(cursor):
     )
 
 
-def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData):
+def insert_benchmark_data(
+    cursor: sqlite3.Cursor, benchmark_data: BenchmarkData, *, table: Literal['result', 'transition'] = 'result'
+) -> None:
+    if table not in ('result', 'transition'):
+        raise ValueError(f'Unsupported benchmark table: {table}')
     request = benchmark_data.request
     inter_token_latencies = json.dumps(benchmark_data.inter_chunk_latency)
     response_messages = encode_data(benchmark_data.response_messages)
@@ -103,7 +109,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
             benchmark_data.max_gpu_memory_cost,
             benchmark_data.time_per_output_token,
         )
-        query = f"""INSERT INTO result(
+        query = f"""INSERT INTO {table}(
                       {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
                       {DatabaseColumns.REQUEST_ID}, {DatabaseColumns.IS_STREAM},
@@ -113,7 +119,7 @@ def insert_benchmark_data(cursor: sqlite3.Cursor, benchmark_data: BenchmarkData)
                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         cursor.execute(query, common_columns + additional_columns)
     else:
-        query = f"""INSERT INTO result(
+        query = f"""INSERT INTO {table}(
                       {DatabaseColumns.REQUEST}, {DatabaseColumns.START_TIME}, {DatabaseColumns.INTER_TOKEN_LATENCIES},
                       {DatabaseColumns.SUCCESS}, {DatabaseColumns.RESPONSE_MESSAGES}, {DatabaseColumns.COMPLETED_TIME},
                       {DatabaseColumns.REQUEST_ID}, {DatabaseColumns.IS_STREAM}

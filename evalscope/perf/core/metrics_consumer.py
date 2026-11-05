@@ -61,6 +61,9 @@ async def statistic_benchmark_metric(
     with sqlite3.connect(result_db_path, check_same_thread=False) as con:
         cursor = con.cursor()
         create_result_table(cursor)
+        if args.exclude_warmup_overlap:
+            create_result_table(cursor, table='transition')
+        transition_count = 0
 
         cur_run_name = (
             f'rate_{args.rate}_number_{args.number}'
@@ -105,6 +108,18 @@ async def statistic_benchmark_metric(
                         if _warmup_pbar.n >= warmup_count:
                             _warmup_pbar.close()
                             _warmup_pbar = None
+                    continue
+
+                if benchmark_data.is_transition:
+                    if benchmark_data.success:
+                        benchmark_data.finalize(api_plugin, enable_pd_metrics=args.enable_pd_metrics)
+                    insert_benchmark_data(cursor, benchmark_data, table='transition')
+                    transition_count += 1
+                    processed_since_commit += 1
+                    if processed_since_commit >= commit_every:
+                        await asyncio.to_thread(con.commit)
+                        processed_since_commit = 0
+                    benchmark_data_queue.task_done()
                     continue
 
                 # Update accumulator and write to DB immediately.
@@ -157,6 +172,8 @@ async def statistic_benchmark_metric(
             _warmup_pbar = None
 
         await asyncio.to_thread(con.commit)
+        if args.exclude_warmup_overlap:
+            logger.info(f'Recorded {transition_count} excluded requests in the transition table.')
 
     return accumulator.to_result(), trace_acc.to_summary(), workload_timeline, result_db_path
 

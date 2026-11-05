@@ -40,6 +40,7 @@
 | `--enable-pd-metrics` | `bool` | 启用可选的PD分离交接指标<br>开启后报告会基于输出chunk间隔展示 `Steady ITL`、`PD Handoff Latency` 和 `PD Handoff Overhead`<br>普通非PD压测建议保持关闭 | `False` |
 | `--open-loop` | `bool` | 启用开放环路（open-loop）模式：<br>请求按 `--rate` 指定的速率发出，无论服务端是否已处理完之前的请求。<br>• `--rate` 变为扫描变量（支持多值）<br>• `--number` 须与 `--rate` 等长，表示每轮发出的请求总数<br>• `--parallel` 在此模式下被忽略（内部设为 -1 / INF）<br>详见[使用示例](./examples.md#open-loop-开放环路) | `False` |
 | `--warmup-num` | `float` | 预热请求数量或比例：<br>• `0`：禁用预热（默认）<br>• `>= 1`：绝对数量，如 `--warmup-num 10` 表示预热 10 个请求<br>• `0 < value < 1`：比例模式，如 `--warmup-num 0.1` 表示预热数量为 `--number` 的 10%<br>预热请求使用与正式压测相同的并发/速率发送，但**不计入性能指标**<br>适用于消除冷启动影响（如 KV-cache 填充、JIT 编译等）<br>闭环模式下建议设为 `--parallel` 或更大，否则最初几个请求会拉高 `p99`<br>详见[使用示例](./examples.md#warmup-预热) | `0` |
+| `--exclude-warmup-overlap` | `bool` | 仅用于单轮闭环。保留连续交接，将最后一条预热完成前发出的过渡请求写入 SQLite 的 `transition` 表。补足 `--number` 条正式请求，受从首条正式请求发送时起算的 `--duration` 限制。正式测量开始时仍可能有在途过渡请求。随机数据集补发时沿用前缀池并重新采样后缀，其他数据集沿用循环取样。 | `False` |
 | `--duration` | `float` | 单次压测的墙钟时间预算（秒）<br>软退出语义：到点后**不再启动新请求**，但**已经在飞行中的请求会跑完**才退出<br>多轮模式下的"已在飞"指的是**已经 claim 的 trace 跑完所有剩余 turn**（trace-level soft exit，与上游 trie 一致）<br>与 `--number` 同时设置时取**先达到的那个**为停止条件 | `None` |
 
 ```{tip}

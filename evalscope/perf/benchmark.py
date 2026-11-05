@@ -28,7 +28,8 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
     Yields ``(request_dict, is_warmup)`` tuples.  The first ``warmup_count``
     requests are marked ``is_warmup=True`` and excluded from final metrics.
-    Total yield count = ``warmup_count + args.number``.
+    The normal stream has ``warmup_count + args.number`` requests. Overlap
+    exclusion can consume more requests until the measured quota is reached.
     """
     warmup_count = args.warmup_count
     total_count = args.total_count
@@ -41,8 +42,10 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         request = api_plugin.build_request(messages)
-        for i in range(total_count):
-            yield request, i < warmup_count
+        count = 0
+        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+            yield request, count < warmup_count
+            count += 1
 
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
@@ -91,7 +94,13 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         # of spinning forever (count would never advance).
         consecutive_skips = 0
 
-        while count < total_count:
+        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+            if args.exclude_warmup_overlap and count >= total_count and dataset_index == 0 and args.dataset == 'random':
+                # Keep the existing prefix pool, but draw new suffixes for replenishment.
+                dataset_messages = message_generator.build_messages_parallel(
+                    total_count=max(args.parallel, args.prefix_count), workers=1
+                )
+                num_messages = len(dataset_messages)
             messages = dataset_messages[dataset_index]
             request = api_plugin.build_request(messages)
             if request is not None:
@@ -127,6 +136,8 @@ def _log_warmup_handoff(args: Arguments) -> None:
     parallel = args.parallel
     warmup_count = args.warmup_count
 
+    if args.exclude_warmup_overlap and warmup_count > 0:
+        return  # The opening cohort is excluded until the last warmup finishes.
     if parallel <= 1 or warmup_count >= parallel:
         return
 

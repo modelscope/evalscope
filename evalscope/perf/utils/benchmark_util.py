@@ -92,6 +92,9 @@ class BenchmarkData:
     is_warmup: bool = False
     """True when this request is a warmup request, excluded from final metrics."""
 
+    is_transition: bool = False
+    """True for a non-warmup request sent while warmup is still in flight."""
+
     # --- Speculative decoding specific ---
     n_decode_chunks: int = 0
     """Streamed chunks from the first output on, including ones whose delta is empty."""
