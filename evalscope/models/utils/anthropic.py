@@ -42,6 +42,7 @@ from evalscope.api.messages import (
 )
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelOutput, ModelUsage, StopReason
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, parse_tool_call
+from evalscope.utils import get_secret_value
 from evalscope.utils.uri_utils import data_uri_mime_type, data_uri_to_base64, file_as_data_uri, is_http_url
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
@@ -521,6 +522,12 @@ def anthropic_completion_params(model: str, config: GenerateConfig) -> Dict[str,
     # Anthropic top-level automatic prompt caching.
     if config.anthropic_cache_control and config.anthropic_cache_strategy == 'recent_messages':
         params['cache_control'] = config.anthropic_cache_control.model_dump(exclude_none=True)
+
+    # Extra request options (same as the OpenAI path)
+    if config.extra_query:
+        params['extra_query'] = config.extra_query
+    if config.extra_headers:
+        params['extra_headers'] = get_secret_value(config.extra_headers)
 
     # Extra body parameters
     if config.extra_body:

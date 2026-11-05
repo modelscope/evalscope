@@ -312,7 +312,7 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     install_fake_pier(monkeypatch, captured, result)
     task_path = tmp_path / 'tasks' / 'task-a'
     task_path.mkdir(parents=True)
-    adapter = make_adapter(tmp_path, pier_agent_kwargs={'model_class': 'litellm'})
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai', 'model_class': 'litellm'})
     sample = Sample(input='', metadata={'task_id': 'task-a', 'task_path': str(task_path)})
 
     result_dict = adapter._run_pier_job(MockModel(), sample)
@@ -320,6 +320,7 @@ def test_run_pier_job_uses_adhoc_task_source(monkeypatch: Any, tmp_path: Path) -
     assert result_dict['job_result_path'].startswith(str(Path(adapter.output_dir) / 'deep_swe_jobs'))
     assert captured['config'].tasks[0].path == task_path
     assert getattr(captured['config'].tasks[0], 'source', None) is None
+    assert captured['config'].agents[0].model_name == 'openai/mock-model'
     assert captured['config'].agents[0].kwargs == {'model_class': 'litellm'}
     assert captured['config'].environment.type == 'docker'
 
@@ -373,6 +374,48 @@ def test_run_pier_job_omits_credential_env_when_unset(monkeypatch: Any, tmp_path
     assert captured['config'].agents[0].env == {}
 
 
+class MockModelNamed:
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def test_agent_model_spec_prepends_provider_and_pops_directive(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai', 'model_class': 'litellm'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('qwen-plus'))
+
+    assert model_name == 'openai/qwen-plus'
+    assert agent_kwargs == {'model_class': 'litellm'}
+
+
+def test_agent_model_spec_keeps_bare_name_without_provider(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'model_class': 'litellm'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('qwen-plus'))
+
+    assert model_name == 'qwen-plus'
+    assert agent_kwargs == {'model_class': 'litellm'}
+
+
+def test_agent_model_spec_prepends_provider_to_hugging_face_model_id(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('Qwen/Qwen2.5-32B-Instruct'))
+
+    assert model_name == 'openai/Qwen/Qwen2.5-32B-Instruct'
+    assert agent_kwargs == {}
+
+
+def test_agent_model_spec_leaves_matching_provider_prefix_untouched(tmp_path: Path) -> None:
+    adapter = make_adapter(tmp_path, pier_agent_kwargs={'provider': 'openai'})
+
+    model_name, agent_kwargs = adapter._agent_model_spec(MockModelNamed('openai/Qwen/Qwen2.5-32B-Instruct'))
+
+    assert model_name == 'openai/Qwen/Qwen2.5-32B-Instruct'
+    assert agent_kwargs == {}
+
+
 @pytest.mark.skipif(
     os.getenv('EVALSCOPE_DEEP_SWE_E2E') != '1' or not os.getenv('OPENAI_API_KEY'),
     reason='Set EVALSCOPE_DEEP_SWE_E2E=1 and OPENAI_API_KEY to run the real Pier DeepSWE smoke test.',
@@ -390,7 +433,7 @@ def test_deep_swe_real_e2e(tmp_path: Path) -> None:
 
     result = run_task(
         TaskConfig(
-            model=os.getenv('EVALSCOPE_DEEP_SWE_MODEL', 'qwen-plus'),
+            model=os.getenv('EVALSCOPE_DEEP_SWE_MODEL', 'qwen3.8-flash'),
             eval_type='mock_llm',
             datasets=['deep_swe'],
             limit=1,

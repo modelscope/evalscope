@@ -34,7 +34,7 @@ class TestRunCustom(TestBenchmark):
             },
             'ignore_errors': False,
             'judge': {'strategy': JudgeStrategy.LLM, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -91,7 +91,7 @@ class TestRunCustom(TestBenchmark):
             dataset_args={
                 'dataset_id': 'data/data/trivia_qa',
             },
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=5,
         )
 
@@ -118,7 +118,7 @@ class TestRunCustom(TestBenchmark):
             model='qwen2.5-7b-instruct',
             limit=10,
             judge={'strategy': JudgeStrategy.LLM, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -137,10 +137,10 @@ class TestRunCustom(TestBenchmark):
                 'dataset_id': 'custom_eval/text/qa',
                 'subset_list': ['example'],
             },
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=10,
             judge={'strategy': JudgeStrategy.LLM, 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -174,7 +174,7 @@ class TestRunCustom(TestBenchmark):
             model_id='Arena',
             limit=10,
             judge={'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {

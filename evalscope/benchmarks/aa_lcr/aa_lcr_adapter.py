@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
+import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Literal
@@ -65,9 +66,28 @@ DEFAULT_ZIP_NAME = 'AA-LCR_extracted-text.zip'
 DEFAULT_EXTRACTED_DIR_NAME: str = 'lcr'
 
 
+def _read_document(file_path: Path) -> str:
+    try:
+        return file_path.read_text(encoding='utf-8')
+    except FileNotFoundError as original_error:
+        # The official ZIP has UTF-8 filenames without the UTF-8 flag, including
+        # an NFD name. Support existing zipfile extractions as well as Unicode names.
+        for form in ('NFC', 'NFD'):
+            filename = unicodedata.normalize(form, file_path.name)
+            for name in (filename, filename.encode('utf-8').decode('cp437')):
+                if name == file_path.name:
+                    continue
+                try:
+                    return file_path.with_name(name).read_text(encoding='utf-8')
+                except FileNotFoundError:
+                    continue
+        raise original_error
+
+
 @register_benchmark(
     BenchmarkMeta(
         name='aa_lcr',
+        evaluation_version='v1.1',
         pretty_name='AA-LCR',
         tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.LONG_CONTEXT],
         description="""
@@ -183,25 +203,24 @@ class AALCRAdapter(DefaultDataAdapter):
 
     def _get_context(self, record: Dict[str, Any]) -> str:
         doc_folder = self.text_dir / record['document_category'] / record['document_set_id']
-
-        # Check if the document folder exists
-        if not doc_folder.exists() or not doc_folder.is_dir():
-            logger.warning(f'Document folder not found: {doc_folder}. Returning empty context.')
-            return ''
-
+        manifest = record.get('data_source_filenames')
+        if not isinstance(manifest, str) or not manifest.strip():
+            raise ValueError(
+                f'AA-LCR data_source_filenames must be a non-empty semicolon-separated string: {doc_folder}'
+            )
+        filenames = manifest.split(';')
         doc_blocks = []
-        try:
-            for file_path in doc_folder.iterdir():
-                if file_path.is_file():
-                    try:
-                        content = file_path.read_text(encoding='utf-8').strip()
-                        if content:
-                            doc_blocks.append(content)
-                    except (IOError, UnicodeDecodeError) as e:
-                        logger.warning(f'Could not read file {file_path}, skipping: {e}')
-        except OSError as e:
-            logger.warning(f'Could not access document folder {doc_folder}: {e}')
-            return f'ERROR: Could not read documents for {record["document_category"]}/{record["document_set_id"]}'
+        # The official per-question manifest defines both membership and order.
+        for filename in filenames:
+            if not filename.strip():
+                raise ValueError(f'AA-LCR data_source_filenames contains an empty filename: {doc_folder}')
+            if filename in ('.', '..') or Path(filename).name != filename:
+                raise ValueError(f'AA-LCR data_source_filenames must contain filenames without paths: {doc_folder}')
+            file_path = doc_folder / filename
+            try:
+                doc_blocks.append(_read_document(file_path).strip())
+            except (OSError, UnicodeDecodeError) as e:
+                raise ValueError(f'Could not read required AA-LCR document {file_path}: {e}') from e
 
         documents_text = '\n\n'.join(
             f'BEGIN DOCUMENT {i + 1}:\n{doc}\nEND DOCUMENT {i + 1}' for i, doc in enumerate(doc_blocks)

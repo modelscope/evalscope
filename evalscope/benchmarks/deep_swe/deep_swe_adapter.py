@@ -143,6 +143,15 @@ class DeepSWEAdapter(AgentAdapter):
             env['OPENAI_API_BASE'] = str(base_url)
         return env
 
+    def _agent_model_spec(self, model: Model) -> Tuple[str, Dict[str, Any]]:
+        """Return the LiteLLM model name and kwargs, consuming ``provider``."""
+        agent_kwargs = dict(self.pier_agent_kwargs or {})
+        provider = agent_kwargs.pop('provider', None)
+        model_name = model.name
+        if provider and not model_name.startswith(f'{provider}/'):
+            model_name = f'{provider}/{model_name}'
+        return model_name, agent_kwargs
+
     def _run_pier_job(self, model: Model, sample: Sample) -> Dict[str, Any]:
         check_import('pier', extra='deep_swe', raise_error=True, feature_name=self.pretty_name)
 
@@ -151,6 +160,7 @@ class DeepSWEAdapter(AgentAdapter):
         from pier.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, VerifierConfig
 
         task_id = str(sample.metadata['task_id'])
+        model_name, agent_kwargs = self._agent_model_spec(model)
 
         config = JobConfig(
             job_name=f'{task_id[:48].rstrip("_-")}__{uuid.uuid4().hex[:8]}',
@@ -165,8 +175,8 @@ class DeepSWEAdapter(AgentAdapter):
             agents=[
                 AgentConfig(
                     name='mini-swe-agent',
-                    model_name=model.name,
-                    kwargs=self.pier_agent_kwargs,
+                    model_name=model_name,
+                    kwargs=agent_kwargs,
                     env=self._agent_credential_env(model),
                 )
             ],

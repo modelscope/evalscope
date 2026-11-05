@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """End-to-end evaluation tests for AgentLoop pipeline.
 
-All tests run against the real qwen-plus API (DashScope).
+All tests run against the real qwen3.8-flash API (DashScope).
 No mocking – each test builds a TaskConfig and calls run_task().
 
 Scenarios
@@ -94,7 +94,7 @@ requires_swe_bench_pro_repo = unittest.skipUnless(
 def _base_cfg(**overrides) -> dict:
     """Common TaskConfig kwargs shared by all tests."""
     cfg = {
-        'model': 'qwen-plus',
+        'model': 'qwen3.8-flash',
         'api_url': _API_URL,
         'api_key': _API_KEY,
         'eval_type': EvalType.OPENAI_API,
@@ -111,7 +111,7 @@ def _base_cfg(**overrides) -> dict:
     return cfg
 
 
-def _read_review_results(benchmark: str, model: str = 'qwen-plus', work_dir: str = './outputs'):
+def _read_review_results(benchmark: str, model: str = 'qwen3.8-flash', work_dir: str = './outputs'):
     """Read all ReviewResult dicts from the JSONL review cache."""
     reviews_dir = Path(work_dir) / 'reviews' / model
     results = []

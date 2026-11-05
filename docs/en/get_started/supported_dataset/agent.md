@@ -13,6 +13,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
 | `browsecomp` | [BrowseComp](../../benchmarks/browsecomp.md) | `Agent`, `Knowledge`, `QA` |
 | `claw_eval` | [Claw-Eval](../../benchmarks/claw_eval.md) | `Agent`, `MultiModal`, `MultiTurn` |
+| `cybench` | [Cybench (Unguided)](../../benchmarks/cybench.md) | `Agent`, `Safety` |
 | `deep_swe` | [DeepSWE](../../benchmarks/deep_swe.md) | `Agent`, `Coding`, `MultiTurn` |
 | `deepsearchqa` | [DeepSearchQA](../../benchmarks/deepsearchqa.md) | `Agent`, `Knowledge`, `QA`, `Retrieval` |
 | `gaia` | [GAIA](../../benchmarks/gaia.md) | `Agent`, `MultiTurn`, `Reasoning` |
@@ -55,6 +56,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 ../../benchmarks/bfcl_v4.md
 ../../benchmarks/browsecomp.md
 ../../benchmarks/claw_eval.md
+../../benchmarks/cybench.md
 ../../benchmarks/deep_swe.md
 ../../benchmarks/deepsearchqa.md
 ../../benchmarks/gaia.md

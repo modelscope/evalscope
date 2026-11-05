@@ -14,7 +14,8 @@ import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ScoreBadge from '@/components/ui/ScoreBadge'
 import JsonViewer from '@/components/ui/JsonViewer'
 import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
-import { formatMetric } from '@/domain/metric'
+import { formatMetric, formatMetricIdentityLabel } from '@/domain/metric'
+import type { ReportMetric } from '@/domain/report/primaryMetrics'
 import { decisionObservation } from '@/domain/report/decisionDiagnostics'
 
 /* ─── CollapsibleJson ──────────────────────────────────────── */
@@ -71,6 +72,7 @@ export interface EvalResultPanelProps {
   metadata: unknown
   threshold: number
   showPred: boolean
+  metrics?: ReportMetric[]
 }
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
@@ -91,10 +93,20 @@ export function EvalResultPanel({
   metadata,
   threshold,
   showPred,
+  metrics,
 }: EvalResultPanelProps) {
   const { t } = useLocale()
   const decision = decisionObservation(score.metadata)
   const values = score.value as Record<string, unknown> | undefined
+  const mainName = typeof score.main_score_name === 'string' ? score.main_score_name : Object.keys(values ?? {})[0]
+  const metricFor = (name: string) => metrics?.find(m => m.identity.name === name && m.identity.aggregation === 'mean')
+    ?? metrics?.find(m => m.identity.name === name)
+  const mainMetric = mainName ? metricFor(mainName) : undefined
+  const mainRaw = values?.[mainName]
+  const mainValue = typeof mainRaw === 'boolean' ? Number(mainRaw) : typeof mainRaw === 'number' ? mainRaw : nScore
+  const secondaryValues = Object.entries(values ?? {}).filter(([name, value]) =>
+    name !== mainName && (typeof value === 'number' || typeof value === 'boolean'),
+  )
   const decisionMae = decision?.continuous && typeof values?.mae === 'number' ? values.mae : null
   const isSameAsGenerated = pred === '*Same as Generated*' || pred === ''
   const metaStr = (() => {
@@ -188,7 +200,12 @@ export function EvalResultPanel({
                 {decisionMae !== null ? (
                   <span className="font-mono tabular-nums">MAE ↓ · {formatMetric(decisionMae, null).primary}</span>
                 ) : (
-                  <ScoreBadge score={nScore} semantics={RATIO_PERCENT_SEMANTICS} threshold={threshold} className="self-start" />
+                  <>
+                    {mainName && <span className="type-body-xs text-[var(--text-muted)]">
+                      {mainMetric ? formatMetricIdentityLabel(mainMetric.identity, mainMetric.semantics) : mainName}
+                    </span>}
+                    <ScoreBadge score={mainMetric ? mainValue ?? nScore : nScore} semantics={mainMetric?.semantics ?? RATIO_PERCENT_SEMANTICS} className="self-start" />
+                  </>
                 )}
                 <span className="type-body-xs text-[var(--text-muted)]">
                   {nScore >= threshold ? t('prediction.aboveFilter') : t('prediction.belowFilter')} · {threshold}
@@ -198,6 +215,18 @@ export function EvalResultPanel({
           </div>
         </div>
       </div>
+
+      {secondaryValues.length > 0 && <dl className="flex flex-wrap gap-x-6 gap-y-3 border-t border-[var(--border)] px-4 py-3">
+        {secondaryValues.map(([name, value]) => {
+          const metric = metricFor(name)
+          return <div key={name} className="flex items-center gap-2 text-sm">
+            <dt className="text-[var(--text-muted)]">
+              {metric ? formatMetricIdentityLabel(metric.identity, metric.semantics) : name}
+            </dt>
+            <dd><ScoreBadge score={Number(value)} semantics={metric?.semantics} /></dd>
+          </div>
+        })}
+      </dl>}
 
       {(Object.keys(score).length > 0 || hasMetadata) && (
         <div className="flex flex-col gap-1 border-t border-[var(--border)] px-4 py-3">

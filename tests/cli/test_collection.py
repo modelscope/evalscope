@@ -31,7 +31,7 @@ class TestCollection(TestBenchmark):
             'judge': {
                 'strategy': JudgeStrategy.AUTO,
                 'models': {
-                'model_id': 'qwen-plus',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -118,7 +118,7 @@ class TestCollection(TestBenchmark):
                 'local_path': 'outputs/mixed_data_test.jsonl',
                 'shuffle': True,
             },
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=20,
         )
 
@@ -128,7 +128,7 @@ class TestCollection(TestBenchmark):
             dataset_args={
                 'local_path': 'examples/collection/index/rag_index_sampled.jsonl',
             },
-            model='qwen-plus',
+            model='qwen3.8-flash',
             limit=10,
             use_cache='outputs/20251124_170860',
             rerun_review=True,
