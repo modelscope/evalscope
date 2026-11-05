@@ -169,6 +169,10 @@ class Subset(BaseModel):
     score: float = 0.0
     num: int = 0
     num_correct: Optional[int] = None
+    ci: Optional[str] = None
+    """Rendered confidence interval for this subset, e.g. ``[85.1, 90.7]`` or
+    ``low confidence (n=20)``; ``None`` when the aggregation carries no interval or for
+    aggregate rows (an interval is never combined across subsets)."""
     """Samples scored 1 when the metric is binary; ``None`` otherwise."""
     metadata: Optional[Dict[str, Any]] = None
     """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
@@ -266,6 +270,7 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     num_correct = 'Correct'
+    ci = 'CI'
     score = 'Score'
     raw_score = 'Raw Score'
     display_score = 'Display Score'
@@ -458,6 +463,7 @@ class Report(BaseModel):
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.num_correct].append(subset.num_correct)
+                    table[ReportKey.ci].append(subset.ci)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
             if metric_count > 1 and add_overall_metric and not has_overall_subset:
@@ -468,6 +474,7 @@ class Report(BaseModel):
                 table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
                 table[ReportKey.num_correct].append(metric.num_correct)
+                table[ReportKey.ci].append(None)
                 table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
