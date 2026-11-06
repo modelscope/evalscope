@@ -1,12 +1,16 @@
 import asyncio
+from functools import partial
 from types import SimpleNamespace
 from typing import Optional
 
+import httpx
 import pytest
+from openai import RateLimitError
 from openai.types.chat import ChatCompletionChunk
 
 from evalscope.api.model import GenerateConfig
 from evalscope.models.openai_compatible import OpenAICompatibleAPI
+from evalscope.utils.function_utils import async_retry_call, retry_call
 
 
 def _chunk(content: str, *, finish_reason: Optional[str] = None) -> ChatCompletionChunk:
@@ -70,6 +74,49 @@ def test_generate_retries_when_stream_consumption_fails(monkeypatch):
 
     assert attempts == 2
     assert result.content == 'complete response'
+
+
+@pytest.mark.parametrize('async_mode', [False, True], ids=['sync', 'async'])
+def test_generate_limits_retry_after_waits(monkeypatch: pytest.MonkeyPatch, async_mode: bool) -> None:
+    api = _prepare_api(monkeypatch)
+    attempts = 0
+    delays = []
+    response = httpx.Response(
+        429, headers={'retry-after': '120'}, request=httpx.Request('POST', 'https://example.test/v1')
+    )
+    error = RateLimitError('limited', response=response, body=None)
+
+    def create(**request: object) -> None:
+        nonlocal attempts
+        attempts += 1
+        raise error
+
+    async def create_async(**request: object) -> None:
+        create(**request)
+
+    async def sleep_async(delay: float) -> None:
+        delays.append(delay)
+
+    config = GenerateConfig(retries=5, retry_interval=0)
+    with pytest.raises(RateLimitError) as caught:
+        if async_mode:
+            client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create_async)))
+            monkeypatch.setattr(OpenAICompatibleAPI, 'async_client', property(lambda self: client))
+            monkeypatch.setattr(
+                'evalscope.models.openai_compatible.async_retry_call',
+                partial(async_retry_call, sleep=sleep_async),
+            )
+            asyncio.run(api.generate_async([], [], None, config))
+        else:
+            api.client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+            monkeypatch.setattr(
+                'evalscope.models.openai_compatible.retry_call', partial(retry_call, sleep=delays.append)
+            )
+            api.generate([], [], None, config)
+
+    assert caught.value is error
+    assert attempts == 3
+    assert delays == [120, 120]
 
 
 def test_generate_async_retries_when_stream_consumption_fails(monkeypatch):

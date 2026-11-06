@@ -3,7 +3,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from typing import Awaitable, Callable, List, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Awaitable, Callable, List, Literal, Optional, Sequence, Tuple, Type, TypeVar
 
 from evalscope.utils import asyncio_runtime
 from evalscope.utils.logger import get_logger
@@ -68,12 +68,60 @@ def run_once(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
+_DEFAULT_MAX_SLEEP = 60.0
+"""Upper bound for a single exponential-backoff sleep."""
+
+
+def _retry_after_seconds(e: Exception) -> Optional[float]:
+    """Read a numeric ``Retry-After`` header from an API exception, or ``None``.
+
+    Read defensively through ``getattr``: not every OpenAI-compatible backend wraps errors
+    in an ``APIStatusError`` carrying a response, and non-numeric (HTTP-date) values are
+    left to the backoff ladder instead of being parsed here.
+    """
+    response = getattr(e, 'response', None)
+    headers = getattr(response, 'headers', None)
+    if headers is None:
+        return None
+    raw = headers.get('retry-after')
+    if raw is None:
+        return None
+    try:
+        return max(0.0, float(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+def _retry_delay(
+    attempt: int,
+    e: Exception,
+    sleep_interval: float,
+    backoff: Literal['fixed', 'exponential'],
+    max_sleep: float,
+) -> float:
+    """Sleep seconds before the next retry attempt.
+
+    ``fixed`` keeps today's behaviour (a flat ``sleep_interval``). ``exponential`` grows
+    with a cap and takes the gateway's ``Retry-After`` as a floor when present.
+    """
+    if backoff == 'fixed':
+        return sleep_interval
+    exponential = min(sleep_interval * (2**attempt), max_sleep)
+    hint = _retry_after_seconds(e)
+    # The server's minimum wait may exceed the exponential-backoff cap.
+    return max(exponential, hint) if hint is not None else exponential
+
+
 def retry_call(
     func: Callable[..., T],
     *args,
     retries: Optional[int] = 3,
     sleep_interval: float = 0,
     no_retry_exceptions: Tuple[Type[Exception], ...] = (),
+    backoff: Literal['fixed', 'exponential'] = 'fixed',
+    max_sleep: float = _DEFAULT_MAX_SLEEP,
+    max_total_wait: Optional[float] = None,
+    sleep: Callable[[float], None] = time.sleep,
     **kwargs,
 ) -> T:
     """Function that retries a function call up to `retries` times if an exception occurs.
@@ -83,8 +131,16 @@ def retry_call(
 
     Exceptions matching `no_retry_exceptions` are re-raised immediately instead of being
     retried (e.g. non-retryable 4xx client errors handled by the caller itself).
+
+    `backoff='fixed'` (the default) sleeps the flat `sleep_interval`, exactly as before.
+    `backoff='exponential'` grows the wait with a `max_sleep` cap, honors the gateway's
+    `Retry-After` header as a floor even when `sleep_interval` is zero. When supplied,
+    `max_total_wait` bounds total outer-retry sleeping time, excluding request execution
+    and SDK retries. If the next wait would exceed it, the last exception is re-raised.
+    `sleep` is injectable for deterministic tests.
     """
     total_attempts = 3 if retries is None else max(1, retries)
+    total_wait = 0.0
     for attempt in range(total_attempts):
         try:
             return func(*args, **kwargs)
@@ -93,9 +149,20 @@ def retry_call(
             raise
         except Exception as e:
             if attempt < total_attempts - 1:
-                if sleep_interval > 0:
+                if sleep_interval > 0 or backoff == 'exponential':
+                    delay = _retry_delay(attempt, e, sleep_interval, backoff, max_sleep)
+                    if delay <= 0:
+                        continue
+                    if max_total_wait is not None and total_wait + delay > max_total_wait:
+                        logger.error(
+                            f'Attempt {attempt + 1} / {total_attempts} failed: {e}. '
+                            f'Total wait {total_wait:.0f}s would exceed max_total_wait '
+                            f'{max_total_wait:.0f}s; giving up.'
+                        )
+                        raise
                     logger.warning(f'Attempt {attempt + 1} / {total_attempts} failed: {e}. Retrying...')
-                    time.sleep(sleep_interval)
+                    sleep(delay)
+                    total_wait += delay
             else:
                 raise
 
@@ -106,6 +173,10 @@ async def async_retry_call(
     retries: Optional[int] = 3,
     sleep_interval: float = 0,
     no_retry_exceptions: Tuple[Type[Exception], ...] = (),
+    backoff: Literal['fixed', 'exponential'] = 'fixed',
+    max_sleep: float = _DEFAULT_MAX_SLEEP,
+    max_total_wait: Optional[float] = None,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     **kwargs,
 ) -> T:
     """Async version of retry_call. Retries an async function call up to `retries` times if an exception occurs.
@@ -115,8 +186,12 @@ async def async_retry_call(
 
     Exceptions matching `no_retry_exceptions` are re-raised immediately instead of being
     retried (e.g. non-retryable 4xx client errors handled by the caller itself).
+
+    The `backoff` / `max_sleep` / `max_total_wait` / `sleep` parameters mirror the sync
+    `retry_call`; see there for the full contract.
     """
     total_attempts = 3 if retries is None else max(1, retries)
+    total_wait = 0.0
     for attempt in range(total_attempts):
         try:
             return await func(*args, **kwargs)
@@ -125,9 +200,20 @@ async def async_retry_call(
             raise
         except Exception as e:
             if attempt < total_attempts - 1:
-                if sleep_interval > 0:
+                if sleep_interval > 0 or backoff == 'exponential':
+                    delay = _retry_delay(attempt, e, sleep_interval, backoff, max_sleep)
+                    if delay <= 0:
+                        continue
+                    if max_total_wait is not None and total_wait + delay > max_total_wait:
+                        logger.error(
+                            f'Attempt {attempt + 1} / {total_attempts} failed: {e}. '
+                            f'Total wait {total_wait:.0f}s would exceed max_total_wait '
+                            f'{max_total_wait:.0f}s; giving up.'
+                        )
+                        raise
                     logger.warning(f'Attempt {attempt + 1} / {total_attempts} failed: {e}. Retrying...')
-                    await asyncio.sleep(sleep_interval)
+                    await sleep(delay)
+                    total_wait += delay
             else:
                 raise
 
