@@ -37,6 +37,7 @@ const IDS = {
   reasoningTokens: 'eval-reasoningTokens',
   enableThinking: 'eval-enableThinking',
   datasetArgs: 'eval-datasetArgs',
+  extraConfig: 'eval-extraConfig',
   sandboxEngine: 'eval-sandboxEngine',
   sandboxUrl: 'eval-sandboxUrl',
   sandboxImage: 'eval-sandboxImage',
@@ -60,6 +61,7 @@ const DOM_ORDER: string[] = [
   IDS.reasoningEffort,
   IDS.reasoningTokens,
   IDS.datasetArgs,
+  IDS.extraConfig,
   IDS.sandboxUrl,
   IDS.sandboxPool,
 ]
@@ -75,6 +77,7 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.reasoningEffort,
   IDS.reasoningTokens,
   IDS.datasetArgs,
+  IDS.extraConfig,
   IDS.sandboxUrl,
   IDS.sandboxPool,
 ]
@@ -96,6 +99,7 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
     reasoningTokens,
     enableThinking,
     datasetArgs,
+    extraConfig,
     sandboxEnabled,
     sandboxEngine,
     sandboxUrl,
@@ -120,6 +124,7 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
   const setReasoningTokens = (value: string) => changeField('reasoningTokens', value)
   const setEnableThinking = (value: boolean) => changeField('enableThinking', value)
   const setDatasetArgs = (value: string) => changeField('datasetArgs', value)
+  const setExtraConfig = (value: string) => changeField('extraConfig', value)
   const setSandboxEnabled = (value: boolean) => changeField('sandboxEnabled', value)
   const setSandboxEngine = (value: string) => {
     if (value === 'docker' || value === 'volcengine') changeField('sandboxEngine', value)
@@ -378,27 +383,54 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
       >
         {(aria) => <Switch {...aria} checked={enableThinking} onCheckedChange={setEnableThinking} />}
       </Field>
-      <Field
-        id={IDS.datasetArgs}
-        name="dataset_args"
-        labelKey="eval.datasetArgs"
-        error={errMsg(IDS.datasetArgs)}
-        className="md:col-span-2"
-      >
-        {(aria) => (
-          <textarea
-            {...aria}
-            value={datasetArgs}
-            onChange={(e) => {
-              setDatasetArgs(e.target.value)
-              clearErr(IDS.datasetArgs)
-            }}
-            className={inputClass(errMsg(IDS.datasetArgs), 'h-20 resize-y')}
-            style={{ fontFamily: 'var(--font-mono)' }}
-            placeholder='{"gsm8k": {"few_shot_num": 4}}'
-          />
-        )}
-      </Field>
+      <section aria-labelledby="eval-advanced-config" className="space-y-4 md:col-span-2">
+        <h3 id="eval-advanced-config" className="font-semibold">{t('eval.advancedConfig')}</h3>
+        <Field
+          id={IDS.datasetArgs}
+          name="dataset_args"
+          labelKey="eval.datasetArgs"
+          error={errMsg(IDS.datasetArgs)}
+        >
+          {(aria) => (
+            <textarea
+              {...aria}
+              value={datasetArgs}
+              onChange={(e) => {
+                setDatasetArgs(e.target.value)
+                clearErr(IDS.datasetArgs)
+              }}
+              className={inputClass(errMsg(IDS.datasetArgs), 'h-20 resize-y')}
+              style={{ fontFamily: 'var(--font-mono)' }}
+              placeholder='{"gsm8k": {"few_shot_num": 4}}'
+            />
+          )}
+        </Field>
+        <Field
+          id={IDS.extraConfig}
+          name="extra_config"
+          labelKey="eval.extraConfig"
+          error={errMsg(IDS.extraConfig)}
+          hintKey="eval.extraConfigHint"
+        >
+          {(aria) => (
+            <>
+              <textarea
+                {...aria}
+                aria-describedby={`${aria['aria-describedby']} ${IDS.extraConfig}-scope`}
+                value={extraConfig}
+                onChange={(e) => setExtraConfig(e.target.value)}
+                className={inputClass(errMsg(IDS.extraConfig), 'h-20 resize-y')}
+                style={{ fontFamily: 'var(--font-mono)' }}
+                spellCheck={false}
+                placeholder='{"agent_config": {"max_steps": 20}}'
+              />
+              <p id={`${IDS.extraConfig}-scope`} className="mt-1 text-xs text-[var(--text-muted)]">
+                {t('eval.extraConfigScope')}
+              </p>
+            </>
+          )}
+        </Field>
+      </section>
       <hr className="md:col-span-2 my-2" />
       <h3 className="md:col-span-2 font-semibold">{t('eval.sandbox')}</h3>
       <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">
@@ -470,7 +502,7 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
   return (
     <TaskFormShell
       onSubmit={submitHandler(validate, buildConfig)}
-      moreParamsLabel={t('eval.moreParams')}
+      moreParamsLabel={t(extraConfig.trim() ? 'eval.moreParamsWithExtraConfig' : 'eval.moreParams')}
       showMore={showMore}
       onToggleMore={toggleMore}
       submitLabel={t('eval.startEval')}

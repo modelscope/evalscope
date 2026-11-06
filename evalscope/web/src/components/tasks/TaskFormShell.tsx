@@ -53,6 +53,7 @@ export default function TaskFormShell({
         <>
           <button
             type="button"
+            aria-expanded={showMore}
             onClick={onToggleMore}
             className="coarse-target flex cursor-pointer items-center gap-1 text-xs text-[var(--accent)] hover:underline"
           >

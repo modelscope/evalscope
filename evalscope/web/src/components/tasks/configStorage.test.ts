@@ -115,15 +115,47 @@ describe('Browser configuration storage', () => {
     expect(parseImport(exportLibrary(state, true)).connections[0].value.apiKey).toBe('fake-secret')
     expect(parseImport(exportLibrary(state, false)).connections[0].rememberKey).toBe(false)
   })
+  it('excludes Extra Config from drafts and all exports, including exports with saved connection keys', () => {
+    const state = savedWorkspace()
+    const extraConfig = JSON.stringify({
+      agent_config: { mcp_servers: [{ command: 'example', args: ['--api-key', 'fake-mcp-key'] }] },
+    })
+    state.eval.datasets = 'gsm8k'
+    state.eval.extraConfig = extraConfig
+    state.evalTemplates = [{ id: 'agent', name: 'Agent', value: { ...state.eval } }]
+
+    expect(writeWorkspace(state).ok).toBe(true)
+    expect(localStorage.getItem(CONFIG_STORAGE_KEY)).not.toContain('fake-mcp-key')
+    expect(readWorkspace()).toMatchObject({
+      ok: true,
+      value: { eval: { datasets: 'gsm8k', extraConfig: '' }, evalTemplates: [{ value: { extraConfig: '' } }] },
+    })
+    for (const includeKeys of [false, true]) {
+      const exported = exportLibrary(state, includeKeys)
+      expect(exported).not.toContain('fake-mcp-key')
+      expect(parseImport(exported).evalTemplates[0].value).toMatchObject({ datasets: 'gsm8k', extraConfig: '' })
+    }
+    expect(state.eval.extraConfig).toBe(extraConfig)
+
+    // Earlier builds could write the text into a workspace or exported template.
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(state))
+    expect(readWorkspace()).toMatchObject({ ok: true, value: { eval: { extraConfig: '' } } })
+    const imported = JSON.parse(exportLibrary(state, false))
+    imported.evalTemplates[0].value.extraConfig = extraConfig
+    expect(parseImport(JSON.stringify(imported)).evalTemplates[0].value.extraConfig).toBe('')
+  })
   it('imports older eval templates with missing fields', () => {
     const state = savedWorkspace()
-    const value = { ...DEFAULT_EVAL, datasets: 'gsm8k' }
+    const value = { ...DEFAULT_EVAL, datasets: 'gsm8k', datasetArgs: '{"gsm8k":{"few_shot_num":4}}' }
     state.evalTemplates = [{ id: 'old', name: 'Old template', value }]
     const raw = JSON.parse(exportLibrary(state, false))
     delete raw.evalTemplates[0].value.reasoningEffort
     delete raw.evalTemplates[0].value.reasoningTokens
     delete raw.evalTemplates[0].value.enableThinking
-    expect(parseImport(JSON.stringify(raw)).evalTemplates[0].value).toEqual(value)
+    delete raw.evalTemplates[0].value.extraConfig
+    const imported = parseImport(JSON.stringify(raw))
+    expect(imported.evalTemplates[0].value).toEqual(value)
+    expect(parseImport(exportLibrary(imported, false)).evalTemplates[0].value).toEqual(value)
   })
   it('imports as new ids without overwriting existing names and values', () => {
     const state = savedWorkspace()

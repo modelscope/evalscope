@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { EvalFormHarness as EvalConfigForm, PerfFormHarness as PerfConfigForm } from '@/test/TaskFormHarness'
 
@@ -76,6 +76,73 @@ describe('Evaluation form → TaskConfig payload', () => {
     expect(generation).not.toHaveProperty('reasoning_effort')
     expect(generation).not.toHaveProperty('reasoning_tokens')
     expect(generation).not.toHaveProperty('extra_body')
+  })
+  it('hoists recognized Extra Config keys to the payload top level', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{"agent_config":{"max_steps":20},"model_args":{"revision":"v2"}}')
+    submitEval()
+    expect(submit.mock.calls[0][0].agent_config).toEqual({ max_steps: 20 })
+    expect(submit.mock.calls[0][0].model_args).toEqual({ revision: 'v2' })
+  })
+  it('groups advanced inputs and takes dataset_args only from Dataset Args', () => {
+    const submit = evalForm()
+    const advanced = within(screen.getByRole('region', { name: 'Advanced Configuration' }))
+    expect(advanced.getByRole('textbox', { name: 'Dataset Args (JSON)' })).toBeVisible()
+    expect(advanced.getByRole('textbox', { name: 'Extra Config (JSON)' })).toBeVisible()
+    change('eval-temperature', '3')
+    change('eval-datasetArgs', '{"gsm8k":{"few_shot_num":4}}')
+    change('eval-extraConfig', '{"generation_config":{"temperature":0.1},"dataset_args":{"gsm8k":{"few_shot_num":9}}}')
+    submitEval()
+    expect(submit.mock.calls[0][0].generation_config).toEqual({ temperature: 0.1 })
+    expect(submit.mock.calls[0][0].dataset_args).toEqual({ gsm8k: { few_shot_num: 4 } })
+  })
+  it('ignores Extra Config keys outside the allowed top-level set', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{"not_a_task_field":{"x":1},"dataset_args":{"gsm8k":{}}}')
+    submitEval()
+    expect(submit.mock.calls[0][0]).not.toHaveProperty('not_a_task_field')
+    expect(submit.mock.calls[0][0]).not.toHaveProperty('dataset_args')
+  })
+  it.each([
+    '{"eval_config":{"limit":2}}',
+    '{"eval_config":null}',
+    '{"agent_config":null}',
+    '{"sandbox":null}',
+  ])('accepts valid Extra Config value shapes %s', (raw) => {
+    const submit = evalForm()
+    change('eval-extraConfig', raw)
+    submitEval()
+    expect(submit).toHaveBeenCalledOnce()
+  })
+  it('ignores unknown keys before validating their values', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{"agent_config":{"max_steps":20},"unknown":"value"}')
+    submitEval()
+    expect(submit.mock.calls[0][0].agent_config).toEqual({ max_steps: 20 })
+  })
+  it.each([
+    ['{"judge":null}', 'Extra Config contains a value with an unsupported type.'],
+    ['{"eval_config":"/tmp/eval.yaml"}', 'Use an inline JSON object or null for eval_config.'],
+    ['{"eval_config":"{\\"limit\\":2}"}', 'Use an inline JSON object or null for eval_config.'],
+  ])('rejects unsupported Extra Config values %s', (raw, message) => {
+    const submit = evalForm()
+    change('eval-extraConfig', raw)
+    submitEval()
+    expect(submit).not.toHaveBeenCalled()
+    expect(screen.getByText(message)).toBeInTheDocument()
+  })
+  it('expands More Parameters when Extra Config is invalid after collapsing it', () => {
+    const submit = evalForm()
+    change('eval-extraConfig', '{invalid')
+    const more = screen.getByRole('button', { name: /More Parameters.*Extra Config entered/ })
+    fireEvent.click(more)
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    expect(document.getElementById('eval-extraConfig')).toBeNull()
+    submitEval()
+    expect(submit).not.toHaveBeenCalled()
+    expect(more).toHaveAttribute('aria-expanded', 'true')
+    expect(document.getElementById('eval-extraConfig')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Extra Config must be valid JSON.')).toBeInTheDocument()
   })
   it('maps both states of the stream switch', () => {
     const submit = evalForm()

@@ -41,6 +41,9 @@ export const FORM_MESSAGE_KEYS = {
   datasetArgsInvalidJson: 'form.validation.datasetArgs.invalidJson',
   /** `Dataset_Args` is valid JSON but not a JSON object. */
   datasetArgsInvalidStructure: 'form.validation.datasetArgs.invalidStructure',
+  extraConfigInvalidJson: 'form.validation.extraConfig.invalidJson',
+  extraConfigInvalidStructure: 'form.validation.extraConfig.invalidStructure',
+  extraConfigEvalConfigObject: 'form.validation.extraConfig.evalConfigObject',
   /** Numeric value is below the allowed minimum. */
   numericBelowMin: 'form.validation.numeric.belowMin',
   /** Numeric value is above the allowed maximum. */
