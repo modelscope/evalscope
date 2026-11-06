@@ -6,11 +6,14 @@ denominator — but the result now carries request/token coverage so readers can
 tell how much of the run the hit rate actually describes.
 """
 
-import logging
+import asyncio
 from unittest.mock import MagicMock
 
 import pytest
 
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.core.strategies.multi_turn import MultiTurnStrategy
+from evalscope.perf.plugin.datasets.base import Turn
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, MetricsAccumulator
 from evalscope.perf.utils.perf_constants import Metrics
 
@@ -93,20 +96,41 @@ class TestHitRateCoverage:
 
 
 class TestWarningAndSerialization:
-    def test_warns_when_coverage_is_partial(self, caplog):
+    def test_final_warning_when_coverage_is_partial(self, monkeypatch):
+        warning = MagicMock()
+        monkeypatch.setattr('evalscope.perf.utils.benchmark_util.logger.warning', warning)
         acc = _accumulate(_request(100, 80), _request(100, None))
-        with caplog.at_level(logging.WARNING):
-            acc.to_result()
 
-        messages = [rec.getMessage() for rec in caplog.records if rec.levelno >= logging.WARNING]
-        assert any('1/2' in m and 'cached_tokens' in m for m in messages), messages
+        acc.to_result()
+        acc.to_result()
+        warning.assert_not_called()
 
-    def test_no_warning_when_coverage_is_full(self, caplog):
+        acc.log_cache_coverage_warning()
+        warning.assert_called_once()
+        message = warning.call_args.args[0]
+        assert '1/2' in message
+        assert 'cached_tokens' in message
+
+    def test_no_warning_when_coverage_is_full(self, monkeypatch):
+        warning = MagicMock()
+        monkeypatch.setattr('evalscope.perf.utils.benchmark_util.logger.warning', warning)
         acc = _accumulate(_request(100, 80), _request(100, 0))
-        with caplog.at_level(logging.WARNING):
-            acc.to_result()
 
-        assert not [rec for rec in caplog.records if 'cached_tokens' in rec.getMessage()]
+        acc.log_cache_coverage_warning()
+
+        warning.assert_not_called()
+
+    def test_final_warning_when_nothing_reports(self, monkeypatch):
+        warning = MagicMock()
+        monkeypatch.setattr('evalscope.perf.utils.benchmark_util.logger.warning', warning)
+        acc = _accumulate(_request(100, None), _request(50, None))
+
+        acc.log_cache_coverage_warning()
+
+        warning.assert_called_once()
+        message = warning.call_args.args[0]
+        assert '0/2' in message
+        assert 'unavailable' in message
 
     def test_coverage_is_emitted_next_to_hit_rate(self):
         result = _accumulate(_request(100, 80), _request(100, None)).to_result().create_message()
@@ -119,3 +143,68 @@ class TestWarningAndSerialization:
         metrics = BenchmarkMetrics()
         assert metrics.cache_request_coverage_percent == -1
         assert metrics.cache_token_coverage_percent == -1
+
+
+class _MultiTurnCacheClient:
+    def __init__(self, reported: list[int | None]) -> None:
+        self._reported = reported
+        self._calls = 0
+
+    async def post(self, request: dict) -> BenchmarkData:
+        real_cached_tokens = self._reported[self._calls]
+        self._calls += 1
+        return BenchmarkData(
+            request={},
+            success=True,
+            start_time=float(self._calls),
+            completed_time=float(self._calls) + 1.0,
+            query_latency=1.0,
+            prompt_tokens=100,
+            completion_tokens=10,
+            generated_text='ok',
+            real_cached_tokens=real_cached_tokens,
+        )
+
+
+def _run_multi_turn(reported: list[int | None]) -> tuple[MetricsAccumulator, list[BenchmarkData]]:
+    args = Arguments(model='test-model', api='openai', number=1, parallel=1, rate=-1, multi_turn=True)
+    args.number = 1
+    args.parallel = 1
+    args.rate = -1
+    plugin = _plugin()
+    client = _MultiTurnCacheClient(reported)
+    queue: asyncio.Queue = asyncio.Queue()
+    conversations = [[
+        Turn(messages=[{'role': 'user', 'content': 'first'}]),
+        Turn(messages=[{'role': 'user', 'content': 'second'}]),
+    ]]
+    strategy = MultiTurnStrategy(args, plugin, client, queue, conversations)
+    asyncio.run(strategy.run())
+
+    turns = [queue.get_nowait(), queue.get_nowait()]
+    accumulator = MetricsAccumulator()
+    for turn in turns:
+        accumulator.update(turn, plugin)
+    return accumulator, turns
+
+
+def test_multi_turn_missing_reports_do_not_create_estimated_hits() -> None:
+    accumulator, turns = _run_multi_turn([None, None])
+
+    result = accumulator.to_result()
+
+    assert [turn.cached_tokens for turn in turns] == [None, None]
+    assert result.avg_cached_percent == -1
+    assert result.cache_request_coverage_percent == -1
+    assert result.cache_token_coverage_percent == -1
+
+
+def test_multi_turn_mixed_estimates_and_reports_use_only_reports() -> None:
+    accumulator, turns = _run_multi_turn([None, 50])
+
+    result = accumulator.to_result()
+
+    assert [turn.cached_tokens for turn in turns] == [None, 50]
+    assert result.avg_cached_percent == pytest.approx(50.0)
+    assert result.cache_request_coverage_percent == pytest.approx(50.0)
+    assert result.cache_token_coverage_percent == pytest.approx(50.0)

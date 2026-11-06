@@ -116,8 +116,6 @@ class MultiTurnStrategy(BenchmarkStrategy):
             # are appended after each successful turn so the next turn sees the
             # growing history.
             context: List[Message] = []
-            prev_prompt_tokens: int = 0
-            prev_completion_tokens: int = 0
             total_turns = len(conversation)
             rid = conversation[0].rid
 
@@ -176,32 +174,6 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 # called.  finalize() is idempotent.
                 if benchmark_data.success:
                     benchmark_data.finalize(self.api_plugin)
-
-                # Compute KV-cache hit count (absolute tokens, not a percentage).
-                #
-                # Priority:
-                #   1. real_cached_tokens – server-reported cached token count
-                #      (from usage.prompt_tokens_details.cached_tokens).
-                #   2. Estimation heuristic – prev_prompt_tokens + prev_completion_tokens,
-                #      i.e. the full context that was already in the KV cache after turn N-1.
-                #
-                # Turn 1 always yields cached_tokens = 0 because there is no prior
-                # context.  The 0 is stored explicitly so the aggregator can include
-                # this turn's prompt_tokens in the denominator, producing an unbiased
-                # global ratio: total_cached_tokens / total_prompt_tokens.
-                if benchmark_data.prompt_tokens is not None and benchmark_data.prompt_tokens > 0:
-                    if benchmark_data.real_cached_tokens is not None:
-                        benchmark_data.cached_tokens = benchmark_data.real_cached_tokens
-                    elif prev_prompt_tokens > 0:
-                        cacheable_tokens = prev_prompt_tokens + prev_completion_tokens
-                        benchmark_data.cached_tokens = cacheable_tokens
-                    else:
-                        # Turn 1: no prior context, cached_tokens = 0.
-                        benchmark_data.cached_tokens = 0
-                if benchmark_data.prompt_tokens:
-                    prev_prompt_tokens = benchmark_data.prompt_tokens
-                if benchmark_data.completion_tokens:
-                    prev_completion_tokens = benchmark_data.completion_tokens
 
                 # Determine whether this is the last turn of the conversation:
                 # • normal completion: final index in the dataset

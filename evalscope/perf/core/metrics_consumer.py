@@ -158,7 +158,9 @@ async def statistic_benchmark_metric(
 
         await asyncio.to_thread(con.commit)
 
-    return accumulator.to_result(), trace_acc.to_summary(), workload_timeline, result_db_path
+    result = accumulator.to_result()
+    accumulator.log_cache_coverage_warning()
+    return result, trace_acc.to_summary(), workload_timeline, result_db_path
 
 
 @exception_handler
