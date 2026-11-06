@@ -917,6 +917,7 @@ def collect_stream_response(
     collected_messages = defaultdict(list)
     collected_reasoning = defaultdict(list)
     collected_tool_calls = defaultdict(dict)
+    collected_logprobs = defaultdict(dict)
 
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
@@ -956,6 +957,13 @@ def collect_stream_response(
             # Handle regular content
             if choice.delta.content is not None:
                 collected_messages[choice.index].append(choice.delta.content)
+
+            if choice.logprobs is not None:
+                logprobs = collected_logprobs[choice.index]
+                for field in ('content', 'refusal'):
+                    tokens = getattr(choice.logprobs, field)
+                    if tokens is not None:
+                        logprobs.setdefault(field, []).extend(tokens)
 
             # Handle tool calls
             if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
@@ -1006,7 +1014,10 @@ def collect_stream_response(
             message_kwargs['tool_calls'] = tool_calls_list
 
         choice = _ProviderChoice(
-            finish_reason=finish_reason, index=index, message=ChatCompletionMessage(**message_kwargs)
+            finish_reason=finish_reason,
+            index=index,
+            message=ChatCompletionMessage(**message_kwargs),
+            logprobs=ChoiceLogprobs(**collected_logprobs[index]) if index in collected_logprobs else None,
         )
         choices.append(choice)
 
@@ -1049,6 +1060,7 @@ async def async_collect_stream_response(
     collected_messages = defaultdict(list)
     collected_reasoning = defaultdict(list)
     collected_tool_calls = defaultdict(dict)
+    collected_logprobs = defaultdict(dict)
 
     t_start = request_start if request_start is not None else time.monotonic()
     ttft: Optional[float] = None
@@ -1088,6 +1100,13 @@ async def async_collect_stream_response(
             # Handle regular content
             if choice.delta.content is not None:
                 collected_messages[choice.index].append(choice.delta.content)
+
+            if choice.logprobs is not None:
+                logprobs = collected_logprobs[choice.index]
+                for field in ('content', 'refusal'):
+                    tokens = getattr(choice.logprobs, field)
+                    if tokens is not None:
+                        logprobs.setdefault(field, []).extend(tokens)
 
             # Handle tool calls
             if hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls:
@@ -1138,7 +1157,10 @@ async def async_collect_stream_response(
             message_kwargs['tool_calls'] = tool_calls_list
 
         choice = _ProviderChoice(
-            finish_reason=finish_reason, index=index, message=ChatCompletionMessage(**message_kwargs)
+            finish_reason=finish_reason,
+            index=index,
+            message=ChatCompletionMessage(**message_kwargs),
+            logprobs=ChoiceLogprobs(**collected_logprobs[index]) if index in collected_logprobs else None,
         )
         choices.append(choice)
 
