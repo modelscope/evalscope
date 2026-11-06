@@ -76,6 +76,7 @@ air_bench        = {file = ["evalscope/benchmarks/air_bench/requirements.txt"]}
 caption          = {file = ["evalscope/benchmarks/caption/requirements.txt"]}
 refcoco          = {file = ["evalscope/benchmarks/refcoco/requirements.txt"]}
 swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
+swe_atlas_qna    = {file = ["evalscope/benchmarks/swe_atlas_qna/requirements.txt"]}
 wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}
 torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
@@ -132,6 +133,8 @@ ignore = ["E501"]
 "tests/**/*.py" = ["E402"]
 "__init__.py" = ["F401"]
 "!evalscope/{utils,cli,report,perf}/**/*.py" = ["F401"]
+# Trailing whitespace in the official SWE-Atlas prompt text must be preserved.
+"evalscope/benchmarks/swe_atlas_qna/prompts.py" = ["W291", "W293"]
 
 [tool.ruff.format]
 exclude = ["tests/**/*.py"]

@@ -54,7 +54,10 @@ class AgentRunResult(BaseModel):
     """
 
     output: str
-    """Final answer string (typically the agent CLI's stdout)."""
+    """Raw agent CLI stdout."""
+
+    final_answer: str = ''
+    """Last assistant text captured by the bridge, populated before post-run hooks."""
 
     metrics: Dict[str, Any] = Field(default_factory=dict)
     """Wall-time, exit code, runner-specific counters."""

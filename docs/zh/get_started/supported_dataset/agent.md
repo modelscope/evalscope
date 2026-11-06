@@ -28,6 +28,7 @@
 | `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
 | `researchrubrics` | [ResearchRubrics](../../benchmarks/researchrubrics.md) | `Agent`, `MultiTurn`, `Reasoning`, `Retrieval` |
 | `skillsbench` | [SkillsBench](../../benchmarks/skillsbench.md) | `Agent`, `MultiTurn` |
+| `swe_atlas_qna` | [SWE-Atlas-QnA](../../benchmarks/swe_atlas_qna.md) | `Agent`, `Coding`, `MultiTurn` |
 | `swe_bench_lite_agentic` | [SWE-bench_Lite_Agentic](../../benchmarks/swe_bench_lite_agentic.md) | `Coding` |
 | `swe_bench_multilingual_agentic` | [SWE-bench_Multilingual_Agentic](../../benchmarks/swe_bench_multilingual_agentic.md) | `Coding` |
 | `swe_bench_pro` | [SWE-bench_Pro](../../benchmarks/swe_bench_pro.md) | `Coding` |
@@ -70,6 +71,7 @@
 ../../benchmarks/officeqa.md
 ../../benchmarks/researchrubrics.md
 ../../benchmarks/skillsbench.md
+../../benchmarks/swe_atlas_qna.md
 ../../benchmarks/swe_bench_lite_agentic.md
 ../../benchmarks/swe_bench_multilingual_agentic.md
 ../../benchmarks/swe_bench_pro.md

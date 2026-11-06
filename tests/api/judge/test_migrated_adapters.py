@@ -662,3 +662,116 @@ def test_agentharm_judge_contract_excludes_invalid_cases(name: str, reply: str, 
         assert score.value['task_completion_score'] == 1 / 8
     else:
         assert score.value == {} and score.judge_summary.coverage == 0
+
+
+def make_swe_atlas_qna_adapter():
+    config = TaskConfig(
+        model='m',
+        datasets=['swe_atlas_qna'],
+        judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    )
+    return get_benchmark('swe_atlas_qna', config)
+
+
+def make_swe_atlas_qna_state(adapter) -> TaskState:
+    sample = adapter.record_to_sample({
+        'task_id': 'task-1',
+        'prompt': 'Where is retries handled?',
+        'reference_answer': 'In retry.py.',
+        'repository_base_commit': 'abc123',
+        'docker_image': 'ghcr.io/scaleapi/swe-atlas:swe_atlas_QnA_kovidgoyal_kitty_1.0',
+        'rubric': [
+            {
+                'id': 'r1',
+                'title': 'Names retry.py.',
+                'annotations': {'type': 'positive hli verifier'},
+            }
+        ],
+    })
+    sample.id = 0
+    sample.metadata['_sandbox_state'] = {'setup_returncode': 0, 'check_returncode': 0, 'tree_status': ''}
+    return TaskState(
+        model='m', sample=sample, output=ModelOutput.from_content('m', 'Retries are in retry.py.'), completed=True
+    )
+
+
+def test_swe_atlas_qna_valid_official_verdict_scores_the_sample() -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    adapter.llm_judge = ScriptedJudge([
+        json.dumps({
+            'ratings': [
+                {
+                    'rubric_statement': 'Names retry.py.',
+                    'status': 'YES',
+                    'score': '1',
+                    'justification': 'The answer names retry.py.',
+                }
+            ]
+        })
+    ])
+
+    score = adapter.calculate_metrics(make_swe_atlas_qna_state(adapter)).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == {'resolved': 1.0, 'rubric_pass_rate': 1.0}
+
+
+@pytest.mark.parametrize(
+    'reply',
+    [
+        'not JSON',
+        '[ERROR] judge transport unavailable',
+        '{"status":"YES","justification":"missing ratings envelope"}',
+    ],
+)
+def test_swe_atlas_qna_invalid_judge_reply_excludes_the_sample(reply: str) -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.calculate_metrics(make_swe_atlas_qna_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+def test_swe_atlas_qna_transport_failure_excludes_the_sample() -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_swe_atlas_qna_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'
+
+
+def test_swe_atlas_qna_environment_failure_skips_judge_and_excludes() -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    judge = ScriptedJudge(['not JSON'])
+    adapter.llm_judge = judge
+    state = make_swe_atlas_qna_state(adapter)
+    state.metadata['_sandbox_state'] = {'setup_returncode': 1, 'setup_error': 'unknown revision'}
+
+    score = adapter.calculate_metrics(state).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.explanation == 'unknown revision'
+    assert judge.calls == []
+
+
+def test_swe_atlas_qna_empty_rubric_skips_judge_and_excludes() -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    judge = ScriptedJudge(['not JSON'])
+    adapter.llm_judge = judge
+    state = make_swe_atlas_qna_state(adapter)
+    state.metadata['rubric'] = []
+
+    score = adapter.calculate_metrics(state).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.explanation == 'rubric must contain at least one item'
+    assert score.metadata['excluded_reason'] == 'rubric must contain at least one item'
+    assert judge.calls == []

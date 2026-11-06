@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "pretty_name": "SWE-Atlas-QnA",
+    "dataset_id": "ScaleAI/SWE-Atlas-QnA",
+    "paper_url": null,
+    "tags": [
+      "Coding",
+      "Agent",
+      "MultiTurn"
+    ],
+    "metrics": [
+      "resolve_rate",
+      "rubric_pass_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\n\nSWE-Atlas QnA is a codebase question-answering benchmark from Scale AI. The public set contains 124 read-only\ncode-comprehension tasks over 11 production repositories in Go, Python, C, and TypeScript.\n\n## Task Description\n\n- **Task Type**: Multi-turn codebase exploration and question answering\n- **Input**: A natural-language question and a task-specific repository image\n- **Output**: A prose answer supported by evidence from the repository\n- **Domain**: Software engineering and code comprehension\n\n## Key Features\n\n- Runs EvalScope's native AgentLoop with a bash tool inside each task's Docker image.\n- Resets the repository to its pinned base commit before evaluation and rejects answers accompanied by source edits.\n- Supports positive and negative expert-written rubric items.\n- Reports task resolve rate and mean rubric pass rate.\n\n## Evaluation Notes\n\n- `resolve_rate` is the primary metric; a task is resolved when its rubric pass rate reaches `pass_threshold`, which\n  defaults to 1.0, and the repository remains clean.\n- Each rubric item is graded independently by an LLM judge using the official output schema. Invalid judge replies,\n  repository setup failures, and source-tree check failures exclude the sample rather than assigning a zero score.\n- A real run requires Docker, `ms-enclave`, and the task images referenced by the dataset. Images can require\n  approximately 20-35 GB of disk space in total.\n- This adapter uses EvalScope's AgentLoop rather than the official SWE-agent and Modal scaffold, so results are not\n  claimed to be leaderboard-equivalent without a separate comparison.",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "working_dir": {
+        "type": "str",
+        "description": "Repository path inside each task image.",
+        "value": "/app"
+      },
+      "reset_to_base_commit": {
+        "type": "bool",
+        "description": "Reset the repository to repository_base_commit before the agent starts.",
+        "value": true
+      },
+      "fail_on_source_modification": {
+        "type": "bool",
+        "description": "Fail tasks whose repository contains uncommitted changes after the agent run.",
+        "value": true
+      },
+      "command_timeout": {
+        "type": "float",
+        "description": "Timeout in seconds for each sandbox command when no native timeout is configured.",
+        "value": 900.0
+      },
+      "pass_threshold": {
+        "type": "float",
+        "description": "Minimum rubric pass rate required to resolve a task.",
+        "value": 1.0
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent",
+    "primary_metric": {
+      "name": "resolve_rate",
+      "aggregation": null,
+      "dimensions": {}
+    },
+    "agent_config": {
+      "strategy": "function_calling",
+      "max_steps": 250
+    },
+    "requires_judge": true
+  },
+  "statistics": {
+    "total_samples": 124,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 124,
+        "prompt_length_mean": 1367.56,
+        "prompt_length_min": 745,
+        "prompt_length_max": 3137,
+        "prompt_length_std": 477.11,
+        "target_length_mean": 12894.73
+      }
+    ],
+    "prompt_length": {
+      "mean": 1367.56,
+      "min": 745,
+      "max": 3137,
+      "std": 477.11
+    },
+    "target_length_mean": 12894.73,
+    "computed_at": "2026-11-05T17:27:17.851230"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "75d7e494",
+          "content": "I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\n\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\n\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion."
+        }
+      ],
+      "target": "I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\n\nNo source files were modified during this investigation. All the temporary test files were cleaned up.",
+      "id": 0,
+      "group_id": 0,
+      "tools": [
+        {
+          "name": "bash",
+          "description": "Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.",
+          "parameters": {
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "The bash command to execute."
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Maximum execution time in seconds (default: 60).",
+                "default": 60
+              }
+            },
+            "required": [
+              "command"
+            ]
+          }
+        }
+      ],
+      "metadata": {
+        "task_id": "6905333b74f22949d97ba9e3",
+        "prompt": "I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\n\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\n\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion.",
+        "reference_answer": "I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\n\nNo source files were modified during this investigation. All the temporary test files were cleaned up.",
+        "repository_url": "kovidgoyal/kitty",
+        "repository_base_commit": "815df1e210e0a9ab4622f5c7f2d6891d7dbeddf1",
+        "language": "c",
+        "category": "Architecture & system design",
+        "docker_image": "ghcr.io/scaleapi/swe-atlas:swe_atlas_QnA_kovidgoyal_kitty_1.0",
+        "rubric": [
+          {
+            "id": "a33fc01cba19849aaf3b55e6b801001c",
+            "title": "1.1: States that kitty's remote control system uses two communication mechanisms: Unix sockets (when --listen-on or KITTY_LISTEN_ON is configured) and TTY-based DCS escape sequences (when running inside a kitty window).",
+            "negated": false
+          },
+          {
+            "id": "298d7e5d6d67565d4e30882f238e337c",
+            "title": "1.2: Reports that socket paths include the kitty process ID (e.g., /tmp/kitty-12345 for PID 12345).",
+            "negated": false
+          },
+          {
+            "id": "30679eccb21e3251eff3613326ff77f4",
+            "title": "1.3: Shows captured protocol bytes demonstrating the DCS escape sequence format: \\\\x1bP@kitty-cmd{JSON}\\\\x1b\\\\\\\\ where \\\\x1bP is the DCS introducer, @kitty-cmd is the marker, and \\\\x1b\\\\\\\\ is the String Terminator.",
+            "negated": false
+          },
+          {
+            "id": "7e48e77ebe24788711fcdb7b38d5105b",
+            "title": "1.4: States that for remote commands, kitty produces no log output - only error conditions trigger log_error() calls.\n",
+            "negated": false
+          },
+          {
+            "id": "42b89782d679568bcbe34f9415716cab",
+            "title": "1.5: States that command processing flows through these key functions: boss._handle_remote_command() as entry point, parse_cmd() for JSON extraction, handle_cmd() for dispatch, command_for_name() for handler lookup, and the specific command's response_from_kitty() method.",
+            "negated": false
+          },
+          {
+            "id": "1782ba2037d6b244f646e31af2e9e12a",
+            "title": "1.6: Shows the JSON response structure for the kitten @ ls command with fields (e.g., id, pid, cwd, cmdline, tabs, windows, foreground_processes).\n",
+            "negated": false
+          },
+          {
+            "id": "4ca20ef4bbf52c6414a7478d688d08c3",
+            "title": "1.7: States that shell integration works through environment variables KITTY_PID, KITTY_LISTEN_ON, and KITTY_WINDOW_ID that kitty sets for child processes.",
+            "negated": false
+          }
+        ]
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# SWE-Atlas-QnA\n\n## Overview\n\nSWE-Atlas QnA is a codebase question-answering benchmark from Scale AI. The public set contains 124 read-only\ncode-comprehension tasks over 11 production repositories in Go, Python, C, and TypeScript.\n\n## Task Description\n\n- **Task Type**: Multi-turn codebase exploration and question answering\n- **Input**: A natural-language question and a task-specific repository image\n- **Output**: A prose answer supported by evidence from the repository\n- **Domain**: Software engineering and code comprehension\n\n## Key Features\n\n- Runs EvalScope's native AgentLoop with a bash tool inside each task's Docker image.\n- Resets the repository to its pinned base commit before evaluation and rejects answers accompanied by source edits.\n- Supports positive and negative expert-written rubric items.\n- Reports task resolve rate and mean rubric pass rate.\n\n## Evaluation Notes\n\n- `resolve_rate` is the primary metric; a task is resolved when its rubric pass rate reaches `pass_threshold`, which\n  defaults to 1.0, and the repository remains clean.\n- Each rubric item is graded independently by an LLM judge using the official output schema. Invalid judge replies,\n  repository setup failures, and source-tree check failures exclude the sample rather than assigning a zero score.\n- A real run requires Docker, `ms-enclave`, and the task images referenced by the dataset. Images can require\n  approximately 20-35 GB of disk space in total.\n- This adapter uses EvalScope's AgentLoop rather than the official SWE-agent and Modal scaffold, so results are not\n  claimed to be leaderboard-equivalent without a separate comparison.\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `swe_atlas_qna` |\n| **Dataset ID** | [ScaleAI/SWE-Atlas-QnA](https://modelscope.cn/datasets/ScaleAI/SWE-Atlas-QnA/summary) |\n| **Paper** | N/A |\n| **Tags** | `Agent`, `Coding`, `MultiTurn` |\n| **Metrics** | `resolve_rate`, `rubric_pass_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 124 |\n| Prompt Length (Mean) | 1367.56 chars |\n| Prompt Length (Min/Max) | 745 / 3137 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"75d7e494\",\n      \"content\": \"I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\\n\\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\\n\\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion.\"\n    }\n  ],\n  \"target\": \"I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \\nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\\n\\nNo source files were modified during this investigation. All the temporary test files were cleaned up.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"bash\",\n      \"description\": \"Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.\",\n      \"parameters\": {\n        \"properties\": {\n          \"command\": {\n            \"type\": \"string\",\n            \"description\": \"The bash command to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"command\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_id\": \"6905333b74f22949d97ba9e3\",\n    \"prompt\": \"I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\\n\\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\\n\\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion.\",\n    \"reference_answer\": \"I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \\nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\\n\\nNo source files were modified during this investigation. All the temporary test files were cleaned up.\",\n    \"repository_url\": \"kovidgoyal/kitty\",\n    \"repository_base_commit\": \"815df1e210e0a9ab4622f5c7f2d6891d7dbeddf1\",\n    \"language\": \"c\",\n    \"category\": \"Architecture & system design\",\n    \"docker_image\": \"ghcr.io/scaleapi/swe-atlas:swe_atlas_QnA_kovidgoyal_kitty_1.0\",\n    \"rubric\": [\n      {\n        \"id\": \"a33fc01cba19849aaf3b55e6b801001c\",\n        \"title\": \"1.1: States that kitty's remote control system uses two communication mechanisms: Unix sockets (when --listen-on or KITTY_LISTEN_ON is configured) and TTY-based DCS escape sequences (when running inside a kitty window).\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"298d7e5d6d67565d4e30882f238e337c\",\n        \"title\": \"1.2: Reports that socket paths include the kitty process ID (e.g., /tmp/kitty-12345 for PID 12345).\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"30679eccb21e3251eff3613326ff77f4\",\n        \"title\": \"1.3: Shows captured protocol bytes demonstrating the DCS escape sequence format: \\\\\\\\x1bP@kitty-cmd{JSON}\\\\\\\\x1b\\\\\\\\\\\\\\\\ where \\\\\\\\x1bP is the DCS introducer, @kitty-cmd is the marker, and \\\\\\\\x1b\\\\\\\\\\\\\\\\ is the String Terminator.\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"7e48e77ebe24788711fcdb7b38d5105b\",\n        \"title\": \"1.4: States that for remote commands, kitty produces no log output - only error conditions trigger log_error() calls.\\n\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"42b89782d679568bcbe34f9415716cab\",\n        \"title\": \"1.5: States that command processing flows through these key functions: boss._handle_remote_command() as entry point, parse_cmd() for JSON extraction, handle_cmd() for dispatch, command_for_name() for handler lookup, and the specific command's response_from_kitty() method.\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"1782ba2037d6b244f646e31af2e9e12a\",\n        \"title\": \"1.6: Shows the JSON response structure for the kitten @ ls command with fields (e.g., id, pid, cwd, cmdline, tabs, windows, foreground_processes).\\n\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"4ca20ef4bbf52c6414a7478d688d08c3\",\n        \"title\": \"1.7: States that shell integration works through environment variables KITTY_PID, KITTY_LISTEN_ON, and KITTY_WINDOW_ID that kitty sets for child processes.\",\n        \"negated\": false\n      }\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `working_dir` | `str` | `/app` | Repository path inside each task image. |\n| `reset_to_base_commit` | `bool` | `True` | Reset the repository to repository_base_commit before the agent starts. |\n| `fail_on_source_modification` | `bool` | `True` | Fail tasks whose repository contains uncommitted changes after the agent run. |\n| `command_timeout` | `float` | `900.0` | Timeout in seconds for each sandbox command when no native timeout is configured. |\n| `pass_threshold` | `float` | `1.0` | Minimum rubric pass rate required to resolve a task. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_atlas_qna \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":250}' \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_atlas_qna'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=250,\n    ),\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'swe_atlas_qna': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SWE-Atlas-QnA\n\n## 概述\n\nSWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数据集包含 124 个只读代码理解任务，涵盖 Go、Python、C 和 TypeScript 语言的 11 个生产级仓库。\n\n## 任务描述\n\n- **任务类型**：多轮代码库探索与问答\n- **输入**：一个自然语言问题以及针对特定任务的仓库镜像\n- **输出**：基于仓库证据支持的文本答案\n- **领域**：软件工程与代码理解\n\n## 主要特点\n\n- 在每个任务的 Docker 镜像中运行 EvalScope 原生的 AgentLoop 并配备 bash 工具。\n- 在评估前将仓库重置到固定的基础提交（base commit），并拒绝伴随源代码修改的答案。\n- 支持正面和负面的专家编写评分标准项（rubric items）。\n- 报告任务解决率（resolve rate）和平均评分标准通过率（mean rubric pass rate）。\n\n## 评估说明\n\n- `resolve_rate` 是主要指标；当任务的评分标准通过率达到 `pass_threshold`（默认为 1.0）且仓库保持干净状态时，视为任务已解决。\n- 每个评分标准项由 LLM 裁判使用官方输出模式独立评分。无效的裁判回复、仓库设置失败以及源树检查失败会导致该样本被排除，而不是赋予零分。\n- 实际运行需要 Docker、`ms-enclave` 以及数据集中引用的任务镜像。镜像总共可能需要约 20-35 GB 的磁盘空间。\n- 此适配器使用 EvalScope 的 AgentLoop，而非官方的 SWE-agent 和 Modal 脚手架，因此在没有单独对比的情况下，不声称结果具有排行榜等效性。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `swe_atlas_qna` |\n| **数据集ID** | [ScaleAI/SWE-Atlas-QnA](https://modelscope.cn/datasets/ScaleAI/SWE-Atlas-QnA/summary) |\n| **论文** | N/A |\n| **标签** | `Agent`, `Coding`, `MultiTurn` |\n| **指标** | `resolve_rate`, `rubric_pass_rate` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 124 |\n| 提示词长度 (平均值) | 1367.56 字符 |\n| 提示词长度 (最小/最大值) | 745 / 3137 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"75d7e494\",\n      \"content\": \"I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\\n\\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\\n\\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion.\"\n    }\n  ],\n  \"target\": \"I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \\nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\\n\\nNo source files were modified during this investigation. All the temporary test files were cleaned up.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"tools\": [\n    {\n      \"name\": \"bash\",\n      \"description\": \"Execute a bash command inside the sandbox environment. Returns the combined stdout / stderr output of the command.\",\n      \"parameters\": {\n        \"properties\": {\n          \"command\": {\n            \"type\": \"string\",\n            \"description\": \"The bash command to execute.\"\n          },\n          \"timeout\": {\n            \"type\": \"number\",\n            \"description\": \"Maximum execution time in seconds (default: 60).\",\n            \"default\": 60\n          }\n        },\n        \"required\": [\n          \"command\"\n        ]\n      }\n    }\n  ],\n  \"metadata\": {\n    \"task_id\": \"6905333b74f22949d97ba9e3\",\n    \"prompt\": \"I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\\n\\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\\n\\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion.\",\n    \"reference_answer\": \"I started by investigating kitty's remote control system to understand how commands flow from `kitten @ ls` to the running kitty instance and back. \\nThe system uses two communication mechanisms: Unix sockets for external connections and TTY-b ... [TRUNCATED 10491 chars] ... nd_for_name()` to handlers in `kitty/rc/`\\n5. Environment variables `KITTY_LISTEN_ON`, `KITTY_PID`, `KITTY_WINDOW_ID` for shell integration\\n\\nNo source files were modified during this investigation. All the temporary test files were cleaned up.\",\n    \"repository_url\": \"kovidgoyal/kitty\",\n    \"repository_base_commit\": \"815df1e210e0a9ab4622f5c7f2d6891d7dbeddf1\",\n    \"language\": \"c\",\n    \"category\": \"Architecture & system design\",\n    \"docker_image\": \"ghcr.io/scaleapi/swe-atlas:swe_atlas_QnA_kovidgoyal_kitty_1.0\",\n    \"rubric\": [\n      {\n        \"id\": \"a33fc01cba19849aaf3b55e6b801001c\",\n        \"title\": \"1.1: States that kitty's remote control system uses two communication mechanisms: Unix sockets (when --listen-on or KITTY_LISTEN_ON is configured) and TTY-based DCS escape sequences (when running inside a kitty window).\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"298d7e5d6d67565d4e30882f238e337c\",\n        \"title\": \"1.2: Reports that socket paths include the kitty process ID (e.g., /tmp/kitty-12345 for PID 12345).\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"30679eccb21e3251eff3613326ff77f4\",\n        \"title\": \"1.3: Shows captured protocol bytes demonstrating the DCS escape sequence format: \\\\\\\\x1bP@kitty-cmd{JSON}\\\\\\\\x1b\\\\\\\\\\\\\\\\ where \\\\\\\\x1bP is the DCS introducer, @kitty-cmd is the marker, and \\\\\\\\x1b\\\\\\\\\\\\\\\\ is the String Terminator.\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"7e48e77ebe24788711fcdb7b38d5105b\",\n        \"title\": \"1.4: States that for remote commands, kitty produces no log output - only error conditions trigger log_error() calls.\\n\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"42b89782d679568bcbe34f9415716cab\",\n        \"title\": \"1.5: States that command processing flows through these key functions: boss._handle_remote_command() as entry point, parse_cmd() for JSON extraction, handle_cmd() for dispatch, command_for_name() for handler lookup, and the specific command's response_from_kitty() method.\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"1782ba2037d6b244f646e31af2e9e12a\",\n        \"title\": \"1.6: Shows the JSON response structure for the kitten @ ls command with fields (e.g., id, pid, cwd, cmdline, tabs, windows, foreground_processes).\\n\",\n        \"negated\": false\n      },\n      {\n        \"id\": \"4ca20ef4bbf52c6414a7478d688d08c3\",\n        \"title\": \"1.7: States that shell integration works through environment variables KITTY_PID, KITTY_LISTEN_ON, and KITTY_WINDOW_ID that kitty sets for child processes.\",\n        \"negated\": false\n      }\n    ]\n  }\n}\n```\n\n*注意：部分显示内容已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `working_dir` | `str` | `/app` | 每个任务镜像中的仓库路径。 |\n| `reset_to_base_commit` | `bool` | `True` | 在代理启动前将仓库重置到 repository_base_commit。 |\n| `fail_on_source_modification` | `bool` | `True` | 如果代理运行后仓库包含未提交的更改，则使任务失败。 |\n| `command_timeout` | `float` | `900.0` | 当未配置原生超时时，每个沙箱命令的超时时间（秒）。 |\n| `pass_threshold` | `float` | `1.0` | 解决任务所需的最低评分标准通过率。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets swe_atlas_qna \\\n    --agent-config '{\"mode\":\"native\",\"strategy\":\"function_calling\",\"max_steps\":250}' \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import TaskConfig, run_task\nfrom evalscope.api.agent import NativeAgentConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['swe_atlas_qna'],\n    agent_config=NativeAgentConfig(\n        strategy='function_calling',\n        max_steps=250,\n    ),\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'swe_atlas_qna': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "cdf5783ef3794ced86ec8a0baa8e517e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-05T17:27:17.855574",
+  "translation_updated_at": "2026-11-06T10:33:36"
+}
