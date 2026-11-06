@@ -12,6 +12,7 @@ failed outright, mirroring the official programmatic check.
 
 from __future__ import annotations
 
+from math import isfinite
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -201,8 +202,12 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
         self.reset_to_base_commit: bool = bool(self.extra_params.get('reset_to_base_commit', True))
         self.fail_on_source_modification: bool = bool(self.extra_params.get('fail_on_source_modification', True))
         self.command_timeout: float = float(self.extra_params.get('command_timeout', 900.0))
+        if not isfinite(self.command_timeout) or self.command_timeout <= 0:
+            raise ValueError('command_timeout must be a finite positive number')
         self.command_timeout_default = self.command_timeout
         self.pass_threshold: float = float(self.extra_params.get('pass_threshold', 1.0))
+        if not isfinite(self.pass_threshold) or not 0.0 <= self.pass_threshold <= 1.0:
+            raise ValueError('pass_threshold must be a finite number in [0, 1]')
 
     # ------------------------------------------------------------------
     # Dataset loading
@@ -366,13 +371,16 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
             if not environment_error and sandbox_state.tree_status is None:
                 environment_error = 'dirty-tree check did not complete'
 
+        data_error = 'rubric must contain at least one item' if not rubric else None
+        exclusion_reason = environment_error or data_error
+
         cases = [
             JudgeCase(
                 case_id=item['id'],
                 output_contract=RUBRIC_CONTRACT,
                 metadata={'title': item['title'], 'negated': item['negated']},
             )
-            for item in (rubric if not environment_error else [])
+            for item in (rubric if not exclusion_reason else [])
         ]
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
@@ -411,7 +419,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
                 resolved = 0.0
 
             return ReducedVerdict(
-                value={} if environment_error else {'resolved': resolved, 'rubric_pass_rate': rubric_pass_rate},
+                value={} if exclusion_reason else {'resolved': resolved, 'rubric_pass_rate': rubric_pass_rate},
                 metadata={
                     'total_rubric_items': total,
                     'passed_rubric_items': passed,
@@ -424,14 +432,15 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
                     'check_returncode': sandbox_state.check_returncode,
                     'check_error': sandbox_state.check_error,
                     'environment_error': environment_error,
+                    'data_error': data_error,
                 },
             )
 
         def finalize(score, review, judge_context):
-            if environment_error:
-                review.error = environment_error
-                score.explanation = environment_error
-                score.metadata = {**(score.metadata or {}), 'excluded_reason': environment_error}
+            if exclusion_reason:
+                review.error = exclusion_reason
+                score.explanation = exclusion_reason
+                score.metadata = {**(score.metadata or {}), 'excluded_reason': exclusion_reason}
             return score
 
         return JudgeDefinition.workflow(

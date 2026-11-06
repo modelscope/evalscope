@@ -759,3 +759,19 @@ def test_swe_atlas_qna_environment_failure_skips_judge_and_excludes() -> None:
     assert score.value == {}
     assert score.explanation == 'unknown revision'
     assert judge.calls == []
+
+
+def test_swe_atlas_qna_empty_rubric_skips_judge_and_excludes() -> None:
+    adapter = make_swe_atlas_qna_adapter()
+    judge = ScriptedJudge(['not JSON'])
+    adapter.llm_judge = judge
+    state = make_swe_atlas_qna_state(adapter)
+    state.metadata['rubric'] = []
+
+    score = adapter.calculate_metrics(state).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.explanation == 'rubric must contain at least one item'
+    assert score.metadata['excluded_reason'] == 'rubric must contain at least one item'
+    assert judge.calls == []

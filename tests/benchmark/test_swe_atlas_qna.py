@@ -55,6 +55,18 @@ def make_adapter(tmp_path, **extra_params: Any) -> SweAtlasQnAAdapter:
     return adapter
 
 
+@pytest.mark.parametrize('value', [0, -1, float('nan'), float('inf')])
+def test_command_timeout_must_be_finite_and_positive(tmp_path, value: float) -> None:
+    with pytest.raises(ValueError, match='command_timeout must be a finite positive number'):
+        make_adapter(tmp_path, command_timeout=value)
+
+
+@pytest.mark.parametrize('value', [-0.01, 1.01, float('nan'), float('inf')])
+def test_pass_threshold_must_be_finite_and_in_unit_interval(tmp_path, value: float) -> None:
+    with pytest.raises(ValueError, match=r'pass_threshold must be a finite number in \[0, 1\]'):
+        make_adapter(tmp_path, pass_threshold=value)
+
+
 # ---------------------------------------------------------------------------
 # Pure helpers (no sandbox / judge)
 # ---------------------------------------------------------------------------
