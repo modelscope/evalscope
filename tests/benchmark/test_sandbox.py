@@ -98,6 +98,17 @@ class TestCodeBenchmark(TestBenchmark):
 
         self._run_dataset_test('scicode', dataset_args, repeats=2, limit=3, stream=True, rerun_review=True)
 
+    def test_scicode_verified(self):
+        """Test SciCode-Verified (problem 62: its first step is the inserted reference code)."""
+        dataset_args = {
+            'extra_params': {
+                'provide_background': False,
+                'problem_ids': ['62'],
+            }
+        }
+
+        self._run_dataset_test('scicode_verified', dataset_args, stream=True)
+
     def test_mbpp(self):
         """Test MBPP dataset."""
         dataset_args = {
