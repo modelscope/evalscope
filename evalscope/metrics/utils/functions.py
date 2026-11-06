@@ -92,7 +92,7 @@ def macro_mean(items):
 
 def bleu_ngram_one_sample(predict: str, reference: str):
     """
-    Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
+    Calculate cumulative BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores.
 
     Args:
         predict: predicted text
@@ -122,9 +122,9 @@ def bleu_ngram_one_sample(predict: str, reference: str):
 
     result = dict()
     result['bleu-1'] = sentence_bleu(reference, predict, weights=(1, 0, 0, 0))
-    result['bleu-2'] = sentence_bleu(reference, predict, weights=(0, 1, 0, 0))
-    result['bleu-3'] = sentence_bleu(reference, predict, weights=(0, 0, 1, 0))
-    result['bleu-4'] = sentence_bleu(reference, predict, weights=(0, 0, 0, 1))
+    result['bleu-2'] = sentence_bleu(reference, predict, weights=(0.5, 0.5))
+    result['bleu-3'] = sentence_bleu(reference, predict, weights=(1 / 3, 1 / 3, 1 / 3))
+    result['bleu-4'] = sentence_bleu(reference, predict, weights=(0.25, 0.25, 0.25, 0.25))
 
     return result
 

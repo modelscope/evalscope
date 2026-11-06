@@ -90,7 +90,7 @@ class TestGeneralVQAAdapterMatchScore:
         assert score.metadata['metric_errors']['BLEU'] == 'LookupError: metric exploded'
 
     def test_evaluation_version(self) -> None:
-        assert BENCHMARK_REGISTRY['general_vqa'].evaluation_version == 'v1.1'
+        assert BENCHMARK_REGISTRY['general_vqa'].evaluation_version == 'v1.2'
 
 
 class TestGeneralVQAAdapterRecordToSample:

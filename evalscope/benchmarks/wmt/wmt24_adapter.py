@@ -141,6 +141,7 @@ LANGUAGE_BY_CODE = {
 @register_benchmark(
     BenchmarkMeta(
         name='wmt24pp',
+        evaluation_version='v1.1',
         pretty_name='WMT2024++',
         dataset_id='extraordinarylab/wmt24pp',
         hf_dataset_id='extraordinarylab/wmt24pp',

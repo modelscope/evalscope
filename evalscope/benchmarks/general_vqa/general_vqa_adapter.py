@@ -59,7 +59,7 @@ It supports OpenAI-compatible message format with flexible image/video/audio inp
         train_split=None,
         eval_split='test',
         prompt_template=None,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class GeneralVQAAdapter(VisionLanguageAdapter):

@@ -58,7 +58,7 @@ General-QA is a customizable question answering benchmark for evaluating languag
         train_split=None,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class GeneralQAAdapter(DefaultDataAdapter):

@@ -128,7 +128,7 @@ class TestGeneralQAAdapterMatchScore:
 class TestGeneralQAAdapterMetadata:
 
     def test_evaluation_version(self) -> None:
-        assert BENCHMARK_REGISTRY['general_qa'].evaluation_version == 'v1.1'
+        assert BENCHMARK_REGISTRY['general_qa'].evaluation_version == 'v1.2'
 
 
 class TestGeneralQAAdapterRecordToSample:
