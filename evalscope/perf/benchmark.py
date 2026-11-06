@@ -1,5 +1,9 @@
 import asyncio
+import threading
+from contextlib import aclosing
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
@@ -28,7 +32,8 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
     Yields ``(request_dict, is_warmup)`` tuples.  The first ``warmup_count``
     requests are marked ``is_warmup=True`` and excluded from final metrics.
-    Total yield count = ``warmup_count + args.number``.
+    The normal stream has ``warmup_count + args.number`` requests. Overlap
+    exclusion can consume more requests until the measured quota is reached.
     """
     warmup_count = args.warmup_count
     total_count = args.total_count
@@ -41,8 +46,10 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         prompt = load_prompt(args.prompt)
         messages = [{'role': 'user', 'content': prompt}] if args.apply_chat_template else prompt
         request = api_plugin.build_request(messages)
-        for i in range(total_count):
-            yield request, i < warmup_count
+        count = 0
+        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+            yield request, count < warmup_count
+            count += 1
 
     async def _generate_from_dataset():
         """Generate requests by cycling through a dataset."""
@@ -85,13 +92,36 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         count = 0
         dataset_index = 0
         num_messages = len(dataset_messages)
+        replenish_random = args.exclude_warmup_overlap and warmup_count > 0 and args.dataset == 'random'
+        replacement_rng = None
+        if replenish_random:
+            # Derive a stream separate from the initial dataset's legacy RNG.
+            seed = np.random.SeedSequence(args.seed, spawn_key=(0,)).generate_state(4)
+            replacement_rng = np.random.RandomState(seed)
+        message_index = 0
 
-        # Guard against an infinite loop: if build_request returns None for a whole
-        # pass over the dataset, no request will ever be produced, so abort instead
-        # of spinning forever (count would never advance).
+        # Abort if the API plugin rejects every message in a batch.
         consecutive_skips = 0
-
-        while count < total_count:
+        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+            if replenish_random and count >= total_count and dataset_index == 0:
+                stop = threading.Event()
+                worker = asyncio.create_task(
+                    asyncio.to_thread(
+                        message_generator.build_messages_parallel,
+                        total_count=max(args.parallel, args.prefix_count),
+                        workers=1,
+                        rng=replacement_rng,
+                        start_index=message_index,
+                        stop=stop,
+                    )
+                )
+                try:
+                    dataset_messages = await asyncio.shield(worker)
+                except asyncio.CancelledError:
+                    stop.set()
+                    await asyncio.gather(worker, return_exceptions=True)
+                    raise
+                num_messages = len(dataset_messages)
             messages = dataset_messages[dataset_index]
             request = api_plugin.build_request(messages)
             if request is not None:
@@ -105,6 +135,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
                         f'{type(api_plugin).__name__}.build_request() returned None for every one of '
                         f'the {num_messages} dataset message(s); no request could be generated.'
                     )
+            message_index += 1
             dataset_index = (dataset_index + 1) % num_messages
 
     # Dispatch based on arguments.
@@ -118,8 +149,9 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     # Yield requests without rate limiting; open-loop strategies apply the
     # Poisson sleep in their dispatch loop so the interval falls between
     # consecutive dispatches rather than during pre-collection.
-    async for request, is_warmup in generator:
-        yield request, is_warmup
+    async with aclosing(generator):
+        async for request, is_warmup in generator:
+            yield request, is_warmup
 
 
 def _log_warmup_handoff(args: Arguments) -> None:
@@ -127,6 +159,8 @@ def _log_warmup_handoff(args: Arguments) -> None:
     parallel = args.parallel
     warmup_count = args.warmup_count
 
+    if args.exclude_warmup_overlap and warmup_count > 0:
+        return  # The opening cohort is excluded until the last warmup finishes.
     if parallel <= 1 or warmup_count >= parallel:
         return
 

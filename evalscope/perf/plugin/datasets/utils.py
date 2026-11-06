@@ -158,6 +158,7 @@ def gen_prompt_decode_to_target_len(
     max_retry: int = 10,
     add_special_tokens: bool = False,
     allowed_tokens: np.ndarray = None,
+    rng: Optional[np.random.RandomState] = None,
 ) -> Tuple[str, List[int], int]:
     """
     Ensure decoded-then-encoded prompt length matches the target token length.
@@ -176,8 +177,10 @@ def gen_prompt_decode_to_target_len(
         if len(allowed_tokens) == 0:
             allowed_tokens = np.arange(vocab_size)
 
+    random = np.random if rng is None else rng
+
     def fill(size: int) -> List[int]:
-        return allowed_tokens[np.random.randint(0, len(allowed_tokens), size=size)].tolist()
+        return allowed_tokens[random.randint(0, len(allowed_tokens), size=size)].tolist()
 
     return converge_to_token_len(
         tokenizer=tokenizer,

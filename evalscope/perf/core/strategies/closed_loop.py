@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, AsyncIterator, Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -22,14 +22,20 @@ async def _send_request(
     queue: asyncio.Queue,
     client: 'AioHttpClient',
     track_gpu_memory: bool = False,
-    on_send: Optional[Callable[[], None]] = None,
+    on_send: Optional[Callable[[], Optional[bool]]] = None,
+    on_warmup_complete: Optional[Callable[[], None]] = None,
 ) -> None:
     async with semaphore:
         # Fired when the request actually goes out, not when its task was created.
-        if on_send is not None:
-            on_send()
+        is_transition = on_send() if on_send is not None else False
+        if is_transition is None:
+            return
         benchmark_data = await client.post(request)
+        if is_warmup and on_warmup_complete is not None:
+            on_warmup_complete()
     benchmark_data.is_warmup = is_warmup
+    if is_transition:
+        benchmark_data.is_transition = True
     if track_gpu_memory:
         benchmark_data.update_gpu_usage()
     await queue.put(benchmark_data)
@@ -68,10 +74,27 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         self._request_generator = request_generator
 
     async def run(self) -> None:
-        requests = await self._collect_requests(self._request_generator)
-        await self._run_phase(requests, duration=self.args.duration)
+        if not self.args.exclude_warmup_overlap or self.args.warmup_count == 0:
+            requests = await self._collect_requests(self._request_generator)
+            await self._run_phase(requests, duration=self.args.duration)
+            return
 
-    async def _run_phase(self, requests: List[Tuple[dict, bool]], duration: Optional[float] = None) -> None:
+        requests = []
+        try:
+            async for item in self._request_generator:
+                requests.append(item)
+                if len(requests) >= self.args.total_count:
+                    break
+            await self._run_phase(requests, duration=self.args.duration, replacements=self._request_generator)
+        finally:
+            await self._request_generator.aclose()
+
+    async def _run_phase(
+        self,
+        requests: List[Tuple[dict, bool]],
+        duration: Optional[float] = None,
+        replacements: Optional[AsyncIterator[Tuple[dict, bool]]] = None,
+    ) -> None:
         """Dispatch ``(request, is_warmup)`` items in order and await completion.
 
         When ``args.rate`` is configured, request pacing uses absolute-time
@@ -108,6 +131,13 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             target_times = delay_ts + time.perf_counter()
 
         deadline: Optional[float] = None
+        deadline_timer: Optional[asyncio.TimerHandle] = None
+        measurement_closed = asyncio.Event()
+        send_progress = asyncio.Event()
+
+        def _close_measurement() -> None:
+            measurement_closed.set()
+            send_progress.set()
 
         def _arm_deadline() -> None:
             """Start the timed window on the first measured request that goes out.
@@ -116,14 +146,82 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             semaphore, so it queues measured tasks while warmup still holds every
             slot; arming on dispatch would start the clock at ~t0.
             """
-            nonlocal deadline
+            nonlocal deadline, deadline_timer
             if deadline is None and duration is not None:
                 deadline = self._compute_deadline(duration)
+                if exclude_overlap:
+                    deadline_timer = asyncio.get_running_loop().call_later(
+                        max(0, deadline - time.perf_counter()), _close_measurement
+                    )
+
+        exclude_overlap = replacements is not None
+        remaining_warmup = sum(is_warmup for _, is_warmup in requests) if exclude_overlap else 0
+        measured = 0
+        pending_candidates = 0
+
+        def _measurement_closed() -> bool:
+            return (
+                measurement_closed.is_set()
+                or measured >= self.args.number
+                or (deadline is not None and time.perf_counter() >= deadline)
+            )
+
+        def _classify_send() -> Optional[bool]:
+            nonlocal measured, pending_candidates
+            if exclude_overlap:
+                pending_candidates -= 1
+                send_progress.set()
+            if remaining_warmup:
+                return True
+            if exclude_overlap and _measurement_closed():
+                return None
+            measured += 1
+            _arm_deadline()
+            if exclude_overlap and _measurement_closed():
+                _close_measurement()
+            return False
+
+        def _finish_warmup() -> None:
+            nonlocal remaining_warmup
+            remaining_warmup -= 1
+
+        async def _dispatch_items() -> AsyncIterator[Tuple[dict, bool]]:
+            nonlocal in_flight
+            for item in requests:
+                yield item
+            if replacements is None:
+                return
+            while not _measurement_closed():
+                # Already queued candidates can still fill the measured quota.
+                if pending_candidates >= self.args.number - measured:
+                    send_progress.clear()
+                    await send_progress.wait()
+                    continue
+                if len(in_flight) >= max_in_flight:
+                    done, in_flight = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+                    await asyncio.gather(*done)
+                    continue
+                replacement = asyncio.ensure_future(anext(replacements))
+                closed = asyncio.create_task(measurement_closed.wait())
+                try:
+                    await asyncio.wait((replacement, closed), return_when=asyncio.FIRST_COMPLETED)
+                    if _measurement_closed():
+                        return
+                    item = replacement.result()
+                except StopAsyncIteration:
+                    return
+                finally:
+                    replacement.cancel()
+                    closed.cancel()
+                    await asyncio.gather(replacement, closed, return_exceptions=True)
+                yield item
 
         dispatched = 0
-        all_tasks: set[asyncio.Task] = set()
+        last_target = None
         try:
-            for i, (request, is_warmup) in enumerate(requests):
+            async for request, is_warmup in _dispatch_items():
+                if exclude_overlap and not is_warmup and _measurement_closed():
+                    break
                 # Duration cap: stop dispatching once the deadline is hit.  It is
                 # ``None`` until a measured request has been sent, so warmup is exempt.
                 if deadline is not None and time.perf_counter() >= deadline:
@@ -137,7 +235,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 # Cap the sleep at the remaining time-to-deadline so we don't sleep
                 # past the cancellation point.
                 if target_times is not None:
-                    sleep_s = target_times[i] - time.perf_counter()
+                    if dispatched < n:
+                        last_target = target_times[dispatched]
+                    else:
+                        last_target += float(np.random.exponential(1.0 / rate))
+                    sleep_s = last_target - time.perf_counter()
                     if deadline is not None:
                         sleep_s = min(sleep_s, deadline - time.perf_counter())
                     if sleep_s > 0:
@@ -156,6 +258,8 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     )
                     break
 
+                if exclude_overlap and not is_warmup:
+                    pending_candidates += 1
                 task = asyncio.create_task(
                     _send_request(
                         semaphore,
@@ -164,11 +268,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                         self.queue,
                         self.client,
                         self.track_gpu_memory,
-                        on_send=None if is_warmup else _arm_deadline,
+                        on_send=None if is_warmup else _classify_send,
+                        on_warmup_complete=_finish_warmup if exclude_overlap else None,
                     )
                 )
                 in_flight.add(task)
-                all_tasks.add(task)
                 dispatched += 1
 
             # Phase barrier: wait for all in-flight requests to finish.  Even when
@@ -179,9 +283,13 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 if deadline is not None and time.perf_counter() >= deadline:
                     logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
                 await asyncio.gather(*in_flight)
+            if exclude_overlap and not _measurement_closed():
+                raise RuntimeError(f'Request source ended after {measured}/{self.args.number} measured requests.')
         finally:
-            for task in all_tasks:
+            if deadline_timer is not None:
+                deadline_timer.cancel()
+            for task in in_flight:
                 if not task.done():
                     task.cancel()
-            if all_tasks:
-                await asyncio.gather(*all_tasks, return_exceptions=True)
+            if in_flight:
+                await asyncio.gather(*in_flight, return_exceptions=True)

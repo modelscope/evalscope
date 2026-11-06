@@ -136,6 +136,9 @@ class Arguments(BaseArgument):
     non-PD benchmarks keep the usual TTFT/TPOT/ITL metric set.
     """
 
+    exclude_warmup_overlap: bool = False
+    """Exclude requests sent while warmup is still in flight (single-turn closed-loop only)."""
+
     @property
     def warmup_count(self) -> int:
         """Resolved number of warmup requests/conversations.
@@ -537,6 +540,8 @@ class Arguments(BaseArgument):
 
     @model_validator(mode='after')
     def _post_init(self) -> 'Arguments':
+        if self.exclude_warmup_overlap and (self.open_loop or self.multi_turn or self.scenario):
+            raise ValueError('--exclude-warmup-overlap requires single-turn closed-loop perf.')
         if self.prefix_count > 1:
             if self.prompt:
                 raise ValueError('--prefix-count > 1 conflicts with --prompt, which bypasses dataset generation.')
@@ -843,6 +848,11 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         default=False,
         help='Enable PD-disaggregation handoff metrics based on streaming inter-output chunk latencies.',
+    )
+    parser.add_argument(
+        '--exclude-warmup-overlap',
+        action='store_true',
+        help='Keep closed-loop handoff, record overlap requests separately, and replenish measured requests.',
     )
     parser.add_argument('--open-loop', action='store_true', default=False,
                         help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '

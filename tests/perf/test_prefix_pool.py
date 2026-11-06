@@ -338,3 +338,25 @@ def test_real_bpe_boundary_can_change_raw_prefix(tmp_path: Path) -> None:
     assert tokenizer.encode(first, add_special_tokens=False)[0] == 3
     assert tokenizer.encode(second, add_special_tokens=False)[0] == 0
     assert plugin.prefix_pool == [[0], [2]]
+
+
+def test_overlap_replenishes_random_prompts_in_same_prefix_pool(tokenizer_path: str) -> None:
+    args = _args(
+        tokenizer_path=tokenizer_path, number=4, warmup_num=2, prefix_count=2,
+        tokenize_prompt=True, exclude_warmup_overlap=True,
+    )
+    args.parallel = 2
+    np.random.seed(42)
+
+    async def collect() -> list[tuple[dict, bool]]:
+        source = get_requests(args, OpenaiPlugin(args))
+        try:
+            return [await anext(source) for _ in range(8)]
+        finally:
+            await source.aclose()
+
+    rows = asyncio.run(collect())
+    assert [warmup for _, warmup in rows] == [True, True] + [False] * 6
+    prompts = [request['prompt'] for request, _ in rows]
+    assert [prompt[:3] for prompt in prompts[6:]] == [prompt[:3] for prompt in prompts[:2]]
+    assert prompts[6:] != prompts[:2]
