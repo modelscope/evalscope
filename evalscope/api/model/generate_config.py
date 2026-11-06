@@ -46,13 +46,13 @@ class GenerateConfig(BaseModel):
     """Request timeout (in seconds)."""
 
     retries: Optional[int] = Field(default=5)
-    """Number of attempts (including the first) for the request. Only supported by OpenAI compatible models.
-
-    The off-by-one matters once a backoff ladder is in play: cost models built from
-    `retries * retry_interval` understate the wall-clock by one interval."""
+    """Number of attempts (including the first) for the request. Only supported by OpenAI compatible models."""
 
     retry_interval: Optional[int] = Field(default=10)
-    """Retry interval between retries (in seconds). Only supported by OpenAI compatible models."""
+    """Base retry interval in seconds. OpenAI-compatible chat requests use exponential backoff
+    capped at 60 seconds, with numeric Retry-After headers as a minimum wait even when this
+    interval is zero. Total outer-retry sleeping time is limited to 300 seconds.
+    """
 
     batch_size: Optional[int] = Field(default=None)
     """Maximum number of concurrent connections to the Model API, or batch size for generation.

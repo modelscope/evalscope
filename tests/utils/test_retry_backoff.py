@@ -1,7 +1,7 @@
-"""Tests for transport-retry backoff (issue: honor Retry-After, bounded jittered backoff).
+"""Sync and async retry behavior with recorded delays and no real waits."""
+import asyncio
+from typing import Any, Optional
 
-Delays are verified with an injected sleep — no global monkeypatching and no real waits.
-"""
 import httpx
 import pytest
 from openai import AuthenticationError, RateLimitError
@@ -10,140 +10,124 @@ from evalscope.utils.function_utils import async_retry_call, retry_call
 
 
 class Recorder:
-    """Fake sleep that records delays and a callable that fails N times then succeeds."""
+    """Record attempts and sleeps while failing a specified number of times."""
 
-    def __init__(self, fail_times: int, exc_factory=None):
+    def __init__(self, fail_times: int, error: Optional[Exception] = None) -> None:
         self.fail_times = fail_times
         self.calls = 0
-        self.delays = []
-        self.exc_factory = exc_factory or (lambda: RateLimitError('limited', response=_resp(429), body=None))
+        self.delays: list[float] = []
+        self.error = error or RateLimitError('limited', response=_resp(), body=None)
 
-    def func(self, *args, **kwargs):
+    def func(self) -> str:
         self.calls += 1
         if self.calls <= self.fail_times:
-            raise self.exc_factory()
+            raise self.error
         return 'ok'
 
-    def sleep_sync(self, delay):
+    async def func_async(self) -> str:
+        return self.func()
+
+    async def sleep_async(self, delay: float) -> None:
         self.delays.append(delay)
 
-    async def sleep_async(self, delay):
-        self.delays.append(delay)
+    def run(self, async_mode: bool, **kwargs: Any) -> str:
+        if async_mode:
+            return asyncio.run(async_retry_call(self.func_async, sleep=self.sleep_async, **kwargs))
+        return retry_call(self.func, sleep=self.delays.append, **kwargs)
 
 
-def _resp(status, headers=None):
-    return httpx.Response(status_code=status, headers=headers or {}, request=httpx.Request('POST', 'http://x/v1'))
+def _resp(retry_after: Optional[str] = None) -> httpx.Response:
+    headers = {'retry-after': retry_after} if retry_after is not None else {}
+    return httpx.Response(429, headers=headers, request=httpx.Request('POST', 'http://example.test/v1'))
 
 
-def test_fixed_backoff_is_unchanged():
-    rec = Recorder(fail_times=2)
-    result = retry_call(rec.func, retries=4, sleep_interval=10, sleep=rec.sleep_sync)
+@pytest.fixture(params=[False, True], ids=['sync', 'async'])
+def async_mode(request: pytest.FixtureRequest) -> bool:
+    return request.param
 
-    assert result == 'ok'
-    assert rec.delays == [10, 10]  # flat cadence, byte-for-byte today's behaviour
+
+def test_fixed_default_has_no_total_wait_limit(async_mode: bool) -> None:
+    rec = Recorder(fail_times=4)
+    assert rec.run(async_mode, retries=5, sleep_interval=100) == 'ok'
+    assert rec.delays == [100, 100, 100, 100]
+    assert rec.calls == 5
+
+
+def test_exponential_ladder_grows_and_is_capped(async_mode: bool) -> None:
+    rec = Recorder(fail_times=5)
+    assert rec.run(async_mode, retries=6, sleep_interval=10, backoff='exponential') == 'ok'
+    assert rec.delays == [10, 20, 40, 60, 60]
+    assert rec.calls == 6
+
+
+@pytest.mark.parametrize('interval', [0, 10])
+def test_retry_after_can_exceed_backoff_cap(async_mode: bool, interval: int) -> None:
+    error = RateLimitError('limited', response=_resp('120'), body=None)
+    rec = Recorder(fail_times=2, error=error)
+    assert rec.run(async_mode, retries=3, sleep_interval=interval, backoff='exponential') == 'ok'
+    assert rec.delays == [120, 120]
     assert rec.calls == 3
 
 
-def test_exponential_ladder_grows_and_is_capped():
-    rec = Recorder(fail_times=5)
-    retry_call(
-        rec.func,
-        retries=6,
-        sleep_interval=10,
-        backoff='exponential',
-        max_sleep=60,
-        max_total_wait=None,
-        sleep=rec.sleep_sync,
-    )
-
-    # base ladder: 10, 20, 40, 60, 60 — jitter keeps each in [d/2, d)
-    for expected_base, actual in zip([10, 20, 40, 60, 60], rec.delays):
-        assert expected_base / 2 <= actual <= expected_base
+@pytest.mark.parametrize('header', [None, 'invalid', 'Wed, 21 Oct 2015 07:28:00 GMT', '-1', '5'])
+def test_retry_after_does_not_shorten_exponential_wait(async_mode: bool, header: Optional[str]) -> None:
+    error = RateLimitError('limited', response=_resp(header), body=None)
+    rec = Recorder(fail_times=2, error=error)
+    assert rec.run(async_mode, retries=3, sleep_interval=10, backoff='exponential') == 'ok'
+    assert rec.delays == [10, 20]
 
 
-def test_retry_after_header_is_honored_as_floor():
-    exc_factory = lambda: RateLimitError('limited', response=_resp(429, headers={'retry-after': '120'}), body=None)  # noqa: E731
-    rec = Recorder(fail_times=2, exc_factory=exc_factory)
-    retry_call(rec.func, retries=3, sleep_interval=10, backoff='exponential', sleep=rec.sleep_sync)
-
-    # both waits must be >= the gateway's ask, regardless of the exponential ladder
-    assert all(d >= 120 for d in rec.delays)
+def test_connection_error_without_response_uses_backoff(async_mode: bool) -> None:
+    rec = Recorder(fail_times=2, error=ConnectionError('disconnected'))
+    assert rec.run(async_mode, retries=3, sleep_interval=10, backoff='exponential') == 'ok'
+    assert rec.delays == [10, 20]
 
 
-def test_max_total_wait_gives_up_fail_closed():
+def test_total_wait_budget_preserves_original_exception(async_mode: bool) -> None:
     rec = Recorder(fail_times=99)
-    with pytest.raises(Exception):
-        retry_call(
-            rec.func,
-            retries=20,
-            sleep_interval=10,
-            backoff='exponential',
-            max_sleep=60,
-            max_total_wait=100,
-            sleep=rec.sleep_sync,
-        )
-    # gave up well before exhausting the ladder
-    assert rec.calls < 20
+    with pytest.raises(RateLimitError) as caught:
+        rec.run(async_mode, retries=20, sleep_interval=10, backoff='exponential', max_total_wait=70)
+    assert caught.value is rec.error
+    assert rec.calls == 4
+    assert rec.delays == [10, 20, 40]
 
 
-def test_non_retryable_raises_immediately_without_sleep():
-    exc_factory = lambda: AuthenticationError('bad key', response=_resp(401), body=None)  # noqa: E731
-    rec = Recorder(fail_times=99, exc_factory=exc_factory)
-    with pytest.raises(Exception):
-        retry_call(
-            rec.func,
-            retries=5,
-            sleep_interval=10,
+@pytest.mark.parametrize('budget, expected_calls, expected_delays', [(100, 1, []), (240, 3, [120, 120])])
+def test_budget_never_shortens_retry_after(
+    async_mode: bool, budget: int, expected_calls: int, expected_delays: list[float]
+) -> None:
+    error = RateLimitError('limited', response=_resp('120'), body=None)
+    rec = Recorder(fail_times=99, error=error)
+    with pytest.raises(RateLimitError) as caught:
+        rec.run(async_mode, retries=5, sleep_interval=0, backoff='exponential', max_total_wait=budget)
+    assert caught.value is error
+    assert rec.calls == expected_calls
+    assert rec.delays == expected_delays
+
+
+def test_non_retryable_error_raises_without_sleep(async_mode: bool) -> None:
+    error = AuthenticationError('bad key', response=_resp(), body=None)
+    rec = Recorder(fail_times=99, error=error)
+    with pytest.raises(AuthenticationError) as caught:
+        rec.run(
+            async_mode, retries=5, sleep_interval=10, backoff='exponential',
             no_retry_exceptions=(AuthenticationError,),
-            backoff='exponential',
-            sleep=rec.sleep_sync,
         )
-
-    assert rec.calls == 1 and rec.delays == []
-
-
-def test_async_parity_with_sync():
-    rec_sync = Recorder(fail_times=2)
-    retry_call(
-        rec_sync.func,
-        retries=3,
-        sleep_interval=10,
-        backoff='exponential',
-        sleep=rec_sync.sleep_sync,
-    )
-
-    rec_async = Recorder(fail_times=2)
-    loop_calls = []
-
-    async def fail_async(*args, **kwargs):
-        loop_calls.append(1)
-        return rec_async.func(*args, **kwargs)
-
-    async def sleep_async(delay):
-        rec_async.delays.append(delay)
-
-    async def run():
-        await async_retry_call(
-            fail_async,
-            retries=3,
-            sleep_interval=10,
-            backoff='exponential',
-            sleep=sleep_async,
-        )
-
-    import asyncio
-
-    asyncio.run(run())
-
-    # same attempt count, same ladder shape (base values), same bounds
-    assert len(loop_calls) == rec_sync.calls
-    assert rec_async.calls == rec_sync.calls
-    for sync_delay, async_delay in zip(rec_sync.delays, rec_async.delays):
-        assert async_delay / 2 <= sync_delay <= async_delay or sync_delay / 2 <= async_delay <= sync_delay
+    assert caught.value is error
+    assert rec.calls == 1
+    assert rec.delays == []
 
 
-def test_default_callers_keep_fixed_behaviour():
-    # no backoff argument -> identical to current behaviour even with the new signature
-    rec = Recorder(fail_times=3)
-    retry_call(rec.func, retries=5, sleep_interval=5, sleep=rec.sleep_sync)
-    assert rec.delays == [5, 5, 5]
+@pytest.mark.parametrize('backoff', ['fixed', 'exponential'])
+def test_zero_interval_without_header_retries_without_sleep(async_mode: bool, backoff: str) -> None:
+    rec = Recorder(fail_times=2)
+    assert rec.run(async_mode, retries=3, sleep_interval=0, backoff=backoff) == 'ok'
+    assert rec.calls == 3
+    assert rec.delays == []
+
+
+def test_fixed_mode_ignores_retry_after(async_mode: bool) -> None:
+    error = RateLimitError('limited', response=_resp('120'), body=None)
+    rec = Recorder(fail_times=2, error=error)
+    assert rec.run(async_mode, retries=3, sleep_interval=10) == 'ok'
+    assert rec.delays == [10, 10]

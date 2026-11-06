@@ -1,5 +1,4 @@
 import asyncio
-import random
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -72,9 +71,6 @@ def run_once(func: Callable[..., T]) -> Callable[..., T]:
 _DEFAULT_MAX_SLEEP = 60.0
 """Upper bound for a single exponential-backoff sleep."""
 
-_DEFAULT_MAX_TOTAL_WAIT = 300.0
-"""Upper bound for the total time one sample may spend sleeping across retries."""
-
 
 def _retry_after_seconds(e: Exception) -> Optional[float]:
     """Read a numeric ``Retry-After`` header from an API exception, or ``None``.
@@ -106,18 +102,14 @@ def _retry_delay(
     """Sleep seconds before the next retry attempt.
 
     ``fixed`` keeps today's behaviour (a flat ``sleep_interval``). ``exponential`` grows
-    with a cap, takes the gateway's ``Retry-After`` as a floor when the exception carries
-    one, and applies equal jitter so concurrent workers do not retry in lockstep — a
-    synchronized ladder would itself schedule the next 429 burst.
+    with a cap and takes the gateway's ``Retry-After`` as a floor when present.
     """
     if backoff == 'fixed':
         return sleep_interval
     exponential = min(sleep_interval * (2**attempt), max_sleep)
-    jittered = exponential / 2 + random.uniform(0, exponential / 2)
     hint = _retry_after_seconds(e)
-    # The gateway's ask is a floor applied after jitter: halving a 120s Retry-After would
-    # still arrive early. Not capped by max_sleep — a gateway that says "wait 120s" means it.
-    return max(jittered, hint) if hint is not None else jittered
+    # The server's minimum wait may exceed the exponential-backoff cap.
+    return max(exponential, hint) if hint is not None else exponential
 
 
 def retry_call(
@@ -128,7 +120,7 @@ def retry_call(
     no_retry_exceptions: Tuple[Type[Exception], ...] = (),
     backoff: Literal['fixed', 'exponential'] = 'fixed',
     max_sleep: float = _DEFAULT_MAX_SLEEP,
-    max_total_wait: Optional[float] = _DEFAULT_MAX_TOTAL_WAIT,
+    max_total_wait: Optional[float] = None,
     sleep: Callable[[float], None] = time.sleep,
     **kwargs,
 ) -> T:
@@ -142,10 +134,10 @@ def retry_call(
 
     `backoff='fixed'` (the default) sleeps the flat `sleep_interval`, exactly as before.
     `backoff='exponential'` grows the wait with a `max_sleep` cap, honors the gateway's
-    `Retry-After` header as a floor when present, and jitters so concurrent workers do not
-    retry in phase. `max_total_wait` bounds the total sleeping time of one sample across
-    all retries; when exceeded, the last exception is re-raised (fail-closed). `sleep` is
-    injectable for deterministic tests.
+    `Retry-After` header as a floor even when `sleep_interval` is zero. When supplied,
+    `max_total_wait` bounds total outer-retry sleeping time, excluding request execution
+    and SDK retries. If the next wait would exceed it, the last exception is re-raised.
+    `sleep` is injectable for deterministic tests.
     """
     total_attempts = 3 if retries is None else max(1, retries)
     total_wait = 0.0
@@ -157,8 +149,10 @@ def retry_call(
             raise
         except Exception as e:
             if attempt < total_attempts - 1:
-                if sleep_interval > 0:
+                if sleep_interval > 0 or backoff == 'exponential':
                     delay = _retry_delay(attempt, e, sleep_interval, backoff, max_sleep)
+                    if delay <= 0:
+                        continue
                     if max_total_wait is not None and total_wait + delay > max_total_wait:
                         logger.error(
                             f'Attempt {attempt + 1} / {total_attempts} failed: {e}. '
@@ -181,7 +175,7 @@ async def async_retry_call(
     no_retry_exceptions: Tuple[Type[Exception], ...] = (),
     backoff: Literal['fixed', 'exponential'] = 'fixed',
     max_sleep: float = _DEFAULT_MAX_SLEEP,
-    max_total_wait: Optional[float] = _DEFAULT_MAX_TOTAL_WAIT,
+    max_total_wait: Optional[float] = None,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     **kwargs,
 ) -> T:
@@ -206,8 +200,10 @@ async def async_retry_call(
             raise
         except Exception as e:
             if attempt < total_attempts - 1:
-                if sleep_interval > 0:
+                if sleep_interval > 0 or backoff == 'exponential':
                     delay = _retry_delay(attempt, e, sleep_interval, backoff, max_sleep)
+                    if delay <= 0:
+                        continue
                     if max_total_wait is not None and total_wait + delay > max_total_wait:
                         logger.error(
                             f'Attempt {attempt + 1} / {total_attempts} failed: {e}. '
