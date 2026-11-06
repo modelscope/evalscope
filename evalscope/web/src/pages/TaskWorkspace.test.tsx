@@ -182,6 +182,28 @@ describe('Task workspace', () => {
     expect(document.getElementById('eval-limit')).toHaveValue(0.25)
     expect(document.getElementById('connection-apiKey')).toHaveValue('fake-key-for-tests')
   })
+  it('submits Extra Config from the current page while keeping it out of evaluation templates', () => {
+    mount()
+    fillConnection()
+    change('eval-datasets', 'gsm8k')
+    fireEvent.click(screen.getByRole('button', { name: 'More Parameters' }))
+    const datasetArgs = '{"gsm8k":{"few_shot_num":4}}'
+    const extraConfig = '{"agent_config":{"max_steps":20},"dataset_args":{"gsm8k":{"few_shot_num":9}}}'
+    change('eval-datasetArgs', datasetArgs)
+    change('eval-extraConfig', extraConfig)
+    save('Agent run', 'Evaluation template')
+    expect(document.getElementById('eval-extraConfig')).toHaveValue(extraConfig)
+    expect(readWorkspace()).toMatchObject({
+      ok: true,
+      value: { evalTemplates: [{ name: 'Agent run', value: { datasets: 'gsm8k', datasetArgs, extraConfig: '' } }] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /More Parameters.*Extra Config entered/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start Evaluation' }))
+    expect(submitEvalTask).toHaveBeenCalledWith(
+      expect.objectContaining({ agent_config: { max_steps: 20 }, dataset_args: { gsm8k: { few_shot_num: 4 } } }),
+      expect.any(String),
+    )
+  })
   it('keeps Local performance settings from being used for Evaluation', () => {
     mount()
     fillConnection()

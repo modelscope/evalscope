@@ -40,20 +40,13 @@ export interface EvalDraft {
   sandboxPool: string
 }
 
-/**
- * Top-level TaskConfig keys the Extra Config field may set. Each is a real
- * TaskConfig field with no dedicated form input, so this field is the only way
- * to reach them from the console (e.g. agent_config for tau-bench / widesearch).
- * Keys outside this list are ignored rather than forwarded, since TaskConfig
- * rejects unknown fields.
- */
-export const EXTRA_CONFIG_TOP_LEVEL_KEYS = [
+/** TaskConfig keys allowed in Extra Config; unknown keys are ignored. */
+const EXTRA_CONFIG_TOP_LEVEL_KEYS = [
   'agent_config',
   'judge',
   'sandbox',
   'generation_config',
   'model_args',
-  'dataset_args',
   'eval_config',
 ] as const
 
@@ -116,23 +109,62 @@ export function validateConnection(connection: ModelConnection): FieldErrors {
   return errors
 }
 
+function validateExtraConfig(
+  rawText: string,
+): { ok: true; value: Record<string, unknown> } | { ok: false; messageKey: string } {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawText)
+  } catch {
+    return { ok: false, messageKey: FORM_MESSAGE_KEYS.extraConfigInvalidJson }
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { ok: false, messageKey: FORM_MESSAGE_KEYS.extraConfigInvalidStructure }
+  }
+
+  const raw = parsed as Record<string, unknown>
+  const value: Record<string, unknown> = {}
+  for (const key of EXTRA_CONFIG_TOP_LEVEL_KEYS) {
+    if (!(key in raw)) continue
+    const item = raw[key]
+    const nullable = key === 'agent_config' || key === 'sandbox' || key === 'eval_config'
+    if (item === null ? !nullable : typeof item !== 'object' || Array.isArray(item)) {
+      return {
+        ok: false,
+        messageKey: key === 'eval_config'
+          ? FORM_MESSAGE_KEYS.extraConfigEvalConfigObject
+          : FORM_MESSAGE_KEYS.extraConfigInvalidStructure,
+      }
+    }
+    value[key] = item
+  }
+  return { ok: true, value }
+}
+
 export function validateEvalDraft(draft: EvalDraft): FieldErrors {
+  const extra = draft.extraConfig.trim() ? validateExtraConfig(draft.extraConfig) : undefined
+  const overrides = extra?.ok ? extra.value : {}
+  const validateGeneration = !('generation_config' in overrides)
+  const validateSandbox = draft.sandboxEnabled && !('sandbox' in overrides)
   const errors = collectNumericErrors([
     { id: 'batchSize', value: draft.batchSize, min: 1, step: 1 },
     { id: 'repeats', value: draft.repeats, min: 1, step: 1 },
-    { id: 'timeout', value: draft.timeout, min: 0 },
-    { id: 'temperature', value: draft.temperature, min: 0, max: 2 },
-    { id: 'topP', value: draft.topP, min: 0, max: 1 },
-    { id: 'maxTokens', value: draft.maxTokens, min: 1, step: 1 },
-    { id: 'topK', value: draft.topK, step: 1 },
-    { id: 'reasoningTokens', value: draft.reasoningTokens, min: 1, step: 1 },
-    ...(draft.sandboxEnabled ? [{ id: 'sandboxPool', value: draft.sandboxPool, min: 1, step: 1 }] : []),
+    ...(validateGeneration ? [
+      { id: 'timeout', value: draft.timeout, min: 0 },
+      { id: 'temperature', value: draft.temperature, min: 0, max: 2 },
+      { id: 'topP', value: draft.topP, min: 0, max: 1 },
+      { id: 'maxTokens', value: draft.maxTokens, min: 1, step: 1 },
+      { id: 'topK', value: draft.topK, step: 1 },
+      { id: 'reasoningTokens', value: draft.reasoningTokens, min: 1, step: 1 },
+    ] : []),
+    ...(validateSandbox ? [{ id: 'sandboxPool', value: draft.sandboxPool, min: 1, step: 1 }] : []),
   ])
   if (!draft.datasets.split(',').some((name) => name.trim())) errors.datasets = FORM_MESSAGE_KEYS.required
   const limitError = validateDatasetLimit(draft.limit)
   if (limitError) errors.limit = limitError
-  if (draft.timeout.trim() && Number(draft.timeout) <= 0) errors.timeout = FORM_MESSAGE_KEYS.numericBelowMin
-  if (draft.sandboxEnabled && draft.sandboxEngine === 'docker' && draft.sandboxUrl.trim()) {
+  if (validateGeneration && draft.timeout.trim() && Number(draft.timeout) <= 0)
+    errors.timeout = FORM_MESSAGE_KEYS.numericBelowMin
+  if (validateSandbox && draft.sandboxEngine === 'docker' && draft.sandboxUrl.trim()) {
     const error = validateApiUrl(draft.sandboxUrl, false)
     if (error) errors.sandboxUrl = error
   }
@@ -140,13 +172,7 @@ export function validateEvalDraft(draft: EvalDraft): FieldErrors {
     const result = validateDatasetArgs(draft.datasetArgs)
     if (!result.ok) errors.datasetArgs = result.messageKey
   }
-  if (draft.extraConfig.trim()) {
-    // Same JSON-object contract as dataset_args: every recognized top-level
-    // TaskConfig key it may set (agent_config, generation_config, ...) is itself
-    // an object, so the shared validator fits.
-    const result = validateDatasetArgs(draft.extraConfig)
-    if (!result.ok) errors.extraConfig = result.messageKey
-  }
+  if (extra && !extra.ok) errors.extraConfig = extra.messageKey
   return errors
 }
 
@@ -228,16 +254,10 @@ export function buildEvalPayload(draft: EvalDraft): Record<string, unknown> {
     if (draft.sandboxPool.trim()) sandbox.pool_size = Number(draft.sandboxPool)
     payload.sandbox = sandbox
   }
-  // Extra Config hoists recognized top-level TaskConfig keys to the payload,
-  // overriding anything the form already built for the same key. Applied last
-  // so the JSON wins; unrecognized keys are dropped (TaskConfig forbids them).
+  // Recognized Extra Config keys override form-built values wholesale.
   if (draft.extraConfig.trim()) {
-    const parsed = validateDatasetArgs(draft.extraConfig)
-    if (parsed.ok) {
-      for (const key of EXTRA_CONFIG_TOP_LEVEL_KEYS) {
-        if (key in parsed.value) payload[key] = parsed.value[key]
-      }
-    }
+    const parsed = validateExtraConfig(draft.extraConfig)
+    if (parsed.ok) Object.assign(payload, parsed.value)
   }
   return payload
 }

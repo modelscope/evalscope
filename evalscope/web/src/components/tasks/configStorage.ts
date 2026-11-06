@@ -87,7 +87,7 @@ function parseConnection(value: unknown): ModelConnection {
 function parseEval(value: unknown): EvalDraft {
   const draft = parseDraft(value, DEFAULT_EVAL)
   if (!['docker', 'volcengine'].includes(draft.sandboxEngine)) throw new Error('Invalid engine')
-  return draft
+  return withoutExtraConfig(draft)
 }
 
 function parsePresets<T>(value: unknown, parse: (value: unknown) => T, allowCredentialChoice = false): Preset<T>[] {
@@ -184,6 +184,15 @@ export function readWorkspace(): StorageResult<Workspace> {
   }
 }
 
+/** Extra Config can carry credentials in arbitrary values and is kept in memory only. */
+export function withoutExtraConfig(draft: EvalDraft): EvalDraft {
+  return { ...draft, extraConfig: '' }
+}
+
+function exportableEvalTemplate(entry: Preset<EvalDraft>): Preset<EvalDraft> {
+  return { ...entry, value: withoutExtraConfig(entry.value) }
+}
+
 export function storageSnapshot(workspace: Workspace): Workspace {
   const selected = workspace.connections.find((entry) => entry.id === workspace.selectedConnection)
   return {
@@ -192,6 +201,8 @@ export function storageSnapshot(workspace: Workspace): Workspace {
       ...entry,
       value: { ...entry.value, apiKey: entry.rememberKey ? entry.value.apiKey : '' },
     })),
+    eval: withoutExtraConfig(workspace.eval),
+    evalTemplates: workspace.evalTemplates.map(exportableEvalTemplate),
     connection: { ...workspace.connection, apiKey: '' },
     restoreSavedKey: Boolean(
       selected?.rememberKey &&
@@ -226,7 +237,7 @@ export function exportLibrary(workspace: ConfigLibrary, includeKeys: boolean): s
         rememberKey: includeKeys && entry.rememberKey,
         value: { ...entry.value, apiKey: includeKeys && entry.rememberKey ? entry.value.apiKey : '' },
       })),
-      evalTemplates: workspace.evalTemplates,
+      evalTemplates: workspace.evalTemplates.map(exportableEvalTemplate),
       perfTemplates: workspace.perfTemplates,
     },
     null,
