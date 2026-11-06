@@ -166,7 +166,10 @@ async def _run_async(
             },
         )
 
+        messages = []
+
         async def run_in_environment() -> str:
+            nonlocal messages
             session.recorder.record_run_start(
                 framework=config.framework,
                 cmd_summary=runner_cls.__name__,
@@ -181,6 +184,15 @@ async def _run_async(
                     task=task,
                     env=env,
                     bridge=session.endpoint_view(for_env=env),
+                )
+                messages = session.recorder.messages()
+                result.final_answer = next(
+                    (
+                        message.text
+                        for message in reversed(messages)
+                        if isinstance(message, ChatMessageAssistant) and message.text
+                    ),
+                    '',
                 )
                 run_returncode = int(result.metrics.get('returncode', 0))
             except RunnerTimeoutError as exc:
@@ -218,7 +230,6 @@ async def _run_async(
         # ``config.environment`` is ``None``) still record a meaningful
         # source on the trace.
         trace.environment = getattr(env, 'name', None) or config.environment
-        messages = session.recorder.messages()
 
         # For external agents without a post_run_hook, prefer the last
         # assistant message captured by the bridge (clean model text) over

@@ -14,6 +14,7 @@ import pytest
 
 from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external import ExternalAgentConfig
+from evalscope.agent.external.runners.mock import MockAgentRunner
 from evalscope.api.agent import AgentEnvironment, EventType
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
@@ -60,6 +61,7 @@ class _ProbingAdapter(AgentLoopAdapter):
         adapter.max_steps = AgentLoopAdapter.max_steps_default
         adapter._captured_env = None  # type: ignore[attr-defined]
         adapter._captured_runner_output = None  # type: ignore[attr-defined]
+        adapter._captured_final_answer = None  # type: ignore[attr-defined]
         adapter._provided_env = env  # type: ignore[attr-defined]
         return adapter
 
@@ -77,14 +79,24 @@ class _ProbingAdapter(AgentLoopAdapter):
         # after the runner returns).
         self._captured_env = env  # type: ignore[attr-defined]
         self._captured_runner_output = run_result.output  # type: ignore[attr-defined]
+        self._captured_final_answer = run_result.final_answer  # type: ignore[attr-defined]
         return f'PATCH<{run_result.output}>'
 
 
-def test_agent_loop_adapter_routes_external_config_through_bridge():
+def test_agent_loop_adapter_routes_external_config_through_bridge(monkeypatch):
     """When ``agent_config.mode == 'external'`` the AgentLoop branch is
     skipped and the bridge stack runs instead, with the adapter's env
     flowing through and the hook's return value becoming the final text."""
     expected = 'mocked-llm-response'
+    raw_stdout = '{"response":"protocol noise"}'
+    original_run = MockAgentRunner.run
+
+    async def run_with_json_stdout(self, *args, **kwargs):
+        result = await original_run(self, *args, **kwargs)
+        result.output = raw_stdout
+        return result
+
+    monkeypatch.setattr(MockAgentRunner, 'run', run_with_json_stdout)
     model = _build_mock_model(expected)
     sample = Sample(input='ignored — overridden by build_initial_messages', id=7)
     env = LocalAgentEnvironment()
@@ -99,12 +111,13 @@ def test_agent_loop_adapter_routes_external_config_through_bridge():
 
     # Hook ran with the same env we provided (per-sample sandbox flowed through).
     assert adapter._captured_env is env  # type: ignore[attr-defined]
-    # Runner stdout is the mock LLM's text (proves bridge → model → bridge).
-    assert adapter._captured_runner_output == expected  # type: ignore[attr-defined]
+    # The hook retains raw stdout for diagnostics and receives clean bridge text separately.
+    assert adapter._captured_runner_output == raw_stdout  # type: ignore[attr-defined]
+    assert adapter._captured_final_answer == expected  # type: ignore[attr-defined]
     # InferenceResult.output text is the *hook's* return, not the runner's stdout.
     assert isinstance(result, InferenceResult)
     assert isinstance(result.output, ModelOutput)
-    assert result.output.choices[0].message.text == f'PATCH<{expected}>'
+    assert result.output.choices[0].message.text == f'PATCH<{raw_stdout}>'
 
     # Trace records the external framework, not 'native' / 'function_calling'.
     assert result.trace is not None

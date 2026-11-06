@@ -325,26 +325,14 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
 
     def _extract_final_answer(self, result, strategy: AgentStrategy) -> str:
         answer = strategy.extract_final_answer(result)
-        if not answer:
-            # Fall back to the last assistant turn: a model that stopped calling
-            # tools without using the sentinel still produced an answer.
-            for message in reversed(result.messages):
-                if getattr(message, 'role', '') == 'assistant':
-                    answer = getattr(message, 'text', '') or ''
-                    if answer:
-                        break
         return extract_final_answer(answer or '')
 
     def extract_answer(self, prediction: str, task_state) -> str:
         return extract_final_answer(prediction or '')
 
     async def _external_extract_prediction(self, env, run_result, sample: Sample) -> str:
-        """Recover the answer when an external CLI agent drove the task.
-
-        External runners do not implement the sentinel protocol, so the answer
-        is taken from whatever text the runner reported.
-        """
-        return extract_final_answer(getattr(run_result, 'output', '') or '')
+        """Recover the final assistant text captured by the external bridge."""
+        return extract_final_answer(getattr(run_result, 'final_answer', '') or '')
 
     # ------------------------------------------------------------------
     # Scoring

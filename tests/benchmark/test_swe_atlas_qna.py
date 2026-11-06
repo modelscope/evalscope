@@ -15,11 +15,14 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+from evalscope.agent.external.runners import AgentRunResult
+from evalscope.agent.strategies.function_calling import FunctionCallingStrategy
 from evalscope.agent.tools.bash import BASH_TOOL_INFO
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import CaseVerdict, JudgeContext
+from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
@@ -111,6 +114,59 @@ def test_extract_final_answer_reads_between_sentinels() -> None:
 def test_extract_final_answer_without_tag_returns_text() -> None:
     assert extract_final_answer('  just prose, no sentinel  ') == 'just prose, no sentinel'
     assert extract_final_answer('') == ''
+
+
+def _native_result(terminal_message: ChatMessageAssistant) -> SimpleNamespace:
+    return SimpleNamespace(
+        messages=[ChatMessageAssistant(content='I will inspect the repository.'), terminal_message],
+        final_output=SimpleNamespace(message=terminal_message),
+    )
+
+
+@pytest.mark.parametrize(
+    'tool_name,arguments',
+    [('submit', {'answer': ''}), ('bash', {'command': 'pwd'})],
+    ids=['empty_submit', 'max_steps_tool_call'],
+)
+def test_empty_native_answer_does_not_recover_earlier_narration(tmp_path, tool_name, arguments) -> None:
+    adapter = make_adapter(tmp_path)
+    call = ToolCall(id='terminal-call', function=ToolFunction(name=tool_name, arguments=arguments))
+    result = _native_result(ChatMessageAssistant(content='', tool_calls=[call]))
+
+    answer = adapter._extract_final_answer(result, FunctionCallingStrategy())
+
+    assert answer == ''
+
+
+def test_native_answer_uses_terminal_prose(tmp_path) -> None:
+    adapter = make_adapter(tmp_path)
+    result = _native_result(
+        ChatMessageAssistant(content='<<FINAL_ANSWER>>\nThe cache is in foo.py.\n<<FINAL_ANSWER>>')
+    )
+
+    answer = adapter._extract_final_answer(result, FunctionCallingStrategy())
+
+    assert answer == 'The cache is in foo.py.'
+
+
+@pytest.mark.parametrize(
+    'runner_stdout',
+    [
+        '{"type":"text","text":"opencode protocol output"}',
+        '{"response":"gemini protocol output"}',
+    ],
+    ids=['opencode_json', 'gemini_json'],
+)
+def test_external_answer_uses_bridge_text_instead_of_json_stdout(tmp_path, runner_stdout: str) -> None:
+    adapter = make_adapter(tmp_path)
+    run_result = AgentRunResult(
+        output=runner_stdout,
+        final_answer='<<FINAL_ANSWER>>\nThe cache is in foo.py.\n<<FINAL_ANSWER>>',
+    )
+
+    answer = asyncio.run(adapter._external_extract_prediction(None, run_result, Sample(input='q')))
+
+    assert answer == 'The cache is in foo.py.'
 
 
 # ---------------------------------------------------------------------------
