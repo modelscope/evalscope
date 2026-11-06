@@ -3,18 +3,21 @@
 import asyncio
 import json
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Iterator, Optional
 
 import pytest
 
+from evalscope.perf import benchmark as benchmark_module
 from evalscope.perf.benchmark import get_requests
 from evalscope.perf.core.pipeline import run_benchmark_pipeline
+from evalscope.perf.core.strategies import closed_loop as closed_loop_module
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from evalscope.perf.utils.benchmark_util import BenchmarkData
-from tests.perf.test_closed_loop_warmup_handoff import _make_args
+from tests.perf.test_closed_loop_warmup_handoff import _make_args, _run, _stream
 
 
 @pytest.mark.parametrize(('enabled', 'warmup', 'duration', 'expected'), [
@@ -91,3 +94,111 @@ def test_overlap_result_partition_and_replenishment(
 def test_overlap_rejects_unsupported_modes(mode: str) -> None:
     with pytest.raises(ValueError, match='requires single-turn closed-loop'):
         _make_args(exclude_warmup_overlap=True, **{mode: True})
+
+
+def test_zero_measured_requests_still_runs_warmup() -> None:
+    args = _make_args(number=0, parallel=2, warmup_num=2, exclude_warmup_overlap=True)
+    client = _run(args, _stream(warmup=2, measured=0))
+    assert [event['request']['id'] for event in client.events] == [0, 1]
+
+
+def test_random_replenishment_runs_off_event_loop_thread(monkeypatch: pytest.MonkeyPatch) -> None:
+    main_thread = threading.get_ident()
+    generation_threads: list[int] = []
+    replacement_started = threading.Event()
+    allow_replacement = threading.Event()
+
+    class Dataset:
+
+        def __init__(self, args: Any) -> None:
+            pass
+
+        def supports_parallel_message_generation(self, total_count: int) -> bool:
+            return False
+
+        def build_messages(self) -> Iterator[str]:
+            yield from ['initial-a', 'initial-b']
+
+        def build_messages_parallel(self, total_count: int, workers: int, rng: Any = None) -> list[str]:
+            assert rng is not None
+            generation_threads.append(threading.get_ident())
+            replacement_started.set()
+            assert allow_replacement.wait(timeout=2)
+            return ['replacement']
+
+    monkeypatch.setattr(benchmark_module.DatasetRegistry, 'get_class', lambda _: Dataset)
+    args = _make_args(
+        number=1, parallel=1, warmup_num=1, dataset='random', prompt=None,
+        prefix_count=1, exclude_warmup_overlap=True,
+    )
+    api = SimpleNamespace(build_request=lambda messages: {'prompt': messages})
+
+    async def run() -> None:
+        stream = get_requests(args, api)
+        try:
+            assert (await anext(stream))[0] == {'prompt': 'initial-a'}
+            await asyncio.wait_for(asyncio.to_thread(replacement_started.wait), timeout=1)
+            assert (await anext(stream))[0] == {'prompt': 'initial-b'}
+            allow_replacement.set()
+            assert (await anext(stream))[0] == {'prompt': 'replacement'}
+        finally:
+            allow_replacement.set()
+            await stream.aclose()
+
+    asyncio.run(run())
+    assert generation_threads and generation_threads[0] != main_thread
+
+
+def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    gather_sizes: list[int] = []
+    real_gather = asyncio.gather
+
+    def recording_gather(*aws: Any, **kwargs: Any) -> Any:
+        gather_sizes.append(len(aws))
+        return real_gather(*aws, **kwargs)
+
+    monkeypatch.setattr(closed_loop_module.asyncio, 'gather', recording_gather)
+    args = _make_args(
+        number=1, parallel=2, warmup_num=1, exclude_warmup_overlap=True,
+        in_flight_task_multiplier=2,
+    )
+
+    async def replacements() -> AsyncIterator[tuple[dict, bool]]:
+        while True:
+            yield {'id': 'replacement'}, False
+
+    async def run() -> None:
+        release_warmup = asyncio.Event()
+        enough_transitions = asyncio.Event()
+        transition_count = 0
+
+        class Client:
+
+            def __init__(self) -> None:
+                self.index = 0
+
+            async def post(self, request: dict[str, Any]) -> SimpleNamespace:
+                nonlocal transition_count
+                index = self.index
+                self.index += 1
+                if index == 0:
+                    await release_warmup.wait()
+                else:
+                    await asyncio.sleep(0)
+                    transition_count += 1
+                    if transition_count >= 20:
+                        enough_transitions.set()
+                return SimpleNamespace(is_warmup=False)
+
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, None)
+        phase = asyncio.create_task(strategy._run_phase(
+            [({'id': 'warmup'}, True), ({'id': 'initial'}, False)],
+            replacements=replacements(),
+        ))
+        await asyncio.wait_for(enough_transitions.wait(), timeout=2)
+        release_warmup.set()
+        await asyncio.wait_for(phase, timeout=2)
+
+    asyncio.run(run())
+    assert max(gather_sizes) <= args.parallel * args.in_flight_task_multiplier

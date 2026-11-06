@@ -177,10 +177,9 @@ class ClosedLoopStrategy(BenchmarkStrategy):
 
         dispatched = 0
         last_target = None
-        all_tasks: set[asyncio.Task] = set()
         try:
             async for request, is_warmup in _dispatch_items():
-                if exclude_overlap and _measurement_closed():
+                if exclude_overlap and not is_warmup and _measurement_closed():
                     break
                 # Duration cap: stop dispatching once the deadline is hit.  It is
                 # ``None`` until a measured request has been sent, so warmup is exempt.
@@ -231,7 +230,6 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     )
                 )
                 in_flight.add(task)
-                all_tasks.add(task)
                 dispatched += 1
 
             # Phase barrier: wait for all in-flight requests to finish.  Even when
@@ -245,8 +243,8 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             if exclude_overlap and not _measurement_closed():
                 raise RuntimeError(f'Request source ended after {measured}/{self.args.number} measured requests.')
         finally:
-            for task in all_tasks:
+            for task in in_flight:
                 if not task.done():
                     task.cancel()
-            if all_tasks:
-                await asyncio.gather(*all_tasks, return_exceptions=True)
+            if in_flight:
+                await asyncio.gather(*in_flight, return_exceptions=True)

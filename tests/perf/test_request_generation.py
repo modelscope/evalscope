@@ -253,10 +253,10 @@ def test_random_dataset_auto_parallel_requires_large_long_prompt_work() -> None:
 
 
 def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: MonkeyPatch) -> None:
-    def fake_gen_prompt(tokenizer, token_sequence, target_token_len, add_special_tokens, allowed_tokens):
-        """Return a prompt that embeds the current numpy random state so we can
-        verify that seeds are applied before each item."""
-        prompt = f'{target_token_len}-{np.random.randint(0, 100000)}'
+    def fake_gen_prompt(tokenizer, token_sequence, target_token_len, add_special_tokens, allowed_tokens, rng=None):
+        """Return a prompt that embeds the item-local random sequence."""
+        assert rng is not None
+        prompt = f'{target_token_len}-{rng.randint(0, 100000)}'
         return prompt, token_sequence, 0
 
     monkeypatch.setattr(
@@ -287,3 +287,22 @@ def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: Mon
     ]
 
     assert serial == expected
+
+
+def test_random_parallel_generation_local_rng_is_reproducible_and_isolated() -> None:
+    args = _make_args(
+        dataset='random', number=4, num_workers=1, min_prompt_length=4,
+        max_prompt_length=4, tokenize_prompt=True, tokenizer_path='test-tokenizer',
+    )
+    plugin = _make_random_plugin(args)
+    np.random.seed(123)
+    state_before = np.random.get_state()
+
+    first = plugin.build_messages_parallel(4, workers=1, rng=np.random.RandomState(7))
+    second = plugin.build_messages_parallel(4, workers=1, rng=np.random.RandomState(7))
+
+    assert first == second
+    state_after = np.random.get_state()
+    assert state_after[0] == state_before[0]
+    np.testing.assert_array_equal(state_after[1], state_before[1])
+    assert state_after[2:] == state_before[2:]

@@ -1,6 +1,8 @@
 import asyncio
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
+import numpy as np
+
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.metrics_consumer import connect_test
@@ -88,33 +90,51 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         count = 0
         dataset_index = 0
         num_messages = len(dataset_messages)
+        replenish_random = args.exclude_warmup_overlap and warmup_count > 0 and args.dataset == 'random'
+        replenishment_task: Optional[asyncio.Task] = None
+        replenishment_index = 0
 
         # Guard against an infinite loop: if build_request returns None for a whole
         # pass over the dataset, no request will ever be produced, so abort instead
         # of spinning forever (count would never advance).
         consecutive_skips = 0
 
-        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
-            if args.exclude_warmup_overlap and count >= total_count and dataset_index == 0 and args.dataset == 'random':
-                # Keep the existing prefix pool, but draw new suffixes for replenishment.
-                dataset_messages = message_generator.build_messages_parallel(
-                    total_count=max(args.parallel, args.prefix_count), workers=1
-                )
-                num_messages = len(dataset_messages)
-            messages = dataset_messages[dataset_index]
-            request = api_plugin.build_request(messages)
-            if request is not None:
-                yield request, count < warmup_count
-                count += 1
-                consecutive_skips = 0
-            else:
-                consecutive_skips += 1
-                if consecutive_skips >= num_messages:
-                    raise ValueError(
-                        f'{type(api_plugin).__name__}.build_request() returned None for every one of '
-                        f'the {num_messages} dataset message(s); no request could be generated.'
+        try:
+            while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+                if replenish_random and replenishment_task is None:
+                    # Keep the existing prefix pool, but draw new suffixes for replenishment.
+                    rng = np.random.RandomState(None if args.seed is None else args.seed + replenishment_index)
+                    replenishment_index += 1
+                    replenishment_task = asyncio.create_task(
+                        asyncio.to_thread(
+                            message_generator.build_messages_parallel,
+                            total_count=max(args.parallel, args.prefix_count),
+                            workers=1,
+                            rng=rng,
+                        )
                     )
-            dataset_index = (dataset_index + 1) % num_messages
+                if replenish_random and count >= total_count and dataset_index == 0:
+                    dataset_messages = await replenishment_task
+                    replenishment_task = None
+                    num_messages = len(dataset_messages)
+                messages = dataset_messages[dataset_index]
+                request = api_plugin.build_request(messages)
+                if request is not None:
+                    yield request, count < warmup_count
+                    count += 1
+                    consecutive_skips = 0
+                else:
+                    consecutive_skips += 1
+                    if consecutive_skips >= num_messages:
+                        raise ValueError(
+                            f'{type(api_plugin).__name__}.build_request() returned None for every one of '
+                            f'the {num_messages} dataset message(s); no request could be generated.'
+                        )
+                dataset_index = (dataset_index + 1) % num_messages
+        finally:
+            if replenishment_task is not None:
+                replenishment_task.cancel()
+                await asyncio.gather(replenishment_task, return_exceptions=True)
 
     # Dispatch based on arguments.
     if args.prompt:

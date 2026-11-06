@@ -96,27 +96,15 @@ def _build_one_random_message(
 
     target_token_len = len(prefix_pool[0]) + int(input_len)
 
-    if seed is not None:
-        random_state = np.random.get_state()
-        np.random.seed(seed)
-        try:
-            prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
-                tokenizer=tokenizer,
-                token_sequence=token_sequence,
-                target_token_len=target_token_len,
-                add_special_tokens=False,
-                allowed_tokens=allowed_tokens,
-            )
-        finally:
-            np.random.set_state(random_state)
-    else:
-        prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
-            tokenizer=tokenizer,
-            token_sequence=token_sequence,
-            target_token_len=target_token_len,
-            add_special_tokens=False,
-            allowed_tokens=allowed_tokens,
-        )
+    rng = np.random.RandomState(seed) if seed is not None else None
+    prompt, _, token_mismatch = gen_prompt_decode_to_target_len(
+        tokenizer=tokenizer,
+        token_sequence=token_sequence,
+        target_token_len=target_token_len,
+        add_special_tokens=False,
+        allowed_tokens=allowed_tokens,
+        rng=rng,
+    )
 
     if apply_chat_template:
         return [{'role': 'user', 'content': prompt}], token_mismatch
@@ -188,9 +176,14 @@ class RandomDatasetPlugin(DatasetPluginBase):
         token-ID lists that bypass the decode/re-encode round-trip entirely."""
         yield from self._build_messages_for_count(self.number)
 
-    def _build_messages_for_count(self, total_count: int) -> Iterator[Union[List[Dict], List[int], str]]:
+    def _build_messages_for_count(
+        self,
+        total_count: int,
+        plan: Optional[Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]] = None,
+    ) -> Iterator[Union[List[Dict], List[int], str]]:
         """Yield random prompts for a fixed item count."""
-        plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
+        if plan is None:
+            plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
         token_mismatch_total = 0
         for index, input_len, offset, seed in self._iter_generation_plan(plan):
             message, token_mismatch = self._build_random_message(input_len, offset, index, seed)
@@ -223,19 +216,28 @@ class RandomDatasetPlugin(DatasetPluginBase):
             and token_work_estimate >= _MIN_AUTO_PARALLEL_TOKEN_WORK
         )
 
-    def build_messages_parallel(self, total_count: int, workers: int) -> List[Union[List[Dict], List[int], str]]:
+    def build_messages_parallel(
+        self,
+        total_count: int,
+        workers: int,
+        rng: Optional[np.random.RandomState] = None,
+    ) -> List[Union[List[Dict], List[int], str]]:
         """Build random request messages across multiple worker processes."""
         if total_count <= 0:
             return []
 
+        plan = self._create_generation_plan(
+            total_count,
+            include_seeds=not self.query_parameters.tokenize_prompt,
+            rng=rng,
+        )
         # Defensive guard: benchmark.py already ensures workers > 1 before
         # calling this method, but direct callers may pass any value.
         workers = max(1, min(workers, total_count))
         if workers == 1:
-            return list(self._build_messages_for_count(total_count))
+            return list(self._build_messages_for_count(total_count, plan=plan))
 
         process_context = _get_random_generation_context()
-        plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
         messages: List[Union[List[Dict], List[int], str, None]] = [None] * total_count
         token_mismatch_total = 0
         chunk_size = max(1, min(64, math.ceil(total_count / (workers * 8))))
@@ -295,17 +297,19 @@ class RandomDatasetPlugin(DatasetPluginBase):
         self,
         total_count: int,
         include_seeds: bool,
+        rng: Optional[np.random.RandomState] = None,
     ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         """Pre-sample all per-index random inputs in the parent process."""
+        random = np.random if rng is None else rng
         min_prompt_length, max_prompt_length = self._resolve_prompt_length_bounds()
-        input_lens = np.random.randint(min_prompt_length, max_prompt_length, size=total_count)
+        input_lens = random.randint(min_prompt_length, max_prompt_length, size=total_count)
         global_offset = self.query_parameters.dataset_offset
-        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_count) + global_offset) % len(
+        offsets = (random.randint(0, len(self.allowed_tokens), size=total_count) + global_offset) % len(
             self.allowed_tokens
         )
         seeds = None
         if include_seeds:
-            seeds = np.random.randint(0, np.iinfo(np.uint32).max, size=total_count, dtype=np.uint32)
+            seeds = random.randint(0, np.iinfo(np.uint32).max, size=total_count, dtype=np.uint32)
         return input_lens, offsets, seeds
 
     def _iter_generation_plan(
