@@ -63,11 +63,7 @@ class BenchmarkData:
     real_cached_tokens: Optional[int] = None
     """Real cached token count from server response usage.prompt_tokens_details.cached_tokens."""
     cached_tokens: Optional[int] = None
-    """Absolute number of KV-cached tokens for this turn.
-    Preferred source for cache hit rate aggregation.
-    Priority: real_cached_tokens (server-reported) > estimated (prev_prompt + prev_completion).
-    Turn 1 is always 0 (no prior context), contributing 0 to the numerator but
-    still counted in the denominator so the global ratio is unbiased."""
+    """Server-reported KV-cached tokens; ``None`` means unknown, never a local estimate."""
 
     # --- Conversation-level progress signal (multi-turn only) ---
     is_last_turn: bool = False
@@ -214,14 +210,11 @@ class MetricsAccumulator:
 
     # --- Multi-turn cumulative sums ---
     total_input_turns: int = 0
-    # Token-level accumulators for unbiased global cache hit rate.
-    # total_cached_tokens: sum of cached_tokens across all turns (incl. turn 1 = 0).
-    # total_prompt_tokens_for_cache: sum of prompt_tokens for turns that have
-    # cached_tokens set (i.e. multi-turn turns).  Kept separate from
-    # total_prompt_tokens so single-turn requests don't pollute the ratio.
+    # Hit rate and coverage use server-reported values only; missing values are unknown.
     total_cached_tokens: int = 0
     total_prompt_tokens_for_cache: int = 0  # denominator: prompt_tokens of turns with cached_tokens set
     n_cache_turns: int = 0  # number of turns contributing to the cache ratio
+    n_cache_eligible: int = 0  # successful requests with prompt_tokens (could have reported cache info)
 
     # First-turn vs subsequent-turn TTFT split (multi-turn only).
     # First-turn TTFT reflects cold prefill of the initial user prompt; subsequent
@@ -310,13 +303,13 @@ class MetricsAccumulator:
                 else:
                     self.total_subsequent_turn_ttft += data.first_chunk_latency
                     self.n_subsequent_turn += 1
-            # Token-level cache accumulator: include *every* turn that has
-            # cached_tokens set (turn 1 contributes 0 to numerator but its
-            # prompt_tokens still count in the denominator).
-            if data.cached_tokens is not None and data.prompt_tokens:
-                self.total_cached_tokens += data.cached_tokens
-                self.total_prompt_tokens_for_cache += data.prompt_tokens
-                self.n_cache_turns += 1
+            # Only server-reported values enter the hit-rate sample.
+            if data.prompt_tokens:
+                self.n_cache_eligible += 1
+                if data.cached_tokens is not None:
+                    self.total_cached_tokens += data.cached_tokens
+                    self.total_prompt_tokens_for_cache += data.prompt_tokens
+                    self.n_cache_turns += 1
 
             # Speculative decoding specific
             # Only count samples where L > 1 (genuine speculative decoding acceleration).
@@ -402,15 +395,20 @@ class MetricsAccumulator:
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
             avg_turns_per_request = _safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1
-            # Unbiased global KV-cache hit rate:
-            # total_cached_tokens / total_prompt_tokens_for_cache
-            # (includes turn 1 which contributes 0 cached tokens but still
-            # counts in the denominator, so the ratio is not inflated).
+            # Global KV-cache hit rate over requests with server-reported cache
+            # information. Missing values remain unknown and stay out of the ratio.
             avg_cached_percent = (
                 _safe_div(self.total_cached_tokens * 100.0, self.total_prompt_tokens_for_cache, default=-1)
                 if self.n_cache_turns > 0
                 else -1
             )
+            if self.n_cache_turns > 0:
+                cache_request_coverage_percent = _safe_div(self.n_cache_turns * 100.0, self.n_cache_eligible)
+                cache_token_coverage_percent = _safe_div(
+                    self.total_prompt_tokens_for_cache * 100.0, self.total_prompt_tokens
+                )
+            else:
+                cache_request_coverage_percent = cache_token_coverage_percent = -1
             avg_decoded_tokens_per_iter = (
                 _safe_div(self.total_decoded_tokens_per_iter, self.n_decoded_samples)
                 if self.n_decoded_samples > 0
@@ -438,6 +436,7 @@ class MetricsAccumulator:
             avg_pd_handoff_latency = avg_pd_handoff_overhead = -1
             avg_input_token_throughput = avg_output_token_throughput = avg_total_token_throughput = -1
             avg_turns_per_request = avg_cached_percent = avg_decoded_tokens_per_iter = -1
+            cache_request_coverage_percent = cache_token_coverage_percent = -1
             avg_first_turn_ttft = avg_subsequent_turn_ttft = -1
 
         return BenchmarkMetrics(
@@ -464,10 +463,32 @@ class MetricsAccumulator:
             avg_total_token_throughput=avg_total_token_throughput,
             avg_turns_per_request=avg_turns_per_request,
             avg_cached_percent=avg_cached_percent,
+            cache_request_coverage_percent=cache_request_coverage_percent,
+            cache_token_coverage_percent=cache_token_coverage_percent,
             avg_first_turn_ttft=avg_first_turn_ttft,
             avg_subsequent_turn_ttft=avg_subsequent_turn_ttft,
             avg_decoded_tokens_per_iter=avg_decoded_tokens_per_iter,
         )
+
+    def log_cache_coverage_warning(self) -> None:
+        """Log a final warning for incomplete cache reporting."""
+        if self.n_cache_eligible == 0 or self.n_cache_turns == self.n_cache_eligible:
+            return
+
+        request_coverage = self.n_cache_turns * 100.0 / self.n_cache_eligible
+        token_coverage = self.total_prompt_tokens_for_cache * 100.0 / self.total_prompt_tokens
+        coverage = f'{request_coverage:.1f}% of requests, {token_coverage:.1f}% of input tokens'
+        if self.n_cache_turns > 0:
+            logger.warning(
+                f'KV cache hit rate is computed from {self.n_cache_turns}/{self.n_cache_eligible} '
+                f'successful requests ({coverage}) that reported cached_tokens. Requests without the field '
+                'are excluded, not counted as misses, so the hit rate may not represent the whole run.'
+            )
+        else:
+            logger.warning(
+                f'KV cache hit rate is unavailable: 0/{self.n_cache_eligible} successful requests '
+                f'reported cached_tokens ({coverage}). Missing values are unknown, not cache misses.'
+            )
 
 
 # ===========================================================================
@@ -515,6 +536,11 @@ class BenchmarkMetrics:
     # --- Multi-turn ---
     avg_turns_per_request: float = -1
     avg_cached_percent: float = -1
+    """KV-cache hit rate over requests that reported ``cached_tokens``.  -1 = not applicable."""
+    cache_request_coverage_percent: float = -1
+    """Share of successful requests that reported ``cached_tokens``.  -1 = not applicable."""
+    cache_token_coverage_percent: float = -1
+    """Share of successful-request input tokens covered by the hit-rate sample.  -1 = not applicable."""
     avg_first_turn_ttft: float = -1
     """Avg TTFT (seconds) of first-turn requests (cold prefill).  -1 = not applicable."""
     avg_subsequent_turn_ttft: float = -1
@@ -613,6 +639,12 @@ class BenchmarkMetrics:
         # -1 means "not applicable" (no multi-turn data); 0 means active but no cache hits.
         if self.avg_cached_percent >= 0:
             result[Metrics.AVERAGE_CACHED_PERCENT] = round(self.avg_cached_percent, r)
+            # Always emitted alongside the hit rate so readers can tell whether
+            # it describes the whole run or only a subset of requests.
+            if self.cache_request_coverage_percent >= 0:
+                result[Metrics.CACHE_REQUEST_COVERAGE_PERCENT] = round(self.cache_request_coverage_percent, r)
+            if self.cache_token_coverage_percent >= 0:
+                result[Metrics.CACHE_TOKEN_COVERAGE_PERCENT] = round(self.cache_token_coverage_percent, r)
         # First-turn / subsequent-turn TTFT split (multi-turn only).  Stored in
         # seconds; report in ms for consistency with avg_ttft.
         if self.avg_first_turn_ttft >= 0:

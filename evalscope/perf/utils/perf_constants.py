@@ -53,6 +53,8 @@ class Metrics:
     # Multi-turn specific
     AVERAGE_INPUT_TURNS_PER_REQUEST = 'Avg Turns/Request'
     AVERAGE_CACHED_PERCENT = 'KV Cache Hit Rate (%)'
+    CACHE_REQUEST_COVERAGE_PERCENT = 'KV Cache Reporting Coverage - Requests (%)'
+    CACHE_TOKEN_COVERAGE_PERCENT = 'KV Cache Reporting Coverage - Input Tokens (%)'
     AVERAGE_FIRST_TURN_TTFT = 'Avg First-Turn TTFT (ms)'
     AVERAGE_SUBSEQUENT_TURN_TTFT = 'Avg Subsequent-Turn TTFT (ms)'
 
