@@ -104,6 +104,17 @@ def get_data_frame(
     return pd.concat(tables, ignore_index=True)
 
 
+def format_ci_for_display(display_table: pd.DataFrame) -> None:
+    """Drop an all-empty CI column.
+
+    Same contract as :func:`format_num_correct_for_display`: intervals only exist on
+    per-subset rows (never on aggregate rows), so a fully empty column is hidden and
+    aggregate rows simply stay empty without dash-filling.
+    """
+    if ReportKey.ci in display_table and display_table[ReportKey.ci].isna().all():
+        display_table.drop(columns=ReportKey.ci, inplace=True)
+
+
 def format_num_correct_for_display(display_table: pd.DataFrame) -> None:
     """Drop an all-empty Correct column, or dash-fill its missing counts in a mixed one.
 
@@ -165,6 +176,7 @@ def get_display_data_frame(
         ]
 
     format_num_correct_for_display(display_table)
+    format_ci_for_display(display_table)
     _format_category_columns_for_display(display_table)
     return display_table
 
