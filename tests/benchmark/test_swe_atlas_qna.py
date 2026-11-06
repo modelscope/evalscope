@@ -22,7 +22,7 @@ from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import CaseVerdict, JudgeContext
-from evalscope.api.messages import ChatMessageAssistant
+from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
@@ -131,7 +131,12 @@ def _native_result(terminal_message: ChatMessageAssistant) -> SimpleNamespace:
 def test_empty_native_answer_does_not_recover_earlier_narration(tmp_path, tool_name, arguments) -> None:
     adapter = make_adapter(tmp_path)
     call = ToolCall(id='terminal-call', function=ToolFunction(name=tool_name, arguments=arguments))
-    result = _native_result(ChatMessageAssistant(content='', tool_calls=[call]))
+    result = _native_result(
+        ChatMessageAssistant(
+            content=[ContentReasoning(reasoning='Still exploring.'), ContentText(text='')],
+            tool_calls=[call],
+        )
+    )
 
     answer = adapter._extract_final_answer(result, FunctionCallingStrategy())
 
@@ -141,7 +146,12 @@ def test_empty_native_answer_does_not_recover_earlier_narration(tmp_path, tool_n
 def test_native_answer_uses_terminal_prose(tmp_path) -> None:
     adapter = make_adapter(tmp_path)
     result = _native_result(
-        ChatMessageAssistant(content='<<FINAL_ANSWER>>\nThe cache is in foo.py.\n<<FINAL_ANSWER>>')
+        ChatMessageAssistant(
+            content=[
+                ContentReasoning(reasoning='The evidence is complete.'),
+                ContentText(text='<<FINAL_ANSWER>>\nThe cache is in foo.py.\n<<FINAL_ANSWER>>'),
+            ]
+        )
     )
 
     answer = adapter._extract_final_answer(result, FunctionCallingStrategy())
@@ -377,6 +387,8 @@ def test_official_ratings_envelope_parses_through_output_contract() -> None:
         '{"status":"YES","justification":"missing envelope"}',
         '{"ratings":[]}',
         '{"ratings":[{"rubric_statement":"a","status":"YES","score":"1","justification":"a"}],"extra":true}',
+        '{"ratings":[{"rubric_statement":"a","status":"YES","score":"0","justification":"a"}]}',
+        '{"ratings":[{"rubric_statement":"a","status":"NO","score":"1","justification":"a"}]}',
         '{"ratings":[{"criterion_id":"1.2","rubric_statement":"a","status":"YES","score":"1","justification":"a"}]}',
         '{"ratings":['
         '{"rubric_statement":"a","status":"YES","score":"1","justification":"a"},'

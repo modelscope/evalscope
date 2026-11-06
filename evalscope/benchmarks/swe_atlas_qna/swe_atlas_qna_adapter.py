@@ -15,7 +15,7 @@ from __future__ import annotations
 from math import isfinite
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -75,6 +75,12 @@ class RubricVerdict(BaseModel):
     status: Literal['YES', 'NO']
     score: Literal['0', '1']
     justification: str
+
+    @model_validator(mode='after')
+    def validate_consistent_status_score(self) -> 'RubricVerdict':
+        if (self.status == 'YES') != (self.score == '1'):
+            raise ValueError('status and score must agree')
+        return self
 
 
 class RubricResponse(BaseModel):

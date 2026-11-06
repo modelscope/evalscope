@@ -130,7 +130,7 @@ class FunctionCallingStrategy(AgentStrategy):
 
         Prioritises the ``submit`` tool call's ``answer`` argument
         (the authoritative answer source), then falls back to the
-        raw message content.
+        plain text content.
         """
         # Scan messages in reverse for a submit tool call.
         for msg in reversed(result.messages):
@@ -140,8 +140,8 @@ class FunctionCallingStrategy(AgentStrategy):
                         answer = extract_submit_answer(tc)
                         if answer is not None:
                             return answer
-        # Fallback: last model output content.
-        return str(result.final_output.message.content or '')
+        # Fallback: last model output's plain text content.
+        return result.final_output.message.text or ''
 
 
 __all__ = ['FunctionCallingStrategy']
