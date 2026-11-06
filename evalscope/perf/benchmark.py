@@ -1,4 +1,6 @@
 import asyncio
+import threading
+from contextlib import aclosing
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
 import numpy as np
@@ -91,50 +93,50 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         dataset_index = 0
         num_messages = len(dataset_messages)
         replenish_random = args.exclude_warmup_overlap and warmup_count > 0 and args.dataset == 'random'
-        replenishment_task: Optional[asyncio.Task] = None
-        replenishment_index = 0
+        replacement_rng = None
+        if replenish_random:
+            # Derive a stream separate from the initial dataset's legacy RNG.
+            seed = np.random.SeedSequence(args.seed, spawn_key=(0,)).generate_state(4)
+            replacement_rng = np.random.RandomState(seed)
+        message_index = 0
 
-        # Guard against an infinite loop: if build_request returns None for a whole
-        # pass over the dataset, no request will ever be produced, so abort instead
-        # of spinning forever (count would never advance).
+        # Abort if the API plugin rejects every message in a batch.
         consecutive_skips = 0
-
-        try:
-            while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
-                if replenish_random and replenishment_task is None:
-                    # Keep the existing prefix pool, but draw new suffixes for replenishment.
-                    rng = np.random.RandomState(None if args.seed is None else args.seed + replenishment_index)
-                    replenishment_index += 1
-                    replenishment_task = asyncio.create_task(
-                        asyncio.to_thread(
-                            message_generator.build_messages_parallel,
-                            total_count=max(args.parallel, args.prefix_count),
-                            workers=1,
-                            rng=rng,
-                        )
+        while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
+            if replenish_random and count >= total_count and dataset_index == 0:
+                stop = threading.Event()
+                worker = asyncio.create_task(
+                    asyncio.to_thread(
+                        message_generator.build_messages_parallel,
+                        total_count=max(args.parallel, args.prefix_count),
+                        workers=1,
+                        rng=replacement_rng,
+                        start_index=message_index,
+                        stop=stop,
                     )
-                if replenish_random and count >= total_count and dataset_index == 0:
-                    dataset_messages = await replenishment_task
-                    replenishment_task = None
-                    num_messages = len(dataset_messages)
-                messages = dataset_messages[dataset_index]
-                request = api_plugin.build_request(messages)
-                if request is not None:
-                    yield request, count < warmup_count
-                    count += 1
-                    consecutive_skips = 0
-                else:
-                    consecutive_skips += 1
-                    if consecutive_skips >= num_messages:
-                        raise ValueError(
-                            f'{type(api_plugin).__name__}.build_request() returned None for every one of '
-                            f'the {num_messages} dataset message(s); no request could be generated.'
-                        )
-                dataset_index = (dataset_index + 1) % num_messages
-        finally:
-            if replenishment_task is not None:
-                replenishment_task.cancel()
-                await asyncio.gather(replenishment_task, return_exceptions=True)
+                )
+                try:
+                    dataset_messages = await asyncio.shield(worker)
+                except asyncio.CancelledError:
+                    stop.set()
+                    await asyncio.gather(worker, return_exceptions=True)
+                    raise
+                num_messages = len(dataset_messages)
+            messages = dataset_messages[dataset_index]
+            request = api_plugin.build_request(messages)
+            if request is not None:
+                yield request, count < warmup_count
+                count += 1
+                consecutive_skips = 0
+            else:
+                consecutive_skips += 1
+                if consecutive_skips >= num_messages:
+                    raise ValueError(
+                        f'{type(api_plugin).__name__}.build_request() returned None for every one of '
+                        f'the {num_messages} dataset message(s); no request could be generated.'
+                    )
+            message_index += 1
+            dataset_index = (dataset_index + 1) % num_messages
 
     # Dispatch based on arguments.
     if args.prompt:
@@ -147,8 +149,9 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     # Yield requests without rate limiting; open-loop strategies apply the
     # Poisson sleep in their dispatch loop so the interval falls between
     # consecutive dispatches rather than during pre-collection.
-    async for request, is_warmup in generator:
-        yield request, is_warmup
+    async with aclosing(generator):
+        async for request, is_warmup in generator:
+            yield request, is_warmup
 
 
 def _log_warmup_handoff(args: Arguments) -> None:

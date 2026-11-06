@@ -5,6 +5,7 @@ import re
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from multiprocessing.context import BaseContext
+from threading import Event
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
@@ -180,13 +181,17 @@ class RandomDatasetPlugin(DatasetPluginBase):
         self,
         total_count: int,
         plan: Optional[Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]] = None,
+        start_index: int = 0,
+        stop: Optional[Event] = None,
     ) -> Iterator[Union[List[Dict], List[int], str]]:
         """Yield random prompts for a fixed item count."""
         if plan is None:
             plan = self._create_generation_plan(total_count, include_seeds=not self.query_parameters.tokenize_prompt)
         token_mismatch_total = 0
         for index, input_len, offset, seed in self._iter_generation_plan(plan):
-            message, token_mismatch = self._build_random_message(input_len, offset, index, seed)
+            if stop is not None and stop.is_set():
+                return
+            message, token_mismatch = self._build_random_message(input_len, offset, start_index + index, seed)
             token_mismatch_total += token_mismatch
             yield message
 
@@ -221,9 +226,14 @@ class RandomDatasetPlugin(DatasetPluginBase):
         total_count: int,
         workers: int,
         rng: Optional[np.random.RandomState] = None,
+        *,
+        start_index: int = 0,
+        stop: Optional[Event] = None,
     ) -> List[Union[List[Dict], List[int], str]]:
-        """Build random request messages across multiple worker processes."""
-        if total_count <= 0:
+        """Build random messages, optionally continuing a cancellable serial batch."""
+        if (start_index or stop is not None) and workers != 1:
+            raise ValueError('Continued random batches require a single worker.')
+        if total_count <= 0 or (stop is not None and stop.is_set()):
             return []
 
         plan = self._create_generation_plan(
@@ -235,7 +245,7 @@ class RandomDatasetPlugin(DatasetPluginBase):
         # calling this method, but direct callers may pass any value.
         workers = max(1, min(workers, total_count))
         if workers == 1:
-            return list(self._build_messages_for_count(total_count, plan=plan))
+            return list(self._build_messages_for_count(total_count, plan=plan, start_index=start_index, stop=stop))
 
         process_context = _get_random_generation_context()
         messages: List[Union[List[Dict], List[int], str, None]] = [None] * total_count

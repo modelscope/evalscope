@@ -119,7 +119,9 @@ def test_random_replenishment_runs_off_event_loop_thread(monkeypatch: pytest.Mon
         def build_messages(self) -> Iterator[str]:
             yield from ['initial-a', 'initial-b']
 
-        def build_messages_parallel(self, total_count: int, workers: int, rng: Any = None) -> list[str]:
+        def build_messages_parallel(
+            self, total_count: int, workers: int, *, rng: Any, start_index: int, stop: threading.Event
+        ) -> list[str]:
             assert rng is not None
             generation_threads.append(threading.get_ident())
             replacement_started.set()
@@ -137,10 +139,12 @@ def test_random_replenishment_runs_off_event_loop_thread(monkeypatch: pytest.Mon
         stream = get_requests(args, api)
         try:
             assert (await anext(stream))[0] == {'prompt': 'initial-a'}
-            await asyncio.wait_for(asyncio.to_thread(replacement_started.wait), timeout=1)
             assert (await anext(stream))[0] == {'prompt': 'initial-b'}
+            assert not replacement_started.is_set()
+            replacement = asyncio.create_task(anext(stream))
+            assert await asyncio.to_thread(replacement_started.wait, 1)
             allow_replacement.set()
-            assert (await anext(stream))[0] == {'prompt': 'replacement'}
+            assert (await replacement)[0] == {'prompt': 'replacement'}
         finally:
             allow_replacement.set()
             await stream.aclose()
@@ -202,3 +206,73 @@ def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) 
 
     asyncio.run(run())
     assert max(gather_sizes) <= args.parallel * args.in_flight_task_multiplier
+
+
+def test_queued_candidate_fills_quota_without_replenishment() -> None:
+    args = _make_args(number=1, parallel=1, warmup_num=1, exclude_warmup_overlap=True, duration=1)
+
+    async def requests() -> AsyncIterator[tuple[dict, bool]]:
+        yield {'id': 'warmup'}, True
+        yield {'id': 'measured'}, False
+        pytest.fail('A queued request can fill the quota without replenishment.')
+
+    async def run() -> None:
+        class Client:
+            async def post(self, request: dict) -> SimpleNamespace:
+                return SimpleNamespace(id=request['id'], is_warmup=False)
+
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, requests())
+        await asyncio.wait_for(strategy.run(), timeout=1)
+        assert [queue.get_nowait().id for _ in range(queue.qsize())] == ['warmup', 'measured']
+
+    asyncio.run(run())
+
+
+def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyPatch) -> None:
+    worker_stopped = threading.Event()
+    args = _make_args(
+        number=2, parallel=2, warmup_num=1, dataset='random', prompt=None,
+        prefix_count=1, exclude_warmup_overlap=True, duration=0.05,
+    )
+
+    async def run() -> None:
+        loop = asyncio.get_running_loop()
+        replacement_started = asyncio.Event()
+
+        class Dataset:
+
+            def __init__(self, args: Any) -> None:
+                pass
+
+            def supports_parallel_message_generation(self, total_count: int) -> bool:
+                return False
+
+            def build_messages(self) -> Iterator[str]:
+                yield from ['warmup', 'transition', 'measured']
+
+            def build_messages_parallel(
+                self, total_count: int, workers: int, *, rng: Any, start_index: int, stop: threading.Event
+            ) -> list[str]:
+                loop.call_soon_threadsafe(replacement_started.set)
+                if stop.wait(timeout=2):
+                    worker_stopped.set()
+                raise RuntimeError('Unused replacement failed')
+
+        class Client:
+
+            async def post(self, request: dict[str, Any]) -> SimpleNamespace:
+                if request['prompt'] in ('warmup', 'transition'):
+                    await replacement_started.wait()
+                return SimpleNamespace(is_warmup=False, is_transition=False, prompt=request['prompt'])
+
+        monkeypatch.setattr(benchmark_module.DatasetRegistry, 'get_class', lambda _: Dataset)
+        api = SimpleNamespace(build_request=lambda messages: {'prompt': messages})
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, api, Client(), queue, get_requests(args, api))
+        await asyncio.wait_for(strategy.run(), timeout=1)
+        assert worker_stopped.is_set()
+        rows = [queue.get_nowait() for _ in range(queue.qsize())]
+        assert [row.prompt for row in rows if not row.is_warmup and not row.is_transition] == ['measured']
+
+    asyncio.run(run())

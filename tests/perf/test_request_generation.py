@@ -306,3 +306,38 @@ def test_random_parallel_generation_local_rng_is_reproducible_and_isolated() -> 
     assert state_after[0] == state_before[0]
     np.testing.assert_array_equal(state_after[1], state_before[1])
     assert state_after[2:] == state_before[2:]
+
+
+@pytest.mark.parametrize('prefix_count', [1, 3])
+def test_seeded_replenishment_preserves_random_stream_and_prefix_rotation(
+    monkeypatch: MonkeyPatch, prefix_count: int
+) -> None:
+    args = _make_args(
+        dataset='random', number=4, warmup_num=1, parallel=4, seed=42, num_workers=1,
+        prefix_count=prefix_count, prefix_length=1 if prefix_count > 1 else 0,
+        min_prompt_length=4, max_prompt_length=4, tokenize_prompt=True, tokenizer_path='test-tokenizer',
+        exclude_warmup_overlap=True,
+    )
+    args = args.model_copy(update={'number': 4, 'parallel': 4})
+    plugin = _make_random_plugin(args)
+    plugin.prefix_pool = [[100 + index] for index in range(prefix_count)] if prefix_count > 1 else [[]]
+    monkeypatch.setattr(DatasetRegistry, 'get_class', lambda _: lambda args: plugin)
+
+    async def collect() -> list:
+        np.random.seed(args.seed)
+        stream = get_requests(args, _FakeApiPlugin())
+        try:
+            return [(await anext(stream))[0]['payload'] for _ in range(13)]
+        finally:
+            await stream.aclose()
+
+    state = np.random.get_state()
+    try:
+        prompts = asyncio.run(collect())
+        assert prompts == asyncio.run(collect())
+    finally:
+        np.random.set_state(state)
+    if prefix_count > 1:
+        assert [prompt[0] - 100 for prompt in prompts] == [index % prefix_count for index in range(13)]
+    else:
+        assert prompts[5] != prompts[0]
