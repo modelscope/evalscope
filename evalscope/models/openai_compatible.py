@@ -45,7 +45,10 @@ logger = get_logger()
 # Client errors (context length exceeded, invalid parameters, bad credentials, ...) are not
 # recoverable by retrying. generate()/generate_async() degrade them gracefully via
 # handle_bad_request(), so retry_call must let them through immediately instead of burning
-# retries * retry_interval on every failing sample.
+# the backoff ladder on every failing sample. Transport-retryable failures (429 / 5xx /
+# connection errors) use the exponential ladder so a gateway's rate-limit window gets time
+# to close; each SDK attempt already honors Retry-After, the outer ladder must not undo
+# that with a flat cadence.
 NON_RETRYABLE_OPENAI_ERRORS: Tuple[Type[Exception], ...] = (
     BadRequestError,
     AuthenticationError,
@@ -165,6 +168,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
+                backoff='exponential',
             )
 
             total_time = time.monotonic() - t_start
@@ -249,6 +253,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
+                backoff='exponential',
             )
 
             total_time = time.monotonic() - t_start

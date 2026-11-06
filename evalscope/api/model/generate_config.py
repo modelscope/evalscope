@@ -46,7 +46,10 @@ class GenerateConfig(BaseModel):
     """Request timeout (in seconds)."""
 
     retries: Optional[int] = Field(default=5)
-    """Number of retries for the request. Only supported by OpenAI compatible models."""
+    """Number of attempts (including the first) for the request. Only supported by OpenAI compatible models.
+
+    The off-by-one matters once a backoff ladder is in play: cost models built from
+    `retries * retry_interval` understate the wall-clock by one interval."""
 
     retry_interval: Optional[int] = Field(default=10)
     """Retry interval between retries (in seconds). Only supported by OpenAI compatible models."""
