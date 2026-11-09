@@ -247,6 +247,26 @@ def build_data_prompt(root: Path, suite: str, item_id: int, attack: str, goal: s
     return code_text(root, item_id, attack, goal)
 
 
+def _last_json_object(text: str) -> Dict[str, Any] | None:
+    """Return the last JSON object that parses, scanning candidates from the end.
+
+    A greedy ``\\{.*\\}`` span fails as soon as the model shows an example object before its answer
+    (the span then runs from the first ``{`` to the last ``}``). Trying every ``{`` from the end keeps
+    the model's final object when earlier ones are prose or drafts.
+    """
+    decoder = json.JSONDecoder()
+    for start in range(len(text) - 1, -1, -1):
+        if text[start] != '{':
+            continue
+        try:
+            value, _ = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    return None
+
+
 def parse_json_response(text: str) -> Dict[str, Any]:
     """Parse a JSON object, tolerating a Markdown fence or surrounding prose."""
     cleaned = text.strip()
@@ -255,10 +275,9 @@ def parse_json_response(text: str) -> Dict[str, Any]:
     try:
         value = json.loads(cleaned)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', cleaned, flags=re.S)
-        if not match:
+        value = _last_json_object(cleaned)
+        if value is None:
             raise
-        value = json.loads(match.group())
     if not isinstance(value, dict):
         raise ValueError('model response must be a JSON object')
     return value
