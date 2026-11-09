@@ -37,18 +37,36 @@ PROMPT_TOO_LONG = {
 }
 
 
+def _stream_body(payload: Dict[str, Any]) -> bytes:
+    message = {**payload, 'content': [], 'stop_reason': None, 'usage': {'input_tokens': 3, 'output_tokens': 0}}
+    events = [
+        {'type': 'message_start', 'message': message},
+        {'type': 'content_block_start', 'index': 0, 'content_block': {'type': 'text', 'text': ''}},
+        {'type': 'content_block_delta', 'index': 0, 'delta': {'type': 'text_delta', 'text': 'partial'}},
+        {'type': 'content_block_stop', 'index': 0},
+        {
+            'type': 'message_delta',
+            'delta': {'stop_reason': payload['stop_reason'], 'stop_sequence': None},
+            'usage': {'output_tokens': 5},
+        },
+        {'type': 'message_stop'},
+    ]
+    return ''.join(f'event: {event["type"]}\ndata: {json.dumps(event)}\n\n' for event in events).encode()
+
+
 @pytest.fixture
-def generate() -> Iterator[Callable[[int, Dict[str, Any]], ModelOutput]]:
+def generate() -> Iterator[Callable[..., ModelOutput]]:
     """Run the real Anthropic SDK against a local server that answers with one canned response."""
     reply: Tuple[int, Dict[str, Any]] = (200, TRUNCATED_REPLY)
 
     class Provider(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
-            self.rfile.read(int(self.headers['Content-Length']))
+            request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             status, payload = reply
-            body = json.dumps(payload).encode()
+            stream = request.get('stream', False)
+            body = _stream_body(payload) if stream else json.dumps(payload).encode()
             self.send_response(status)
-            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Type', 'text/event-stream' if stream else 'application/json')
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -60,13 +78,22 @@ def generate() -> Iterator[Callable[[int, Dict[str, Any]], ModelOutput]]:
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
 
-    def run(status: int, payload: Dict[str, Any]) -> ModelOutput:
+    def run(status: int, payload: Dict[str, Any], stream: bool = False, asynchronous: bool = False) -> ModelOutput:
         nonlocal reply
         reply = (status, payload)
         api = AnthropicCompatibleAPI(
             model_name='test-model', base_url=f'http://127.0.0.1:{server.server_port}', api_key='test-key'
         )
-        config = GenerateConfig(retries=0, retry_interval=0, max_tokens=5)
+        config = GenerateConfig(retries=0, retry_interval=0, max_tokens=5, stream=stream)
+        if asynchronous:
+
+            async def generate_async() -> ModelOutput:
+                try:
+                    return await api.generate_async([ChatMessageUser(content='q')], [], 'none', config)
+                finally:
+                    await api.aclose()
+
+            return asyncio.run(generate_async())
         return api.generate([ChatMessageUser(content='q')], [], 'none', config)
 
     try:
@@ -101,5 +128,12 @@ def test_prompt_too_long_still_reports_model_length(generate: Callable) -> None:
     assert generate(400, PROMPT_TOO_LONG).stop_reason == 'model_length'
 
 
-def test_context_window_exceeded_stop_reason_maps_to_model_length(generate: Callable) -> None:
-    assert generate(200, CONTEXT_WINDOW_EXCEEDED).stop_reason == 'model_length'
+@pytest.mark.parametrize('asynchronous', [False, True], ids=['sync', 'async'])
+@pytest.mark.parametrize('stream', [False, True], ids=['json', 'sse'])
+def test_context_window_exceeded_stop_reason_maps_to_model_length(
+    generate: Callable, stream: bool, asynchronous: bool
+) -> None:
+    output = generate(200, CONTEXT_WINDOW_EXCEEDED, stream=stream, asynchronous=asynchronous)
+
+    assert output.stop_reason == 'model_length'
+    assert output.completions == ['partial']
