@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import types
 from pathlib import Path
@@ -14,6 +15,7 @@ from evalscope.api.dataset import (
     download_dataset_snapshot,
     load_dataset_from_hub,
 )
+from evalscope.api.dataset.hub import _short_windows_datasets_lock_path
 from evalscope.constants import HubType
 
 
@@ -925,3 +927,36 @@ def test_modelscope_pinned_file_does_not_reuse_another_revision(tmp_path: Path, 
     monkeypatch.setitem(sys.modules, 'modelscope', fake_modelscope)
     path = download_dataset_file('owner/data', 'tasks.json', revision='new-revision')
     assert Path(path).read_text() == 'new manifest'
+
+
+def test_windows_datasets_lock_shortens_only_the_filename() -> None:
+    cache_root = r'C:\Users\alice\AppData\Local\Temp\pytest-cache'
+    long_lock = cache_root + '\\' + 'nested_cache_' * 20 + '.lock'
+    short_lock = _short_windows_datasets_lock_path(long_lock)
+
+    assert short_lock.startswith(cache_root + '\\.')
+    assert short_lock.endswith('.lock')
+    assert len(short_lock) <= 259
+    assert _short_windows_datasets_lock_path(short_lock) == short_lock
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows MAX_PATH regression')
+def test_deep_cache_dir_still_loads_a_cached_snapshot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cache = tmp_path / 'hf-cache'
+    cache.mkdir(parents=True)
+
+    snapshot = tmp_path / 'snapshot'
+    _write_snapshot(snapshot)
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        pytest.fail('An existing snapshot must not be downloaded again')
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+
+    dataset = load_dataset_from_hub('owner/data', split='test', cache_dir=str(cache))
+
+    assert list(dataset['text']) == ['cached-test']
+    assert list(cache.rglob('*.arrow'))

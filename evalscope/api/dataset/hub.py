@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import hashlib
 import inspect
+import ntpath
 import os
 import re
 from copy import deepcopy
@@ -118,6 +120,8 @@ class DatasetHub:
         snapshot_cache_dir: Optional[Callable[[], str]] = None,
     ) -> 'Union[HFDataset, HFIterableDataset]':
         import datasets
+
+        _install_windows_datasets_lock_patch()
 
         # Explicit local mirrors retain the legacy metadata workaround; SDK snapshots remain untouched.
         dataset_infos_path = os.path.join(path, 'dataset_infos.json')
@@ -309,6 +313,40 @@ def _persistent_download_config(load_kwargs: Mapping[str, Any]) -> 'DownloadConf
     if config.cache_dir is None:
         config.cache_dir = str(datasets.config.DOWNLOADED_DATASETS_PATH)
     return config
+
+
+_WINDOWS_MAX_PATH = 259
+
+
+def _short_windows_datasets_lock_path(lock_file: str) -> str:
+    """Hash an overflowing datasets lock name without moving its cache directory."""
+    absolute = ntpath.abspath(lock_file)
+    if absolute.startswith('\\\\?\\') or len(absolute) <= _WINDOWS_MAX_PATH:
+        return lock_file
+    digest = hashlib.sha256(ntpath.normcase(absolute).encode()).hexdigest()[:32]
+    short_lock = ntpath.join(ntpath.dirname(absolute), f'.{digest}.lock')
+    if len(short_lock) <= _WINDOWS_MAX_PATH:
+        return short_lock
+    if short_lock.startswith('\\\\'):
+        return '\\\\?\\UNC\\' + short_lock.lstrip('\\')
+    return '\\\\?\\' + short_lock
+
+
+def _install_windows_datasets_lock_patch() -> None:
+    """Keep datasets' repeated absolute lock names within Windows MAX_PATH."""
+    if os.name != 'nt':
+        return
+    import datasets.builder as datasets_builder
+
+    file_lock = datasets_builder.FileLock
+    if getattr(file_lock, '_evalscope_path_safe', False):
+        return
+
+    def _path_safe_file_lock(lock_file: str, *args: Any, **kwargs: Any) -> Any:
+        return file_lock(_short_windows_datasets_lock_path(lock_file), *args, **kwargs)
+
+    setattr(_path_safe_file_lock, '_evalscope_path_safe', True)
+    datasets_builder.FileLock = _path_safe_file_lock
 
 
 def _is_missing_cached_data(exc: Exception) -> bool:
