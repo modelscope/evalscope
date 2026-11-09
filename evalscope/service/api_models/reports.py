@@ -43,6 +43,12 @@ class ReportSubset(ApiResponseModel):
     num_correct: Optional[int] = None
     is_aggregate: bool = False
     metadata: Optional[Dict[str, Any]] = None
+    ci_low: Optional[float] = None
+    ci_high: Optional[float] = None
+    ci_flags: Optional[List[str]] = None
+    ci_display: Optional[str] = None
+    """Interval fields, matching Subset; all optional so old payloads without them load
+    unchanged."""
 
 
 class ReportCategory(ApiResponseModel):

@@ -104,14 +104,41 @@ def get_data_frame(
     return pd.concat(tables, ignore_index=True)
 
 
-def format_ci_for_display(display_table: pd.DataFrame) -> None:
-    """Drop an all-empty CI column.
+def format_ci_for_display_row(row: 'pd.Series', semantics: Optional[MetricSemantics]) -> str:
+    """Render one row's structured CI dict; empty string when the row carries none."""
+    ci = row[ReportKey.ci]
+    if not isinstance(ci, dict) or ci.get('low') is None:
+        return ''
+    flags = ci.get('flags') or []
+    if 'low_confidence' in flags:
+        return f'low confidence (n={row[ReportKey.num]})'
+    low = format_metric_value(ci['low'], semantics)
+    high = format_metric_value(ci['high'], semantics)
+    interval = f'[{low}, {high}]'
+    if 'wide_interval' in flags:
+        return f'wide interval {interval} (n={row[ReportKey.num]})'
+    return interval
 
-    Same contract as :func:`format_num_correct_for_display`: intervals only exist on
-    per-subset rows (never on aggregate rows), so a fully empty column is hidden and
-    aggregate rows simply stay empty without dash-filling.
+
+def format_ci_for_display(
+    display_table: pd.DataFrame, semantics_by_metric: Optional[Dict[Any, MetricSemantics]] = None
+) -> None:
+    """Render the structured CI dict into a display string, then drop the column when empty.
+
+    Intervals only exist on per-subset rows (never on aggregate rows), so aggregate rows
+    stay empty; when no row carries an interval the whole column is hidden. Endpoints are
+    formatted through the metric's own semantics — the same multiplier, precision and unit
+    the score cell gets (issue: a 0-5 quality score must not render as a percentage).
     """
-    if ReportKey.ci in display_table and display_table[ReportKey.ci].isna().all():
+    if ReportKey.ci not in display_table:
+        return
+    semantics_by_metric = semantics_by_metric or {}
+    rendered = []
+    for _, row in display_table.iterrows():
+        key = (row['Model'], row['Dataset'], row['Metric'])
+        rendered.append(format_ci_for_display_row(row, semantics_by_metric.get(key)))
+    display_table[ReportKey.ci] = rendered
+    if (display_table[ReportKey.ci] == '').all():
         display_table.drop(columns=ReportKey.ci, inplace=True)
 
 
@@ -162,21 +189,30 @@ def get_display_data_frame(
                 else labels[metric.identity.key]
             )
 
+    # CI rendering must run while the Metric column still holds the raw name: its
+    # semantics lookup is keyed the same way as the score formatting above.
     if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
         metric_labels = []
         display_scores = []
+        ci_rendered = []
         for _, row in display_table.iterrows():
             key = (row['Model'], row['Dataset'], row['Metric'])
+            semantics = semantics_by_metric.get(key)
             metric_labels.append(labels_by_metric.get(key, row['Metric']))
-            display_scores.append(format_metric_value(float(row['Score']), semantics_by_metric.get(key)))
+            display_scores.append(format_metric_value(float(row['Score']), semantics))
+            ci_rendered.append(format_ci_for_display_row(row, semantics))
         display_table['Metric'] = metric_labels
         display_table['Score'] = display_scores
         display_table['Dataset'] = [
             dataset_labels.get((row['Model'], row['Dataset']), row['Dataset']) for _, row in display_table.iterrows()
         ]
+        if ReportKey.ci in display_table:
+            display_table[ReportKey.ci] = ci_rendered
+            # an all-empty rendering means no row carries an interval: hide the column
+            if (display_table[ReportKey.ci] == '').all():
+                display_table.drop(columns=ReportKey.ci, inplace=True)
 
     format_num_correct_for_display(display_table)
-    format_ci_for_display(display_table)
     _format_category_columns_for_display(display_table)
     return display_table
 

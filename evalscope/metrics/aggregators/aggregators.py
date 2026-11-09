@@ -454,11 +454,14 @@ class MeanAndCI(Mean):
     mean is taken over — the samples passed to this aggregator, i.e. one reported subset;
     a reported mean-of-subset-means must be bootstrapped at that layer instead.
 
-    Two ``AggScore`` entries are emitted per metric: a plain ``mean`` (identical to what
-    :class:`Mean` emits, so consumers looking up ``aggregation == 'mean'`` keep working)
-    and a ``mean_and_ci`` one carrying ``metadata['ci_*']`` plus the flags. Metadata only —
-    old report JSON loads unchanged. ``n`` counts scored samples (post fail-closed);
-    exclusions are assumed ignorable and their count is a report-layer concern.
+    One ``AggScore`` per metric: the interval lives in its ``metadata`` under the ``ci``
+    key (numeric endpoints in the metric's own scale, level, method, flags) — a single
+    metric identity, losslessly saved with the report and formatted at the display
+    boundary. ``n`` counts scored samples (post fail-closed); exclusions are assumed
+    ignorable and their count is a report-layer concern.
+
+    Repeated generations of the same item are **not** independent samples; this v1
+    aggregator rejects them instead of treating repeat count as sample count.
     """
 
     name = 'mean_and_ci'
@@ -466,6 +469,16 @@ class MeanAndCI(Mean):
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
         if not scores:
             return []
+
+        seen_ids: Dict[Any, None] = {}
+        for score in scores:
+            if score.sample_id in seen_ids:
+                raise ValueError(
+                    f'Sample {score.sample_id!r} appears more than once; repeated generations are '
+                    'not independent samples and mean_and_ci does not support repeats. '
+                    'Aggregate repeats with mean_and_pass_at_k-style aggregators instead.'
+                )
+            seen_ids[score.sample_id] = None
 
         metric_values: Dict[str, List[float]] = defaultdict(list)
         metric_sample_ids: Dict[str, List[Any]] = defaultdict(list)
@@ -480,7 +493,6 @@ class MeanAndCI(Mean):
                 continue
             n = len(values)
             is_ratio = all(v in (0, 1) for v in values)
-            num_correct = int(sum(values)) if is_ratio else None
             if is_ratio:
                 ci_low, ci_high = _wilson_interval(values)
                 ci_method = 'wilson'
@@ -494,33 +506,22 @@ class MeanAndCI(Mean):
             if (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
                 flags.append('wide_interval')
 
-            # Plain mean: byte-for-byte what Mean emits, so `aggregation == 'mean'` lookups
-            # in report renderers and downstream consumers keep working unchanged.
             aggregated_scores.append(
                 AggScore(
                     score=self.agg_func(values),
                     metric_name=metric_name,
                     aggregation='mean',
                     num=n,
-                    num_correct=num_correct,
+                    num_correct=int(sum(values)) if is_ratio else None,
                     ids=metric_sample_ids[metric_name],
-                )
-            )
-            aggregated_scores.append(
-                AggScore(
-                    score=self.agg_func(values),
-                    metric_name=metric_name,
-                    aggregation=self.name,
-                    num=n,
-                    num_correct=num_correct,
-                    ids=metric_sample_ids[metric_name],
-                    dimensions={'method': 'ci'},
                     metadata={
-                        'ci_low': ci_low,
-                        'ci_high': ci_high,
-                        'ci_level': 0.95,
-                        'ci_method': ci_method,
-                        'flags': flags,
+                        'ci': {
+                            'low': ci_low,
+                            'high': ci_high,
+                            'level': 0.95,
+                            'method': ci_method,
+                            'flags': flags,
+                        },
                     },
                 )
             )

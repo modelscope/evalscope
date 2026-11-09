@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -5,7 +7,7 @@ from pandas import DataFrame
 
 from evalscope.api.metric.semantics import MetricDirection, MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
-from evalscope.metrics.semantics import get_semantics_resolver
+from evalscope.metrics.semantics import format_metric_value, get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.semantics.primary import PrimarySelection, PrimarySelectionStatus, select_primary
 from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX
@@ -15,20 +17,24 @@ from evalscope.utils import get_logger
 logger = get_logger()
 
 
-def _format_ci(row) -> Optional[str]:
-    """Render one subset's interval as a display string, or ``None`` when absent.
+def _format_ci(ci: Optional[Dict[str, Any]], n: int, semantics: Optional[MetricSemantics]) -> Optional[str]:
+    """Render one subset's interval, or ``None`` when absent.
 
-    Asymmetric Wilson intervals render as ``[lo, hi]`` (never ``±``); the representativeness
-    flags replace the numbers when they fire, per the issue's flag semantics.
+    Endpoints are formatted through the metric's own semantics (display multiplier,
+    precision, unit) — the same treatment the score cell gets, so a 0-5 quality score
+    never renders as a percentage. NaN endpoints (non-CI metrics coexisting with
+    CI-bearing ones in the same DataFrame column) render as an empty cell. The
+    representativeness flags replace the numbers when they fire.
     """
-    ci_low, ci_high = row.get('ci_low'), row.get('ci_high')
-    if ci_low is None or ci_high is None:
+    if not ci:
         return None
-    flags = row.get('ci_flags') or ()
-    n = row.get('num')
+    ci_low, ci_high = ci.get('low'), ci.get('high')
+    if ci_low is None or ci_high is None or pd.isna(ci_low) or pd.isna(ci_high):
+        return None
+    flags = ci.get('flags') or []
     if 'low_confidence' in flags:
         return f'low confidence (n={n})'
-    interval = f'[{ci_low * 100:.1f}, {ci_high * 100:.1f}]'
+    interval = f'[{format_metric_value(ci_low, semantics)}, {format_metric_value(ci_high, semantics)}]'
     if 'wide_interval' in flags:
         return f'wide interval {interval} (n={n})'
     return interval
@@ -134,26 +140,12 @@ class ReportGenerator:
             0       ARC-Easy    0.5    2    [default]  AverageAccuracy
             1  ARC-Challenge    0.5    2    [default]  AverageAccuracy
             """
-            # The CI-bearing `mean_and_ci` entries are not separate metrics: their interval
-            # metadata merges onto the plain-mean row of the same metric, and the entry itself
-            # is skipped so it cannot surface as a duplicate report row.
-            ci_by_metric: Dict[str, Dict[str, Any]] = {}
-            for agg_scores in score_dict.values():
-                for agg_score_item in agg_scores:
-                    if agg_score_item.aggregation == 'mean_and_ci' and agg_score_item.metadata:
-                        ci_by_metric.setdefault(agg_score_item.metric_name, agg_score_item.metadata)
-
             subsets = []
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
-                    if agg_score_item.aggregation == 'mean_and_ci':
-                        continue
                     categories = category_map.get(subset_name, ['default'])
                     identity = agg_score_item.identity
-                    ci_meta = ci_by_metric.get(agg_score_item.metric_name, {})
-
-                    if isinstance(categories, str):
-                        categories = [categories]
+                    ci = (agg_score_item.metadata or {}).get('ci')
                     subsets.append(
                         dict(
                             name=subset_name,
@@ -161,9 +153,7 @@ class ReportGenerator:
                             num=agg_score_item.num,
                             num_correct=agg_score_item.num_correct,
                             metadata=agg_score_item.metadata,
-                            ci_low=ci_meta.get('ci_low'),
-                            ci_high=ci_meta.get('ci_high'),
-                            ci_flags=tuple(ci_meta.get('flags', [])),
+                            ci=ci,
                             identity_key=identity.key,
                             identity=identity,
                             categories=tuple(categories),
@@ -211,7 +201,10 @@ class ReportGenerator:
                             score=row['score'],
                             num=row['num'],
                             num_correct=num_correct,
-                            ci=_format_ci(row),
+                            ci_low=row['ci']['low'] if row['ci'] else None,
+                            ci_high=row['ci']['high'] if row['ci'] else None,
+                            ci_flags=list(row['ci']['flags']) if row['ci'] else None,
+                            ci_display=_format_ci(row['ci'], row['num'], semantics),
                             metadata=row['metadata'],
                         )
                     )

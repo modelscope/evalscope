@@ -169,11 +169,15 @@ class Subset(BaseModel):
     score: float = 0.0
     num: int = 0
     num_correct: Optional[int] = None
-    ci: Optional[str] = None
-    """Rendered confidence interval for this subset, e.g. ``[85.1, 90.7]`` or
-    ``low confidence (n=20)``; ``None`` when the aggregation carries no interval or for
-    aggregate rows (an interval is never combined across subsets)."""
     """Samples scored 1 when the metric is binary; ``None`` otherwise."""
+    ci_low: Optional[float] = None
+    """Interval lower endpoint in the metric's own scale, when the aggregation carries one."""
+    ci_high: Optional[float] = None
+    """Interval upper endpoint in the metric's own scale."""
+    ci_flags: Optional[List[str]] = None
+    """Representativeness flags, e.g. ``['low_confidence']`` when n is small."""
+    ci_display: Optional[str] = None
+    """Display string rendered at the report boundary through the metric's semantics."""
     metadata: Optional[Dict[str, Any]] = None
     """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
@@ -270,10 +274,10 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     num_correct = 'Correct'
-    ci = 'CI'
     score = 'Score'
     raw_score = 'Raw Score'
     display_score = 'Display Score'
+    ci = 'CI'
     overall_score = 'OVERALL'
 
 
@@ -463,8 +467,17 @@ class Report(BaseModel):
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.num_correct].append(subset.num_correct)
-                    table[ReportKey.ci].append(subset.ci)
                     table[ReportKey.score].append(subset.score)
+                    # CI lives in its own trailing column so the established column
+                    # positions (and the [-N:] slices consumers take) stay stable.
+                    table[ReportKey.ci].append(
+                        {
+                            'low': subset.ci_low,
+                            'high': subset.ci_high,
+                            'flags': subset.ci_flags,
+                            'display': subset.ci_display,
+                        }
+                    )
             # add overall metric when there are multiple subsets
             if metric_count > 1 and add_overall_metric and not has_overall_subset:
                 table[ReportKey.model_name].append(self.model_name)

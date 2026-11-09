@@ -2,10 +2,13 @@
 
 Wilson intervals are verified against closed-form values computed independently
 (python, z=1.959964): p=0.882, n=500 -> [0.8510, 0.9074]; p=0.85, n=20 -> [0.6397, 0.9476].
+
+v2 protocol: one AggScore per metric (`aggregation='mean'` for downstream compatibility),
+with the interval stored losslessly in `metadata['ci']` and formatted at the display boundary.
 """
 import pytest
 
-from evalscope.api.metric import SampleScore, Score
+from evalscope.api.metric import MetricIdentity, SampleScore, Score
 from evalscope.metrics.aggregators.aggregators import Mean, MeanAndCI
 
 
@@ -25,80 +28,122 @@ def continuous_scores(values, prefix: str = 'c'):
     ]
 
 
-def find(entries, aggregation, metric='accuracy', method=None):
+def find(entries, metric='accuracy'):
     for entry in entries:
-        if entry.aggregation != aggregation or entry.metric_name != metric:
-            continue
-        if method is not None and (entry.metadata or {}).get('ci_method') != method:
-            continue
-        return entry
+        if entry.metric_name == metric:
+            return entry
     return None
 
 
 def test_wilson_interval_matches_closed_form():
     scores = ratio_scores(ones=441, zeros=59)  # mean 0.882, n=500
-    ci = find(MeanAndCI()(scores), 'mean_and_ci')
+    entry = find(MeanAndCI()(scores))
+    ci = entry.metadata['ci']
 
-    assert ci.metadata['ci_low'] == pytest.approx(0.8510, abs=0.002)
-    assert ci.metadata['ci_high'] == pytest.approx(0.9074, abs=0.002)
-    assert ci.metadata['ci_method'] == 'wilson'
-    assert ci.metadata['ci_level'] == 0.95
+    assert ci['low'] == pytest.approx(0.8510, abs=0.002)
+    assert ci['high'] == pytest.approx(0.9074, abs=0.002)
+    assert ci['method'] == 'wilson'
+    assert ci['level'] == 0.95
 
 
-def test_plain_mean_is_emitted_alongside():
+def test_single_entry_with_mean_aggregation_name():
     entries = MeanAndCI()(ratio_scores(ones=441, zeros=59))
-    plain = find(entries, 'mean')
-    ci = find(entries, 'mean_and_ci')
 
-    assert plain is not None and ci is not None
-    assert plain.aggregation == 'mean'
-    assert plain.score == ci.score
-    assert plain.num == ci.num == 500
-    assert plain.num_correct == ci.num_correct == 441
-    assert ci.dimensions == {'method': 'ci'}
-    assert plain.metadata is None and ci.metadata.get('ci_low') is not None
+    assert len(entries) == 1
+    entry = entries[0]
+    # downstream consumers looking up aggregation == 'mean' keep working unchanged
+    assert entry.aggregation == 'mean'
+    assert entry.score == 0.882
+    assert entry.num == 500
+    assert entry.num_correct == 441
+    assert entry.metadata['ci']['low'] is not None
 
 
-def test_output_count_is_two_per_metric():
-    assert len(MeanAndCI()(ratio_scores(ones=8, zeros=2))) == 2
+def test_no_duplicate_metric_identity():
+    scores = ratio_scores(ones=8, zeros=2)
+    entries = MeanAndCI()(scores)
+
+    assert len(entries) == 1
+    identities = {(e.metric_name, e.aggregation) for e in entries}
+    assert len(identities) == 1
 
 
 def test_continuous_metric_uses_bootstrap_and_is_deterministic():
     values = [0.5 + 0.01 * (i % 50) for i in range(300)]
-    first = find(MeanAndCI()(continuous_scores(values)), 'mean_and_ci', metric='judge_score')
-    second = find(MeanAndCI()(continuous_scores(values)), 'mean_and_ci', metric='judge_score')
+    first = find(MeanAndCI()(continuous_scores(values)), metric='judge_score')
+    second = find(MeanAndCI()(continuous_scores(values)), metric='judge_score')
+    ci = first.metadata['ci']
 
-    assert first.metadata['ci_method'] == 'bootstrap'
-    assert first.metadata['ci_low'] == second.metadata['ci_low']
-    assert first.metadata['ci_high'] == second.metadata['ci_high']
-    assert first.metadata['ci_low'] < first.score < first.metadata['ci_high']
+    assert ci['method'] == 'bootstrap'
+    assert ci['low'] == second.metadata['ci']['low']
+    assert ci['high'] == second.metadata['ci']['high']
+    assert ci['low'] < first.score < ci['high']
 
 
 def test_small_ratio_subset_flags_both_conditions():
     scores = ratio_scores(ones=17, zeros=3)  # mean 0.85, n=20
-    ci = find(MeanAndCI()(scores), 'mean_and_ci')
+    ci = find(MeanAndCI()(scores)).metadata['ci']
 
-    flags = ci.metadata['flags']
+    flags = ci['flags']
     assert 'low_confidence' in flags
     assert 'wide_interval' in flags
 
 
 def test_large_narrow_subset_has_no_flags():
     scores = ratio_scores(ones=441, zeros=59)  # width ~5.6pt, n=500
-    ci = find(MeanAndCI()(scores), 'mean_and_ci')
+    assert find(MeanAndCI()(scores)).metadata['ci']['flags'] == []
 
-    assert ci.metadata['flags'] == []
+
+def test_repeated_generations_are_rejected():
+    scores = ratio_scores(ones=4, zeros=1)
+    duplicated = scores + [SampleScore(sample_id='s-0', score=Score(value={'accuracy': 0.0}))]
+
+    with pytest.raises(ValueError, match='not independent samples'):
+        MeanAndCI()(duplicated)
 
 
 def test_empty_input_returns_empty_list():
     assert MeanAndCI()([]) == []
 
 
-def test_plain_mean_matches_mean_aggregator_exactly():
+def test_matches_mean_aggregator_exactly():
     scores = ratio_scores(ones=7, zeros=3)
     mean_entry = Mean()(scores)[0]
-    plain_from_ci = find(MeanAndCI()(scores), 'mean')
+    ci_entry = find(MeanAndCI()(scores))
 
-    assert plain_from_ci.score == mean_entry.score
-    assert plain_from_ci.num == mean_entry.num
-    assert plain_from_ci.num_correct == mean_entry.num_correct
+    assert ci_entry.score == mean_entry.score
+    assert ci_entry.num == mean_entry.num
+    assert ci_entry.num_correct == mean_entry.num_correct
+
+
+def test_report_renderer_does_not_leak_intervals_across_subsets():
+    """Issue review reproduction: two accuracy subsets (90%/10%) must show their own
+    intervals — the v1 cross-subset map kept the first interval for both rows."""
+    from types import SimpleNamespace
+
+    from evalscope.api.metric import MetricSelector
+    from evalscope.report import gen_table
+    from evalscope.report.generator import ReportGenerator
+
+    subset_scores = {
+        'easy': MeanAndCI()([SampleScore(score=Score(value={'accuracy': 1.0}), sample_id=f'easy_{i}') for i in range(100)]),
+        'hard': MeanAndCI()([SampleScore(score=Score(value={'accuracy': 0.0}), sample_id=f'hard_{i}') for i in range(100)]),
+    }
+    adapter = SimpleNamespace(
+        name='mmmu',
+        pretty_name='MMMU',
+        description='',
+        category_map={},
+        primary_metric=MetricSelector(name='accuracy'),
+    )
+    report = ReportGenerator.generate_report(subset_scores, 'model', adapter)
+
+    table = gen_table(report_list=[report])
+    lines = [line for line in table.splitlines() if 'easy' in line or 'hard' in line]
+    assert len(lines) == 2
+    assert '100%' in lines[0] and '0%' in lines[1]
+    # each row carries its own interval, not the first row's
+    # each row carries its own Wilson interval through the metric's semantics
+    # (n=100 all-correct: [96.3%, 100%]; n=100 all-wrong: [0%, 3.6%])
+    assert '[96.3%, 100%]' in lines[0]
+    assert '[0%, 3.7%]' in lines[1]
