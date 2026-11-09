@@ -89,6 +89,12 @@ def _parse_perf_args(argv: List[str]) -> Arguments:
     return Arguments.from_args(parser.parse_args(argv))
 
 
+def test_overlap_exclusion_cli_flag_is_opt_in() -> None:
+    argv = ['--model', 'test-model']
+    assert not _parse_perf_args(argv).exclude_warmup_overlap
+    assert _parse_perf_args(argv + ['--exclude-warmup-overlap']).exclude_warmup_overlap
+
+
 def test_sweep_scalar_strings_are_normalized_to_lists() -> None:
     args = _make_args(number='10', parallel='2')
 
@@ -253,10 +259,10 @@ def test_random_dataset_auto_parallel_requires_large_long_prompt_work() -> None:
 
 
 def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: MonkeyPatch) -> None:
-    def fake_gen_prompt(tokenizer, token_sequence, target_token_len, add_special_tokens, allowed_tokens):
-        """Return a prompt that embeds the current numpy random state so we can
-        verify that seeds are applied before each item."""
-        prompt = f'{target_token_len}-{np.random.randint(0, 100000)}'
+    def fake_gen_prompt(tokenizer, token_sequence, target_token_len, add_special_tokens, allowed_tokens, rng=None):
+        """Return a prompt that embeds the item-local random sequence."""
+        assert rng is not None
+        prompt = f'{target_token_len}-{rng.randint(0, 100000)}'
         return prompt, token_sequence, 0
 
     monkeypatch.setattr(
@@ -287,3 +293,57 @@ def test_random_dataset_serial_generation_uses_item_local_seeds(monkeypatch: Mon
     ]
 
     assert serial == expected
+
+
+def test_random_parallel_generation_local_rng_is_reproducible_and_isolated() -> None:
+    args = _make_args(
+        dataset='random', number=4, num_workers=1, min_prompt_length=4,
+        max_prompt_length=4, tokenize_prompt=True, tokenizer_path='test-tokenizer',
+    )
+    plugin = _make_random_plugin(args)
+    np.random.seed(123)
+    state_before = np.random.get_state()
+
+    first = plugin.build_messages_parallel(4, workers=1, rng=np.random.RandomState(7))
+    second = plugin.build_messages_parallel(4, workers=1, rng=np.random.RandomState(7))
+
+    assert first == second
+    state_after = np.random.get_state()
+    assert state_after[0] == state_before[0]
+    np.testing.assert_array_equal(state_after[1], state_before[1])
+    assert state_after[2:] == state_before[2:]
+
+
+@pytest.mark.parametrize('prefix_count', [1, 3])
+def test_seeded_replenishment_preserves_random_stream_and_prefix_rotation(
+    monkeypatch: MonkeyPatch, prefix_count: int
+) -> None:
+    args = _make_args(
+        dataset='random', number=4, warmup_num=1, parallel=4, seed=42, num_workers=1,
+        prefix_count=prefix_count, prefix_length=1 if prefix_count > 1 else 0,
+        min_prompt_length=4, max_prompt_length=4, tokenize_prompt=True, tokenizer_path='test-tokenizer',
+        exclude_warmup_overlap=True,
+    )
+    args = args.model_copy(update={'number': 4, 'parallel': 4})
+    plugin = _make_random_plugin(args)
+    plugin.prefix_pool = [[100 + index] for index in range(prefix_count)] if prefix_count > 1 else [[]]
+    monkeypatch.setattr(DatasetRegistry, 'get_class', lambda _: lambda args: plugin)
+
+    async def collect() -> list:
+        np.random.seed(args.seed)
+        stream = get_requests(args, _FakeApiPlugin())
+        try:
+            return [(await anext(stream))[0]['payload'] for _ in range(13)]
+        finally:
+            await stream.aclose()
+
+    state = np.random.get_state()
+    try:
+        prompts = asyncio.run(collect())
+        assert prompts == asyncio.run(collect())
+    finally:
+        np.random.set_state(state)
+    if prefix_count > 1:
+        assert [prompt[0] - 100 for prompt in prompts] == [index % prefix_count for index in range(13)]
+    else:
+        assert prompts[5] != prompts[0]
