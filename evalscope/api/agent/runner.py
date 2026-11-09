@@ -112,20 +112,20 @@ def run_agent_loop(
 
     async def _run() -> AgentLoopResult:
         async with AsyncExitStack() as mcp_stack:
-            merged_handlers: Dict[str, ToolHandler] = dict(handlers)
-            merged_tools: List[Any] = list(all_tools)
-
-            if mcp_configs:
-                from .mcp import resolve_mcp_tools
-
-                mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
-                for tool_name, handler in mcp_handler_map.items():
-                    if tool_name in merged_handlers:
-                        logger.warning(f'MCP tool {tool_name!r} shadows existing handler; last-write-wins')
-                    merged_handlers[tool_name] = handler
-                merged_tools.extend(mcp_tool_infos)
-
             try:
+                merged_handlers: Dict[str, ToolHandler] = dict(handlers)
+                merged_tools: List[Any] = list(all_tools)
+
+                if mcp_configs:
+                    from .mcp import resolve_mcp_tools
+
+                    mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
+                    for tool_name, handler in mcp_handler_map.items():
+                        if tool_name in merged_handlers:
+                            logger.warning(f'MCP tool {tool_name!r} shadows existing handler; last-write-wins')
+                        merged_handlers[tool_name] = handler
+                    merged_tools.extend(mcp_tool_infos)
+
                 ctx = AgentContext(
                     sample_id=sample_id,
                     messages=initial_messages,

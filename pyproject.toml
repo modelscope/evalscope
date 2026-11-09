@@ -74,7 +74,7 @@ arena_hard       = {file = ["evalscope/benchmarks/arena_hard/requirements.txt"]}
 air_bench        = {file = ["evalscope/benchmarks/air_bench/requirements.txt"]}
 caption          = {file = ["evalscope/benchmarks/caption/requirements.txt"]}
 refcoco          = {file = ["evalscope/benchmarks/refcoco/requirements.txt"]}
-swe_bench        = {file = ["evalscope/benchmarks/swe_bench/requirements.txt"]}
+swe_bench        = {file = ["requirements/sandbox.txt", "evalscope/benchmarks/swe_bench/requirements.txt"]}
 swe_atlas_qna    = {file = ["evalscope/benchmarks/swe_atlas_qna/requirements.txt"]}
 wmt              = {file = ["evalscope/benchmarks/wmt/requirements.txt"]}
 torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}

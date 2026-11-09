@@ -107,7 +107,8 @@ def test_harness_protocol(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     config = env.kwargs['sandbox_config']
     assert config['platform'] == 'linux/amd64' and config['command'] == 'tail -f /dev/null'
     assert config['cap_add'] == ['SYS_ADMIN']
-    assert not {'cpu_limit', 'memory_limit', 'volumes'} & set(config)
+    assert config['cpu_limit'] is None and config['memory_limit'] is None
+    assert 'volumes' not in config
     assert env.kwargs['expected_duration'] == 1800
     assert len([c for c, _ in env.calls if c[-1] == 'git -c core.fileMode=false diff']) == 2
     assert any(c[-1] == '/bin/bash /tmp/eval.sh 2>&1' and k['timeout'] == 1800 for c, k in env.calls)
@@ -116,6 +117,37 @@ def test_harness_protocol(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     assert (tmp_path / 'swebench_log/demo' / LOG_TEST_OUTPUT).read_text() == 'test output'
     spec = SimpleNamespace(instance_image_key='image', platform='linux/amd64', docker_specs={})
     assert 'cap_add' not in swe._eval_sandbox_config(None, spec)
+
+
+def test_docker_grading_preserves_unrestricted_defaults() -> None:
+    from evalscope.api.sandbox import build_sandbox_config
+
+    spec = SimpleNamespace(instance_image_key='image', platform='linux/amd64', docker_specs={})
+    config = build_sandbox_config(SandboxEngine.DOCKER, swe._eval_sandbox_config(None, spec))
+    assert config.memory_limit is None and config.cpu_limit is None
+    task = SimpleNamespace(sandbox=SimpleNamespace(enabled=False, engine='docker',
+                                                  default_config={'memory_limit': '8g', 'cpu_limit': 4}))
+    config = build_sandbox_config(SandboxEngine.DOCKER, swe._eval_sandbox_config(task, spec))
+    assert config.memory_limit == '8g' and config.cpu_limit == 4
+    task.sandbox.enabled, task.sandbox.engine = True, 'e2b'
+    task.sandbox.default_config = {}
+    config = build_sandbox_config(SandboxEngine.E2B, swe._eval_sandbox_config(task, spec))
+    assert config.memory_mb == 4096 and config.cpu_count == 2
+
+
+@pytest.mark.parametrize('agentic', [False, True])
+def test_swe_missing_runtime_fails_at_initialization(monkeypatch: pytest.MonkeyPatch, agentic: bool) -> None:
+    import importlib.util
+
+    from evalscope.api.benchmark import BenchmarkMeta
+    from evalscope.benchmarks.swe_bench.swe_bench_adapter import SWEBenchVerifiedAdapter
+    from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import SWEBenchVerifiedAgenticAdapter
+
+    original = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, 'find_spec', lambda name: None if name == 'ms_enclave' else original(name))
+    cls = SWEBenchVerifiedAgenticAdapter if agentic else SWEBenchVerifiedAdapter
+    with pytest.raises(ImportError, match='ms_enclave.*evalscope\\[swe_bench\\]'):
+        cls(benchmark_meta=BenchmarkMeta(name='swe-test', dataset_id='fake'), task_config=TaskConfig())
 
 
 def test_remote_arch_and_config_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

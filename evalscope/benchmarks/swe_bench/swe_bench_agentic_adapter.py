@@ -233,7 +233,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-        check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
+        check_import(['swebench', 'ms_enclave'], extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
 
         # Hardcoded: must match the /testbed path used by swebench harness eval_script.
         self.working_dir: str = '/testbed'

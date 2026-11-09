@@ -247,6 +247,7 @@ class AgentLoopAdapter(AgentAdapter):
 
         if max_steps <= 0:
             raise ValueError('AgentLoop max_steps must be greater than 0.')
+        initial_messages = self.build_initial_messages(sample)
         environment = self.build_environment(sample)
         reason = prepare_environment(environment, sample_id=sample.id)
         if reason is not None:
@@ -257,7 +258,7 @@ class AgentLoopAdapter(AgentAdapter):
             strategy=strategy,
             handlers=handlers,
             environment=environment,
-            initial_messages=self.build_initial_messages(sample),
+            initial_messages=initial_messages,
             all_tools=all_tools,
             max_steps=max_steps,
             sample_id=sample.id,

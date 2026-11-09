@@ -13,6 +13,7 @@ from evalscope.api.sandbox import (
     SandboxConfigError,
     SandboxEngine,
     merge_sandbox_config_dicts,
+    resolve_task_engine,
     sandbox_image_arch,
     task_sandbox_env_kwargs,
 )
@@ -85,6 +86,9 @@ def _eval_sandbox_config(task_config: Optional['TaskConfig'], test_spec: 'TestSp
     if cap_add:
         required['cap_add'] = list(cap_add)
     defaults = task_config.sandbox.default_config if task_config and task_config.sandbox else {}
+    if resolve_task_engine(task_config) is SandboxEngine.DOCKER:
+        # The original Docker harness imposed no resource limits unless requested.
+        defaults = {'memory_limit': None, 'cpu_limit': None, **defaults}
     return merge_sandbox_config_dicts(defaults, required)
 
 
