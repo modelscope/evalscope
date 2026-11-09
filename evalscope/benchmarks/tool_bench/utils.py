@@ -194,7 +194,7 @@ def calculate_metrics(data):
         'Act.EM': evaluate_action_em(cand_list=action_pred, ref_list=action_ref) if action_ref else None,
         'F1': f1,
         'HalluRate': hallu_pred,
-        'plan_em': evaluate_action_em(cand_list=plan_pred, ref_list=plan_ref),
+        'Plan.EM': evaluate_action_em(cand_list=plan_pred, ref_list=plan_ref),
         'Easy_F1': easy_f1,
         'Hard_F1': hard_f1,
         'Rouge-L': evaluate_rougel(answer_pred, answer_ref) if answer_ref else None,
