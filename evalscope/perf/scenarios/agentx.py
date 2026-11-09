@@ -10,6 +10,7 @@ import importlib.metadata
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -18,10 +19,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 from urllib.parse import urlsplit, urlunsplit
 
+from filelock import FileLock
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from evalscope.api.dataset import download_dataset_snapshot
-from evalscope.constants import HubType
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
 from evalscope.utils import get_secret_value
 from evalscope.utils.logger import get_logger
 
@@ -129,6 +131,8 @@ class AgentXDatasetProvenance(BaseModel):
     trace_file: str
     sha256: str
     verified: bool
+    trace_dir: str = ''
+    """Directory of per-trace ``.json`` files for AIPerf's native Weka loader; empty for the HuggingFace source."""
 
 
 class AgentXRunSummary(BaseModel):
@@ -293,6 +297,7 @@ def _resolve_dataset(args: 'Arguments', scenario: AgentXScenario) -> AgentXDatas
     verified = digest == spec['sha256']
     if scenario.mode == 'benchmark' and not verified:
         raise ValueError(f'AgentX benchmark dataset hash mismatch for {trace_file}: {digest}')
+    trace_dir = '' if source == HubType.HUGGINGFACE else _materialize_weka_traces(trace_file, digest)
     return AgentXDatasetProvenance(
         source=source,
         dataset_id=dataset_id,
@@ -300,6 +305,7 @@ def _resolve_dataset(args: 'Arguments', scenario: AgentXScenario) -> AgentXDatas
         trace_file=str(trace_file),
         sha256=digest,
         verified=verified,
+        trace_dir=trace_dir,
     )
 
 
@@ -381,7 +387,16 @@ def _build_command(
     if dataset.source == HubType.HUGGINGFACE:
         command.extend(['--public-dataset', _DATASETS[scenario.variant]['public_dataset']])
     else:
-        command.extend(['--hf-weka-dataset', str(Path(dataset.trace_file).parent)])
+        # ``--hf-weka-dataset`` expects a HuggingFace repo id; the local mirror is a directory,
+        # so replay it through the native file loader, which takes a directory of per-trace JSON files.
+        command.extend(
+            [
+                '--custom-dataset-type',
+                'weka_trace',
+                '--input-file',
+                dataset.trace_dir or str(Path(dataset.trace_file).parent),
+            ]
+        )
     if scenario.mode == 'smoke' or dataset.source != HubType.HUGGINGFACE:
         command.append('--unsafe-override')
 
@@ -559,6 +574,50 @@ def _split_chat_url(url: str) -> str:
         raise ValueError(f'AgentX requires a URL ending with {expected}.')
     base_path = parsed.path.rstrip('/')[: -len(expected)]
     return urlunsplit((parsed.scheme, parsed.netloc, base_path, '', ''))
+
+
+def _materialize_weka_traces(trace_file: Path, digest: str) -> str:
+    """Split ``traces.jsonl`` into an immutable, atomically published directory for AIPerf."""
+    cache_root = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / 'agentx' / 'weka'
+    target = cache_root / f'weka-json-{digest}'
+    if target.is_dir():
+        return str(target)
+
+    cache_root.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(cache_root / f'{target.name}.lock')):
+        if target.is_dir():
+            return str(target)
+
+        staging = cache_root / f'{target.name}.incomplete'
+        shutil.rmtree(staging, ignore_errors=True)
+        staging.mkdir()
+        try:
+            seen_ids: set[str] = set()
+            with trace_file.open('r', encoding='utf-8') as handle:
+                for number, line in enumerate(handle, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f'{trace_file}:{number} is not a JSON object: {e}') from e
+                    trace_id = row.get('id') if isinstance(row, dict) else None
+                    if not isinstance(trace_id, str) or not trace_id:
+                        raise ValueError(f'{trace_file}:{number} has no string "id"')
+                    if trace_id in seen_ids:
+                        raise ValueError(f'{trace_file}:{number} repeats trace id {trace_id!r}')
+                    seen_ids.add(trace_id)
+                    name = re.sub(r'[^A-Za-z0-9._-]', '_', trace_id)
+                    (staging / f'{number:08d}-{name}.json').write_text(line, encoding='utf-8')
+
+            if not seen_ids:
+                raise ValueError(f'{trace_file} contains no Weka traces')
+            staging.rename(target)
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+
+    return str(target)
 
 
 def _sha256(path: Path) -> str:
