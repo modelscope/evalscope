@@ -30,6 +30,7 @@ TRUNCATED_REPLY = {
     'stop_sequence': None,
     'usage': {'input_tokens': 3, 'output_tokens': 5},
 }
+CONTEXT_WINDOW_EXCEEDED = {**TRUNCATED_REPLY, 'stop_reason': 'model_context_window_exceeded'}
 PROMPT_TOO_LONG = {
     'type': 'error',
     'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 300000 tokens'},
@@ -98,3 +99,7 @@ def test_agent_loop_does_not_report_a_truncated_reply_as_context_overflow(genera
 
 def test_prompt_too_long_still_reports_model_length(generate: Callable) -> None:
     assert generate(400, PROMPT_TOO_LONG).stop_reason == 'model_length'
+
+
+def test_context_window_exceeded_stop_reason_maps_to_model_length(generate: Callable) -> None:
+    assert generate(200, CONTEXT_WINDOW_EXCEEDED).stop_reason == 'model_length'

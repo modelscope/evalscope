@@ -592,6 +592,8 @@ def message_stop_reason(message: Message) -> StopReason:
             return 'tool_calls'
         case 'max_tokens':
             return 'max_tokens'
+        case 'model_context_window_exceeded':
+            return 'model_length'
         case 'refusal':
             return 'content_filter'
         case _:

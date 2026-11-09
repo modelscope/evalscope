@@ -1,3 +1,7 @@
+import importlib.metadata
+
+from packaging.version import Version
+
 from evalscope.api.model import ModelAPI
 from evalscope.api.registry import register_model_api
 from evalscope.utils.deprecation_utils import deprecated
@@ -44,6 +48,14 @@ def openai_responses_api() -> type[ModelAPI]:
 @register_model_api(name='anthropic_api')
 def anthropic_api() -> type[ModelAPI]:
     check_import('anthropic', package='anthropic', raise_error=True, feature_name='anthropic_api')
+
+    minimum_version = '0.119.0'
+    installed_version = importlib.metadata.version('anthropic')
+    if Version(installed_version) < Version(minimum_version):
+        raise ImportError(
+            f'anthropic_api requires anthropic>={minimum_version}, found {installed_version}. '
+            f'Please run `pip install "anthropic>={minimum_version}"`.'
+        )
 
     from .anthropic_compatible import AnthropicCompatibleAPI
 
