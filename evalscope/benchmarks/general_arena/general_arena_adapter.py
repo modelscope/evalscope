@@ -48,7 +48,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
 @register_benchmark(
     BenchmarkMeta(
         name='general_arena',
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         pretty_name='GeneralArena',
         tags=[Tags.CUSTOM, Tags.ARENA],
         description="""
@@ -462,7 +462,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             for model_name, score_val in models.items():
                 if model_name == self.baseline:
                     continue
-                agg_scores.append(AggScore(score=score_val, metric_name=metric_name, num=len(sample_scores)))
+                agg_scores.append(AggScore(score=score_val, metric_name=metric_name, num=len(scored)))
 
         return agg_scores
 
