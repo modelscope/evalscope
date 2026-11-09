@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import re
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Hashable, Iterable, List, Tuple
 
 BOOL_CATEGORY_IDS = frozenset({'CF1', 'CF2', 'MV1', 'MV2', 'MV3', 'P3', 'RL2', 'S1', 'S2', 'SS2', 'VZ1', 'VZ2'})
 STRING_LIST_CATEGORY_IDS = frozenset({'CS1', 'CS2', 'CS3'})
@@ -77,11 +77,11 @@ def score_prediction(category_id: str, prediction: str, reference: str, addition
     return normalized, float(correct)
 
 
-def aggregate_item_accuracy(rows: Iterable[Tuple[str, int, float]]) -> Dict[str, Tuple[float, int]]:
+def aggregate_item_accuracy(rows: Iterable[Tuple[str, Hashable, float]]) -> Dict[str, Tuple[float, int]]:
     """Apply logical AND within each item and return per-category accuracy and item count."""
-    grouped_rows: Dict[Tuple[str, int], List[float]] = defaultdict(list)
-    for category_id, eval_index, score in rows:
-        grouped_rows[(category_id, eval_index)].append(score)
+    grouped_rows: Dict[Tuple[str, Hashable], List[float]] = defaultdict(list)
+    for category_id, item_id, score in rows:
+        grouped_rows[(category_id, item_id)].append(score)
 
     category_items: Dict[str, List[float]] = defaultdict(list)
     for (category_id, _), scores in grouped_rows.items():
