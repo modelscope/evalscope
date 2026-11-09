@@ -89,6 +89,12 @@ def _parse_perf_args(argv: List[str]) -> Arguments:
     return Arguments.from_args(parser.parse_args(argv))
 
 
+def test_overlap_exclusion_cli_flag_is_opt_in() -> None:
+    argv = ['--model', 'test-model']
+    assert not _parse_perf_args(argv).exclude_warmup_overlap
+    assert _parse_perf_args(argv + ['--exclude-warmup-overlap']).exclude_warmup_overlap
+
+
 def test_sweep_scalar_strings_are_normalized_to_lists() -> None:
     args = _make_args(number='10', parallel='2')
 

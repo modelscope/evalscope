@@ -25,11 +25,13 @@ class _MeasurementWindow:
     duration: Optional[float]
     compute_deadline: Callable[[Optional[float]], Optional[float]]
     exclude_overlap: bool
-    measured: int = 0
-    pending_candidates: int = 0
+    measured_sent: int = 0  # Includes requests that later fail.
+    queued_candidates: int = 0  # Non-warmup tasks not yet classified at send time.
     deadline: Optional[float] = None
     timer: Optional[asyncio.TimerHandle] = None
+    # Stops dispatch and replenishment; already-sent requests still finish.
     stopped: asyncio.Event = field(default_factory=asyncio.Event)
+    # Wakes the producer when a queued candidate is classified or the window stops.
     send_progress: asyncio.Event = field(default_factory=asyncio.Event)
 
     @property
@@ -38,24 +40,24 @@ class _MeasurementWindow:
 
     @property
     def closed(self) -> bool:
-        return self.stopped.is_set() or self.measured >= self.number or self.expired
+        return self.stopped.is_set() or self.measured_sent >= self.number or self.expired
 
     def queue_request(self, is_warmup: bool) -> None:
         if self.exclude_overlap and not is_warmup:
-            self.pending_candidates += 1
+            self.queued_candidates += 1
 
     def start_request(self, is_warmup: bool) -> Optional[Literal['warmup', 'transition', 'measured']]:
         if is_warmup:
             return 'warmup'
         if self.exclude_overlap:
-            self.pending_candidates -= 1
+            self.queued_candidates -= 1
             self.send_progress.set()
             if self.remaining_warmup:
                 return 'transition'
             if self.closed:
                 return None
 
-        self.measured += 1
+        self.measured_sent += 1
         if self.deadline is None and self.duration is not None:
             self.deadline = self.compute_deadline(self.duration)
             if self.exclude_overlap:
@@ -172,7 +174,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             return
         while not window.closed:
             # Already queued candidates can still fill the measured quota.
-            if window.pending_candidates >= window.number - window.measured:
+            if window.queued_candidates >= window.number - window.measured_sent:
                 window.send_progress.clear()
                 await window.send_progress.wait()
                 continue
@@ -303,7 +305,9 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
                 await asyncio.gather(*in_flight)
             if window.exclude_overlap and not window.closed:
-                raise RuntimeError(f'Request source ended after {window.measured}/{window.number} measured requests.')
+                raise RuntimeError(
+                    f'Request source ended after {window.measured_sent}/{window.number} measured requests.'
+                )
         finally:
             window.cancel_timer()
             for task in in_flight:

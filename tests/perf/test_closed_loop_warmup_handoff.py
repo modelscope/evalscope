@@ -21,74 +21,8 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import run_benchmark
 from evalscope.perf.core.strategies import closed_loop
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
+from tests.perf.closed_loop_helpers import _make_args, _run, _stream
 from tests.perf.test_async_lifecycle import LocalOpenAIServer
-
-
-def _make_args(**kwargs: Any) -> Arguments:
-    """Build Arguments with scalar (already swept) number/parallel/rate."""
-    number = kwargs.pop('number', 6)
-    parallel = kwargs.pop('parallel', 3)
-    rate = kwargs.pop('rate', -1)
-    args = Arguments(model='test-model', api='openai', number=number, parallel=parallel, rate=rate, **kwargs)
-    args.number = number
-    args.parallel = parallel
-    args.rate = rate
-    return args
-
-
-class _RecordingClient:
-    """Client that records server occupancy at the moment each request starts.
-
-    Each request completes after a distinct number of event-loop ticks so the
-    completion order is deterministic and the warmup requests finish one at a
-    time, mirroring the output-length spread of a real server.
-    """
-
-    def __init__(self) -> None:
-        self.in_flight = 0
-        self.events: List[Dict[str, Any]] = []
-        self._seq = 0
-
-    async def post(self, request: Dict[str, Any]) -> SimpleNamespace:
-        seq = self._seq
-        self._seq += 1
-        self.events.append({
-            'request': request,
-            'occupancy_at_start': self.in_flight,
-            'order': seq,
-        })
-        self.in_flight += 1
-        try:
-            # Strictly increasing service times so completions never coincide,
-            # mirroring the output-length spread of a real server: slots free up
-            # one at a time and each frees exactly one waiting request.
-            for _ in range(2 * (seq + 1)):
-                await asyncio.sleep(0)
-        finally:
-            self.in_flight -= 1
-        return SimpleNamespace(is_warmup=False)
-
-
-def _run(args: Arguments, requests: List[Tuple[dict, bool]]) -> _RecordingClient:
-    """Drive ClosedLoopStrategy over ``requests`` and return the client."""
-    client = _RecordingClient()
-
-    async def generator() -> AsyncIterator[Tuple[dict, bool]]:
-        for item in requests:
-            yield item
-
-    async def main() -> None:
-        queue: asyncio.Queue = asyncio.Queue()
-        strategy = ClosedLoopStrategy(args, None, client, queue, generator())
-        await strategy.run()
-
-    asyncio.run(main())
-    return client
-
-
-def _stream(warmup: int, measured: int) -> List[Tuple[dict, bool]]:
-    return [({'id': i}, i < warmup) for i in range(warmup + measured)]
-
 
 # --- hand-off behaviour ---------------------------------------------------
 
@@ -307,6 +241,17 @@ def test_warns_when_warmup_smaller_than_parallel(monkeypatch: pytest.MonkeyPatch
     assert len(recorder.warnings) == 1
     assert 'only 3 of the 8 concurrency slots' in recorder.warnings[0]
     assert '5 measured requests' in recorder.warnings[0]
+
+
+@pytest.mark.parametrize(('warmup', 'expect_warning'), [(0, True), (3, False)])
+def test_overlap_warning_matches_measurement_boundary(
+    monkeypatch: pytest.MonkeyPatch, warmup: int, expect_warning: bool
+) -> None:
+    recorder = _capture_handoff_log(
+        monkeypatch,
+        _make_args(number=100, parallel=8, warmup_num=warmup, exclude_warmup_overlap=True),
+    )
+    assert bool(recorder.warnings) == expect_warning
 
 
 def test_no_warning_for_single_concurrency(monkeypatch: pytest.MonkeyPatch) -> None:

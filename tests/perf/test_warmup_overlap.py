@@ -1,10 +1,12 @@
 """Exercise overlap exclusion through the real request stream and result pipeline."""
 
 import asyncio
+import gc
 import json
 import sqlite3
 import threading
 import time
+import weakref
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Iterator, Optional
@@ -14,10 +16,10 @@ import pytest
 from evalscope.perf import benchmark as benchmark_module
 from evalscope.perf.benchmark import get_requests
 from evalscope.perf.core.pipeline import run_benchmark_pipeline
-from evalscope.perf.core.strategies import closed_loop as closed_loop_module
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
-from evalscope.perf.utils.benchmark_util import BenchmarkData
-from tests.perf.test_closed_loop_warmup_handoff import _make_args, _run, _stream
+from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
+from evalscope.perf.utils.workload_timeline import WorkloadTimeline
+from tests.perf.closed_loop_helpers import _make_args, _run, _stream
 
 
 @pytest.mark.parametrize(('enabled', 'warmup', 'duration', 'expected'), [
@@ -36,7 +38,7 @@ def test_overlap_result_partition_and_replenishment(
     starts: dict[int, float] = {}
     ends: dict[int, float] = {}
 
-    async def run() -> None:
+    async def run() -> tuple[BenchmarkMetrics, WorkloadTimeline]:
         release_warmup = asyncio.Event()
         # Hold one slot through five transitions. The initial stream alone is
         # too short to release it when replenishment is enabled.
@@ -68,9 +70,14 @@ def test_overlap_result_partition_and_replenishment(
         api = SimpleNamespace(build_request=lambda prompt: {'prompt': prompt})
         queue: asyncio.Queue = asyncio.Queue(maxsize=2)
         strategy = ClosedLoopStrategy(args, api, Client(), queue, get_requests(args, api))
-        await asyncio.wait_for(run_benchmark_pipeline(strategy.run(), queue, args, api), timeout=5)
+        metrics, _, timeline, _ = await asyncio.wait_for(
+            run_benchmark_pipeline(strategy.run(), queue, args, api), timeout=5
+        )
+        return metrics, timeline
 
-    asyncio.run(run())
+    metrics, timeline = asyncio.run(run())
+    assert metrics.total_requests == expected
+    assert timeline.n_points == metrics.succeed_requests
     with sqlite3.connect(tmp_path / 'benchmark_data.db') as con:
         result = con.execute('SELECT request_id, start_time FROM result ORDER BY start_time').fetchall()
         assert len(result) == expected
@@ -90,10 +97,10 @@ def test_overlap_result_partition_and_replenishment(
         assert len(starts) == warmup + len(transition) + expected
 
 
-@pytest.mark.parametrize('mode', ['open_loop', 'multi_turn'])
-def test_overlap_rejects_unsupported_modes(mode: str) -> None:
+@pytest.mark.parametrize('options', [{'open_loop': True}, {'multi_turn': True}, {'scenario': 'agentx'}])
+def test_overlap_rejects_unsupported_modes(options: dict[str, Any]) -> None:
     with pytest.raises(ValueError, match='requires single-turn closed-loop'):
-        _make_args(exclude_warmup_overlap=True, **{mode: True})
+        _make_args(exclude_warmup_overlap=True, **options)
 
 
 def test_zero_measured_requests_still_runs_warmup() -> None:
@@ -153,15 +160,8 @@ def test_random_replenishment_runs_off_event_loop_thread(monkeypatch: pytest.Mon
     assert generation_threads and generation_threads[0] != main_thread
 
 
-def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
-    gather_sizes: list[int] = []
-    real_gather = asyncio.gather
-
-    def recording_gather(*aws: Any, **kwargs: Any) -> Any:
-        gather_sizes.append(len(aws))
-        return real_gather(*aws, **kwargs)
-
-    monkeypatch.setattr(closed_loop_module.asyncio, 'gather', recording_gather)
+def test_transition_task_cleanup_stays_bounded() -> None:
+    live_requests: weakref.WeakSet[asyncio.Task] = weakref.WeakSet()
     args = _make_args(
         number=1, parallel=2, warmup_num=1, exclude_warmup_overlap=True,
         in_flight_task_multiplier=2,
@@ -183,6 +183,7 @@ def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) 
 
             async def post(self, request: dict[str, Any]) -> SimpleNamespace:
                 nonlocal transition_count
+                live_requests.add(asyncio.current_task())
                 index = self.index
                 self.index += 1
                 if index == 0:
@@ -192,6 +193,7 @@ def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) 
                     transition_count += 1
                     if transition_count >= 20:
                         enough_transitions.set()
+                        await release_warmup.wait()
                 return SimpleNamespace(is_warmup=False)
 
         queue: asyncio.Queue = asyncio.Queue()
@@ -201,11 +203,14 @@ def test_transition_task_cleanup_stays_bounded(monkeypatch: pytest.MonkeyPatch) 
             replacements=replacements(),
         ))
         await asyncio.wait_for(enough_transitions.wait(), timeout=2)
+        gc.collect()
+        # Finished requests must be collectible during the run, even if warmup
+        # stays slow enough to require arbitrarily many transition requests.
+        assert len(live_requests) <= args.parallel * args.in_flight_task_multiplier
         release_warmup.set()
         await asyncio.wait_for(phase, timeout=2)
 
     asyncio.run(run())
-    assert max(gather_sizes) <= args.parallel * args.in_flight_task_multiplier
 
 
 def test_queued_candidate_fills_quota_without_replenishment() -> None:
