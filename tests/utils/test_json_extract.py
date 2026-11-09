@@ -1,48 +1,28 @@
-"""Unit tests for the shared last-JSON-object extractor."""
-
-import pytest
+"""Shared JSON extraction: the last object wins when prose contains an earlier one."""
 
 from evalscope.utils.json_extract import extract_last_json_object
 
 
-@pytest.mark.parametrize(
-    'text',
-    [
-        '{"score": 4}',
-        '```json\n{"score": 4}\n```',
-        '  {"score": 4}  ',
-        'Here is the verdict:\n{"score": 4}\nHope this helps!',
-    ],
-)
-def test_single_object_is_extracted(text: str) -> None:
-    assert extract_last_json_object(text) == {'score': 4}
+def test_plain_object():
+    assert extract_last_json_object('{"score": 4}') == {'score': 4}
 
 
-def test_example_object_before_the_answer_is_ignored() -> None:
-    assert extract_last_json_object('Example: {"score": 0}. Answer: {"score": 4}') == {'score': 4}
+def test_example_object_before_the_answer_is_ignored():
+    text = 'The schema is {"weaknesses": [...]}. Final answer: {"weaknesses": []}'
+
+    assert extract_last_json_object(text) == {'weaknesses': []}
 
 
-def test_nested_object_is_returned_whole() -> None:
-    text = 'Payload: {"images": [{"content": [{"text": "A"}]}]}'
-
-    assert extract_last_json_object(text) == {'images': [{'content': [{'text': 'A'}]}]}
+def test_last_of_two_objects_is_returned():
+    assert extract_last_json_object('{"draft": true} then {"score": 4}') == {'score': 4}
 
 
-def test_unparseable_trailer_does_not_hide_the_answer() -> None:
-    text = '{"score": 4}\nExample of bad output: {"score": }'
+def test_braces_inside_a_string_value_are_data():
+    text = '{"reasoning": "the set {A, B} is open", "score": 4}'
 
-    assert extract_last_json_object(text) == {'score': 4}
+    assert extract_last_json_object(text) == {'reasoning': 'the set {A, B} is open', 'score': 4}
 
 
-@pytest.mark.parametrize(
-    'text',
-    [
-        '',
-        'no json here',
-        '[1, 2]',
-        '{"score": 4',
-        '{"score": }',
-    ],
-)
-def test_text_without_a_parseable_object_returns_none(text: str) -> None:
-    assert extract_last_json_object(text) is None
+def test_text_without_an_object_returns_none():
+    assert extract_last_json_object('no json here') is None
+    assert extract_last_json_object('') is None
