@@ -14,15 +14,17 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 from urllib.parse import urlsplit, urlunsplit
 
+from filelock import FileLock
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from evalscope.api.dataset import download_dataset_snapshot
-from evalscope.constants import HubType
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
 from evalscope.utils import get_secret_value
 from evalscope.utils.logger import get_logger
 
@@ -576,48 +578,48 @@ def _split_chat_url(url: str) -> str:
 
 
 def _materialize_weka_traces(trace_file: Path, digest: str) -> str:
-    """Split ``traces.jsonl`` into one JSON file per trace for AIPerf's native Weka loader.
-
-    AIPerf's ``weka_trace`` loader accepts a single ``.json`` file or a directory of
-    per-conversation ``.json`` files, while the published corpus ships as one JSONL file with
-    one trace per line. The split directory is cached next to the corpus and keyed by the
-    corpus SHA-256, so repeated runs and concurrent runs reuse it.
-    """
-    target = trace_file.parent / f'.weka-json-{digest[:12]}'
+    """Split ``traces.jsonl`` into an immutable, atomically published directory for AIPerf."""
+    cache_root = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / 'agentx' / 'weka'
+    target = cache_root / f'weka-json-{digest}'
     marker = target / '.complete'
     if marker.is_file():
         return str(target)
 
-    staging = target.with_name(f'{target.name}.tmp')
-    if staging.exists():
-        shutil.rmtree(staging)
-    staging.mkdir(parents=True)
+    cache_root.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(cache_root / f'{target.name}.lock')):
+        if marker.is_file():
+            return str(target)
 
-    written: Dict[str, str] = {}
-    with trace_file.open('r', encoding='utf-8') as handle:
-        for number, line in enumerate(handle, start=1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError as e:
-                raise ValueError(f'{trace_file}:{number} is not a JSON object: {e}') from e
-            trace_id = row.get('id') if isinstance(row, dict) else None
-            if not isinstance(trace_id, str) or not trace_id:
-                raise ValueError(f'{trace_file}:{number} has no string "id"')
-            name = re.sub(r'[^A-Za-z0-9._-]', '_', trace_id)
-            if name in written:
-                raise ValueError(f'{trace_file}:{number} repeats trace id {trace_id!r}')
-            written[name] = trace_id
-            (staging / f'{name}.json').write_text(line, encoding='utf-8')
+        staging = Path(tempfile.mkdtemp(prefix=f'{target.name}.tmp-', dir=cache_root))
+        try:
+            seen_ids: set[str] = set()
+            with trace_file.open('r', encoding='utf-8') as handle:
+                for number, line in enumerate(handle, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f'{trace_file}:{number} is not a JSON object: {e}') from e
+                    trace_id = row.get('id') if isinstance(row, dict) else None
+                    if not isinstance(trace_id, str) or not trace_id:
+                        raise ValueError(f'{trace_file}:{number} has no string "id"')
+                    if trace_id in seen_ids:
+                        raise ValueError(f'{trace_file}:{number} repeats trace id {trace_id!r}')
+                    seen_ids.add(trace_id)
+                    name = re.sub(r'[^A-Za-z0-9._-]', '_', trace_id)
+                    (staging / f'{number:08d}-{name}.json').write_text(line, encoding='utf-8')
 
-    if not written:
-        raise ValueError(f'{trace_file} contains no Weka traces')
-    if target.exists():
-        shutil.rmtree(target)
-    staging.rename(target)
-    marker.write_text('', encoding='utf-8')
+            if not seen_ids:
+                raise ValueError(f'{trace_file} contains no Weka traces')
+            (staging / '.complete').write_text('', encoding='utf-8')
+            if target.exists():
+                shutil.rmtree(target)
+            staging.rename(target)
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+
     return str(target)
 
 

@@ -1,4 +1,6 @@
 import json
+import multiprocessing as mp
+import os
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,12 @@ from evalscope.perf.scenarios.agentx import (
     _resolve_dataset,
     _run_one_agentx,
 )
+
+
+def _materialize_from_worker(args: tuple[str, str, str]) -> str:
+    source, digest, cache_root = args
+    agentx_module.DEFAULT_EVALSCOPE_CACHE_DIR = cache_root
+    return _materialize_weka_traces(Path(source), digest)
 
 
 def _args(**kwargs) -> Arguments:
@@ -205,6 +213,16 @@ class TestAgentXCommand:
 
 class TestWekaTraceMaterialization:
 
+    @pytest.fixture(autouse=True)
+    def cache_root(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+        root = tmp_path / 'evalscope-cache'
+        monkeypatch.setattr(agentx_module, 'DEFAULT_EVALSCOPE_CACHE_DIR', str(root))
+        return root
+
+    @staticmethod
+    def _target(cache_root: Path, digest: str) -> Path:
+        return cache_root / 'agentx' / 'weka' / f'weka-json-{digest}'
+
     @staticmethod
     def _trace(trace_id: str) -> str:
         return json.dumps({
@@ -221,14 +239,17 @@ class TestWekaTraceMaterialization:
         source.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         return source
 
-    def test_splits_jsonl_into_one_file_per_trace(self, tmp_path: Path) -> None:
+    def test_splits_jsonl_into_one_file_per_trace(self, tmp_path: Path, cache_root: Path) -> None:
         source = self._write(tmp_path, [self._trace('trace-a'), self._trace('trace/b')])
 
         directory = Path(_materialize_weka_traces(source, 'f' * 64))
 
-        assert directory == tmp_path / f'.weka-json-{"f" * 12}'
-        assert sorted(path.name for path in directory.glob('*.json')) == ['trace-a.json', 'trace_b.json']
-        assert json.loads((directory / 'trace-a.json').read_text(encoding='utf-8'))['id'] == 'trace-a'
+        assert directory == self._target(cache_root, 'f' * 64)
+        assert sorted(path.name for path in directory.glob('*.json')) == [
+            '00000001-trace-a.json',
+            '00000002-trace_b.json',
+        ]
+        assert json.loads((directory / '00000001-trace-a.json').read_text(encoding='utf-8'))['id'] == 'trace-a'
         assert (directory / '.complete').is_file()
 
     def test_reuses_the_cached_directory(self, tmp_path: Path) -> None:
@@ -251,11 +272,65 @@ class TestWekaTraceMaterialization:
             ([], 'contains no Weka traces'),
         ],
     )
-    def test_rejects_a_corpus_it_cannot_replay(self, tmp_path: Path, lines: list[str], message: str) -> None:
+    def test_rejects_a_corpus_it_cannot_replay(
+        self, tmp_path: Path, cache_root: Path, lines: list[str], message: str
+    ) -> None:
         source = self._write(tmp_path, lines)
 
         with pytest.raises(ValueError, match=message):
             _materialize_weka_traces(source, 'b' * 64)
+        assert list(cache_root.glob('agentx/weka/*.tmp-*')) == []
+
+    def test_concurrent_runs_publish_one_complete_cache(self, tmp_path: Path, cache_root: Path) -> None:
+        source = self._write(tmp_path, [self._trace(f'trace-{index:03d}') for index in range(200)])
+        worker_args = [(str(source), 'e' * 64, str(cache_root))] * 8
+
+        with mp.get_context('spawn').Pool(8) as pool:
+            results = pool.map(_materialize_from_worker, worker_args)
+
+        assert results == [str(self._target(cache_root, 'e' * 64))] * 8
+        files = sorted(self._target(cache_root, 'e' * 64).glob('*.json'))
+        assert len(files) == 200
+        assert {json.loads(path.read_text(encoding='utf-8'))['id'] for path in files} == {
+            f'trace-{index:03d}' for index in range(200)
+        }
+        assert (self._target(cache_root, 'e' * 64) / '.complete').is_file()
+
+    def test_case_insensitive_and_sanitized_ids_do_not_collide(self, tmp_path: Path) -> None:
+        ids = ['Trace', 'trace', 'a/b', 'a?b']
+        source = self._write(tmp_path, [self._trace(trace_id) for trace_id in ids])
+
+        directory = Path(_materialize_weka_traces(source, 'c' * 64))
+
+        files = sorted(directory.glob('*.json'))
+        assert len(files) == 4
+        assert [json.loads(path.read_text(encoding='utf-8'))['id'] for path in files] == ids
+
+    @pytest.mark.skipif(hasattr(os, 'geteuid') and os.geteuid() == 0, reason='root ignores directory permissions')
+    def test_read_only_source_directory(self, tmp_path: Path, cache_root: Path) -> None:
+        source_dir = tmp_path / 'mirror'
+        source_dir.mkdir()
+        source = self._write(source_dir, [self._trace('trace-a')])
+        source_dir.chmod(0o555)
+        try:
+            directory = Path(_materialize_weka_traces(source, 'd' * 64))
+        finally:
+            source_dir.chmod(0o755)
+
+        assert directory == self._target(cache_root, 'd' * 64)
+        assert len(list(directory.glob('*.json'))) == 1
+
+    def test_rebuilds_an_incomplete_cache(self, tmp_path: Path, cache_root: Path) -> None:
+        source = self._write(tmp_path, [self._trace('trace-a')])
+        target = self._target(cache_root, 'a' * 64)
+        target.mkdir(parents=True)
+        (target / 'stale.json').write_text('{}', encoding='utf-8')
+
+        directory = Path(_materialize_weka_traces(source, 'a' * 64))
+
+        assert not (directory / 'stale.json').exists()
+        assert len(list(directory.glob('*.json'))) == 1
+        assert (directory / '.complete').is_file()
 
 
 class TestAgentXNormalization:
@@ -414,7 +489,8 @@ class TestAgentXProcessLifecycle:
 
 class TestAgentXDatasetValidation:
 
-    def test_unverified_local_data_is_allowed_only_for_smoke(self, tmp_path):
+    def test_unverified_local_data_is_allowed_only_for_smoke(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(agentx_module, 'DEFAULT_EVALSCOPE_CACHE_DIR', str(tmp_path / 'evalscope-cache'))
         trace = {'id': 'unverified', 'models': ['m'], 'block_size': 64, 'hash_id_scope': 'local', 'requests': []}
         (tmp_path / 'traces.jsonl').write_text(json.dumps(trace) + '\n', encoding='utf-8')
         smoke_args = _args(scenario='{"name":"agentx","mode":"smoke"}', dataset_path=str(tmp_path))
