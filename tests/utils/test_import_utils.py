@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Focused regression tests for evalscope.utils.import_utils.check_import."""
+import importlib
 import sys
 from pathlib import Path
 from typing import Callable
@@ -105,3 +106,17 @@ class TestCheckImport:
         with mock.patch('evalscope.utils.import_utils.logger') as mock_logger:
             assert check_import('os.path', raise_warning=False) is True
             mock_logger.warning.assert_not_called()
+
+    def test_translation_helpers_do_not_disable_missing_import_errors(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Importing the README translator must not silence missing-dependency errors.
+
+        ``check_import(..., raise_error=True)`` skips the error while ``BUILD_DOC=1``.
+        The translator used to set that variable at import time, so collecting its
+        tests made later import checks return False instead of raising.
+        """
+        monkeypatch.delenv('BUILD_DOC', raising=False)
+        importlib.reload(importlib.import_module('evalscope.utils.doc_utils.translate_description'))
+        with pytest.raises(ImportError, match='not found'):
+            check_import('definitely_missing_mod_after_translate_xyz', raise_warning=False, raise_error=True)
