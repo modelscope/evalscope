@@ -250,18 +250,17 @@ class TestWekaTraceMaterialization:
             '00000002-trace_b.json',
         ]
         assert json.loads((directory / '00000001-trace-a.json').read_text(encoding='utf-8'))['id'] == 'trace-a'
-        assert (directory / '.complete').is_file()
 
     def test_reuses_the_cached_directory(self, tmp_path: Path) -> None:
         source = self._write(tmp_path, [self._trace('trace-a')])
 
         first = _materialize_weka_traces(source, 'a' * 64)
-        marker = Path(first) / '.complete'
-        marker_mtime = marker.stat().st_mtime_ns
+        cached_file = Path(first) / '00000001-trace-a.json'
+        cached_mtime = cached_file.stat().st_mtime_ns
         second = _materialize_weka_traces(source, 'a' * 64)
 
         assert second == first
-        assert marker.stat().st_mtime_ns == marker_mtime
+        assert cached_file.stat().st_mtime_ns == cached_mtime
 
     @pytest.mark.parametrize(
         'lines, message',
@@ -279,7 +278,7 @@ class TestWekaTraceMaterialization:
 
         with pytest.raises(ValueError, match=message):
             _materialize_weka_traces(source, 'b' * 64)
-        assert list(cache_root.glob('agentx/weka/*.tmp-*')) == []
+        assert list(cache_root.glob('agentx/weka/*.incomplete')) == []
 
     def test_concurrent_runs_publish_one_complete_cache(self, tmp_path: Path, cache_root: Path) -> None:
         source = self._write(tmp_path, [self._trace(f'trace-{index:03d}') for index in range(200)])
@@ -294,7 +293,6 @@ class TestWekaTraceMaterialization:
         assert {json.loads(path.read_text(encoding='utf-8'))['id'] for path in files} == {
             f'trace-{index:03d}' for index in range(200)
         }
-        assert (self._target(cache_root, 'e' * 64) / '.complete').is_file()
 
     def test_case_insensitive_and_sanitized_ids_do_not_collide(self, tmp_path: Path) -> None:
         ids = ['Trace', 'trace', 'a/b', 'a?b']
@@ -320,17 +318,17 @@ class TestWekaTraceMaterialization:
         assert directory == self._target(cache_root, 'd' * 64)
         assert len(list(directory.glob('*.json'))) == 1
 
-    def test_rebuilds_an_incomplete_cache(self, tmp_path: Path, cache_root: Path) -> None:
+    def test_rebuilds_an_interrupted_staging_directory(self, tmp_path: Path, cache_root: Path) -> None:
         source = self._write(tmp_path, [self._trace('trace-a')])
         target = self._target(cache_root, 'a' * 64)
-        target.mkdir(parents=True)
-        (target / 'stale.json').write_text('{}', encoding='utf-8')
+        staging = target.with_name(f'{target.name}.incomplete')
+        staging.mkdir(parents=True)
+        (staging / 'stale.json').write_text('{}', encoding='utf-8')
 
         directory = Path(_materialize_weka_traces(source, 'a' * 64))
 
         assert not (directory / 'stale.json').exists()
         assert len(list(directory.glob('*.json'))) == 1
-        assert (directory / '.complete').is_file()
 
 
 class TestAgentXNormalization:

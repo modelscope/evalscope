@@ -14,7 +14,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
@@ -581,16 +580,17 @@ def _materialize_weka_traces(trace_file: Path, digest: str) -> str:
     """Split ``traces.jsonl`` into an immutable, atomically published directory for AIPerf."""
     cache_root = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / 'agentx' / 'weka'
     target = cache_root / f'weka-json-{digest}'
-    marker = target / '.complete'
-    if marker.is_file():
+    if target.is_dir():
         return str(target)
 
     cache_root.mkdir(parents=True, exist_ok=True)
     with FileLock(str(cache_root / f'{target.name}.lock')):
-        if marker.is_file():
+        if target.is_dir():
             return str(target)
 
-        staging = Path(tempfile.mkdtemp(prefix=f'{target.name}.tmp-', dir=cache_root))
+        staging = cache_root / f'{target.name}.incomplete'
+        shutil.rmtree(staging, ignore_errors=True)
+        staging.mkdir()
         try:
             seen_ids: set[str] = set()
             with trace_file.open('r', encoding='utf-8') as handle:
@@ -613,9 +613,6 @@ def _materialize_weka_traces(trace_file: Path, digest: str) -> str:
 
             if not seen_ids:
                 raise ValueError(f'{trace_file} contains no Weka traces')
-            (staging / '.complete').write_text('', encoding='utf-8')
-            if target.exists():
-                shutil.rmtree(target)
             staging.rename(target)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
