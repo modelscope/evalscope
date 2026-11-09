@@ -1,6 +1,7 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, AsyncIterator, Callable, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, AsyncIterator, Callable, List, Literal, Optional, Tuple
 
 import numpy as np
 
@@ -15,26 +16,87 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
+@dataclass
+class _MeasurementWindow:
+    """Own send-time classification, quota and deadline for one closed-loop run."""
+
+    number: int
+    remaining_warmup: int
+    duration: Optional[float]
+    compute_deadline: Callable[[Optional[float]], Optional[float]]
+    exclude_overlap: bool
+    measured: int = 0
+    pending_candidates: int = 0
+    deadline: Optional[float] = None
+    timer: Optional[asyncio.TimerHandle] = None
+    stopped: asyncio.Event = field(default_factory=asyncio.Event)
+    send_progress: asyncio.Event = field(default_factory=asyncio.Event)
+
+    @property
+    def expired(self) -> bool:
+        return self.deadline is not None and time.perf_counter() >= self.deadline
+
+    @property
+    def closed(self) -> bool:
+        return self.stopped.is_set() or self.measured >= self.number or self.expired
+
+    def queue_request(self, is_warmup: bool) -> None:
+        if self.exclude_overlap and not is_warmup:
+            self.pending_candidates += 1
+
+    def start_request(self, is_warmup: bool) -> Optional[Literal['warmup', 'transition', 'measured']]:
+        if is_warmup:
+            return 'warmup'
+        if self.exclude_overlap:
+            self.pending_candidates -= 1
+            self.send_progress.set()
+            if self.remaining_warmup:
+                return 'transition'
+            if self.closed:
+                return None
+
+        self.measured += 1
+        if self.deadline is None and self.duration is not None:
+            self.deadline = self.compute_deadline(self.duration)
+            if self.exclude_overlap:
+                self.timer = asyncio.get_running_loop().call_later(
+                    max(0, self.deadline - time.perf_counter()), self._stop
+                )
+        if self.exclude_overlap and self.closed:
+            self._stop()
+        return 'measured'
+
+    def finish_request(self, is_warmup: bool) -> None:
+        if is_warmup:
+            self.remaining_warmup -= 1
+
+    def _stop(self) -> None:
+        self.stopped.set()
+        self.send_progress.set()
+
+    def cancel_timer(self) -> None:
+        if self.timer is not None:
+            self.timer.cancel()
+
+
 async def _send_request(
     semaphore: asyncio.Semaphore,
     request: dict,
     is_warmup: bool,
     queue: asyncio.Queue,
     client: 'AioHttpClient',
+    window: _MeasurementWindow,
     track_gpu_memory: bool = False,
-    on_send: Optional[Callable[[], Optional[bool]]] = None,
-    on_warmup_complete: Optional[Callable[[], None]] = None,
 ) -> None:
     async with semaphore:
         # Fired when the request actually goes out, not when its task was created.
-        is_transition = on_send() if on_send is not None else False
-        if is_transition is None:
+        phase = window.start_request(is_warmup)
+        if phase is None:
             return
         benchmark_data = await client.post(request)
-        if is_warmup and on_warmup_complete is not None:
-            on_warmup_complete()
+        window.finish_request(is_warmup)
     benchmark_data.is_warmup = is_warmup
-    if is_transition:
+    if phase == 'transition':
         benchmark_data.is_transition = True
     if track_gpu_memory:
         benchmark_data.update_gpu_usage()
@@ -89,6 +151,48 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         finally:
             await self._request_generator.aclose()
 
+    async def _wait_for_capacity(self, in_flight: set[asyncio.Task]) -> bool:
+        if len(in_flight) < self.args.parallel * self.args.in_flight_task_multiplier:
+            return False
+        done, _ = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+        in_flight.difference_update(done)
+        await asyncio.gather(*done)
+        return True
+
+    async def _dispatch_items(
+        self,
+        requests: List[Tuple[dict, bool]],
+        replacements: Optional[AsyncIterator[Tuple[dict, bool]]],
+        window: _MeasurementWindow,
+        in_flight: set[asyncio.Task],
+    ) -> AsyncIterator[Tuple[dict, bool]]:
+        for item in requests:
+            yield item
+        if replacements is None:
+            return
+        while not window.closed:
+            # Already queued candidates can still fill the measured quota.
+            if window.pending_candidates >= window.number - window.measured:
+                window.send_progress.clear()
+                await window.send_progress.wait()
+                continue
+            if await self._wait_for_capacity(in_flight):
+                continue
+            replacement = asyncio.ensure_future(anext(replacements))
+            closed = asyncio.create_task(window.stopped.wait())
+            try:
+                await asyncio.wait((replacement, closed), return_when=asyncio.FIRST_COMPLETED)
+                if window.closed:
+                    return
+                item = replacement.result()
+            except StopAsyncIteration:
+                return
+            finally:
+                replacement.cancel()
+                closed.cancel()
+                await asyncio.gather(replacement, closed, return_exceptions=True)
+            yield item
+
     async def _run_phase(
         self,
         requests: List[Tuple[dict, bool]],
@@ -110,10 +214,16 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         matches trie's semantics).
         """
         semaphore = asyncio.Semaphore(self.args.parallel)
-        max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
         in_flight: set[asyncio.Task] = set()
         n = len(requests)
         rate = self.args.rate
+        window = _MeasurementWindow(
+            number=self.args.number,
+            remaining_warmup=sum(is_warmup for _, is_warmup in requests),
+            duration=duration,
+            compute_deadline=self._compute_deadline,
+            exclude_overlap=replacements is not None,
+        )
 
         # Pre-compute absolute dispatch timestamps when pacing is enabled.
         # ``target_times`` is anchored just before the dispatch loop so that
@@ -130,101 +240,15 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             # otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
 
-        deadline: Optional[float] = None
-        deadline_timer: Optional[asyncio.TimerHandle] = None
-        measurement_closed = asyncio.Event()
-        send_progress = asyncio.Event()
-
-        def _close_measurement() -> None:
-            measurement_closed.set()
-            send_progress.set()
-
-        def _arm_deadline() -> None:
-            """Start the timed window on the first measured request that goes out.
-
-            The dispatch loop is bounded by ``max_in_flight``, not by the
-            semaphore, so it queues measured tasks while warmup still holds every
-            slot; arming on dispatch would start the clock at ~t0.
-            """
-            nonlocal deadline, deadline_timer
-            if deadline is None and duration is not None:
-                deadline = self._compute_deadline(duration)
-                if exclude_overlap:
-                    deadline_timer = asyncio.get_running_loop().call_later(
-                        max(0, deadline - time.perf_counter()), _close_measurement
-                    )
-
-        exclude_overlap = replacements is not None
-        remaining_warmup = sum(is_warmup for _, is_warmup in requests) if exclude_overlap else 0
-        measured = 0
-        pending_candidates = 0
-
-        def _measurement_closed() -> bool:
-            return (
-                measurement_closed.is_set()
-                or measured >= self.args.number
-                or (deadline is not None and time.perf_counter() >= deadline)
-            )
-
-        def _classify_send() -> Optional[bool]:
-            nonlocal measured, pending_candidates
-            if exclude_overlap:
-                pending_candidates -= 1
-                send_progress.set()
-            if remaining_warmup:
-                return True
-            if exclude_overlap and _measurement_closed():
-                return None
-            measured += 1
-            _arm_deadline()
-            if exclude_overlap and _measurement_closed():
-                _close_measurement()
-            return False
-
-        def _finish_warmup() -> None:
-            nonlocal remaining_warmup
-            remaining_warmup -= 1
-
-        async def _dispatch_items() -> AsyncIterator[Tuple[dict, bool]]:
-            nonlocal in_flight
-            for item in requests:
-                yield item
-            if replacements is None:
-                return
-            while not _measurement_closed():
-                # Already queued candidates can still fill the measured quota.
-                if pending_candidates >= self.args.number - measured:
-                    send_progress.clear()
-                    await send_progress.wait()
-                    continue
-                if len(in_flight) >= max_in_flight:
-                    done, in_flight = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-                    await asyncio.gather(*done)
-                    continue
-                replacement = asyncio.ensure_future(anext(replacements))
-                closed = asyncio.create_task(measurement_closed.wait())
-                try:
-                    await asyncio.wait((replacement, closed), return_when=asyncio.FIRST_COMPLETED)
-                    if _measurement_closed():
-                        return
-                    item = replacement.result()
-                except StopAsyncIteration:
-                    return
-                finally:
-                    replacement.cancel()
-                    closed.cancel()
-                    await asyncio.gather(replacement, closed, return_exceptions=True)
-                yield item
-
         dispatched = 0
         last_target = None
         try:
-            async for request, is_warmup in _dispatch_items():
-                if exclude_overlap and not is_warmup and _measurement_closed():
+            async for request, is_warmup in self._dispatch_items(requests, replacements, window, in_flight):
+                if window.exclude_overlap and not is_warmup and window.closed:
                     break
                 # Duration cap: stop dispatching once the deadline is hit.  It is
                 # ``None`` until a measured request has been sent, so warmup is exempt.
-                if deadline is not None and time.perf_counter() >= deadline:
+                if window.expired:
                     logger.info(
                         f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
                         'stopping further dispatches.'
@@ -240,26 +264,22 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     else:
                         last_target += float(np.random.exponential(1.0 / rate))
                     sleep_s = last_target - time.perf_counter()
-                    if deadline is not None:
-                        sleep_s = min(sleep_s, deadline - time.perf_counter())
+                    if window.deadline is not None:
+                        sleep_s = min(sleep_s, window.deadline - time.perf_counter())
                     if sleep_s > 0:
                         await asyncio.sleep(sleep_s)
 
                 # Keep the number of scheduled tasks bounded to avoid OOM.
-                if len(in_flight) >= max_in_flight:
-                    done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-                    in_flight = pending
-                    await asyncio.gather(*done)
+                await self._wait_for_capacity(in_flight)
 
-                if deadline is not None and time.perf_counter() >= deadline:
+                if window.expired:
                     logger.info(
                         f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
                         'stopping further dispatches.'
                     )
                     break
 
-                if exclude_overlap and not is_warmup:
-                    pending_candidates += 1
+                window.queue_request(is_warmup)
                 task = asyncio.create_task(
                     _send_request(
                         semaphore,
@@ -267,9 +287,8 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                         is_warmup,
                         self.queue,
                         self.client,
+                        window,
                         self.track_gpu_memory,
-                        on_send=None if is_warmup else _classify_send,
-                        on_warmup_complete=_finish_warmup if exclude_overlap else None,
                     )
                 )
                 in_flight.add(task)
@@ -280,14 +299,13 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             # (soft exit), matching trie: cap is "stop starting new requests at the
             # deadline", not "kill in-flight work".
             if in_flight:
-                if deadline is not None and time.perf_counter() >= deadline:
+                if window.expired:
                     logger.info(f'Duration deadline reached; awaiting {len(in_flight)} in-flight request(s).')
                 await asyncio.gather(*in_flight)
-            if exclude_overlap and not _measurement_closed():
-                raise RuntimeError(f'Request source ended after {measured}/{self.args.number} measured requests.')
+            if window.exclude_overlap and not window.closed:
+                raise RuntimeError(f'Request source ended after {window.measured}/{window.number} measured requests.')
         finally:
-            if deadline_timer is not None:
-                deadline_timer.cancel()
+            window.cancel_timer()
             for task in in_flight:
                 if not task.done():
                     task.cancel()

@@ -229,6 +229,88 @@ def test_queued_candidate_fills_quota_without_replenishment() -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize('enabled', [False, True])
+def test_result_queue_backpressure_does_not_hold_http_slots(enabled: bool) -> None:
+    args = _make_args(number=4, parallel=2, warmup_num=2, exclude_warmup_overlap=enabled)
+
+    async def run() -> None:
+        release_first_cohort = asyncio.Event()
+        first_cohort_started = asyncio.Event()
+        next_cohort_started = asyncio.Event()
+        starts: list[int] = []
+
+        class Client:
+
+            async def post(self, request: dict[str, int]) -> SimpleNamespace:
+                starts.append(request['id'])
+                if len(starts) == 2:
+                    first_cohort_started.set()
+                if len(starts) == 4:
+                    next_cohort_started.set()
+                if request['id'] < 2:
+                    await release_first_cohort.wait()
+                return SimpleNamespace(id=request['id'], is_warmup=False)
+
+        async def requests() -> AsyncIterator[tuple[dict, bool]]:
+            for index in range(args.total_count):
+                yield {'id': index}, index < args.warmup_count
+            if enabled:
+                pytest.fail('The initial requests already fill the measured quota.')
+
+        queue: asyncio.Queue = asyncio.Queue(maxsize=1)
+        await queue.put(None)
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, requests())
+        phase = asyncio.create_task(strategy.run())
+        consumer = None
+        try:
+            await asyncio.wait_for(first_cohort_started.wait(), timeout=1)
+            release_first_cohort.set()
+            # The result queue is still full, but completed HTTP requests must
+            # release their slots so the next queued requests can reach the server.
+            await asyncio.wait_for(next_cohort_started.wait(), timeout=1)
+
+            async def drain() -> None:
+                while True:
+                    await queue.get()
+                    queue.task_done()
+
+            consumer = asyncio.create_task(drain())
+            await asyncio.wait_for(phase, timeout=1)
+            await queue.join()
+            assert starts == list(range(args.total_count))
+        finally:
+            phase.cancel()
+            if consumer is not None:
+                consumer.cancel()
+                await asyncio.gather(consumer, return_exceptions=True)
+            await asyncio.gather(phase, return_exceptions=True)
+
+    asyncio.run(run())
+
+
+def test_failed_measured_request_consumes_quota() -> None:
+    args = _make_args(number=2, parallel=1, warmup_num=1, exclude_warmup_overlap=True)
+
+    async def requests() -> AsyncIterator[tuple[dict, bool]]:
+        for index in range(args.total_count):
+            yield {'id': index}, index < args.warmup_count
+        pytest.fail('A failed measured request still counts toward the quota.')
+
+    async def run() -> None:
+        class Client:
+
+            async def post(self, request: dict[str, int]) -> SimpleNamespace:
+                return SimpleNamespace(id=request['id'], is_warmup=False, success=request['id'] != 1)
+
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, requests())
+        await asyncio.wait_for(strategy.run(), timeout=1)
+        rows = [queue.get_nowait() for _ in range(queue.qsize())]
+        assert [(row.id, row.success) for row in rows if not row.is_warmup] == [(1, False), (2, True)]
+
+    asyncio.run(run())
+
+
 def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyPatch) -> None:
     worker_stopped = threading.Event()
     args = _make_args(
