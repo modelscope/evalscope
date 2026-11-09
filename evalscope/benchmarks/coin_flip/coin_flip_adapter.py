@@ -79,7 +79,7 @@ Here are some examples of how to solve similar problems:
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
-        evaluation_version='v1.2',
+        evaluation_version='v1.1',
     )
 )
 class CoinFlipAdapter(DefaultDataAdapter):

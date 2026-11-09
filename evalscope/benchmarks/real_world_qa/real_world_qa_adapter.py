@@ -27,7 +27,7 @@ OPEN_PROMPT = (
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.1',
         name='real_world_qa',
         pretty_name='RealWorldQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],

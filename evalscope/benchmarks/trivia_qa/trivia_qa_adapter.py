@@ -39,7 +39,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 @register_benchmark(
     BenchmarkMeta(
         name='trivia_qa',
-        evaluation_version='v1.3',
+        evaluation_version='v1.2',
         pretty_name='TriviaQA',
         dataset_id='evalscope/trivia_qa',
         hf_dataset_id='mandarjoshi/trivia_qa',

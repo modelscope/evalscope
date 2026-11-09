@@ -191,9 +191,12 @@ def extract_answer_line(text: str) -> Optional[str]:
     markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
     if not markers:
         return None
-    value = text[markers[-1].end() :].split('\n', 1)[0].strip()
-    value = _CLOSING_EMPHASIS_RE.sub('', value)
-    return value.replace('**', '').strip()
+    marker = markers[-1]
+    value = text[marker.end() :].split('\n', 1)[0].strip()
+    has_opening_emphasis = marker.group(0).rstrip().endswith('*') or text[: marker.start()].endswith('*')
+    if has_opening_emphasis:
+        value = _CLOSING_EMPHASIS_RE.sub('', value)
+    return value.strip('*').strip()
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:

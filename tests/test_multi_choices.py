@@ -349,9 +349,14 @@ def test_extract_answer_line_without_marker() -> None:
         ('**ANSWER: 3.5**.', '3.5'),
         ('**ANSWER: Paris**!', 'Paris'),
         ('ANSWER: *45*.', '45'),
-        # Unbolded values keep their punctuation, so a real answer such as '3.5.' is not cut.
+        # Unbolded values keep their punctuation and literal asterisks.
         ('ANSWER: 45.', '45.'),
         ('ANSWER: 2*3', '2*3'),
+        ('ANSWER: 2**3', '2**3'),
+        ('ANSWER: x ** y', 'x ** y'),
+        ('ANSWER: Pa**ris', 'Pa**ris'),
+        ('ANSWER: char*.', 'char*.'),
+        ('ANSWER: 2**.', '2**.'),
     ],
 )
 def test_extract_answer_line_drops_punctuation_after_closing_bold(text: str, expected: str) -> None:
