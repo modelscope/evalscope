@@ -23,6 +23,9 @@ class AgentEnvironment(ABC):
     name: str = 'base'
     """Registered environment name.  Subclasses should override."""
 
+    async def prepare(self) -> None:
+        """Create external resources before the agent loop; default is a no-op."""
+
     @abstractmethod
     async def exec(
         self,

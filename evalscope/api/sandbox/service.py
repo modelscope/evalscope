@@ -22,11 +22,14 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Set, Tuple, TypeVar
 
+from pydantic import SecretStr, ValidationError
+
 from evalscope.utils.asyncio_runtime import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
 
 from .config_builder import build_sandbox_config
-from .engine import SandboxEngine, get_enclave_types, resolve_engine
+from .e2b import with_e2b_image_mapping
+from .engine import SandboxConfigError, SandboxEngine, get_enclave_types, resolve_engine
 
 if TYPE_CHECKING:
     from ms_enclave.sandbox.manager import SandboxManager
@@ -125,7 +128,11 @@ class SandboxHandle:
 def _freeze(cfg: Optional[Dict[str, Any]]) -> str:
     """Produce a stable, hashable representation of a manager config dict."""
     try:
-        return json.dumps(cfg or {}, sort_keys=True, default=str)
+        return json.dumps(
+            cfg or {},
+            sort_keys=True,
+            default=lambda value: value.get_secret_value() if isinstance(value, SecretStr) else str(value),
+        )
     except Exception:
         return repr(cfg or {})
 
@@ -267,6 +274,11 @@ class SandboxService:
         pool_size: int,
         sandbox_config: Any,
     ) -> None:
+        if engine is SandboxEngine.E2B and pool_size > manager.config.max_sandboxes:
+            raise SandboxConfigError(
+                f'sandbox.pool_size={pool_size} exceeds E2B max_sandboxes={manager.config.max_sandboxes}; '
+                'lower sandbox.pool_size (which defaults to eval_batch_size) or raise max_sandboxes.'
+            )
         sandbox_type, _, _, _ = get_enclave_types(engine)
         pool = await manager.initialize_pool(pool_size=pool_size, sandbox_type=sandbox_type, config=sandbox_config)
         logger.info(f'SandboxService: pool initialized with {len(pool)} sandboxes (engine={engine.value}).')
@@ -296,11 +308,18 @@ class SandboxService:
 
     def _construct_manager(self, engine: SandboxEngine, manager_config: Dict[str, Any]) -> 'SandboxManager':
         _, _, manager_cls, manager_config_cls = get_enclave_types(engine)
+        if engine is SandboxEngine.E2B:
+            manager_config = with_e2b_image_mapping(manager_config)
 
         if manager_cls is not None:
-            cfg = (
-                manager_config_cls.model_validate(manager_config) if manager_config_cls is not None else manager_config
-            )
+            try:
+                cfg = (
+                    manager_config_cls.model_validate(manager_config)
+                    if manager_config_cls is not None
+                    else manager_config
+                )
+            except ValidationError as exc:
+                raise SandboxConfigError(f'Invalid {engine.value} sandbox.manager_config: {exc}') from exc
             return manager_cls(config=cfg) if manager_config_cls is not None else manager_cls(**manager_config)
 
         # Default path: ms_enclave ``SandboxManagerFactory`` (covers docker).

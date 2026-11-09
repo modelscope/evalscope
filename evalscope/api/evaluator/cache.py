@@ -117,6 +117,15 @@ class CacheManager:
                 duplicate_rows += 1
             cached_by_sample_id[cached_state.sample_id] = cached_state
 
+        from .inference_result import get_prepare_failure
+
+        failed_ids = [
+            sid for sid, state in cached_by_sample_id.items() if get_prepare_failure(state.output) is not None
+        ]
+        for sid in failed_ids:
+            del cached_by_sample_id[sid]
+        if failed_ids:
+            logger.info(f'Retrying {len(failed_ids)} sandbox preparation failures from prediction cache: {cache_file}')
         cached_task_states = list(cached_by_sample_id.values())
         if duplicate_rows:
             logger.warning(f'Dropped {duplicate_rows} duplicate rows from prediction cache: {cache_file}')

@@ -70,6 +70,27 @@ def adapter(**extra: Any) -> Any:
     return get_benchmark('cybench', config=config)
 
 
+@pytest.mark.parametrize('engine', ['docker', 'e2b', 'volcengine'])
+def test_environment_engine_selection(engine: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.api.sandbox import SandboxConfigError, SandboxEngine
+    from evalscope.config import SandboxTaskConfig
+    benchmark = adapter()
+    task = benchmark.task_manifest.tasks[0]
+    sample = benchmark.record_to_sample(task.model_dump())
+    benchmark._task_config.sandbox = SandboxTaskConfig(enabled=True, engine=engine, manager_config={'api_key': 'placeholder'})
+    seen = []
+    monkeypatch.setattr(benchmark, '_dataset_file', lambda path: '/tmp/archive')
+    monkeypatch.setattr('evalscope.benchmarks.cybench.cybench_adapter.CybenchEnvironment', lambda **kwargs: seen.append(kwargs))
+    if engine == 'docker':
+        benchmark.build_environment(sample)
+        assert seen[0]['engine'] == SandboxEngine.DOCKER and 'manager_config' not in seen[0]
+        assert seen[0]['sandbox_config'] == {}
+    else:
+        with pytest.raises(SandboxConfigError, match=engine):
+            benchmark.build_environment(sample)
+        assert not seen
+
+
 def output(text: str) -> ModelOutput:
     return ModelOutput.from_content(model='scripted', content=text)
 

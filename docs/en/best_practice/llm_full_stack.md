@@ -22,7 +22,7 @@ It is recommended to use conda for environment management and pip for installing
 
 ### 1.1 Create Conda Environment
 ```shell
-conda create -n zhihu python=3.10
+conda create -n zhihu python=3.11
 conda activate zhihu
 ```
 

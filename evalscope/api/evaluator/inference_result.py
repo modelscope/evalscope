@@ -13,6 +13,13 @@ from typing import List, Optional, Union
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 
+PREPARE_FAILURE_KEY = 'sandbox_prepare_error'
+
+
+def get_prepare_failure(output: Optional[ModelOutput]) -> Optional[str]:
+    """Return a sandbox preparation failure carried by a prediction, if any."""
+    return output.metadata.get(PREPARE_FAILURE_KEY) if output is not None and output.metadata else None
+
 
 @dataclass
 class InferenceResult:
@@ -26,6 +33,13 @@ class InferenceResult:
 
     output: ModelOutput
     """Final ``ModelOutput`` (the prediction artifact)."""
+
+    @classmethod
+    def prepare_failure(cls, model: str, reason: str) -> 'InferenceResult':
+        """Return an empty prediction carrying the preparation failure reason."""
+        output = ModelOutput.from_content(model=model, content='')
+        output.metadata = {PREPARE_FAILURE_KEY: reason}
+        return cls(output=output)
 
     messages: Optional[List[ChatMessage]] = None
     """Full conversation messages; overrides ``TaskState.messages`` when set."""

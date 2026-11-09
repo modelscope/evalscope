@@ -134,7 +134,7 @@ def _returncode_from_status(status: Any, stderr: str, timed_out: bool, success_s
     return int(match.group(1)) if match else 1
 
 
-@register_environment(['enclave', 'docker', 'volcengine'])
+@register_environment(['enclave', 'docker', 'volcengine', 'e2b'])
 class EnclaveAgentEnvironment(AgentEnvironment):
     """Per-sample sandbox via :class:`SandboxService`.
 
@@ -171,6 +171,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         manager_config: Optional[Dict[str, Any]] = None,
         timeout: Optional[float] = None,
         interpreter: Optional[Sequence[str]] = None,
+        expected_duration: Optional[float] = None,
         **_: Any,
     ) -> None:
         # ms_enclave is mandatory for this environment. Fail fast at construction
@@ -191,8 +192,14 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         )
         if invalid_interpreter:
             raise ValueError('EnclaveAgentEnvironment.interpreter must be a non-empty sequence of non-empty strings.')
+        if self._engine is SandboxEngine.E2B and self._interpreter == ['bash', '-lc']:
+            self._interpreter = ['bash', '-c']
+        self._expected_duration = expected_duration
         self._manager_config: Dict[str, Any] = dict(manager_config or {})
         self._sandbox_config_dict: Dict[str, Any] = self._apply_engine_defaults(dict(sandbox_config or {}))
+        self._sandbox_config = build_sandbox_config(
+            self._engine, self._sandbox_config_dict, expected_duration=expected_duration
+        )
         self._handle: Optional[SandboxHandle] = None
 
     # ------------------------------------------------------------------
@@ -213,6 +220,8 @@ class EnclaveAgentEnvironment(AgentEnvironment):
                 'tools_config': list(_DEFAULT_TOOLS),
             }
             return merge_sandbox_config_dicts(defaults, sandbox_config)
+        if self._engine is SandboxEngine.E2B:
+            return merge_sandbox_config_dicts({'tools_config': list(_DEFAULT_TOOLS)}, sandbox_config)
         return sandbox_config
 
     # ------------------------------------------------------------------
@@ -232,15 +241,20 @@ class EnclaveAgentEnvironment(AgentEnvironment):
                 'EnclaveAgentEnvironment.merge_sandbox_config: sandbox '
                 f'{self._handle.sandbox_id} is already running; merge before exec.'
             )
-        self._sandbox_config_dict = merge_sandbox_config_dicts(self._sandbox_config_dict, overlay)
+        merged = merge_sandbox_config_dicts(self._sandbox_config_dict, overlay)
+        config = build_sandbox_config(self._engine, merged, expected_duration=self._expected_duration)
+        self._sandbox_config_dict, self._sandbox_config = merged, config
+
+    async def prepare(self) -> None:
+        """Create the sandbox now; subsequent commands and uploads reuse it."""
+        await self._ensure_sandbox()
 
     async def _ensure_sandbox(self) -> SandboxHandle:
         if self._handle is None:
             service = get_sandbox_service()
-            sandbox_config = build_sandbox_config(self._engine, self._sandbox_config_dict)
             self._handle = await service.create_sandbox(
                 engine=self._engine,
-                sandbox_config=sandbox_config,
+                sandbox_config=self._sandbox_config,
                 manager_config=self._manager_config or None,
             )
             logger.debug(

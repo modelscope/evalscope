@@ -13,7 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_image
+from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_image, task_sandbox_env_kwargs
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -32,6 +32,8 @@ from .utils import (
     sandbox_reference_path,
     submission_records_from_samples,
 )
+
+_E2B_UNSUPPORTED = 'gdpval: images are built locally and reference files are bind-mounted from the host.'
 
 logger = get_logger()
 
@@ -204,6 +206,7 @@ class GDPvalAdapter(AgentLoopAdapter):
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
+        env_kwargs = task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED)
         self._ensure_docker_image()
         volumes = build_reference_volumes(sample)
         defaults: Dict[str, Any] = {
@@ -223,7 +226,7 @@ class GDPvalAdapter(AgentLoopAdapter):
             sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
         env = EnclaveAgentEnvironment(
-            engine='docker',
+            **env_kwargs,
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
         )

@@ -43,6 +43,9 @@ class FakeEnvironment:
     async def put_dir(self, source_dir: str | Path, target_dir: str) -> None:
         self.put_dirs.append((str(source_dir), target_dir))
 
+    async def prepare(self) -> None:
+        pass
+
     async def close(self) -> None:
         self.closed += 1
 
@@ -51,6 +54,27 @@ class FakeStrategy:
 
     def __init__(self, **_: Any) -> None:
         pass
+
+
+def test_native_prepare_precedes_skill_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    events = []
+    env = FakeEnvironment()
+    async def prepare() -> None:
+        events.append('prepare')
+    async def install(*args: Any, **kwargs: Any) -> None:
+        events.append('install')
+    env.prepare = prepare
+    monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
+    monkeypatch.setattr('evalscope.agent.runner.install_agent_skills', install)
+    monkeypatch.setattr('evalscope.agent.runner.run_agent_loop', lambda **kwargs: AgentLoopResult(
+        messages=[], final_output=_model_output('done'), trace=AgentTrace(strategy='fake', max_steps=1)))
+    run_native_agent(task_config=TaskConfig(agent_config=NativeAgentConfig(strategy='fake', max_steps=1)),
+                     model=object(), sample=Sample(id=0, input='task', target=''),
+                     build_sandbox_config=lambda sample: None, extract_final_answer=lambda result, strategy: 'done',
+                     environment_override=env)
+    assert events == ['prepare', 'install']
 
 
 def test_run_native_agent_keeps_environment_override_open(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -6,8 +6,8 @@
 
 1. 创建 conda 环境（可选）
 ```shell
-# 建议使用 python 3.10
-conda create -n evalscope python=3.10
+# 建议使用 python 3.11
+conda create -n evalscope python=3.11
 conda activate evalscope
 ```
 

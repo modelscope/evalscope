@@ -233,7 +233,7 @@ class AgentLoopAdapter(AgentAdapter):
         and prompt, and :meth:`_external_extract_prediction` recovering
         the prediction artifact before the env closes.
         """
-        from evalscope.api.agent import run_agent_loop
+        from evalscope.api.agent import prepare_environment, run_agent_loop
 
         ac = self._task_config.agent_config if self._task_config is not None else None
         external_result = self._maybe_run_external_agent(ac, model, sample)
@@ -248,6 +248,9 @@ class AgentLoopAdapter(AgentAdapter):
         if max_steps <= 0:
             raise ValueError('AgentLoop max_steps must be greater than 0.')
         environment = self.build_environment(sample)
+        reason = prepare_environment(environment, sample_id=sample.id)
+        if reason is not None:
+            return InferenceResult.prepare_failure(model.name, reason)
 
         result: AgentLoopResult = run_agent_loop(
             model=model,

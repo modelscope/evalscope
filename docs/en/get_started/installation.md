@@ -4,8 +4,8 @@
 We recommend using conda to manage your environment and pip to install dependencies. You can install the latest evalscope package from PyPI.
 1. Create a conda environment (optional)
 ```shell
-# Python 3.10 is recommended
-conda create -n evalscope python=3.10
+# Python 3.11 is recommended
+conda create -n evalscope python=3.11
 
 # Activate the conda environment
 conda activate evalscope

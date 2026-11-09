@@ -30,12 +30,14 @@ from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import get_strategy, register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
 
 from .scorer import question_scorer
+
+_E2B_UNSUPPORTED = 'gaia: attachments are bind-mounted from the host (read-only volume).'
 
 logger = get_logger()
 
@@ -212,7 +214,7 @@ class GaiaAdapter(AgentLoopAdapter):
             sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
         return EnclaveAgentEnvironment(
-            engine='docker',
+            **task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED),
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
         )

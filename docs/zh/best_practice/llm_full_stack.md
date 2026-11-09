@@ -29,7 +29,7 @@
 ### 1.1  准备conda环境
     
 ```shell
-conda create -n zhihu python=3.10
+conda create -n zhihu python=3.11
 conda activate zhihu
 ```
 ### 1.2  安装依赖

@@ -179,6 +179,199 @@ During model evaluation, EvalScope will communicate with the remote sandbox serv
 
 ## 3. Additional Supported Sandbox
 
+### Using E2B Remote Sandboxes
+
+The E2B engine creates isolated remote sandboxes without a local Docker daemon.
+Use Python 3.11+ and an ms-enclave version with E2B support:
+
+```bash
+pip install -U 'ms-enclave[e2b]'
+export E2B_API_KEY='<your-e2b-compatible-api-key>'
+```
+
+Prepare a provider account, E2B-compatible API key, concurrency quota and lifetime quota.
+Aliyun also requires an API URL and domain for the same region.
+The key defaults to E2B_API_KEY; manager_config.api_key overrides it.
+API keys at every depth of persisted sandbox settings are masked. The bundled image conversion table is loaded automatically.
+Supply a real key when resuming; a masked placeholder is not a credential.
+
+Official E2B example (model and sandbox credentials are separate):
+
+```python
+import os
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='qwen3.8-flash',
+    eval_type='openai_api',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.environ['DASHSCOPE_API_KEY'],
+    datasets=['swe_bench_verified_agentic'],
+    limit=1,
+    agent_config={'mode': 'native', 'max_steps': 20},
+    sandbox={
+        'enabled': True,
+        'engine': 'e2b',
+        'default_config': {'sandbox_timeout': 3600},
+        'manager_config': {'max_sandboxes': 2},
+    },
+))
+```
+
+Aliyun Agent Sandbox example:
+
+```python
+import os
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='qwen3.8-flash',
+    eval_type='openai_api',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.environ['DASHSCOPE_API_KEY'],
+    datasets=['swe_bench_verified_agentic'],
+    limit=1,
+    agent_config={'mode': 'native', 'max_steps': 20},
+    sandbox={
+        'enabled': True,
+        'engine': 'e2b',
+        'default_config': {'sandbox_timeout': 3600},
+        'manager_config': {
+            'api_url': 'https://api.cn-hangzhou.sandbox.aliyuncs.com',
+            'domain': 'cn-hangzhou.sandbox.aliyuncs.com',
+            'max_sandboxes': 4,
+        },
+    },
+))
+```
+
+E2B_API_KEY must belong to the selected provider. Aliyun uses its E2B-compatible API key, without Team ID or AK/SK.
+Legacy domains such as `<id>.<region>.e2b.fc.aliyuncs.com` are also supported.
+
+#### Configuration
+
+| manager_config field | Default | Meaning |
+| --- | --- | --- |
+| api_key | E2B_API_KEY environment variable | Required credential; masked in outputs |
+| api_url | SDK endpoint | Aliyun: https://api.&lt;region&gt;.sandbox.aliyuncs.com |
+| domain | SDK domain | Aliyun: &lt;region&gt;.sandbox.aliyuncs.com |
+| max_sandboxes | 16 | Positive integer; maximum live sandboxes in this manager |
+| max_concurrent_builds | 4 | Positive integer; maximum builds including readiness polling |
+| build_mode | Aliyun: micro; official: container | micro is supported only by Aliyun |
+
+| default_config field | Default | Meaning |
+| --- | --- | --- |
+| image | Supplied by benchmark | Official source image, converted to ACR automatically on Aliyun |
+| template | Unset | Existing template; bypasses mapping, region rewriting and builds |
+| sandbox_timeout | 3600 seconds | Fixed lifetime at creation; no renewal or pause |
+| cpu_count | 2 | Positive integer; included in template resources and name |
+| memory_mb | 4096 MiB | Positive integer; included in template resources and name |
+| disk_size_mb | 15360 MiB | Positive integer; applied through headers in micro mode, always hashed into the name |
+| user | root | EvalScope default to avoid git ownership errors in /testbed |
+| working_dir | Benchmark-defined; SDK config default /home/user | Command working directory |
+| env_vars | {} | Environment variables passed to every command |
+| tools_config | Agent environments: shell_executor, python_executor | Standard ms-enclave tool configuration |
+| allow_internet_access | true | Internet access at creation |
+| timeout | 30 seconds | Inherited field; does not control sandbox lifetime |
+| resource_limits | {} | Inherited field; unused by E2B |
+
+Docker memory_limit is rounded up to MiB, cpu_limit to an integer CPU count, and network_enabled to the internet flag.
+Explicit E2B fields take precedence. Container command, platform, pull logging, removal, executor worker count and cap_add are dropped.
+Nondefault volumes, privileged, entrypoint, ports, extra_hosts and network fail locally with SandboxConfigError.
+Unknown fields also fail before remote preparation.
+
+#### Templates, quotas and lifetime
+
+For pooled code execution, sandbox.pool_size (default: eval_batch_size) must not exceed max_sandboxes.
+An invalid combination fails locally rather than waiting indefinitely for warm-pool slots.
+
+The first request builds a template. Identical images and build resources reuse it.
+Concurrent requests share the build; a failed build is cached within the manager, so rerun after fixing the cause.
+An existing automatic template in error state is deleted and rebuilt once. Explicit templates are never automatically deleted.
+
+Aliyun defaults to micro with MicroVM and disk-size headers; container can be selected explicitly.
+Official E2B uses container without provider-specific headers.
+
+Observed lifetime limits are 3600 seconds for official Hobby accounts and 86400 seconds on Aliyun; check your account's current quota.
+SWE-bench and Pro **evaluation sandbox** lifetime is
+`min(evaluation timeout + 600 seconds, explicitly configured sandbox_timeout)`.
+Without an explicit limit it is evaluation timeout plus 600 seconds. Inference still defaults to 3600 seconds.
+Official Hobby users must set sandbox_timeout=3600 for swe_bench_pro, whose default evaluation timeout is already 3600 seconds.
+Platform reclamation and evaluation timeouts fail closed as unresolved.
+Preparation failures skip model calls and count as zero; cache resume retries those samples.
+
+`swe_bench_pro` uses evaluation version `v1.1`: the evaluation sandbox receives the dataset's
+`test_patch` at `/tests/test_patch.patch`, as required by the upstream script.
+This fixes missing test-patch staging in the previous version. Keep Pro v1.1 scores separate from earlier scores;
+other benchmark evaluation versions are unchanged.
+
+#### Advanced: image region
+
+| manager_config field | Default | Meaning |
+| --- | --- | --- |
+| image_region | Inferred from endpoint | Override the target ACR image region |
+
+New and legacy Aliyun endpoints support automatic inference, including cn-hangzhou and ap-southeast-1.
+Only the ACR registry host region changes; repository paths and tags remain unchanged.
+
+#### Compatibility
+
+This table distinguishes implementation scope from real provider acceptance.
+“Available, unverified” does not claim end-to-end validation.
+“Verified” means one gold/empty-patch sample per benchmark, with separate small native-agent runs; it is not full-dataset acceptance.
+Pro preserves the pinned upstream scripts and parser: test names that do not match the dataset's required names remain unresolved.
+
+| Benchmark | Official E2B | Aliyun |
+| --- | --- | --- |
+| swe_bench_verified | Verified | Verified |
+| swe_bench_verified_mini | Verified | Verified |
+| swe_bench_lite | Verified | Verified |
+| swe_bench_verified_agentic | Verified | Verified |
+| swe_bench_verified_mini_agentic | Verified | Verified |
+| swe_bench_lite_agentic | Verified | Verified |
+| swe_bench_multilingual_agentic | Verified | Verified |
+| swe_bench_pro | Verified | Verified |
+| swe_atlas_qna | Available, unverified | Available, unverified |
+| wide_search | Available, unverified | Image mapping required |
+| Pooled code benchmarks, e.g. HumanEval | Available, unverified | Image mapping required |
+
+Aliyun cannot build directly from docker.io. Default wide_search and pooled code images are not in the bundled table;
+an existing template can be supplied. Selecting E2B for any of the following raises SandboxConfigError in phase 1:
+
+| Benchmark | Status | Reason and future migration effort |
+| --- | --- | --- |
+| gaia | E2B unsupported in phase 1 | Read-only attachment mounts; upload per-sample files, low effort |
+| officeqa | E2B unsupported in phase 1 | Local corpus mounts; upload or preinstall a template, medium effort |
+| job_bench | E2B unsupported in phase 1 | Writable output mounts and local scoring; requires artifact download, medium effort |
+| gdpval | E2B unsupported in phase 1 | Local Dockerfile builds and reference mounts; remote builds and upload, high effort |
+| skillsbench | E2B unsupported in phase 1 | Local task images and host services; remote builds and network changes, high effort |
+| cybench | E2B unsupported in phase 1 | privileged, Docker-in-Docker, cgroups and local inspect, high effort |
+
+ExternalAgentConfig with E2B is unsupported.
+Harbor/Pier-driven terminal_bench, deep_swe and automation_bench do not use this engine and are outside phase 1.
+Docker remains the default engine.
+
+#### Cleanup and troubleshooting
+
+Normal shutdown kills sandboxes. Platform expiry is only a fallback for unexpected process termination.
+Use metadata run_id from the startup log to find leftovers.
+Use the same provider environment variables as the evaluation; Aliyun also needs E2B_API_URL and E2B_DOMAIN:
+
+```bash
+npx --yes @e2b/cli sandbox list --metadata 'run_id=<run-id>' --format json
+npx --yes @e2b/cli sandbox kill <sandbox-id>
+# Restrict cleanup to the intended run; keep the metadata filter:
+npx --yes @e2b/cli sandbox kill --all --metadata 'run_id=<run-id>'
+```
+
+- Missing api_key: set E2B_API_KEY and check which provider issued it.
+- Missing ACR mapping: check the source image, extend the bundled mapping or supply a template.
+- Template build failure: inspect the template name, source/target images and original provider error; fix and rerun.
+- Quota exceeded: lower max_sandboxes or max_concurrent_builds and check account limits.
+- Lifetime exceeded: lower sandbox_timeout or upgrade the plan; errors include the value and Hobby limit.
+- Unsupported fields or benchmarks: follow the listed fields or use Docker.
+
+
 ### Using VolcEngine Sandbox Environment
 
 EvalScope also supports using the [VolcEngine Sandbox Environment](https://bytedance.github.io/SandboxFusion/docs/docs/get-started/). Users can choose to use the sandbox images provided by VolcEngine for code evaluation.

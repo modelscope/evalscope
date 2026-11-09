@@ -13,10 +13,13 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import task_sandbox_env_kwargs
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 from .utils import DEFAULT_TOLERANCE, extract_final_answer, score_answer
+
+_E2B_UNSUPPORTED = 'officeqa: the corpus is bind-mounted from the host (read-only volume).'
 
 logger = get_logger()
 
@@ -151,7 +154,10 @@ class OfficeQAAdapter(AgentLoopAdapter):
                 'working_dir': _CONTAINER_CORPUS_DIR,
                 'volumes': {self._corpus_dir: {'bind': _CONTAINER_CORPUS_DIR, 'mode': 'ro'}},
             }
-            return EnclaveAgentEnvironment(engine='docker', sandbox_config=sandbox_config)
+            return EnclaveAgentEnvironment(
+                **task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED),
+                sandbox_config=sandbox_config,
+            )
 
         from evalscope.agent.environments.local import LocalAgentEnvironment
 

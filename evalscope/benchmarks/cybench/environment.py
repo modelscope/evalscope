@@ -57,6 +57,7 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
         archive_path: str,
         setup_timeout: float = 1800,
         sandbox_config: Optional[Dict[str, Any]] = None,
+        **env_kwargs: Any,
     ) -> None:
         self.task_path = task.path
         self.target_host = task.target_host
@@ -78,7 +79,7 @@ class CybenchEnvironment(EnclaveAgentEnvironment):
             sandbox_config,
         )
         self.image = config['image']
-        super().__init__(engine='docker', sandbox_config=config)
+        super().__init__(**env_kwargs, sandbox_config=config)
 
     async def _root_exec(self, args: List[str], timeout: float = 60) -> ExecResult:
         return await super().exec(args, timeout=timeout)

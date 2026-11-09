@@ -26,7 +26,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
 
@@ -182,7 +182,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             self._task_sandbox_config(),
         )
         return EnclaveAgentEnvironment(
-            engine='docker',
+            **task_sandbox_env_kwargs(self._task_config),
             sandbox_config=sandbox_config,
         )
 

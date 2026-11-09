@@ -118,6 +118,7 @@ def _install_fake_ms_enclave(monkeypatch: pytest.MonkeyPatch) -> None:
 def _allow_enclave_construction(monkeypatch: pytest.MonkeyPatch) -> None:
     from evalscope.agent.environments import enclave as enclave_mod
     monkeypatch.setattr(enclave_mod, 'check_import', lambda *args, **kwargs: None)
+    monkeypatch.setattr(enclave_mod, 'build_sandbox_config', lambda engine, config, **kwargs: config)
 
 
 # ===========================================================================

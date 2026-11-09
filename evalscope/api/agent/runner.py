@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
+from evalscope.api.sandbox.engine import SandboxConfigError
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
@@ -30,6 +31,33 @@ if TYPE_CHECKING:
     from .mcp import MCPServerConfig
 
 logger = get_logger()
+
+
+def prepare_environment(
+    environment: Optional[AgentEnvironment], *, sample_id: Any, close_on_failure: bool = True
+) -> Optional[str]:
+    """Prepare resources before model I/O; propagate local configuration errors."""
+    if environment is None:
+        return None
+
+    async def _prepare() -> Optional[str]:
+        try:
+            await environment.prepare()
+            return None
+        except Exception as exc:
+            if close_on_failure:
+                try:
+                    await environment.close()
+                except Exception as close_exc:
+                    logger.warning(f'Environment cleanup failed for sample {sample_id}: {close_exc}')
+            if isinstance(exc, SandboxConfigError):
+                raise
+            return f'{type(exc).__name__}: {exc}'
+
+    reason = AsyncioLoopRunner.run(_prepare())
+    if reason is not None:
+        logger.warning(f'Sandbox preparation failed for sample {sample_id}; skipping model calls: {reason}')
+    return reason
 
 
 def run_agent_loop(

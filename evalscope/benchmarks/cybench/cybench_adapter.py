@@ -18,6 +18,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import task_sandbox_env_kwargs
 from evalscope.api.tool import ToolCall
 from evalscope.benchmarks.cybench.dataset import CybenchManifest, CybenchTask
 from evalscope.benchmarks.cybench.environment import CybenchEnvironment
@@ -28,6 +29,7 @@ from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.download_utils import file_sha256
 
 SOURCE_SHA = 'ca483c6443f17a20ba7d6bac3d274859a1721e51'
+_E2B_UNSUPPORTED = 'cybench requires privileged Docker-in-Docker, cgroups and local Docker inspection.'
 METRICS = ['flag_found', 'correct_submission', 'full_flag_found']
 SUBSETS = ['crypto', 'forensics', 'misc', 'pwn', 'reversing', 'web']
 
@@ -210,6 +212,10 @@ class CybenchAdapter(AgentLoopAdapter):
         task = CybenchTask.model_validate(sample.metadata['cybench'])
         params = self.extra_params
         return CybenchEnvironment(
+            **task_sandbox_env_kwargs(
+                self._task_config,
+                docker_only_reason=_E2B_UNSUPPORTED,
+            ),
             task=task,
             archive_path=self._dataset_file(task.archive),
             setup_timeout=params['setup_timeout'],

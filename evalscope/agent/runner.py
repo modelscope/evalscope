@@ -82,6 +82,12 @@ def run_native_agent(
         environment = env_cls(**env_kwargs)
     owns_environment = environment_override is None
 
+    from evalscope.api.agent import prepare_environment
+
+    reason = prepare_environment(environment, sample_id=sample.id, close_on_failure=owns_environment)
+    if reason is not None:
+        return InferenceResult.prepare_failure(model.name, reason)
+
     if isinstance(sample.input, list):
         initial_messages = list(sample.input)
     else:

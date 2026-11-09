@@ -22,7 +22,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
+from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image, task_sandbox_env_kwargs
 from evalscope.constants import Tags
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.import_utils import is_build_doc
@@ -48,6 +48,7 @@ _DEFAULT_SUBSET = 'default'
 _VERIFIER_DIR = '/verifier'
 _ORACLE_DIR = '/oracle'
 _LOGS_VERIFIER_DIR = '/logs/verifier'
+_E2B_UNSUPPORTED = 'skillsbench: task images are built locally and network tasks access host services.'
 
 _EXTRA_PARAMS: Dict[str, Any] = {
     'tasks_dir': {
@@ -163,6 +164,7 @@ class SkillsBenchAdapter(AgentAdapter):
         self._current_output_dir: Optional[str] = None
 
     def load(self) -> Tuple[DatasetDict, None]:
+        self._sandbox_env_kwargs = task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED)
         if is_build_doc():
             return DatasetDict({_DEFAULT_SUBSET: MemoryDataset([], name=_DEFAULT_SUBSET)}), None
         if not self.tasks_dir.is_dir():
@@ -347,7 +349,7 @@ class SkillsBenchAdapter(AgentAdapter):
 
     def _build_environment(self, sample: Sample) -> EnclaveAgentEnvironment:
         return EnclaveAgentEnvironment(
-            engine='docker',
+            **self._sandbox_env_kwargs,
             sandbox_config=skillsbench_sandbox_config(sample.metadata),
             timeout=60.0,
             interpreter=['bash', '-lc'],
