@@ -135,6 +135,7 @@
  "k2_verifier": "evalscope.benchmarks.k2_verifier.k2_verifier_adapter",
  "kimi_verifier": "evalscope.benchmarks.kimi_verifier.kimi_verifier_adapter",
  "kina": "evalscope.benchmarks.kina.kina_adapter",
+ "lawbench": "evalscope.benchmarks.lawbench.lawbench_adapter",
  "librispeech": "evalscope.benchmarks.librispeech.librispeech_adapter",
  "live_code_bench": "evalscope.benchmarks.live_code_bench.live_code_bench_adapter",
  "locomo": "evalscope.benchmarks.locomo.locomo_adapter",

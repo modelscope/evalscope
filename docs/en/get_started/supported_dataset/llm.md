@@ -93,6 +93,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
 | `kina` | [KINA](../../benchmarks/kina.md) | `Knowledge`, `MCQ` |
+| `lawbench` | [LawBench](../../benchmarks/lawbench.md) | `Knowledge`, `QA`, `Reasoning` |
 | `live_code_bench` | [Live-Code-Bench](../../benchmarks/live_code_bench.md) | `Coding` |
 | `locomo` | [LoCoMo](../../benchmarks/locomo.md) | `LongContext`, `MultiTurn`, `QA` |
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
@@ -264,6 +265,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
 ../../benchmarks/kina.md
+../../benchmarks/lawbench.md
 ../../benchmarks/live_code_bench.md
 ../../benchmarks/locomo.md
 ../../benchmarks/logi_qa.md
