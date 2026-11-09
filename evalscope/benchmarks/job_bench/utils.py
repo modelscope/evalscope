@@ -338,13 +338,18 @@ def parse_judge_json(content: str) -> Dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    first = content.find('{')
-    last = content.rfind('}')
-    if first != -1 and last > first:
+    # A first-brace-to-last-brace span breaks as soon as the judge shows an example object
+    # before its verdict; keep the last object that actually parses.
+    decoder = json.JSONDecoder()
+    for start in range(len(content) - 1, -1, -1):
+        if content[start] != '{':
+            continue
         try:
-            return json.loads(content[first : last + 1])
+            value, _ = decoder.raw_decode(content, start)
         except json.JSONDecodeError:
-            pass
+            continue
+        if isinstance(value, dict):
+            return value
     raise ValueError(f'Could not extract JSON from response: {content[:500]}')
 
 
