@@ -56,6 +56,7 @@ InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evalu
         metric_list=['anls'],
         eval_split='validation',
         prompt_template=PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class InfoVQAAdapter(VisionLanguageAdapter):

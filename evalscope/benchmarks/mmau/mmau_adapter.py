@@ -70,7 +70,7 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
         metric_list=['acc'],
         primary_metric=MetricSelector(name='accuracy', dimensions={'scope': 'overall'}),
         prompt_template=MMAU_PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):

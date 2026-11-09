@@ -337,3 +337,23 @@ def test_extract_answer_line(text: str) -> None:
 
 def test_extract_answer_line_without_marker() -> None:
     assert extract_answer_line('The value is 45.') is None
+
+
+@pytest.mark.parametrize(
+    'text, expected',
+    [
+        ('**ANSWER: 45**.', '45'),
+        ('**ANSWER: 45**,', '45'),
+        ('**ANSWER: 45**)', '45'),
+        ('ANSWER: **45**.', '45'),
+        ('**ANSWER: 3.5**.', '3.5'),
+        ('**ANSWER: Paris**!', 'Paris'),
+        ('ANSWER: *45*.', '45'),
+        # Unbolded values keep their punctuation, so a real answer such as '3.5.' is not cut.
+        ('ANSWER: 45.', '45.'),
+        ('ANSWER: 2*3', '2*3'),
+    ],
+)
+def test_extract_answer_line_drops_punctuation_after_closing_bold(text: str, expected: str) -> None:
+    # The closing '**' used to survive when punctuation followed it: '**ANSWER: 45**.' -> '45**.' (#2027).
+    assert extract_answer_line(text) == expected

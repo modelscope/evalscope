@@ -56,6 +56,7 @@ DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate 
         metric_list=['anls'],
         eval_split='validation',
         prompt_template=PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class DocVQAAdapter(VisionLanguageAdapter):

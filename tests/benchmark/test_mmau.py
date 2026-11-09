@@ -79,7 +79,7 @@ def test_answer_line_reads_only_a_choice_letter(prediction: str, expected: str) 
 
 
 def test_evaluation_version_bumped_for_scoring_change() -> None:
-    assert _adapter()._benchmark_meta.evaluation_version == 'v1.1'
+    assert _adapter()._benchmark_meta.evaluation_version == 'v1.2'
 
 
 def test_natural_language_does_not_earn_credit_for_a() -> None:

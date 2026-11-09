@@ -9,7 +9,9 @@ from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 
 
-@pytest.mark.parametrize('answer_line', ['ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45'])
+@pytest.mark.parametrize(
+    'answer_line', ['ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45', '**ANSWER: 45**.', '**ANSWER: 45**,']
+)
 def test_chartqa_answer_line(answer_line):
     adapter = get_benchmark('chartqa', TaskConfig(model='mock', datasets=['chartqa']))
     completion = f'The tallest bar reads 45.\\n{answer_line}'

@@ -184,6 +184,6 @@ def test_trivia_qa_scores_with_the_official_answer_normalization(reply: str, exp
     assert adapter.calculate_metrics(state).score.value['accuracy'] == expected
 
 
-@pytest.mark.parametrize(('benchmark_name', 'version'), [('mmlu_redux', 'v1.1'), ('trivia_qa', 'v1.2')])
+@pytest.mark.parametrize(('benchmark_name', 'version'), [('mmlu_redux', 'v1.1'), ('trivia_qa', 'v1.3')])
 def test_inclusion_benchmark_evaluation_version(benchmark_name: str, version: str) -> None:
     assert BENCHMARK_REGISTRY[benchmark_name].evaluation_version == version

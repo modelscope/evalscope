@@ -175,16 +175,25 @@ _LABEL_CONNECTORS = {'and', 'or'}
 _LABEL_CONNECTOR_RE = re.compile(r'\s+(?:and|or)\s+', re.IGNORECASE)
 
 
+# A closing emphasis run and any punctuation a model put after it: '45**.' or '45*,'.  That punctuation
+# sits outside the answer, so it goes with the markers; unbolded values keep theirs ('ANSWER: 3.5.').
+_CLOSING_EMPHASIS_RE = re.compile(r'\*+[\s.,;:!?)\]]*$')
+
+
 def extract_answer_line(text: str) -> Optional[str]:
     """Text after the last 'ANSWER:' marker, up to the end of its line, without bold markers.
 
     The marker is matched like the multiple-choice parser does, in any case and inside or around
-    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Returns None without a marker.
+    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Punctuation after a closing
+    bold run is dropped with it ('**ANSWER: 45**.' -> '45'); unbolded values keep theirs ('ANSWER: 3.5.').
+    Returns None without a marker.
     """
     markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
     if not markers:
         return None
-    return text[markers[-1].end() :].split('\n', 1)[0].strip().strip('*').strip()
+    value = text[markers[-1].end() :].split('\n', 1)[0].strip()
+    value = _CLOSING_EMPHASIS_RE.sub('', value)
+    return value.replace('**', '').strip()
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
