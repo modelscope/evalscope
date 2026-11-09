@@ -168,7 +168,7 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
                     elif char == '"':
                         in_string = False
                     continue
-                if char == '"':
+                if char == '"' and stack:
                     in_string = True
                 elif char == '{':
                     if not stack:
