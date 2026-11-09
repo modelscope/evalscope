@@ -6,6 +6,7 @@ from typing import Union
 
 import regex as re
 
+from evalscope.utils.json_extract import extract_last_json_object
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -33,6 +34,25 @@ def fix_json(input_str):
     fixed_str = re.sub(r'(".*?"):(.*?)(,|})', format_value, fixed_str)
 
     return fixed_str
+
+
+def _repair_json_candidate(input_string: str) -> Union[dict, None]:
+    """Repair the trailing object of ``input_string`` when it is not strict JSON.
+
+    Models often print Python-style payloads such as ``{score: 4}`` with unquoted keys, which
+    ``json.JSONDecoder`` rejects. Only the trailing brace span is repaired, so an example object
+    earlier in the text cannot swallow the answer.
+    """
+    start_index = input_string.rfind('{')
+    end_index = input_string.rfind('}')
+    if start_index == -1 or end_index <= start_index:
+        return None
+    candidate = input_string[start_index : end_index + 1].replace('\n', '')
+    try:
+        repaired = json.loads(fix_json(candidate))
+    except Exception:
+        return None
+    return repaired if isinstance(repaired, dict) else None
 
 
 def read_file_to_string(file_path):
@@ -185,9 +205,14 @@ def mllm_output_to_dict(input_string, give_up_parsing=False):
         # find the json mannually
         # some mllm tends not to output the delimiters, but it does output the json contents
         # so we will find the json content mannually
-        start_index = input_string.find('{')
-        end_index = input_string.rfind('}') + 1
-        if start_index == -1 or end_index == 0:
+        extracted = extract_last_json_object(input_string)
+        if extracted is None:
+            extracted = _repair_json_candidate(input_string)
+        if extracted is not None:
+            input_string = json.dumps(extracted)
+            start_index = 0
+            end_index = len(input_string)
+        else:
             # json not found
             # some mllm tends to output only a list of scores like [6, 0],
             # this time we will just get the scores and ignore the reasoning (other part of the json)
@@ -272,9 +297,14 @@ def write_entry_to_json_file(input_string, uid, prompt_input, vision_input, outp
         # find the json mannually
         # some mllm tends not to output the delimiters, but it does output the json contents
         # so we will find the json content mannually
-        start_index = input_string.find('{')
-        end_index = input_string.rfind('}') + 1
-        if start_index == -1 or end_index == 0:
+        extracted = extract_last_json_object(input_string)
+        if extracted is None:
+            extracted = _repair_json_candidate(input_string)
+        if extracted is not None:
+            input_string = json.dumps(extracted)
+            start_index = 0
+            end_index = len(input_string)
+        else:
             # json not found
             # some mllm tends to output only a list of scores like [6, 0],
             # this time we will just get the scores and ignore the reasoning (other part of the json)
