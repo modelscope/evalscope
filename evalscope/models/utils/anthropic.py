@@ -28,7 +28,6 @@ from anthropic.types import (
     ToolUseBlock,
     ToolUseBlockParam,
 )
-from pydantic import ValidationError
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -692,16 +691,6 @@ def anthropic_media_filter(key: Optional[Any], value: Any) -> Any:
     return value
 
 
-def _construct_stream_message(**kwargs: Any) -> Message:
-    try:
-        return Message(**kwargs)
-    except ValidationError as exc:
-        is_new_stop_reason = kwargs.get('stop_reason') == 'model_context_window_exceeded'
-        if not is_new_stop_reason or any(error['loc'] != ('stop_reason',) for error in exc.errors()):
-            raise
-        return Message.model_construct(**kwargs)
-
-
 def collect_stream_response(
     response_stream: Any,
     request_start: Optional[float] = None,
@@ -842,7 +831,7 @@ def collect_stream_response(
             content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input, current_thinking
         )
 
-    return _construct_stream_message(
+    return Message(
         id=message_id,
         type='message',
         role=role,  # type: ignore
@@ -1034,7 +1023,7 @@ async def async_collect_stream_response(
             content_blocks, current_text, current_tool_id, current_tool_name, current_tool_input, current_thinking
         )
 
-    return _construct_stream_message(
+    return Message(
         id=message_id,
         type='message',
         role=role,  # type: ignore
