@@ -13,6 +13,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.utils.io_utils import JsonlWriter, OutputsStructure, convert_normal_types, jsonl_to_list
 from evalscope.utils.logger import get_logger
 
+from .inference_result import get_prepare_failure
 from .state import TaskState
 
 logger = get_logger()
@@ -117,21 +118,18 @@ class CacheManager:
                 duplicate_rows += 1
             cached_by_sample_id[cached_state.sample_id] = cached_state
 
-        from .inference_result import get_prepare_failure
-
-        failed_ids = [
-            sid for sid, state in cached_by_sample_id.items() if get_prepare_failure(state.output) is not None
+        # Preparation failures have no model prediction to reuse.
+        cached_task_states = [
+            state for state in cached_by_sample_id.values() if get_prepare_failure(state.output) is None
         ]
-        for sid in failed_ids:
-            del cached_by_sample_id[sid]
-        if failed_ids:
-            logger.info(f'Retrying {len(failed_ids)} sandbox preparation failures from prediction cache: {cache_file}')
-        cached_task_states = list(cached_by_sample_id.values())
+        retry_count = len(cached_by_sample_id) - len(cached_task_states)
+        if retry_count:
+            logger.info(f'Retrying {retry_count} sandbox preparation failures from prediction cache: {cache_file}')
         if duplicate_rows:
             logger.warning(f'Dropped {duplicate_rows} duplicate rows from prediction cache: {cache_file}')
 
         # Remove cached samples from the dataset to avoid reprocessing
-        cached_sample_ids = set(cached_by_sample_id)
+        cached_sample_ids = {state.sample_id for state in cached_task_states}
         filtered_dataset = dataset.filter(lambda sample: sample.id not in cached_sample_ids)
 
         logger.info(

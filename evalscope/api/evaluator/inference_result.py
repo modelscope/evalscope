@@ -34,13 +34,6 @@ class InferenceResult:
     output: ModelOutput
     """Final ``ModelOutput`` (the prediction artifact)."""
 
-    @classmethod
-    def prepare_failure(cls, model: str, reason: str) -> 'InferenceResult':
-        """Return an empty prediction carrying the preparation failure reason."""
-        output = ModelOutput.from_content(model=model, content='')
-        output.metadata = {PREPARE_FAILURE_KEY: reason}
-        return cls(output=output)
-
     messages: Optional[List[ChatMessage]] = None
     """Full conversation messages; overrides ``TaskState.messages`` when set."""
 
@@ -50,6 +43,13 @@ class InferenceResult:
     Typed as ``object`` to avoid an import cycle with ``api.agent``;
     concrete callers pass an ``AgentTrace`` instance.
     """
+
+    @classmethod
+    def prepare_failure(cls, model: str, reason: str) -> 'InferenceResult':
+        """Mark a sample that needs zero scoring now and prediction retry on resume."""
+        output = ModelOutput.from_content(model=model, content='')
+        output.metadata = {PREPARE_FAILURE_KEY: reason}
+        return cls(output=output)
 
 
 InferenceReturn = Union[ModelOutput, InferenceResult]

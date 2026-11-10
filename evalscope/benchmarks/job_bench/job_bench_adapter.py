@@ -26,7 +26,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentIm
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
+from evalscope.api.sandbox import merge_sandbox_config_dicts, require_docker_engine
 from evalscope.constants import HubType, ScoringPolicy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
@@ -44,8 +44,6 @@ from .utils import (
     parse_rubrics,
     rubric_needs_vision,
 )
-
-_E2B_UNSUPPORTED = 'job_bench: artifacts are written to host-mounted directories and scored locally.'
 
 logger = get_logger()
 
@@ -176,7 +174,7 @@ class JobBenchAdapter(AgentLoopAdapter):
         }
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
-        task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED)
+        require_docker_engine(self._task_config)
         agent_config = self._task_config.agent_config if self._task_config is not None else None
         if agent_config is not None and agent_config.environment == 'docker':
             return self._build_docker_environment(sample)
@@ -224,7 +222,7 @@ class JobBenchAdapter(AgentLoopAdapter):
         sandbox_config['volumes'] = {**sandbox_config.get('volumes', {}), **volumes}
 
         env = EnclaveAgentEnvironment(
-            **task_sandbox_env_kwargs(self._task_config, docker_only_reason=_E2B_UNSUPPORTED),
+            engine='docker',
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
         )

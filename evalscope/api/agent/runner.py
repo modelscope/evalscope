@@ -36,7 +36,7 @@ logger = get_logger()
 def prepare_environment(
     environment: Optional[AgentEnvironment], *, sample_id: Any, close_on_failure: bool = True
 ) -> Optional[str]:
-    """Prepare resources before model I/O; propagate local configuration errors."""
+    """Prepare before model I/O; return runtime failures and raise configuration errors."""
     if environment is None:
         return None
 
@@ -49,15 +49,15 @@ def prepare_environment(
                 try:
                     await environment.close()
                 except Exception as close_exc:
+                    # Cleanup must not replace the preparation error.
                     logger.warning(f'Environment cleanup failed for sample {sample_id}: {close_exc}')
             if isinstance(exc, SandboxConfigError):
                 raise
-            return f'{type(exc).__name__}: {exc}'
+            reason = f'{type(exc).__name__}: {exc}'
+            logger.warning(f'Sandbox preparation failed for sample {sample_id}; skipping model calls: {reason}')
+            return reason
 
-    reason = AsyncioLoopRunner.run(_prepare())
-    if reason is not None:
-        logger.warning(f'Sandbox preparation failed for sample {sample_id}; skipping model calls: {reason}')
-    return reason
+    return AsyncioLoopRunner.run(_prepare())
 
 
 def run_agent_loop(

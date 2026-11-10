@@ -20,7 +20,7 @@ Two extension modes are supported:
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
-from evalscope.api.agent import AgentLoopResult, NativeAgentConfig
+from evalscope.api.agent import AgentLoopResult, NativeAgentConfig, prepare_environment, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.registry import get_strategy, resolve_tool_infos, resolve_tools
@@ -233,8 +233,6 @@ class AgentLoopAdapter(AgentAdapter):
         and prompt, and :meth:`_external_extract_prediction` recovering
         the prediction artifact before the env closes.
         """
-        from evalscope.api.agent import prepare_environment, run_agent_loop
-
         ac = self._task_config.agent_config if self._task_config is not None else None
         external_result = self._maybe_run_external_agent(ac, model, sample)
         if external_result is not None:

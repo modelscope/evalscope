@@ -24,11 +24,12 @@ from evalscope.api.sandbox import (
     build_sandbox_config,
     get_enclave_types,
     memory_limit_to_mib,
+    require_docker_engine,
     resolve_engine,
     resolve_task_engine,
     task_sandbox_env_kwargs,
 )
-from evalscope.api.sandbox.compat import E2B_FIELD_RULES, FieldAction, validate_e2b_fields
+from evalscope.api.sandbox.compat import validate_e2b_fields
 from evalscope.api.sandbox.e2b import load_e2b_image_mapping, with_e2b_image_mapping
 from evalscope.config import TaskConfig
 
@@ -42,8 +43,8 @@ def task_stub(engine: str, enabled: bool = True) -> SimpleNamespace:
 # Feature: e2b-sandbox, Property 12: Shared engine resolution follows the enabled/image-engine decision table.
 @settings(max_examples=100)
 @given(st.sampled_from(['docker', 'e2b', 'volcengine', 'volcano', 'volc', 'unknown']), st.booleans(),
-       st.booleans(), st.booleans(), st.one_of(st.none(), st.just('host volumes required')))
-def test_engine_table(engine: str, enabled: bool, uppercase: bool, absent: bool, reason: str | None) -> None:
+       st.booleans(), st.booleans())
+def test_engine_table(engine: str, enabled: bool, uppercase: bool, absent: bool) -> None:
     spelling = f' {engine.upper() if uppercase else engine} '
     task = None if absent else task_stub(spelling, enabled)
     invalid = not absent and ((enabled and engine not in ['docker', 'e2b']) or (not enabled and engine == 'e2b'))
@@ -53,16 +54,17 @@ def test_engine_table(engine: str, enabled: bool, uppercase: bool, absent: bool,
         return
     expected = SandboxEngine.E2B if not absent and enabled and engine == 'e2b' else SandboxEngine.DOCKER
     assert resolve_task_engine(task) == expected
-    if expected == SandboxEngine.E2B and reason:
-        with pytest.raises(SandboxConfigError, match=reason):
-            task_sandbox_env_kwargs(task, docker_only_reason=reason)
+    if expected == SandboxEngine.E2B:
+        with pytest.raises(SandboxConfigError, match='does not support the e2b sandbox engine'):
+            require_docker_engine(task)
     else:
-        kwargs = task_sandbox_env_kwargs(task, docker_only_reason=reason)
-        assert kwargs['engine'] == expected
-        assert ('manager_config' in kwargs) == (expected == SandboxEngine.E2B)
-        if expected == SandboxEngine.E2B:
-            assert kwargs['manager_config'] == task.sandbox.manager_config
-            assert kwargs['manager_config'] is not task.sandbox.manager_config
+        require_docker_engine(task)
+    kwargs = task_sandbox_env_kwargs(task)
+    assert kwargs['engine'] == expected
+    assert ('manager_config' in kwargs) == (expected == SandboxEngine.E2B)
+    if expected == SandboxEngine.E2B:
+        assert kwargs['manager_config'] == task.sandbox.manager_config
+        assert kwargs['manager_config'] is not task.sandbox.manager_config
 
 
 def test_engine_types() -> None:
@@ -128,11 +130,9 @@ def test_field_errors_and_defaults() -> None:
     assert build_sandbox_config(SandboxEngine.E2B, dict(image='image', privileged=False)).user == 'root'
     assert build_sandbox_config(SandboxEngine.E2B, dict(image='image', user='user')).user == 'user'
     validate_e2b_fields({})
-    with pytest.raises(TypeError):
-        E2B_FIELD_RULES['new'] = E2B_FIELD_RULES['image']
-    for key, rule in E2B_FIELD_RULES.items():
-        if rule.action == FieldAction.DROP:
-            assert key not in adapt_sandbox_config(SandboxEngine.E2B, {'image': 'image', key: 'ignored'})
+    config = dict(image='image', command='ignored', platform='ignored', pull_progress=True,
+                  pull_progress_interval=1, remove_on_exit=True, docker_executor_workers=8, cap_add=['SYS_ADMIN'])
+    assert adapt_sandbox_config(SandboxEngine.E2B, config) == {'image': 'image', 'user': 'root'}
 
 
 def mapping_script():
@@ -344,11 +344,15 @@ def test_prepare_failure_short_circuit(reason: str, metrics: list[str], error_ty
         assert len(reused) == 1 and len(remaining) == 0
     state.output = restored
     adapter.match_score = MagicMock(side_effect=AssertionError('scorer must not run'))
+    adapter.filter_prediction = MagicMock(side_effect=AssertionError('filter must not run'))
+    adapter.score_with_judge_contracts = MagicMock(side_effect=AssertionError('judge must not run'))
     score = adapter.calculate_metrics(state).score
     assert score.value == dict.fromkeys(metrics, 0.0)
     assert score.status == ScoreStatus.SUCCESS
     assert score.metadata[PREPARE_FAILURE_KEY] == get_prepare_failure(restored)
     adapter.match_score.assert_not_called()
+    adapter.filter_prediction.assert_not_called()
+    adapter.score_with_judge_contracts.assert_not_called()
 
 
 def test_prepare_config_error() -> None:
@@ -359,6 +363,24 @@ def test_prepare_config_error() -> None:
         prepare_environment(env, sample_id=0)
     assert caught.value is error
     env.close.assert_awaited_once()
+
+
+@pytest.mark.parametrize('owned', [False, True])
+@pytest.mark.parametrize('cleanup_fails', [False, True])
+@pytest.mark.parametrize('error_type', [RuntimeError, SandboxConfigError])
+def test_prepare_failure_preserves_error_and_ownership(owned: bool, cleanup_fails: bool, error_type: type) -> None:
+    from evalscope.api.agent import prepare_environment
+
+    error = error_type('preparation failed')
+    env = SimpleNamespace(prepare=AsyncMock(side_effect=error),
+                          close=AsyncMock(side_effect=RuntimeError('cleanup failed') if cleanup_fails else None))
+    if error_type is SandboxConfigError:
+        with pytest.raises(SandboxConfigError) as caught:
+            prepare_environment(env, sample_id=0, close_on_failure=owned)
+        assert caught.value is error
+    else:
+        assert prepare_environment(env, sample_id=0, close_on_failure=owned) == 'RuntimeError: preparation failed'
+    assert env.close.await_count == int(owned)
 
 
 def test_environment_defaults() -> None:
@@ -516,10 +538,7 @@ def test_migrated_environment_sites(site: str, engine: str, tmp_path: Path, monk
             # load() must reject remote engines before touching any task Dockerfile.
             if engine != 'docker':
                 return adapter.load()
-            adapter._sandbox_env_kwargs = task_sandbox_env_kwargs(adapter._task_config)
             return adapter._build_environment(sample)
-        if site == 'job':
-            return adapter._build_docker_environment(sample)
         return adapter.build_environment(sample)
     if engine == 'volcengine' or (engine == 'e2b' and unsupported):
         with pytest.raises(SandboxConfigError, match=engine):

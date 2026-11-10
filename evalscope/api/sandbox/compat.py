@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
-from types import MappingProxyType
-from typing import Any, Callable, Dict, Mapping, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import ValidationError
 
@@ -16,24 +13,6 @@ from .engine import SandboxConfigError, SandboxEngine, get_enclave_types
 
 E2B_DEFAULT_USER = 'root'
 SANDBOX_LIFETIME_MARGIN_S = 600
-
-
-class FieldAction(str, Enum):
-    """How a Docker field participates in E2B configuration."""
-
-    KEEP = 'keep'
-    DROP = 'drop'
-    MAP = 'map'
-    REJECT = 'reject'
-
-
-@dataclass(frozen=True)
-class FieldRule:
-    """One immutable conversion rule."""
-
-    action: FieldAction
-    target: Optional[str] = None
-    convert: Optional[Callable[[Any], Any]] = None
 
 
 def memory_limit_to_mib(value: Any) -> int:
@@ -45,30 +24,23 @@ def memory_limit_to_mib(value: Any) -> int:
     return max(1, -(-int(match.group(1)) * factor // 1024**2))
 
 
-E2B_FIELD_RULES: Mapping[str, FieldRule] = MappingProxyType(
+_IGNORED_DOCKER_FIELDS = frozenset(
     {
-        **{key: FieldRule(FieldAction.KEEP) for key in ('image', 'working_dir', 'env_vars', 'tools_config')},
-        **{
-            key: FieldRule(FieldAction.DROP)
-            for key in (
-                'command',
-                'platform',
-                'pull_progress',
-                'pull_progress_interval',
-                'remove_on_exit',
-                'docker_executor_workers',
-                'cap_add',
-            )
-        },
-        'network_enabled': FieldRule(FieldAction.MAP, 'allow_internet_access', bool),
-        'memory_limit': FieldRule(FieldAction.MAP, 'memory_mb', memory_limit_to_mib),
-        'cpu_limit': FieldRule(FieldAction.MAP, 'cpu_count', lambda v: max(1, math.ceil(float(v)))),
-        **{
-            key: FieldRule(FieldAction.REJECT)
-            for key in ('volumes', 'privileged', 'entrypoint', 'ports', 'extra_hosts', 'network')
-        },
+        'command',
+        'platform',
+        'pull_progress',
+        'pull_progress_interval',
+        'remove_on_exit',
+        'docker_executor_workers',
+        'cap_add',
     }
 )
+_UNSUPPORTED_DOCKER_FIELDS = frozenset({'volumes', 'privileged', 'entrypoint', 'ports', 'extra_hosts', 'network'})
+_FIELD_CONVERSIONS = {
+    'network_enabled': ('allow_internet_access', bool),
+    'memory_limit': ('memory_mb', memory_limit_to_mib),
+    'cpu_limit': ('cpu_count', lambda value: max(1, math.ceil(float(value)))),
+}
 
 
 @lru_cache(maxsize=1)
@@ -81,21 +53,22 @@ def _apply_e2b_rules(config: Dict[str, Any]) -> Dict[str, Any]:
     adapted, converted, rejected = {}, {}, []
     defaults = _docker_defaults()
     for key, value in config.items():
-        rule = E2B_FIELD_RULES.get(key)
-        if rule is None or rule.action is FieldAction.KEEP:
-            adapted[key] = value
-        elif rule.action is FieldAction.MAP:
+        if key in _IGNORED_DOCKER_FIELDS:
+            continue
+        if key in _UNSUPPORTED_DOCKER_FIELDS:
+            if value != defaults[key]:
+                rejected.append(key)
+            continue
+        if key in _FIELD_CONVERSIONS:
+            target, convert = _FIELD_CONVERSIONS[key]
             try:
-                converted[rule.target] = rule.convert(value)
+                converted[target] = convert(value)
             except (TypeError, ValueError, OverflowError) as exc:
                 raise SandboxConfigError(f'Invalid sandbox field {key}: {exc}') from exc
-        elif rule.action is FieldAction.REJECT and value != defaults[key]:
-            rejected.append(key)
+        else:
+            adapted[key] = value
     if rejected:
-        raise SandboxConfigError(
-            f'Sandbox fields {sorted(rejected)} are not supported by the e2b engine; '
-            'this benchmark does not support e2b yet.'
-        )
+        raise SandboxConfigError(f'Sandbox fields {sorted(rejected)} are not supported by the e2b engine.')
     for key, value in converted.items():
         adapted.setdefault(key, value)
     adapted.setdefault('user', E2B_DEFAULT_USER)

@@ -118,17 +118,18 @@ def resolve_task_engine(task_config: Optional['TaskConfig']) -> SandboxEngine:
     return engine
 
 
-def task_sandbox_env_kwargs(
-    task_config: Optional['TaskConfig'], *, docker_only_reason: Optional[str] = None
-) -> Dict[str, Any]:
-    """Return shared environment settings and enforce declared Docker-only needs."""
+def require_docker_engine(task_config: Optional['TaskConfig']) -> None:
+    """Reject unsupported engines before a Docker-only benchmark allocates resources."""
+    engine = resolve_task_engine(task_config)
+    if engine is not SandboxEngine.DOCKER:
+        raise SandboxConfigError(f'This benchmark does not support the {engine.value} sandbox engine.')
+
+
+def task_sandbox_env_kwargs(task_config: Optional['TaskConfig']) -> Dict[str, Any]:
+    """Return shared environment settings for an image-based benchmark."""
     engine = resolve_task_engine(task_config)
     if engine is SandboxEngine.DOCKER:
         return {'engine': engine}
-    if docker_only_reason:
-        raise SandboxConfigError(
-            f'This benchmark does not support the {engine.value} sandbox engine yet: {docker_only_reason}'
-        )
     return {'engine': engine, 'manager_config': dict(task_config.sandbox.manager_config or {})}
 
 
@@ -144,6 +145,7 @@ __all__ = [
     'get_enclave_types',
     'IMAGE_SANDBOX_ENGINES',
     'resolve_task_engine',
+    'require_docker_engine',
     'task_sandbox_env_kwargs',
     'sandbox_image_arch',
 ]

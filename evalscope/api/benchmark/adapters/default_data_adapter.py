@@ -8,7 +8,13 @@ from typing_extensions import override
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.dataset.loader import dataset_loading_session
-from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
+from evalscope.api.evaluator import (
+    PREPARE_FAILURE_KEY,
+    InferenceResult,
+    InferenceReturn,
+    TaskState,
+    get_prepare_failure,
+)
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
@@ -728,8 +734,6 @@ class DefaultDataAdapter(DataAdapter):
         """
         assert task_state.completed, 'TaskState must be completed before calculating metrics.'
 
-        from evalscope.api.evaluator.inference_result import get_prepare_failure
-
         reason = get_prepare_failure(task_state.output)
         if reason is not None:
             return self._prepare_failure_sample_score(task_state, reason)
@@ -848,8 +852,6 @@ class DefaultDataAdapter(DataAdapter):
 
     def _prepare_failure_sample_score(self, task_state: TaskState, reason: str) -> SampleScore:
         """Count preparation failures as zero without invoking rules or judges."""
-        from evalscope.api.evaluator.inference_result import PREPARE_FAILURE_KEY
-
         names = [metric if isinstance(metric, str) else next(iter(metric)) for metric in self.metric_list]
         score = Score(
             value={name: 0.0 for name in names},
@@ -872,8 +874,7 @@ class DefaultDataAdapter(DataAdapter):
         self, task_states: List[TaskState], sample_scores: List[SampleScore]
     ) -> List[SampleScore]:
         """Batch calculate metrics for a list of task states with tqdm progress and batch processing."""
-        from evalscope.api.evaluator.inference_result import get_prepare_failure
-
+        # Batch scorers must not overwrite preparation failures with a real score.
         active_states, active_scores = [], []
         for index, (state, score) in enumerate(zip(task_states, sample_scores)):
             reason = get_prepare_failure(state.output)
