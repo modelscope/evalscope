@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/python-%E2%89%A53.10-5be.svg">
+<img src="https://img.shields.io/badge/python-%E2%89%A53.11-5be.svg">
 <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
@@ -175,6 +175,8 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 ## 🚀 快速开始
 
 ### 安装
+
+需要 **Python >= 3.11**。
 
 ```shell
 pip install evalscope

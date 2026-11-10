@@ -18,6 +18,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import require_docker_engine
 from evalscope.api.tool import ToolCall
 from evalscope.benchmarks.cybench.dataset import CybenchManifest, CybenchTask
 from evalscope.benchmarks.cybench.environment import CybenchEnvironment
@@ -207,9 +208,11 @@ class CybenchAdapter(AgentLoopAdapter):
 
     def build_environment(self, sample: Sample) -> CybenchEnvironment:
         """Build a sample-owned runtime from the pinned task and explicit runtime options."""
+        require_docker_engine(self._task_config)
         task = CybenchTask.model_validate(sample.metadata['cybench'])
         params = self.extra_params
         return CybenchEnvironment(
+            engine='docker',
             task=task,
             archive_path=self._dataset_file(task.archive),
             setup_timeout=params['setup_timeout'],

@@ -43,6 +43,9 @@ class FakeEnvironment:
     async def put_dir(self, source_dir: str | Path, target_dir: str) -> None:
         self.put_dirs.append((str(source_dir), target_dir))
 
+    async def prepare(self) -> None:
+        pass
+
     async def close(self) -> None:
         self.closed += 1
 
@@ -51,6 +54,27 @@ class FakeStrategy:
 
     def __init__(self, **_: Any) -> None:
         pass
+
+
+def test_native_prepare_precedes_skill_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    events = []
+    env = FakeEnvironment()
+    async def prepare() -> None:
+        events.append('prepare')
+    async def install(*args: Any, **kwargs: Any) -> None:
+        events.append('install')
+    env.prepare = prepare
+    monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
+    monkeypatch.setattr('evalscope.agent.runner.install_agent_skills', install)
+    monkeypatch.setattr('evalscope.agent.runner.run_agent_loop', lambda **kwargs: AgentLoopResult(
+        messages=[], final_output=_model_output('done'), trace=AgentTrace(strategy='fake', max_steps=1)))
+    run_native_agent(task_config=TaskConfig(agent_config=NativeAgentConfig(strategy='fake', max_steps=1)),
+                     model=object(), sample=Sample(id=0, input='task', target=''),
+                     build_sandbox_config=lambda sample: None, extract_final_answer=lambda result, strategy: 'done',
+                     environment_override=env)
+    assert events == ['prepare', 'install']
 
 
 def test_run_native_agent_keeps_environment_override_open(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -229,6 +253,47 @@ description: Demo skill.
         )
 
     assert env.closed == 1
+
+
+def test_native_validates_skills_before_preparation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock
+
+    env = FakeEnvironment()
+    env.prepare = AsyncMock()
+    monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
+    monkeypatch.setattr('evalscope.agent.runner.get_environment', lambda name: lambda **kwargs: env)
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
+    with pytest.raises(FileNotFoundError, match='skills_dir'):
+        run_native_agent(
+            task_config=TaskConfig(agent_config=NativeAgentConfig(
+                strategy='fake', environment='fake-env', skills_dir=str(tmp_path / 'missing'))),
+            model=object(), sample=Sample(id=0, input='task', target=''),
+            build_sandbox_config=lambda _: None, extract_final_answer=lambda result, strategy: '',
+        )
+    env.prepare.assert_not_awaited()
+
+
+@pytest.mark.parametrize('owned', [True, False])
+@pytest.mark.parametrize('error_type', [RuntimeError, asyncio.CancelledError])
+def test_mcp_initialization_failure_cleans_owned_environment(
+    monkeypatch: pytest.MonkeyPatch, owned: bool, error_type: type[BaseException]
+) -> None:
+    from concurrent.futures import CancelledError
+    from unittest.mock import AsyncMock
+
+    env = FakeEnvironment()
+    error = error_type('MCP initialization failed')
+    monkeypatch.setattr('evalscope.api.agent.mcp.resolve_mcp_tools', AsyncMock(side_effect=error))
+    expected = CancelledError if error_type is asyncio.CancelledError else error_type
+    with pytest.raises(expected):
+        run_agent_loop(
+            model=object(), strategy=FakeStrategy(), handlers={}, environment=env,
+            initial_messages=[], all_tools=[], max_steps=1, sample_id=0,
+            trace_strategy_name='fake', trace_env_name='fake', mcp_configs=[object()],
+            close_environment=owned,
+        )
+    assert env.closed == int(owned)
 
 
 def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pytest.MonkeyPatch) -> None:

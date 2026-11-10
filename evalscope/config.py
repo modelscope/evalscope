@@ -115,7 +115,7 @@ class SandboxTaskConfig(BaseArgument):
     """Whether to enable the sandbox subsystem for this task."""
 
     engine: str = 'docker'
-    """Sandbox engine name.  One of ``'docker'`` / ``'volcengine'`` (or aliases
+    """Sandbox engine name.  One of ``'docker'`` / ``'volcengine'`` / ``'e2b'`` (or aliases
     accepted by :func:`evalscope.api.sandbox.resolve_engine`)."""
 
     default_config: Dict[str, Any] = Field(default_factory=dict)
@@ -130,6 +130,11 @@ class SandboxTaskConfig(BaseArgument):
     pool_size: Optional[int] = None
     """Warm-pool size for pooled execution.  Defaults to ``eval_batch_size``
     when ``None``."""
+
+    @field_validator('default_config', 'manager_config', mode='before')
+    @classmethod
+    def _secretize_settings(cls, value: Any) -> Any:
+        return _secretize_api_keys(value)
 
 
 class JudgeModelConfig(BaseArgument):
@@ -503,6 +508,11 @@ class TaskConfig(BaseArgument):
     def _validate_sandbox(cls, v: Any) -> Any:
         return cls._coerce_sandbox_config(v)
 
+    @field_validator('sandbox_manager_config', mode='before')
+    @classmethod
+    def _secretize_sandbox_manager_config(cls, value: Any) -> Any:
+        return _secretize_api_keys(value)
+
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
     @model_validator(mode='after')
@@ -676,6 +686,9 @@ class TaskConfig(BaseArgument):
                 'removed in v2.0.0.',
             )
 
+        from evalscope.api.sandbox.e2b import check_e2b_task_config
+
+        check_e2b_task_config(self.sandbox, external_agent=isinstance(self.agent_config, ExternalAgentConfig))
         if not self.sandbox.enabled:
             return
 

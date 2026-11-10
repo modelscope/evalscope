@@ -34,7 +34,7 @@ from evalscope.api.judge import (
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.api.tool import ToolCall
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
@@ -304,7 +304,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
             setup_command=setup_command,
             check_command=check_command,
             state=state,
-            engine='docker',
+            **task_sandbox_env_kwargs(self._task_config),
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout() or self.command_timeout,
             interpreter=_INTERPRETER,

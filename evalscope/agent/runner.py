@@ -20,7 +20,7 @@ from evalscope.agent.skills import (
     resolve_agent_skills,
 )
 from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
-from evalscope.api.agent import AgentEnvironment, AgentLoopResult, run_agent_loop
+from evalscope.api.agent import AgentEnvironment, AgentLoopResult, prepare_environment, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import Model
@@ -96,6 +96,14 @@ def run_native_agent(
         nudge = format_skills_prompt(skills.skills)
         if nudge:
             initial_messages.insert(0, ChatMessageUser(content=nudge))
+
+    # Complete local setup before allocating external resources.
+    sample_tools = list(sample.tools or [])
+    all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
+    handlers, all_tools = apply_bash_command_timeout_defaults(handlers, all_tools, cfg.command_timeout)
+
+    prepare_environment(environment, sample_id=sample.id, close_on_failure=owns_environment)
+
     if environment is not None:
         try:
             AsyncioLoopRunner.run(install_agent_skills(environment, skills, runner_name='NativeAgentRunner'))
@@ -103,11 +111,6 @@ def run_native_agent(
             if owns_environment:
                 AsyncioLoopRunner.run(environment.close())
             raise
-
-    # Merge sample-level tools with agent-config tools.
-    sample_tools = list(sample.tools or [])
-    all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
-    handlers, all_tools = apply_bash_command_timeout_defaults(handlers, all_tools, cfg.command_timeout)
 
     result: AgentLoopResult = run_agent_loop(
         model=model,

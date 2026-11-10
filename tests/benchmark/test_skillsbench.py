@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult, NativeAgentConfig
@@ -211,6 +213,25 @@ def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch
 
     assert result.output.message.text == 'done'
     assert sample.metadata['reward'] == 1.0
+    assert env.closed
+
+
+def test_native_preparation_failure_skips_verifier(monkeypatch) -> None:
+    from unittest.mock import AsyncMock
+
+    adapter = SkillsBenchAdapter(
+        benchmark_meta=BenchmarkMeta(name='skillsbench', dataset_id='skillsbench', metric_list=['score']),
+        task_config=TaskConfig(agent_config=NativeAgentConfig(tools=['bash'])),
+    )
+    env = _FakeSkillsBenchEnv()
+    env.prepare = AsyncMock(side_effect=RuntimeError('sandbox unavailable'))
+    verifier = AsyncMock(side_effect=AssertionError('verifier must not run'))
+    monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
+    monkeypatch.setattr(adapter, '_run_verifier', verifier)
+    with pytest.raises(RuntimeError, match='sandbox unavailable'):
+        adapter._on_inference(model=type('Model', (), {'name': 'mock'})(),
+                              sample=Sample(id=0, input='task', target=''))
+    verifier.assert_not_awaited()
     assert env.closed
 
 

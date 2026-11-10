@@ -1,11 +1,68 @@
+from unittest.mock import MagicMock
+
+import pytest
+from pydantic import SecretStr
+
 from evalscope.api.mixin import llm_judge_mixin
 from evalscope.api.model import model as model_module
 from evalscope.api.model.generate_config import GenerateConfig
-from evalscope.config import TaskConfig
+from evalscope.api.sandbox import SandboxEngine, SandboxService, build_sandbox_config
+from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.models.utils.openai import openai_completion_params
 from evalscope.models.utils.openai_responses import openai_response_params
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
+from evalscope.utils.argument_utils import get_secret_value
+
+
+@pytest.mark.parametrize('source', ['nested', 'typed', 'legacy'])
+def test_sandbox_keys_use_secretstr_for_display_and_updates(source: str) -> None:
+    payload = {'api_key': 'sandbox-test-secret', 'nested': [{'api_key': 'nested-test-secret'}], 'empty': {'api_key': ''}}
+    settings = {'manager_config': payload, 'default_config': payload}
+    kwargs = {'sandbox_manager_config': payload} if source == 'legacy' else {
+        'sandbox': SandboxTaskConfig(**settings) if source == 'typed' else settings,
+    }
+    task = TaskConfig(model='test', eval_type='mock_llm', **kwargs)
+    assert isinstance(task.sandbox.manager_config['api_key'], SecretStr)
+    assert get_secret_value(task.sandbox.manager_config) == payload
+    assert 'sandbox-test-secret' not in repr(task)
+    assert 'nested-test-secret' not in task.model_dump_json()
+    assert task.to_dict()['sandbox']['manager_config']['empty']['api_key'] == ''
+    clone = TaskConfig(model='test', eval_type='mock_llm')
+    clone.update(task)
+    assert get_secret_value(clone.sandbox.manager_config) == payload
+    clone.update({'sandbox': {'manager_config': {'api_key': 'updated-test-secret'}}})
+    assert isinstance(clone.sandbox.manager_config['api_key'], SecretStr)
+    assert get_secret_value(clone.sandbox.manager_config)['api_key'] == 'updated-test-secret'
+    assert 'updated-test-secret' not in str(clone)
+    assert payload['api_key'] == 'sandbox-test-secret'
+
+
+@pytest.mark.parametrize('engine', [SandboxEngine.DOCKER, SandboxEngine.E2B])
+def test_sandbox_runtime_config_receives_raw_env_values(engine: SandboxEngine) -> None:
+    task = TaskConfig(model='test', eval_type='mock_llm', sandbox={
+        'enabled': True, 'engine': engine.value,
+        'default_config': {'image': 'python:3.11-slim', 'env_vars': {'api_key': 'runtime-test-secret'}},
+        'manager_config': {'api_key': 'manager-test-secret'},
+    })
+    config = build_sandbox_config(engine, task.sandbox.default_config)
+    assert config.env_vars['api_key'] == 'runtime-test-secret'
+    assert isinstance(task.sandbox.default_config['env_vars']['api_key'], SecretStr)
+
+
+def test_sandbox_manager_receives_raw_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.api.sandbox import service as service_module
+
+    manager = MagicMock()
+    monkeypatch.setattr(service_module, 'get_enclave_types', lambda engine: (None, None, manager, None))
+    sandbox = SandboxTaskConfig(manager_config={'api_key': 'manager-test-secret'})
+    service = SandboxService()
+    try:
+        service._construct_manager(SandboxEngine.VOLCENGINE, sandbox.manager_config)
+        manager.assert_called_once_with(api_key='manager-test-secret')
+        assert isinstance(sandbox.manager_config['api_key'], SecretStr)
+    finally:
+        service.shutdown_all()
 
 
 def test_perf_arguments_masks_api_key_and_authorization_header():

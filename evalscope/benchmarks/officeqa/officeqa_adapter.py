@@ -13,6 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import require_docker_engine
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -144,6 +145,7 @@ class OfficeQAAdapter(AgentLoopAdapter):
         return {'bash': run_bash}
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+        require_docker_engine(self._task_config)
         if self._task_config.sandbox and self._task_config.sandbox.enabled:
             from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
@@ -151,7 +153,10 @@ class OfficeQAAdapter(AgentLoopAdapter):
                 'working_dir': _CONTAINER_CORPUS_DIR,
                 'volumes': {self._corpus_dir: {'bind': _CONTAINER_CORPUS_DIR, 'mode': 'ro'}},
             }
-            return EnclaveAgentEnvironment(engine='docker', sandbox_config=sandbox_config)
+            return EnclaveAgentEnvironment(
+                engine='docker',
+                sandbox_config=sandbox_config,
+            )
 
         from evalscope.agent.environments.local import LocalAgentEnvironment
 

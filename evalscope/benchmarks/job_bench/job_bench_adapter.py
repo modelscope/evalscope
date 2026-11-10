@@ -26,7 +26,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentIm
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, require_docker_engine
 from evalscope.constants import HubType, ScoringPolicy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
@@ -174,6 +174,7 @@ class JobBenchAdapter(AgentLoopAdapter):
         }
 
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
+        require_docker_engine(self._task_config)
         agent_config = self._task_config.agent_config if self._task_config is not None else None
         if agent_config is not None and agent_config.environment == 'docker':
             return self._build_docker_environment(sample)

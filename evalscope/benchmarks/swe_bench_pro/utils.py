@@ -4,13 +4,18 @@ import re
 import subprocess
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from evalscope.api.sandbox import SandboxEngine, build_sandbox_config, get_sandbox_service, merge_sandbox_config_dicts
+from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+from evalscope.api.agent import prepare_environment
+from evalscope.api.sandbox import SandboxConfigError, merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+if TYPE_CHECKING:
+    from evalscope.config import TaskConfig
 
 PRO_REPO_URL = 'https://github.com/scaleapi/SWE-bench_Pro-os.git'
 PINNED_COMMIT = 'ca10a60'
@@ -178,6 +183,8 @@ def eval_instance(
     pred: str,
     resources: Dict[str, str],
     image: str,
+    *,
+    task_config: Optional['TaskConfig'],
     log_dir: str = 'outputs',
     timeout: int = 3600,
     sandbox_config: Optional[Dict[str, Any]] = None,
@@ -186,7 +193,7 @@ def eval_instance(
 
     ``sandbox_config`` is a base ms_enclave ``DockerSandboxConfig`` dict
     (memory_limit / cpu_limit / platform / network_enabled / ...). Stage-required
-    fields (``image``, ``volumes``) are always injected and cannot be overridden.
+    fields (``image``, ``working_dir``) are always injected and cannot be overridden.
 
     Returns dict: {completed, resolved, report}.
     """
@@ -207,6 +214,10 @@ def eval_instance(
     for name, content in files.items():
         (workspace / name).write_text(content if content is not None else '')
 
+    test_patch_dir = workspace_root / 'tests'
+    test_patch_dir.mkdir(parents=True, exist_ok=True)
+    (test_patch_dir / 'test_patch.patch').write_text(metadata.get('test_patch') or '')
+
     completed = False
     resolved = False
     output_json: Any = None
@@ -215,46 +226,54 @@ def eval_instance(
     defaults = {'tools_config': {'shell_executor': {}}}
     stage_required = {
         'image': image,
-        'volumes': {
-            str(workspace.resolve()): {
-                'bind': '/workspace',
-                'mode': 'rw',
-            }
-        },
+        'working_dir': '/app',
         'pull_progress': True,
         'pull_progress_interval': 5.0,
     }
     cfg_dict = merge_sandbox_config_dicts(defaults, sandbox_config, stage_required)
+    env = EnclaveAgentEnvironment(
+        **task_sandbox_env_kwargs(task_config),
+        sandbox_config=cfg_dict,
+        timeout=120,
+        expected_duration=timeout,
+    )
 
-    async def _run() -> str:
-        service = get_sandbox_service()
-        sbx_cfg = build_sandbox_config(SandboxEngine.DOCKER, cfg_dict)
-        handle = await service.create_sandbox(SandboxEngine.DOCKER, sbx_cfg)
+    prepare_environment(env, sample_id=instance_id)
+
+    async def _run() -> Tuple[str, Optional[str]]:
         try:
-            result = await handle.execute_tool(
-                'shell_executor',
-                {
-                    'command': 'bash /workspace/entryscript.sh',
-                    'timeout': int(timeout),
-                },
-            )
-            return f'{result.output or ""}\n{result.error or ""}'
+            await env.put_dir(workspace, '/workspace')
+            await env.put_dir(test_patch_dir, '/tests')
+            run = await env.exec(['bash', '/workspace/entryscript.sh'], timeout=timeout)
+            if run.timed_out:
+                raise TimeoutError(f'{instance_id} Test timed out after {timeout} seconds.')
+            for name in ('stdout.log', 'stderr.log'):
+                log = await env.exec(['cat', f'/workspace/{name}'])
+                if log.returncode == 0:
+                    (workspace / name).write_text(log.stdout)
+            output = await env.exec(['cat', '/workspace/output.json'])
+            if output.returncode != 0:
+                raise RuntimeError(f'Could not read /workspace/output.json: {output.stderr}')
+            return f'{run.stdout}\n{run.stderr}', output.stdout
         finally:
-            await handle.close()
+            await env.close()
 
     try:
         logger.info(f'Running container for {instance_id} on image {image}...')
-        container_log = AsyncioLoopRunner.run(_run(), timeout=timeout + 60)
+        container_log, output_text = AsyncioLoopRunner.run(_run(), timeout=timeout + 60)
         try:
             (workspace_root / 'container.log').write_text(container_log)
         except Exception:
             pass
 
         output_path = workspace / 'output.json'
-        if output_path.is_file():
-            output_json = json.loads(output_path.read_text())
+        if output_text is not None:
+            output_path.write_text(output_text)
+            output_json = json.loads(output_text)
             completed = True
 
+    except SandboxConfigError:
+        raise
     except Exception as e:
         error = f'{e}\n{traceback.format_exc()}'
         logger.error(f'Error evaluating {instance_id}: {error}')

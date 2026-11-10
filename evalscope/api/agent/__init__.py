@@ -7,7 +7,7 @@ live in ``evalscope/agent``.
 
 from .environment import AgentEnvironment
 from .loop import AgentLoop
-from .runner import run_agent_loop
+from .runner import prepare_environment, run_agent_loop
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor, ToolHandler
 from .trace import AgentTrace, AgentTraceEvent, EventType
@@ -42,4 +42,5 @@ __all__ = [
     'ToolSchemaMode',
     'TurnOutcome',
     'run_agent_loop',
+    'prepare_environment',
 ]

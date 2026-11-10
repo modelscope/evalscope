@@ -22,7 +22,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image
+from evalscope.api.sandbox import DockerImageSpec, prepare_docker_image, require_docker_engine
 from evalscope.constants import Tags
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.import_utils import is_build_doc
@@ -163,6 +163,7 @@ class SkillsBenchAdapter(AgentAdapter):
         self._current_output_dir: Optional[str] = None
 
     def load(self) -> Tuple[DatasetDict, None]:
+        require_docker_engine(self._task_config)
         if is_build_doc():
             return DatasetDict({_DEFAULT_SUBSET: MemoryDataset([], name=_DEFAULT_SUBSET)}), None
         if not self.tasks_dir.is_dir():

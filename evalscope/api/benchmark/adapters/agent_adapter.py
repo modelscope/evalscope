@@ -20,7 +20,7 @@ Two extension modes are supported:
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
-from evalscope.api.agent import AgentLoopResult, NativeAgentConfig
+from evalscope.api.agent import AgentLoopResult, NativeAgentConfig, prepare_environment, run_agent_loop
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.registry import get_strategy, resolve_tool_infos, resolve_tools
@@ -233,8 +233,6 @@ class AgentLoopAdapter(AgentAdapter):
         and prompt, and :meth:`_external_extract_prediction` recovering
         the prediction artifact before the env closes.
         """
-        from evalscope.api.agent import run_agent_loop
-
         ac = self._task_config.agent_config if self._task_config is not None else None
         external_result = self._maybe_run_external_agent(ac, model, sample)
         if external_result is not None:
@@ -247,14 +245,16 @@ class AgentLoopAdapter(AgentAdapter):
 
         if max_steps <= 0:
             raise ValueError('AgentLoop max_steps must be greater than 0.')
+        initial_messages = self.build_initial_messages(sample)
         environment = self.build_environment(sample)
+        prepare_environment(environment, sample_id=sample.id)
 
         result: AgentLoopResult = run_agent_loop(
             model=model,
             strategy=strategy,
             handlers=handlers,
             environment=environment,
-            initial_messages=self.build_initial_messages(sample),
+            initial_messages=initial_messages,
             all_tools=all_tools,
             max_steps=max_steps,
             sample_id=sample.id,

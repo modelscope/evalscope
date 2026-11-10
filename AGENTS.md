@@ -9,7 +9,7 @@ pip install -e .       # basic install
 make dev               # dev + perf + docs extras + pre-commit
 ```
 
-Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt` + `pyproject.toml [project.optional-dependencies]` (extras: `opencompass`, `vlmeval`, `rag`, `perf`, `app`, `aigc`, `sandbox`, `service`, `dev`, `docs`, `all`, plus per-benchmark extras).
+Python ≥ 3.11. Dependencies: `requirements/framework.txt` + `pyproject.toml [project.optional-dependencies]` (extras: `opencompass`, `vlmeval`, `rag`, `perf`, `app`, `aigc`, `sandbox`, `service`, `dev`, `docs`, `all`, plus per-benchmark extras).
 
 ## Build, lint, test
 

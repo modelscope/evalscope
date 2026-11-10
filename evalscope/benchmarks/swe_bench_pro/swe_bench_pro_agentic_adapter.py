@@ -25,7 +25,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
@@ -197,6 +197,7 @@ _EXTRA_PARAMS: Dict[str, Any] = {
 @register_benchmark(
     BenchmarkMeta(
         name='swe_bench_pro',
+        evaluation_version='v1.1',
         pretty_name='SWE-bench_Pro',
         tags=[Tags.CODING],
         description=_DESCRIPTION,
@@ -311,7 +312,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         }
         sandbox_config = merge_sandbox_config_dicts(self._user_sandbox_config(), agent_required)
         return EnclaveAgentEnvironment(
-            engine='docker',
+            **task_sandbox_env_kwargs(self._task_config),
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
             interpreter=_SWE_BENCH_PRO_INTERPRETER,
@@ -391,6 +392,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         )
         md = task_state.metadata
         result = eval_instance(
+            task_config=self._task_config,
             metadata=md,
             pred=filtered_prediction,
             resources=md['_resources'],

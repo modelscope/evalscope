@@ -30,7 +30,7 @@ from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import get_strategy, register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import merge_sandbox_config_dicts, require_docker_engine
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
@@ -192,6 +192,7 @@ class GaiaAdapter(AgentLoopAdapter):
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
+        require_docker_engine(self._task_config)
         volumes: Dict[str, Dict[str, str]] = {}
         if self._host_files_dir and os.path.isdir(self._host_files_dir):
             volumes[self._host_files_dir] = {'bind': _SHARED_FILES_DIR, 'mode': 'ro'}

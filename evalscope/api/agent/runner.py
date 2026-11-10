@@ -32,6 +32,28 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
+def prepare_environment(
+    environment: Optional[AgentEnvironment], *, sample_id: Any, close_on_failure: bool = True
+) -> None:
+    """Prepare before model I/O, releasing owned resources if preparation raises."""
+    if environment is None:
+        return
+
+    async def _prepare() -> None:
+        try:
+            await environment.prepare()
+        except Exception:
+            if close_on_failure:
+                try:
+                    await environment.close()
+                except Exception as close_exc:
+                    # Cleanup must not replace the preparation error.
+                    logger.warning(f'Environment cleanup failed for sample {sample_id}: {close_exc}')
+            raise
+
+    AsyncioLoopRunner.run(_prepare())
+
+
 def run_agent_loop(
     *,
     model: Model,
@@ -84,20 +106,20 @@ def run_agent_loop(
 
     async def _run() -> AgentLoopResult:
         async with AsyncExitStack() as mcp_stack:
-            merged_handlers: Dict[str, ToolHandler] = dict(handlers)
-            merged_tools: List[Any] = list(all_tools)
-
-            if mcp_configs:
-                from .mcp import resolve_mcp_tools
-
-                mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
-                for tool_name, handler in mcp_handler_map.items():
-                    if tool_name in merged_handlers:
-                        logger.warning(f'MCP tool {tool_name!r} shadows existing handler; last-write-wins')
-                    merged_handlers[tool_name] = handler
-                merged_tools.extend(mcp_tool_infos)
-
             try:
+                merged_handlers: Dict[str, ToolHandler] = dict(handlers)
+                merged_tools: List[Any] = list(all_tools)
+
+                if mcp_configs:
+                    from .mcp import resolve_mcp_tools
+
+                    mcp_handler_map, mcp_tool_infos = await resolve_mcp_tools(mcp_configs, mcp_stack)
+                    for tool_name, handler in mcp_handler_map.items():
+                        if tool_name in merged_handlers:
+                            logger.warning(f'MCP tool {tool_name!r} shadows existing handler; last-write-wins')
+                        merged_handlers[tool_name] = handler
+                    merged_tools.extend(mcp_tool_infos)
+
                 ctx = AgentContext(
                     sample_id=sample_id,
                     messages=initial_messages,

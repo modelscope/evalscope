@@ -33,7 +33,12 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.sandbox import (
+    SandboxEngine,
+    merge_sandbox_config_dicts,
+    resolve_task_engine,
+    task_sandbox_env_kwargs,
+)
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -228,7 +233,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-        check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
+        check_import(['swebench', 'ms_enclave'], extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
 
         # Hardcoded: must match the /testbed path used by swebench harness eval_script.
         self.working_dir: str = '/testbed'
@@ -276,7 +281,8 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
 
         samples = self.test_dataset[self.default_subset]
 
-        if self.build_docker_images:
+        engine = resolve_task_engine(self._task_config)
+        if self.build_docker_images and engine is SandboxEngine.DOCKER:
             id_to_docker_image_map = build_images(
                 samples=samples,
                 force_rebuild=False,
@@ -293,6 +299,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
 
             docker_image_from_id = partial(
                 get_remote_docker_image_from_id,
+                engine=engine,
                 dockerhub_username=self.dockerhub_username,
                 force_arch=self.force_arch,
             )
@@ -349,7 +356,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             sandbox_config['platform'] = forced_platform
         sandbox_config = merge_sandbox_config_dicts(self._task_sandbox_config(), sandbox_config)
         return EnclaveAgentEnvironment(
-            engine='docker',
+            **task_sandbox_env_kwargs(self._task_config),
             sandbox_config=sandbox_config,
             timeout=self._native_command_timeout(),
             interpreter=_SWE_BENCH_INTERPRETER,
@@ -440,6 +447,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         result = eval_instance(
             instance=task_state.metadata,
             pred=filtered_prediction,
+            task_config=self._task_config,
             timeout=1800,
             log_dir=self._task_config.work_dir,
             dockerhub_username=self.dockerhub_username,

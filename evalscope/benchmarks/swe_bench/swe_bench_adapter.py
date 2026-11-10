@@ -6,6 +6,7 @@ from evalscope.api.dataset import FieldSpec, RemoteDataLoader, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import SandboxEngine, resolve_task_engine
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -90,7 +91,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        check_import('swebench', extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
+        check_import(['swebench', 'ms_enclave'], extra='swe_bench', raise_error=True, feature_name=self.pretty_name)
 
         self.build_docker_images: bool = self.extra_params.get('build_docker_images', True)
         self.pull_remote_images_if_available: bool = self.extra_params.get('pull_remote_images_if_available', True)
@@ -150,7 +151,8 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
 
         samples = self.test_dataset[self.default_subset]
 
-        if self.build_docker_images:
+        engine = resolve_task_engine(self._task_config)
+        if self.build_docker_images and engine is SandboxEngine.DOCKER:
             # build images
             id_to_docker_image_map = build_images(
                 samples=samples,
@@ -173,6 +175,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
 
             docker_image_from_id = partial(
                 get_remote_docker_image_from_id,
+                engine=engine,
                 dockerhub_username=self.dockerhub_username,
                 force_arch=self.force_arch,
             )
@@ -203,6 +206,7 @@ class SWEBenchVerifiedAdapter(DefaultDataAdapter):
         result = eval_instance(
             instance=task_state.metadata,
             pred=filtered_prediction,
+            task_config=self._task_config,
             timeout=1800,
             log_dir=self._task_config.work_dir,
             dockerhub_username=self.dockerhub_username,

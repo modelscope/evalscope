@@ -11,9 +11,13 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
+from pydantic import ValidationError
+
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.logger import get_logger
 
-from .engine import SandboxEngine, get_enclave_types
+from .compat import adapt_sandbox_config
+from .engine import SandboxConfigError, SandboxEngine, get_enclave_types
 
 logger = get_logger()
 
@@ -32,10 +36,16 @@ def merge_sandbox_config_dicts(*sources: Optional[Dict[str, Any]]) -> Dict[str, 
     return merged
 
 
-def build_sandbox_config(engine: SandboxEngine, cfg_dict: Optional[Dict[str, Any]]) -> Any:
+def build_sandbox_config(
+    engine: SandboxEngine, cfg_dict: Optional[Dict[str, Any]], *, expected_duration: Optional[float] = None
+) -> Any:
     """Instantiate the engine-specific ``SandboxConfig`` from a dict."""
     _, config_cls, _, _ = get_enclave_types(engine)
-    return config_cls.model_validate(cfg_dict or {})
+    adapted = adapt_sandbox_config(engine, get_secret_value(cfg_dict or {}), expected_duration=expected_duration)
+    try:
+        return config_cls.model_validate(adapted)
+    except ValidationError as exc:
+        raise SandboxConfigError(f'Invalid {engine.value} sandbox config: {exc}') from exc
 
 
 def should_build_docker_image(image: str) -> bool:

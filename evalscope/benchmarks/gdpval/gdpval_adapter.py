@@ -13,7 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_image
+from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_image, require_docker_engine
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -204,6 +204,7 @@ class GDPvalAdapter(AgentLoopAdapter):
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
+        require_docker_engine(self._task_config)
         self._ensure_docker_image()
         volumes = build_reference_volumes(sample)
         defaults: Dict[str, Any] = {
