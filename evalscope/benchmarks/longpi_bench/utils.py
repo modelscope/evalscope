@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict
 
+from evalscope.utils.json_extract import extract_last_json_object
+
 ATTACKS = ('no', 'naive', 'combine', 'authority_spoof')
 GOALS = ('0', '1', '2')
 SUITES = ('paper', 'resume', 'email', 'code')
@@ -255,10 +257,9 @@ def parse_json_response(text: str) -> Dict[str, Any]:
     try:
         value = json.loads(cleaned)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', cleaned, flags=re.S)
-        if not match:
+        value = extract_last_json_object(cleaned)
+        if value is None:
             raise
-        value = json.loads(match.group())
     if not isinstance(value, dict):
         raise ValueError('model response must be a JSON object')
     return value
