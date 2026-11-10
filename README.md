@@ -175,7 +175,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ### Installation
 
-Requires **Python >= 3.11**, with no upper version bound declared by EvalScope. Optional integrations may impose additional version constraints.
+Requires **Python >= 3.11**.
 
 ```shell
 pip install evalscope

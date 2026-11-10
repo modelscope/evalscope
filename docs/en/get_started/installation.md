@@ -1,12 +1,12 @@
 # Installation
 
-EvalScope requires **Python >= 3.11**, with no upper version bound declared by the framework. Optional integrations may impose additional version constraints.
+EvalScope requires **Python >= 3.11**.
 
 ## Method 1. Installing via pip
 We recommend using conda to manage your environment and pip to install dependencies. You can install the latest evalscope package from PyPI.
 1. Create a conda environment (optional)
 ```shell
-# Example using the minimum supported Python version; newer versions can also be used
+# Python >= 3.11
 conda create -n evalscope python=3.11
 
 # Activate the conda environment
