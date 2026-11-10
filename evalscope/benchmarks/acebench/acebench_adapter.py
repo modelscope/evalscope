@@ -99,6 +99,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         metric_list=['acc', 'process_acc'],
         primary_metric='accuracy',
         eval_split='normal',
+        evaluation_version='v1.1',
         extra_params={
             'language': {
                 'type': 'str',
@@ -353,10 +354,14 @@ class AceBenchAdapter(AgentAdapter):
         if not (test_category and 'multi_turn' in test_category and 'agent' not in test_category):
             return super().aggregate_scores(sample_scores)
 
+        if self._task_config and self.repeats > 1 and any(s.generation_index is None for s in sample_scores):
+            raise ValueError('ACEBench repeats require generation_index; use rerun_review=True for legacy reviews.')
+
         dialogues: Dict[Any, List[SampleScore]] = {}
         for sample_score in sample_scores:
             dialogue_id = (sample_score.sample_metadata or {}).get('dialogue_id') or sample_score.sample_id
-            dialogues.setdefault(dialogue_id, []).append(sample_score)
+            key = (dialogue_id, sample_score.generation_index or 0)
+            dialogues.setdefault(key, []).append(sample_score)
 
         end_scores, process_scores = [], []
         for steps in dialogues.values():
