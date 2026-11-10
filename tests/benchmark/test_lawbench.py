@@ -34,9 +34,9 @@ def test_native_loader_preserves_prompt_and_standard_repeats(tmp_path: Path) -> 
     assert adapter.benchmark_meta.evaluation_version == 'v1.0'
 
 
-@pytest.mark.parametrize('task', ['1-2', '2-1'])
+@pytest.mark.parametrize('task', ['1-2', '2-5', None])
 def test_hub_loader_preserves_official_rows_and_task_context(
-    task: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    task: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from datasets import Dataset as HFDataset
 
@@ -50,23 +50,27 @@ def test_hub_loader_preserves_official_rows_and_task_context(
         return HFDataset.from_list(records)
 
     monkeypatch.setattr(DatasetHub, 'load', load)
+    options: dict[str, Any] = {'dataset_revision': 'test-revision', 'shuffle': True}
+    if task is not None:
+        options['subset_list'] = [task]
     adapter = get_benchmark('lawbench', TaskConfig(
         datasets=['lawbench'], dataset_dir=str(tmp_path), limit=2, repeats=2,
-        dataset_args={'lawbench': {'subset_list': [task], 'dataset_revision': 'test-revision', 'shuffle': True}},
+        dataset_args={'lawbench': options},
     ))
-    samples = list(adapter.load_dataset()[task])
-
-    assert seen == [('evalscope/LawBench', 'modelscope', 'test-revision', 'zero_shot', task)]
-    assert len(samples) == 4
-    assert [sample.group_id for sample in samples] == [0, 0, 1, 1]
-    assert len({sample.target for sample in samples}) == 2
-    for sample in samples:
-        source = next(record for record in records if record['answer'] == sample.target)
-        assert sample.input[0].content == f'{source["instruction"]}\n{source["question"]}'
-        assert sample.metadata['task'] == task
-        if task == '2-1':
-            assert sample.metadata['origin_prompt'] == sample.input[0].content
-            assert sample.metadata['reference'] == sample.target
+    datasets = adapter.load_dataset()
+    expected = [task] if task is not None else [
+        '1-1', '1-2', *(f'2-{i}' for i in range(2, 11)), *(f'3-{i}' for i in range(1, 9)),
+    ]
+    assert list(datasets.keys()) == expected
+    assert seen == [('evalscope/LawBench', 'modelscope', 'test-revision', 'zero_shot', name) for name in expected]
+    for name, samples in datasets.items():
+        assert len(samples) == 4
+        assert [sample.group_id for sample in samples] == [0, 0, 1, 1]
+        assert len({sample.target for sample in samples}) == 2
+        for sample in samples:
+            source = next(record for record in records if record['answer'] == sample.target)
+            assert sample.input[0].content == f'{source["instruction"]}\n{source["question"]}'
+            assert sample.metadata['task'] == name
 
 
 def test_native_aggregation_keeps_official_denominators(tmp_path: Path) -> None:
@@ -108,6 +112,17 @@ def test_native_loader_rejects_unsupported_task_and_fewshot(tmp_path: Path) -> N
         get_benchmark('lawbench', TaskConfig(datasets=['lawbench'], dataset_args={'lawbench': {'few_shot_num': 1}}))
 
 
+@pytest.mark.parametrize('subsets', [['2-1'], ['1-2', '2-1']])
+def test_proofreading_is_rejected_before_dataset_loading(
+    subsets: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from evalscope.api.dataset import DatasetHub
+
+    monkeypatch.setattr(DatasetHub, 'load', lambda *a, **k: pytest.fail('unsupported tasks must not load data'))
+    with pytest.raises(ValueError, match='2-1.*not supported'):
+        _adapter(tmp_path, subsets)
+
+
 def test_native_run_and_cache_replay_are_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from evalscope import run_task
     from evalscope.models.mockllm import MockLLM
@@ -136,102 +151,28 @@ def test_native_run_and_cache_replay_are_offline(tmp_path: Path, monkeypatch: py
     assert metric['num'] == 4
 
 
-def test_corpus_score_uses_cached_rows_and_excludes_failed_records(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from evalscope.benchmarks.lawbench import lawbench_adapter
-    from evalscope.constants import ScoreStatus
-
-    adapter = _adapter(tmp_path, ['2-1'])
-    scores = [SampleScore(sample_id=i, score=Score(prediction=f'改正{i}'), sample_metadata={
-        'task': '2-1', 'origin_prompt': f'句子：\n原句{i}', 'reference': f'正确{i}',
-    }) for i in range(3)]
-    scores[2].score.status = ScoreStatus.EXCLUDED
-    seen = []
-    def corpus(rows: list[dict[str, str]], *args: Any) -> float:
-        seen.append(rows)
-        return 0.625
-    monkeypatch.setattr(lawbench_adapter, 'score_corrections', corpus)
-    cached = [SampleScore.model_validate_json(s.model_dump_json()) for s in reversed(scores)]
-    aggregates = adapter.aggregate_scores(cached)
-    assert len(seen) == 1 and len(seen[0]) == 2
-    assert {r['prediction'] for r in seen[0]} == {'改正0', '改正1'}
-    assert aggregates[0].score == 0.625 and aggregates[0].num == 2
-
-
 def test_only_official_mean_aggregation_is_supported(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match='aggregation'):
         get_benchmark('lawbench', TaskConfig(datasets=['lawbench'], dataset_args={'lawbench': {'aggregation': 'pass_at_k'}}))
 
 
-def test_corpus_metric_survives_native_review_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from evalscope import run_task
-    from evalscope.benchmarks.lawbench import lawbench_adapter
-    from evalscope.models.mockllm import MockLLM
-
-    data = tmp_path / 'data'
-    data.mkdir()
-    (data / '2-1.json').write_text(json.dumps([
-        {'instruction': '纠错', 'question': f'句子：\n原句{i}', 'answer': f'改正{i}'} for i in range(2)
-    ]))
-    toolkit = tmp_path / 'toolkit'
-    toolkit.mkdir()
-    for script in ('parallel_to_m2.py', 'compare_m2_for_evaluation.py'):
-        (toolkit / script).touch()
-    monkeypatch.setattr(MockLLM, 'default_output', '改正')
-    calls = []
-    def corpus(rows: list[dict[str, str]], *args: Any) -> float:
-        calls.append(rows)
-        return 0.625
-    monkeypatch.setattr(lawbench_adapter, 'score_corrections', corpus)
-    work = tmp_path / 'run'
-    base = dict(model='offline-lawbench-corpus', eval_type='mock_llm', datasets=['lawbench'],
-                eval_batch_size=2, no_timestamp=True, work_dir=str(work),
-                dataset_args={'lawbench': {'local_path': str(data), 'subset_list': ['2-1'],
-                                          'extra_params': {'cherrant_path': str(toolkit)}}})
-    run_task(TaskConfig(**base))
-    monkeypatch.setattr(MockLLM, 'generate', lambda *a, **k: pytest.fail('cache replay must not generate'))
-    run_task(TaskConfig(**base, use_cache=str(work)))
-    run_task(TaskConfig(**base, use_cache=str(work), rerun_review=True))
-    assert len(calls) == 3
-    assert all(sorted(rows, key=lambda r: r['origin_prompt']) == sorted(calls[0], key=lambda r: r['origin_prompt'])
-               for rows in calls)
-    assert len(calls[0]) == 2
-    report = json.loads((work / 'reports/offline-lawbench-corpus/lawbench.json').read_text())
-    assert report['metrics'][0]['score'] == 0.625
-    assert report['metrics'][0]['num'] == 2
-
-
-@pytest.mark.parametrize('task', ['1-2', '2-1'])
-def test_scoring_uses_configured_prediction_filters(task: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scoring_uses_configured_prediction_filters() -> None:
     from evalscope.api.evaluator import TaskState
     from evalscope.api.model import ModelOutput
-    from evalscope.benchmarks.lawbench import lawbench_adapter
 
+    task = '1-2'
     adapter = get_benchmark('lawbench', TaskConfig(datasets=['lawbench'], dataset_args={'lawbench': {
         'subset_list': [task], 'filters': {'remove_until': {'delimiter': '|FINAL|'}},
     }}))
     sample = adapter.record_to_sample({'task': task, 'instruction': '选择', 'question': '句子：\n原句',
-                                       'answer': '正确答案：A' if task == '1-2' else 'A'})
+                                       'answer': '正确答案：A'})
     raw = 'B|FINAL|A'
     scored = adapter.calculate_metrics(TaskState(
         model='scripted', sample=sample, completed=True, output=ModelOutput.from_content('scripted', raw),
     ))
     assert scored.score.prediction == raw
     assert scored.score.extracted_prediction == 'A'
-    if task == '1-2':
-        assert scored.score.value['lawbench_score'] == 1.0
-    else:
-        seen = []
-        def corpus(rows: list[dict[str, str]], *args: Any) -> float:
-            seen.extend(rows)
-            return 1.0
-        monkeypatch.setattr(lawbench_adapter, 'score_corrections', corpus)
-        cached = SampleScore.model_validate_json(scored.model_dump_json())
-        adapter.aggregate_scores([cached])
-        assert seen[0]['prediction'] == 'A'
-        seen.clear()
-        cached.score.extracted_prediction = ''
-        adapter.aggregate_scores([cached])
-        assert seen[0]['prediction'] == ''
+    assert scored.score.value['lawbench_score'] == 1.0
 
 
 @pytest.mark.parametrize(('task', 'prediction', 'reference'), [
@@ -287,6 +228,7 @@ def test_extraction_keeps_official_partial_credit_and_order() -> None:
     assert score_response('3-7', '10元、2000元', '上文涉及到的犯罪金额:2000元。')['score'] == 1
 
 
-def test_unknown_task_cannot_silently_score_zero() -> None:
+@pytest.mark.parametrize('task', ['4-1', '2-1'])
+def test_unknown_task_cannot_silently_score_zero(task: str) -> None:
     with pytest.raises(ValueError, match='task'):
-        score_response('4-1', '', '')
+        score_response(task, '', '')

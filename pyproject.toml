@@ -67,7 +67,6 @@ miniwob          = {file = ["evalscope/benchmarks/miniwob/requirements.txt"]}
 ifeval           = {file = ["evalscope/benchmarks/ifeval/requirements.txt"]}
 ifbench          = {file = ["evalscope/benchmarks/ifbench/requirements.txt"]}
 lawbench         = {file = ["evalscope/benchmarks/lawbench/requirements.txt"]}
-lawbench-cherrant = {file = ["evalscope/benchmarks/lawbench/requirements.txt", "evalscope/benchmarks/lawbench/requirements_cherrant.txt"]}
 multi_if         = {file = ["evalscope/benchmarks/multi_if/requirements.txt"]}
 olympiad_bench   = {file = ["evalscope/benchmarks/olympiad_bench/requirements.txt"]}
 needle_haystack  = {file = ["evalscope/benchmarks/needle_haystack/requirements.txt"]}

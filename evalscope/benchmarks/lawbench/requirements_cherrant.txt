@@ -1,8 +1,0 @@
-ltp>=4.2.14,<5
-numpy
-opencc-python-reimplemented
-pypinyin
-python-Levenshtein
-timeout-decorator
-torch
-tqdm

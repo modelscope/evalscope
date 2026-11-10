@@ -114,7 +114,6 @@ def score_response(task: str, prediction: str, reference: str) -> Dict[str, floa
 
     Abstention is returned only for tasks defining it. An omitted score still carries
     zero abstention so skipped references remain in the official abstention denominator.
-    Task 2-1 requires corpus-level ChERRANT scoring instead of a row average.
     """
     if task in ('1-1', '2-7', '3-2', '3-8'):
         gold = reference.replace('答案:', '') if task == '1-1' else reference
@@ -163,4 +162,4 @@ def score_response(task: str, prediction: str, reference: str) -> Dict[str, floa
         gold = float(reference.replace('上文涉及到的犯罪金额:', '').replace('元。', ''))
         pred = [float(number) for number in re.findall(r'\d+\.?\d*', prediction)]
         return {'score': float(gold in pred), 'abstention_rate': float(not pred)}
-    raise ValueError(f'LawBench task {task!r} has no row scorer; task 2-1 requires corpus scoring.')
+    raise ValueError(f'LawBench scoring task {task!r} is not supported.')
