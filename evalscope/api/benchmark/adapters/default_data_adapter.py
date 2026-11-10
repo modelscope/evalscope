@@ -912,6 +912,15 @@ class DefaultDataAdapter(DataAdapter):
         """
         # Get the configured aggregation implementation
         aggregate_cls = get_aggregation(self.aggregation)
+        if self.aggregation == 'mean_and_ci' and self.repeats > 1:
+            # Reject at the configuration boundary: with repeats the loader emits one
+            # observation per generation, which the item-sampling interval cannot treat
+            # as independent samples.
+            raise ValueError(
+                f'aggregation "mean_and_ci" does not support repeats={self.repeats}; repeated '
+                'generations are not independent samples. Use repeats=1 or an '
+                'aggregation that models repeat groups (bayes_at_n).'
+            )
         aggregator = aggregate_cls(repeats=self.repeats) if self.aggregation == 'bayes_at_n' else aggregate_cls()
 
         # Compute aggregated scores

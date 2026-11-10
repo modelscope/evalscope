@@ -32,12 +32,13 @@ def _format_ci(ci: Optional[Dict[str, Any]], n: int, semantics: Optional[MetricS
     if ci_low is None or ci_high is None or pd.isna(ci_low) or pd.isna(ci_high):
         return None
     flags = ci.get('flags') or []
-    if 'low_confidence' in flags:
-        return f'low confidence (n={n})'
     interval = f'[{format_metric_value(ci_low, semantics)}, {format_metric_value(ci_high, semantics)}]'
+    notes = []
+    if 'low_confidence' in flags:
+        notes.append(f'low confidence, n={n}')
     if 'wide_interval' in flags:
-        return f'wide interval {interval} (n={n})'
-    return interval
+        notes.append('wide interval')
+    return f'{interval} ({"; ".join(notes)})' if notes else interval
 
 
 if TYPE_CHECKING:
@@ -144,6 +145,8 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
+                    if isinstance(categories, str):
+                        categories = [categories]
                     identity = agg_score_item.identity
                     ci = (agg_score_item.metadata or {}).get('ci')
                     subsets.append(

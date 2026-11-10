@@ -35,7 +35,6 @@ KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset(
         'micro_mean',
         'weighted_mean',
         'clipped_mean',
-        'mean_and_ci',
         # k-sample aggregations. The k itself is `dimensions.k`, never part of this name.
         'pass_at_k',
         'pass_hat_k',

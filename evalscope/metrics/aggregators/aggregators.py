@@ -457,14 +457,27 @@ class MeanAndCI(Mean):
     One ``AggScore`` per metric: the interval lives in its ``metadata`` under the ``ci``
     key (numeric endpoints in the metric's own scale, level, method, flags) — a single
     metric identity, losslessly saved with the report and formatted at the display
-    boundary. ``n`` counts scored samples (post fail-closed); exclusions are assumed
-    ignorable and their count is a report-layer concern.
+    boundary. ``n`` counts scored samples (post fail-closed); the excluded count belongs
+    to the report layer, and the interval assumes exclusions are ignorable (MCAR).
+
+    The interval describes **item-sampling error**: it does not capture decoding
+    nondeterminism, prompt/template sensitivity, or judge variance. A narrow interval is
+    not evidence that the score is stable, and the flags are small-sample/precision
+    warnings — ``low_confidence`` means too few observations to support an interval
+    (a warning policy, not a universal rule), not proof that a dataset is or is not
+    representative. Display shows the interval alongside the flag.
 
     Repeated generations of the same item are **not** independent samples; this v1
-    aggregator rejects them instead of treating repeat count as sample count.
+    aggregator rejects them (via group_id/generation_index or duplicate sample_id)
+    instead of treating repeat count as sample count.
+
+    ``name`` is an instance attribute (same shape as ``MeanPassAtK``): the emitted
+    ``AggScore`` rows carry ``aggregation='mean'``, so 'mean_and_ci' is a registry key
+    that selects this aggregator, not an identity vocabulary name.
     """
 
-    name = 'mean_and_ci'
+    def __init__(self):
+        self.name = 'mean_and_ci'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
         if not scores:
@@ -479,6 +492,18 @@ class MeanAndCI(Mean):
                     'Aggregate repeats with mean_and_pass_at_k-style aggregators instead.'
                 )
             seen_ids[score.sample_id] = None
+            # The dataset loader gives every generation its own sample_id and marks the
+            # repeat structure on group_id/generation_index, so duplicate-ID checks alone
+            # cannot see repeats. Any repeat structure at all means the observations are
+            # not independent items — reject, this v1 aggregator is item-sampling only.
+            if score.group_id is not None or score.generation_index is not None:
+                raise ValueError(
+                    'mean_and_ci requires one independent observation per item; scores carry '
+                    f'repeat structure (group_id={score.group_id!r}, '
+                    f'generation_index={score.generation_index!r}). Repeated generations are '
+                    'not independent samples — aggregate repeats with mean_and_pass_at_k-style '
+                    'aggregators instead.'
+                )
 
         metric_values: Dict[str, List[float]] = defaultdict(list)
         metric_sample_ids: Dict[str, List[Any]] = defaultdict(list)
@@ -503,7 +528,11 @@ class MeanAndCI(Mean):
             flags: List[str] = []
             if n < _LOW_CONFIDENCE_N:
                 flags.append('low_confidence')
-            if (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
+            # The percentage-point width policy is meaningful only for binary proportions;
+            # applying it to a continuous metric would make the flag depend on the unit
+            # (rescaling the same scores flips it). A scale-aware continuous policy is a
+            # follow-up, not a silent reuse of this threshold.
+            if is_ratio and (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
                 flags.append('wide_interval')
 
             aggregated_scores.append(
