@@ -319,6 +319,10 @@ Only the ACR registry host region changes; repository paths and tags remain unch
 This table distinguishes implementation scope from real provider acceptance.
 “Available, unverified” does not claim end-to-end validation.
 “Verified” means one gold/empty-patch sample per benchmark, with separate small native-agent runs; it is not full-dataset acceptance.
+Mini and Multilingual also completed real-model patch submission and official grading on both providers.
+SWE-Atlas completed a real-model answer and all five rubric judgments on both providers.
+These sampled runs used larger agent budgets and explicit submission constraints; some required model format repair or continuation.
+Grading completion does not imply that the model solved the task.
 Pro preserves the pinned upstream scripts and parser: test names that do not match the dataset's required names remain unresolved.
 
 | Benchmark | Official E2B | Aliyun |
@@ -331,7 +335,7 @@ Pro preserves the pinned upstream scripts and parser: test names that do not mat
 | swe_bench_lite_agentic | Verified | Verified |
 | swe_bench_multilingual_agentic | Verified | Verified |
 | swe_bench_pro | Verified | Verified |
-| swe_atlas_qna | Available, unverified | Available, unverified |
+| swe_atlas_qna | Sampled answer + judge verified | Sampled answer + judge verified |
 | wide_search | Available, unverified | Image mapping required |
 | Pooled code benchmarks, e.g. HumanEval | Available, unverified | Image mapping required |
 

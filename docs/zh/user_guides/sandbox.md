@@ -311,6 +311,8 @@ SWE-bench 与 Pro 的**评测沙箱**存活时长为
 
 下表区分实现范围和真实服务验收；“可用未验证”不代表已经通过端到端验收。
 “已验证”指本期每个 benchmark 的单样本 gold/空 patch 冒烟，Agent 链路另做小样本验证，不代表全量数据验收。
+Mini 和 Multilingual 还在两家服务上完成了真实模型补丁提交及官方评分；SWE-Atlas 完成了真实模型答案和全部 5 项 rubric 评分。
+这些单样本运行提高了 Agent 步数并明确提交约束，部分需要模型修正格式或继续提交；评分完成不等于模型成功解题。
 Pro 使用上游固定版本的脚本与解析器；若解析出的测试名与数据集要求不一致，仍按原始名称比较并判为未解决。
 
 | benchmark | e2b 官方 | 阿里云 |
@@ -323,7 +325,7 @@ Pro 使用上游固定版本的脚本与解析器；若解析出的测试名与�
 | swe_bench_lite_agentic | 已验证 | 已验证 |
 | swe_bench_multilingual_agentic | 已验证 | 已验证 |
 | swe_bench_pro | 已验证 | 已验证 |
-| swe_atlas_qna | 可用未验证 | 可用未验证 |
+| swe_atlas_qna | 单样本答案及 judge 已验证 | 单样本答案及 judge 已验证 |
 | wide_search | 可用未验证 | 需补镜像映射 |
 | 池化代码执行 benchmark（如 HumanEval） | 可用未验证 | 需补镜像映射 |
 
