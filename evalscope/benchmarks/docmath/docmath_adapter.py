@@ -37,7 +37,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='docmath',
         pretty_name='DocMath',
         tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],

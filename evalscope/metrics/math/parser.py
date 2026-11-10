@@ -13,6 +13,13 @@ from .isolation import isolation_available, run_isolated
 _P = ParamSpec('_P')
 _R = TypeVar('_R')
 
+# Math-Verify combines digit groups separated by LaTeX spacing arithmetically (70\,000 -> 70*0, 1\,250 -> 251),
+# so join them only when a complete three-digit group follows.
+_DIGIT_GROUP_SPACING_RE = re.compile(r'(?<=\d)\\[,;: ](?=\d{3}\b)')
+# Currency symbols other than \$ yield no number, so drop one that directly precedes a number.
+_CURRENCY = r'(?:[₹€£¥]|\bRs\.?|\bINR)'
+_CURRENCY_PREFIX_RE = re.compile(rf'(?:\\text\{{\s*{_CURRENCY}\s*\}}|{_CURRENCY})\s?(?=\d)')
+
 MATH_DEADLINE_S = 30
 """Deadline for computation and the complete result transfer once the scoring child has started.
 
@@ -54,12 +61,18 @@ def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
     return wrapped
 
 
+def _normalize_number_formatting(text: str) -> str:
+    """Join LaTeX-spaced thousands groups and drop a currency prefix so Math-Verify reads one number."""
+    return _CURRENCY_PREFIX_RE.sub('', _DIGIT_GROUP_SPACING_RE.sub('', text))
+
+
 def _parse(text: str, mode: str) -> tuple[list[Any], str]:
     from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse
 
     text = text.strip()
     if not text:
         return [], ''
+    text = _normalize_number_formatting(text)
     original = text
     scientific_literal = re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)[eE][+-]?[0-9]+', text)
     if scientific_literal:

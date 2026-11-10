@@ -105,7 +105,7 @@ Remember to put your answer inside \\boxed{{}}."""
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime24',
         pretty_name='AIME-2024',
         tags=[Tags.MATH, Tags.REASONING],
@@ -204,7 +204,7 @@ class AIME24Adapter(DefaultDataAdapter):
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime25',
         pretty_name='AIME-2025',
         tags=[Tags.MATH, Tags.REASONING],
@@ -249,7 +249,7 @@ class AIME25Adapter(AIME24Adapter): ...
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime26',
         pretty_name='AIME-2026',
         tags=[Tags.MATH, Tags.REASONING],
