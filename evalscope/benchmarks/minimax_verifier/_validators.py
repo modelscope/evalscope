@@ -106,6 +106,8 @@ def validate_tool_call_with_array_command(tool_call: Any, tools: List[Dict[str, 
     from jsonschema import ValidationError, validate
 
     try:
+        if tool_call.parse_error:
+            return False
         tool_name = tool_call.function.name
         schema = next(
             (t['function']['parameters'] for t in tools if t['function']['name'] == tool_name),

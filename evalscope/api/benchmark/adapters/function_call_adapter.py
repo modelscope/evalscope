@@ -59,17 +59,22 @@ class FunctionCallAdapter(AgentAdapter):
     def validate_tool_call(tool_calls: List[ToolCall], tools: List[Dict[str, Any]]) -> Tuple[bool, str]:
         """Validate each tool call's arguments against its declared JSON schema.
 
-        Returns ``(passed, reason)`` where ``passed`` is True only if all
-        provided tool calls have a matching schema and their arguments
+        Returns ``(passed, reason)`` where ``passed`` is True only if at least one
+        tool call is provided, all calls parsed successfully, and their arguments
         validate. ``reason`` is empty on success or a short human-readable
         description of the first failure.
         """
         from jsonschema import ValidationError, validate
 
+        if not tool_calls:
+            return False, 'No tool calls were provided.'
+
         tool_name = ''
         try:
             for tool_call in tool_calls:
                 tool_name = tool_call.function.name
+                if tool_call.parse_error:
+                    return False, f"Argument parsing failed for tool '{tool_name}': {tool_call.parse_error}"
                 schema = next(
                     (t['function']['parameters'] for t in tools if t['function']['name'] == tool_name),
                     None,

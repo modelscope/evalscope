@@ -44,6 +44,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
 @register_benchmark(
     BenchmarkMeta(
         name='k2_verifier',
+        evaluation_version='v1.1',
         pretty_name='K2-Vendor-Verifier',
         description=K2_VERIFIER_DESCRIPTION,
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
@@ -122,7 +123,7 @@ class K2VerifierAdapter(FunctionCallAdapter):
             score.prediction = task_state.messages_markdown
             score.extracted_prediction = task_state.messages_markdown
 
-        is_valid_tool_call, error_reason = self.validate_tool_call(tool_calls, tools)
+        is_valid_tool_call, error_reason = self.validate_tool_call(tool_calls, tools) if is_call_tool else (False, '')
         is_call_successful = is_call_tool and is_valid_tool_call
 
         score.value = {
