@@ -240,9 +240,10 @@ class TestWideSearchAdapter(unittest.TestCase):
             judge={'strategy': JudgeStrategy.RULE, 'models': {'model_id': 'mock'}},
         )
 
-        # ``get_benchmark`` is the only construction path, so the run fails before generation.
+        # Metadata construction is allowed; evaluation validates before generation.
+        adapter = get_benchmark('wide_search', config=config)
         with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
-            get_benchmark('wide_search', config=config)
+            adapter.validate_judge_strategy()
 
     @unittest.skipUnless(_ENCLAVE_AVAILABLE, 'ms_enclave (sandbox extra) is not installed')
     def test_docker_uses_unified_sandbox_config(self) -> None:
