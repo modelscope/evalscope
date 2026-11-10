@@ -24,7 +24,7 @@ CATEGORIES = {'1': 'memorization', '2': 'understanding', '3': 'application'}
     BenchmarkMeta(
         name='lawbench',
         pretty_name='LawBench',
-        dataset_id='LawBench',
+        dataset_id='evalscope/LawBench',
         paper_url='https://arxiv.org/abs/2309.16289',
         tags=[Tags.KNOWLEDGE, Tags.REASONING, Tags.QA],
         subset_list=list(TASKS),
@@ -73,13 +73,14 @@ LawBench evaluates Chinese legal knowledge through 20 tasks covering memorizatio
 ## Evaluation Notes
 
 - Install the ordinary scoring dependency with `pip install 'evalscope[lawbench]'`.
-- Download the official repository and set `dataset_args.lawbench.local_path` to its root, `data/zero_shot` directory, or another directory containing the 20 `<task>.json` files. There is no automatic complete hub mirror in this adapter.
+- The 20 official zero-shot task files load automatically from [ModelScope](https://modelscope.cn/datasets/evalscope/LawBench). Each file is an unchanged copy from the pinned official revision.
+- For offline data, set `dataset_args.lawbench.local_path` to the official checkout root, its `data/zero_shot` directory, or another directory containing the 20 `<task>.json` files.
 - Zero-shot only. Select individual tasks with `subset_list`; standard `limit`, `shuffle`, filters and `repeats` apply.
 - `lawbench_score` is the task's official score, usually in [0, 1]; imprisonment log-distance scores can be negative. Overall and category scores are unweighted means of represented task scores.
 - Officially skipped dispute/imprisonment references are omitted from score denominators but retained in abstention denominators. NER's upstream `anstention_rate` spelling is normalized to `abstention_rate`; the official CSV driver instead silently defaults this misspelled field to zero.
 - Task `2-1` additionally requires the official `evaluation/utils` directory and its ChERRANT dependencies (`ltp`, `pypinyin`, `opencc-python-reimplemented`, `timeout-decorator`, `python-Levenshtein`). Set `extra_params.cherrant_path` to that directory and optionally `cherrant_python` to a separate Python interpreter. Scoring runs in private temporary directories; tool errors and timeouts fail explicitly.
 - No LLM judge or OpenCompass runtime is required. This is LawBench, distinct from PLawBench.
-- The generic Usage examples below must also include `local_path` and, when selecting task `2-1`, `cherrant_path`. The complete configuration is:
+- When selecting task `2-1` (included by default), add `cherrant_path` to the generic Usage examples below. The complete configuration is:
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -89,7 +90,6 @@ run_task(TaskConfig(
     api_url='http://localhost:8000/v1', api_key='EMPTY',
     datasets=['lawbench'],
     dataset_args={'lawbench': {
-        'local_path': '/path/to/LawBench',
         'extra_params': {'cherrant_path': '/path/to/LawBench/evaluation/utils'},
     }},
     generation_config={'temperature': 0, 'max_tokens': 1024},
@@ -113,18 +113,18 @@ class LawBenchAdapter(DefaultDataAdapter):
         self.category_map = {task: [CATEGORIES[task[0]]] for task in TASKS}
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Read official JSON and delegate sampling, filtering and indexing to the standard loader."""
+        """Use the standard hub loader, with support for original local JSON directories."""
         if subset not in TASKS:
             raise ValueError(f'Unknown LawBench subset: {subset!r}')
         root = Path(self.dataset_id).expanduser()
         if not root.is_dir():
-            raise FileNotFoundError(
-                'LawBench requires local_path pointing to the official checkout or zero_shot data directory.'
-            )
+            return super().load_subset(subset, data_loader)
         for prefix in ('data/zero_shot', 'zero_shot', ''):
             if (root / prefix / f'{subset}.json').is_file():
                 break
-        path = download_dataset_file(str(root), f'{prefix}/{subset}.json'.lstrip('/'), data_source=HubType.LOCAL)
+        path = download_dataset_file(
+            str(root), f'{prefix}/{subset}.json'.lstrip('/'), data_source=HubType.LOCAL, revision=self.dataset_revision
+        )
         records = json.loads(Path(path).read_text(encoding='utf-8'))
         if not isinstance(records, list):
             raise ValueError('LawBench task JSON must contain a list of records.')
@@ -139,12 +139,15 @@ class LawBenchAdapter(DefaultDataAdapter):
         ).load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        for field in ('instruction', 'question', 'answer', 'task'):
+        for field in ('instruction', 'question', 'answer'):
             if not isinstance(record.get(field), str):
                 raise ValueError(f'LawBench record requires a string {field!r}.')
+        task = record.get('task', self.current_subset_name)
+        if not isinstance(task, str) or task not in TASKS:
+            raise ValueError(f'Unknown LawBench task: {task!r}')
         prompt = f'{record["instruction"]}\n{record["question"]}'
-        metadata = {'task': record['task']}
-        if record['task'] == '2-1':
+        metadata = {'task': task}
+        if task == '2-1':
             metadata.update(origin_prompt=prompt, reference=record['answer'])
         return Sample(input=prompt, target=record['answer'], metadata=metadata)
 

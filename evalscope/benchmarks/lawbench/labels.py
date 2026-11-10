@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# Label lists adapted from OpenCompass/LawBench (Apache-2.0); see NOTICE.
+# Label lists adapted from OpenCompass/LawBench (Apache-2.0).
 
 DISPUTE_LABELS = (
     '诉讼主体',

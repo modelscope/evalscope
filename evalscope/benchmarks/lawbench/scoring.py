@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# Adapted from OpenCompass/LawBench (Apache-2.0); see NOTICE for modifications.
+# Adapted from OpenCompass/LawBench (Apache-2.0) for per-sample scoring and explicit denominators.
 import math
 import re
 from collections import Counter

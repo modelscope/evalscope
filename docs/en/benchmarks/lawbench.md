@@ -22,13 +22,14 @@ LawBench evaluates Chinese legal knowledge through 20 tasks covering memorizatio
 ## Evaluation Notes
 
 - Install the ordinary scoring dependency with `pip install 'evalscope[lawbench]'`.
-- Download the official repository and set `dataset_args.lawbench.local_path` to its root, `data/zero_shot` directory, or another directory containing the 20 `<task>.json` files. There is no automatic complete hub mirror in this adapter.
+- The 20 official zero-shot task files load automatically from [ModelScope](https://modelscope.cn/datasets/evalscope/LawBench). Each file is an unchanged copy from the pinned official revision.
+- For offline data, set `dataset_args.lawbench.local_path` to the official checkout root, its `data/zero_shot` directory, or another directory containing the 20 `<task>.json` files.
 - Zero-shot only. Select individual tasks with `subset_list`; standard `limit`, `shuffle`, filters and `repeats` apply.
 - `lawbench_score` is the task's official score, usually in [0, 1]; imprisonment log-distance scores can be negative. Overall and category scores are unweighted means of represented task scores.
 - Officially skipped dispute/imprisonment references are omitted from score denominators but retained in abstention denominators. NER's upstream `anstention_rate` spelling is normalized to `abstention_rate`; the official CSV driver instead silently defaults this misspelled field to zero.
 - Task `2-1` additionally requires the official `evaluation/utils` directory and its ChERRANT dependencies (`ltp`, `pypinyin`, `opencc-python-reimplemented`, `timeout-decorator`, `python-Levenshtein`). Set `extra_params.cherrant_path` to that directory and optionally `cherrant_python` to a separate Python interpreter. Scoring runs in private temporary directories; tool errors and timeouts fail explicitly.
 - No LLM judge or OpenCompass runtime is required. This is LawBench, distinct from PLawBench.
-- The generic Usage examples below must also include `local_path` and, when selecting task `2-1`, `cherrant_path`. The complete configuration is:
+- When selecting task `2-1` (included by default), add `cherrant_path` to the generic Usage examples below. The complete configuration is:
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -38,7 +39,6 @@ run_task(TaskConfig(
     api_url='http://localhost:8000/v1', api_key='EMPTY',
     datasets=['lawbench'],
     dataset_args={'lawbench': {
-        'local_path': '/path/to/LawBench',
         'extra_params': {'cherrant_path': '/path/to/LawBench/evaluation/utils'},
     }},
     generation_config={'temperature': 0, 'max_tokens': 1024},
@@ -51,7 +51,7 @@ run_task(TaskConfig(
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `lawbench` |
-| **Dataset ID** | `LawBench` |
+| **Dataset ID** | [evalscope/LawBench](https://modelscope.cn/datasets/evalscope/LawBench/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2309.16289) |
 | **Tags** | `Knowledge`, `QA`, `Reasoning` |
 | **Metrics** | `lawbench_score`, `abstention_rate` |
@@ -100,7 +100,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "80213160",
+      "id": "ac43c78e",
       "content": "回答以下问题，只需直接给出法条内容:\n民法商法农民专业合作社法第三十三条的内容是什么？"
     }
   ],

@@ -1,7 +1,0 @@
-Native LawBench scoring is adapted from OpenCompass/LawBench, revision
-e30981bb3ff54c41571f222e0b23e92d27375388, under the Apache License 2.0.
-https://github.com/open-compass/LawBench
-
-Modified for EvalScope: per-sample scoring, typed interfaces, lazy dependencies,
-explicit denominators, isolated corpus scoring, and normalized abstention key.
-The character F1 follows the upstream CAIL-2021/CoQA-based evaluator.

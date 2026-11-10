@@ -34,6 +34,41 @@ def test_native_loader_preserves_prompt_and_standard_repeats(tmp_path: Path) -> 
     assert adapter.benchmark_meta.evaluation_version == 'v1.0'
 
 
+@pytest.mark.parametrize('task', ['1-2', '2-1'])
+def test_hub_loader_preserves_official_rows_and_task_context(
+    task: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datasets import Dataset as HFDataset
+
+    from evalscope.api.dataset import DatasetHub
+
+    records = [{'instruction': '任务指令', 'question': f'句子：\n原句{i}', 'answer': f'答案{i}'} for i in range(4)]
+    seen = []
+
+    def load(hub: DatasetHub, split: str, subset: str, **kwargs: Any) -> HFDataset:
+        seen.append((hub.data_id_or_path, hub.data_source, hub.revision, split, subset))
+        return HFDataset.from_list(records)
+
+    monkeypatch.setattr(DatasetHub, 'load', load)
+    adapter = get_benchmark('lawbench', TaskConfig(
+        datasets=['lawbench'], dataset_dir=str(tmp_path), limit=2, repeats=2,
+        dataset_args={'lawbench': {'subset_list': [task], 'dataset_revision': 'test-revision', 'shuffle': True}},
+    ))
+    samples = list(adapter.load_dataset()[task])
+
+    assert seen == [('evalscope/LawBench', 'modelscope', 'test-revision', 'zero_shot', task)]
+    assert len(samples) == 4
+    assert [sample.group_id for sample in samples] == [0, 0, 1, 1]
+    assert len({sample.target for sample in samples}) == 2
+    for sample in samples:
+        source = next(record for record in records if record['answer'] == sample.target)
+        assert sample.input[0].content == f'{source["instruction"]}\n{source["question"]}'
+        assert sample.metadata['task'] == task
+        if task == '2-1':
+            assert sample.metadata['origin_prompt'] == sample.input[0].content
+            assert sample.metadata['reference'] == sample.target
+
+
 def test_native_aggregation_keeps_official_denominators(tmp_path: Path) -> None:
     adapter = _adapter(tmp_path, ['2-2'])
     scores = [SampleScore(sample_id=i, score=Score(value=value), sample_metadata={'task': '2-2'})

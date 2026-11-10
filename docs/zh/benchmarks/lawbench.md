@@ -3,32 +3,33 @@
 
 ## 概述
 
-LawBench 通过 20 个任务评估中文法律知识，涵盖记忆、理解和应用三个层次。本原生适配遵循[官方零样本数据和评分代码](https://github.com/open-compass/LawBench)，对应版本为 `e30981bb3ff54c41571f222e0b23e92d27375388`。
+LawBench 通过涵盖记忆、理解和应用的 20 个任务来评估中文法律知识。此原生适配器遵循 [官方零样本数据和评分代码](https://github.com/open-compass/LawBench)，基于修订版本 `e30981bb3ff54c41571f222e0b23e92d27375388`。
 
 ## 任务描述
 
-- **任务类型**: 法律问答、分类、抽取、生成和文书校对
-- **输入**: 官方任务指令与问题，以换行符连接
-- **输出**: 遵循任务要求格式的中文回答
-- **领域**: 中文法律知识与法律推理
+- **任务类型**：法律问答、分类、抽取、生成和校对
+- **输入**：官方指令后跟问题，两者之间用换行符分隔
+- **输出**：符合任务要求格式的中文自由文本响应
+- **领域**：中文法律知识和法律推理
 
 ## 主要特点
 
-- 共 10,000 个样本，每个任务 500 个；子集为 `1-1`–`1-2`、`2-1`–`2-10` 和 `3-1`–`3-8`
-- 涵盖法条背诵、法律考试、文书校对、争议分类、阅读理解、实体与事件抽取、摘要、论辩挖掘、判决预测、金额计算和法律咨询
-- 保留官方基于子串的答案解析、字符级 F1、ROUGE-L 和归一化刑期对数距离
-- 任务 `2-1` 使用官方 ChERRANT 字符级语料 F0.5，对参与评测的记录整体计算一次
+- 10,000 个样本：每个任务 500 个；子集包括 `1-1`–`1-2`、`2-1`–`2-10` 和 `3-1`–`3-8`
+- 涵盖法条背诵、法律考试、校对、争议焦点分类、阅读理解、实体/事件抽取、摘要、论辩挖掘、判决预测、损害赔偿计算和咨询
+- 保留官方的基于子串的解析答案方式、字符 F1、ROUGE-L 以及归一化的刑期对数距离
+- 任务 `2-1` 使用官方的 ChERRANT 字符级语料库 F0.5，该指标是对全部参与评测的记录整体计算一次
 
 ## 评估说明
 
-- 使用 `pip install 'evalscope[lawbench]'` 安装普通任务的评分依赖。
-- 下载官方仓库，将 `dataset_args.lawbench.local_path` 设为仓库根目录、`data/zero_shot` 目录，或包含 20 个 `<task>.json` 文件的目录。本适配暂不自动下载完整的 Hub 镜像。
-- 仅支持零样本评测。可通过 `subset_list` 选择任务，支持框架标准的 `limit`、`shuffle`、过滤器和 `repeats` 设置。
-- `lawbench_score` 为任务的官方得分，通常位于 [0, 1]；刑期对数距离得分可能为负数。总分及类别得分均为相应任务得分的等权平均值。
-- 官方跳过的争议焦点或刑期参考答案不计入得分分母，但保留在弃权率分母中。NER 上游拼写错误的 `anstention_rate` 统一为 `abstention_rate`；官方 CSV 入口会将该拼写错误字段静默记为零。
-- 任务 `2-1` 还需要官方 `evaluation/utils` 目录及其 ChERRANT 依赖（`ltp`、`pypinyin`、`opencc-python-reimplemented`、`timeout-decorator`、`python-Levenshtein`）。将 `extra_params.cherrant_path` 指向该目录，也可通过 `cherrant_python` 指定独立的 Python 解释器。评分在独立临时目录中运行；工具错误和超时会明确报错。
-- 无需 LLM 裁判或 OpenCompass 运行环境。本基准为 LawBench，与 PLawBench 不同。
-- 下方通用使用示例还需要填写 `local_path`；选择任务 `2-1` 时，还需填写 `cherrant_path`。完整配置如下：
+- 安装常规评分依赖项：`pip install 'evalscope[lawbench]'`。
+- 20 个官方零样本任务文件会自动从 [ModelScope](https://modelscope.cn/datasets/evalscope/LawBench) 加载。每个文件均为固定官方修订版本的未修改副本。
+- 对于离线数据，请将 `dataset_args.lawbench.local_path` 设置为官方检出根目录、其 `data/zero_shot` 目录或包含这 20 个 `<task>.json` 文件的另一个目录。
+- 仅支持零样本。可通过 `subset_list` 选择单个任务；标准的 `limit`、`shuffle`、过滤器和 `repeats` 参数均适用。
+- `lawbench_score` 是任务的官方得分，通常在 [0, 1] 范围内；刑期对数距离得分可能为负值。总体得分和类别得分为本次参与评测的任务得分的未加权平均值。
+- 官方跳过的争议焦点/刑期参考答案不计入得分分母，但保留在弃答率分母中。NER 上游字段拼写错误 `anstention_rate` 已规范化为 `abstention_rate`；官方 CSV 驱动程序则会将此拼写错误的字段静默默认设为零。
+- 任务 `2-1` 额外需要官方的 `evaluation/utils` 目录及其 ChERRANT 依赖项（`ltp`、`pypinyin`、`opencc-python-reimplemented`、`timeout-decorator`、`python-Levenshtein`）。将 `extra_params.cherrant_path` 设置为该目录，并可选地将 `cherrant_python` 设置为单独的 Python 解释器。评分在私有临时目录中运行；工具错误和超时会导致显式失败。
+- 不需要 LLM 裁判或 OpenCompass 运行环境。这是 LawBench，与 PLawBench 不同。
+- 当选择任务 `2-1`（默认包含）时，请在下方的通用使用方法示例中添加 `cherrant_path`。完整配置如下：
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -38,7 +39,6 @@ run_task(TaskConfig(
     api_url='http://localhost:8000/v1', api_key='EMPTY',
     datasets=['lawbench'],
     dataset_args={'lawbench': {
-        'local_path': '/path/to/LawBench',
         'extra_params': {'cherrant_path': '/path/to/LawBench/evaluation/utils'},
     }},
     generation_config={'temperature': 0, 'max_tokens': 1024},
@@ -51,12 +51,12 @@ run_task(TaskConfig(
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `lawbench` |
-| **数据集 ID** | `LawBench` |
-| **论文** | [论文](https://arxiv.org/abs/2309.16289) |
+| **数据集ID** | [evalscope/LawBench](https://modelscope.cn/datasets/evalscope/LawBench/summary) |
+| **论文** | [Paper](https://arxiv.org/abs/2309.16289) |
 | **标签** | `Knowledge`, `QA`, `Reasoning` |
 | **指标** | `lawbench_score`, `abstention_rate` |
-| **默认示例数** | 零样本 |
-| **评测划分** | `zero_shot` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `zero_shot` |
 
 
 ## 数据统计
@@ -67,9 +67,9 @@ run_task(TaskConfig(
 | 提示词长度（平均） | 391.46 字符 |
 | 提示词长度（最小/最大） | 32 / 23490 字符 |
 
-**各子集统计:**
+**各子集统计：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
 | `1-1` | 500 | 40.74 | 32 | 55 |
 | `1-2` | 500 | 219.41 | 106 | 503 |
@@ -100,7 +100,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "80213160",
+      "id": "ac43c78e",
       "content": "回答以下问题，只需直接给出法条内容:\n民法商法农民专业合作社法第三十三条的内容是什么？"
     }
   ],
@@ -122,15 +122,15 @@ run_task(TaskConfig(
 
 ## 额外参数
 
-| 参数 | 类型 | 默认值 | 说明 |
+| 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `cherrant_path` | `str` | `` | 官方 LawBench 的 evaluation/utils 目录；任务 2-1 必填。 |
-| `cherrant_python` | `str` | `` | 已安装 ChERRANT 依赖的 Python 可执行文件，默认使用当前解释器。 |
-| `cherrant_timeout` | `float` | `600.0` | 每个 ChERRANT 子进程的超时时间，单位为秒。 |
+| `cherrant_path` | `str` | `` | 官方 LawBench evaluation/utils 目录；任务 2-1 必需。 |
+| `cherrant_python` | `str` | `` | 包含 ChERRANT 依赖项的 Python 可执行文件；默认为当前解释器。 |
+| `cherrant_timeout` | `float` | `600.0` | 每个 ChERRANT 子进程的超时时间（秒）。 |
 
 ## 使用方法
 
-### 使用命令行
+### 使用 CLI
 
 ```bash
 evalscope eval \

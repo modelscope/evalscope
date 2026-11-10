@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# Input preparation follows OpenCompass/LawBench (Apache-2.0); see NOTICE.
+# Input preparation follows OpenCompass/LawBench (Apache-2.0).
 import math
 import os
 import re
