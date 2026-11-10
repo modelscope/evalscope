@@ -9,6 +9,7 @@ metrics. The sandbox run and real judging are exercised end-to-end elsewhere.
 from __future__ import annotations
 
 import asyncio
+import json
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -24,9 +25,10 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import CaseVerdict, JudgeContext
 from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.benchmarks.swe_atlas_qna.prompts import JUDGE_SYSTEM_PROMPT
+from evalscope.benchmarks.swe_atlas_qna.prompts import JUDGE_SYSTEM_PROMPT, JUDGE_USER_PROMPT_TEMPLATE
 from evalscope.benchmarks.swe_atlas_qna.swe_atlas_qna_adapter import (
     RUBRIC_CONTRACT,
     RubricResponse,
@@ -398,6 +400,46 @@ def test_official_ratings_envelope_parses_through_output_contract() -> None:
 )
 def test_ratings_contract_rejects_wrong_shape(reply: str) -> None:
     assert not RUBRIC_CONTRACT.parse(reply).ok
+
+
+class _RecordingJudge:
+    judge_id = model_id = 'recording-judge'
+
+    def __init__(self) -> None:
+        self.calls: List[List[Any]] = []
+
+    def generate(self, messages: List[Any]) -> ModelOutput:
+        self.calls.append(messages)
+        reply = '{"ratings":[{"rubric_statement":"s","status":"YES","score":"1","justification":"j"}]}'
+        return ModelOutput.from_content(model=self.model_id, content=reply)
+
+
+def test_judge_receives_rubric_statement_as_the_official_grader_sends_it(tmp_path) -> None:
+    # Most dataset titles carry a "1.10: " number. The official evaluate_answer.py strips it and
+    # fills the template with json.dumps(title), so the criterion block is valid JSON.
+    title = '1.10: States the port the dev server binds to (e.g., "3000")'
+    rubric = [{'id': 'r1', 'title': title, 'annotations': {'type': 'positive hli verifier', 'importance': 'must have'}}]
+    adapter = make_adapter(tmp_path)
+    sample = adapter.record_to_sample({**_record(), 'rubric': json.dumps(rubric)})
+    sample.id = 0  # assigned by the dataset loader
+    sample.metadata['_sandbox_state'] = {'setup_returncode': 0, 'check_returncode': 0, 'tree_status': ''}
+    judge = _RecordingJudge()
+    adapter.llm_judge = judge
+    output = ModelOutput.from_content('mock', '<<FINAL_ANSWER>>\nPort 3000.\n<<FINAL_ANSWER>>')
+    task_state = TaskState(model='mock', sample=sample, output=output, completed=True)
+
+    sample_score = adapter.calculate_metrics(task_state)
+
+    assert sample_score.score.value == {'resolved': 1.0, 'rubric_pass_rate': 1.0}
+    assert adapter.aggregate_scores([sample_score])[0].score == 1.0
+    statement = 'States the port the dev server binds to (e.g., "3000")'
+    assert judge.calls[0][1].text == JUDGE_USER_PROMPT_TEMPLATE.format(
+        problem_statement='Where is the key repeat handled?',
+        model_answer='Port 3000.',
+        title=json.dumps(statement),
+    )
+    criterion = judge.calls[0][1].text.split('#Rubric Criteria\n', 1)[1]
+    assert json.loads(criterion) == {'rubric_statement': statement}
 
 
 def test_sandbox_commands_stop_on_failure_and_preserve_stderr() -> None:
