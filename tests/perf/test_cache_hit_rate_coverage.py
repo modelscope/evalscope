@@ -7,15 +7,19 @@ tell how much of the run the hit rate actually describes.
 """
 
 import asyncio
+import json
 from unittest.mock import MagicMock
 
 import pytest
+from aiohttp import web
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.multi_turn import MultiTurnStrategy
+from evalscope.perf.multi_turn_benchmark import run_multi_turn_benchmark
 from evalscope.perf.plugin.datasets.base import Turn
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics, MetricsAccumulator
 from evalscope.perf.utils.perf_constants import Metrics
+from tests.perf.test_async_lifecycle import LocalOpenAIServer
 
 
 def _request(prompt_tokens: int, cached_tokens):
@@ -208,3 +212,53 @@ def test_multi_turn_mixed_estimates_and_reports_use_only_reports() -> None:
     assert result.avg_cached_percent == pytest.approx(50.0)
     assert result.cache_request_coverage_percent == pytest.approx(50.0)
     assert result.cache_token_coverage_percent == pytest.approx(50.0)
+
+
+@pytest.mark.parametrize('report_every', [0, 2], ids=['never-reported', 'second-turns-reported'])
+def test_trace_cache_rates_use_only_server_reported_turns(tmp_path, report_every: int) -> None:
+    """Per-trace cache rates must not count a turn without cached_tokens as a miss."""
+    conversation = [{'role': 'user', 'content': 'a'}, {'role': 'assistant', 'content': 'b'},
+                    {'role': 'user', 'content': 'c'}]
+    dataset_path = tmp_path / 'conversations.jsonl'
+    dataset_path.write_text('\n'.join(json.dumps(conversation) for _ in range(2)) + '\n')
+
+    class CacheServer(LocalOpenAIServer):
+
+        async def handle(self, request: web.Request) -> web.Response:
+            await request.json()
+            self.request_count += 1
+            usage = {'prompt_tokens': 100, 'completion_tokens': 10, 'total_tokens': 110}
+            if report_every and self.request_count % report_every == 0:
+                usage['prompt_tokens_details'] = {'cached_tokens': 80}
+            return web.json_response({
+                'object': 'chat.completion',
+                'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'ok'}, 'finish_reason': 'stop'}],
+                'usage': usage,
+            })
+
+    async def run():
+        server = CacheServer()
+        port = await server.start()
+        try:
+            args = Arguments(
+                model='test-model', api='openai', number=2, parallel=1, rate=-1, multi_turn=True, warmup_num=0,
+                dataset='custom_multi_turn', dataset_path=str(dataset_path), stream=False, no_test_connection=True,
+                url=f'http://127.0.0.1:{port}/v1/chat/completions', outputs_dir=str(tmp_path),
+            )
+            args.number, args.parallel, args.rate, args.outputs_dir = 2, 1, -1, str(tmp_path)
+            return await run_multi_turn_benchmark(args)
+        finally:
+            await server.close()
+
+    summary, _, trace_summary, _ = asyncio.run(run())
+
+    rows = {row.metric: row for row in trace_summary.rows}
+    assert trace_summary.n_traces == 2 and 'Latency (s)' in rows
+    if report_every:
+        # Each trace: turn 1 unreported, turn 2 reported 80 of 100 cached.
+        assert summary.avg_cached_percent == pytest.approx(80.0)
+        assert rows['Cache Hit Rate (%)'].mean == pytest.approx(80.0)
+    else:
+        assert summary.avg_cached_percent is None
+        assert 'Cache Hit Rate (%)' not in rows
+        assert 'Eligible Cache Hit Rate (%)' not in rows

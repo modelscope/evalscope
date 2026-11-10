@@ -28,17 +28,23 @@ Metric definitions (per trace):
   ``completion_tokens > 1`` and ``latency > ttft``.  Matches ``trie``'s
   per-trace aggregation.
 * ``Cache Hit Rate (%)``: ``sum(cached_tokens) / sum(prompt_tokens)`` over
-  turns with ``prompt_tokens > 0``.
+  turns whose server reported ``cached_tokens``.
 * ``Eligible Cache Hit Rate (%)``: ``sum(cached_tokens) / sum(eligible)``
   where ``eligible_i = prev_prompt_tokens + prev_completion_tokens``
-  (turn 1 contributes 0 to both numerator and denominator).  Reflects the
-  fraction of theoretically-cacheable tokens the server actually reused.
+  (turn 1 contributes 0 to both numerator and denominator), over the same
+  reported turns.  Reflects the fraction of theoretically-cacheable tokens
+  the server actually reused.
+
+As in :class:`~evalscope.perf.utils.benchmark_util.MetricsAccumulator`, a turn
+without a reported ``cached_tokens`` is unknown, not a miss.  A trace with no
+reported turn has no cache rate, and the two cache rows are omitted when no
+trace has one.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -64,7 +70,7 @@ class _TraceTurn:
     latency: float
     prompt_tokens: int
     completion_tokens: int
-    cached_tokens: int
+    cached_tokens: Optional[int]
     eligible_prompt_tokens: int
 
 
@@ -103,16 +109,26 @@ class _TraceState:
         return sum(samples) / len(samples)
 
     @property
-    def cache_hit_rate(self) -> float:
-        total_prompt = sum(t.prompt_tokens for t in self.turns)
+    def _cache_reported_turns(self) -> List[_TraceTurn]:
+        return [t for t in self.turns if t.cached_tokens is not None]
+
+    @property
+    def cache_hit_rate(self) -> Optional[float]:
+        reported = self._cache_reported_turns
+        if not reported:
+            return None
+        total_prompt = sum(t.prompt_tokens for t in reported)
         if total_prompt <= 0:
             return 0.0
-        total_cached = sum(t.cached_tokens for t in self.turns)
+        total_cached = sum(t.cached_tokens for t in reported)
         return total_cached / total_prompt * 100.0
 
     @property
-    def eligible_cache_hit_rate(self) -> float:
-        eligible_turns = [t for t in self.turns if t.eligible_prompt_tokens > 0]
+    def eligible_cache_hit_rate(self) -> Optional[float]:
+        reported = self._cache_reported_turns
+        if not reported:
+            return None
+        eligible_turns = [t for t in reported if t.eligible_prompt_tokens > 0]
         if not eligible_turns:
             return 0.0
         total_eligible = sum(t.eligible_prompt_tokens for t in eligible_turns)
@@ -157,7 +173,7 @@ class TraceAccumulator:
                 latency=data.query_latency,
                 prompt_tokens=data.prompt_tokens or 0,
                 completion_tokens=data.completion_tokens or 0,
-                cached_tokens=data.cached_tokens or 0,
+                cached_tokens=data.cached_tokens,
                 eligible_prompt_tokens=eligible,
             )
         )
@@ -181,7 +197,12 @@ class TraceAccumulator:
             ('Eligible Cache Hit Rate (%)', [t.eligible_cache_hit_rate for t in traces]),
         ]
 
-        rows = [TraceMetricStats.from_values(name, values) for name, values in per_metric]
+        # Cache rates are None for traces without server-reported cached_tokens.
+        rows = []
+        for name, values in per_metric:
+            known = [value for value in values if value is not None]
+            if known:
+                rows.append(TraceMetricStats.from_values(name, known))
         return TraceLevelSummary(n_traces=len(traces), rows=rows)
 
 
