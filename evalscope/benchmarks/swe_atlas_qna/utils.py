@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shlex
 from typing import Any, Dict, List
 
@@ -12,6 +13,9 @@ POSITIVE_TYPE = 'positive hli verifier'
 NEGATIVE_TYPE = 'negative hli verifier'
 
 FINAL_ANSWER_TAG = '<<FINAL_ANSWER>>'
+
+# Most rubric titles start with a numbering such as ``1.10: ``.
+_RUBRIC_NUMBER_PREFIX = re.compile(r'^\d+(\.\d+)*:\s*')
 
 
 def parse_rubric(raw: Any) -> List[Dict[str, Any]]:
@@ -39,6 +43,15 @@ def parse_rubric(raw: Any) -> List[Dict[str, Any]]:
             }
         )
     return parsed
+
+
+def judge_rubric_statement(title: str) -> str:
+    """Render a rubric title as the official grader puts it in the judge prompt.
+
+    ``evaluate_answer.py`` strips the ``1.1: `` numbering and inserts ``json.dumps`` of the
+    rest, so the criterion block the judge reads is valid JSON.
+    """
+    return json.dumps(_RUBRIC_NUMBER_PREFIX.sub('', title))
 
 
 def rubric_item_passed(claim_met: bool, negated: bool) -> bool:

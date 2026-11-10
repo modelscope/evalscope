@@ -49,6 +49,7 @@ from .prompts import (
 from .utils import (
     dirty_check_command,
     extract_final_answer,
+    judge_rubric_statement,
     parse_rubric,
     reset_repo_command,
     rubric_item_passed,
@@ -192,7 +193,7 @@ class SweAtlasEnclaveEnvironment(SweAtlasSandboxMixin, EnclaveAgentEnvironment):
         metric_list=['resolve_rate', 'rubric_pass_rate'],
         primary_metric='resolve_rate',
         extra_params=EXTRA_PARAMS,
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class SweAtlasQnAAdapter(AgentLoopAdapter):
@@ -381,7 +382,7 @@ class SweAtlasQnAAdapter(AgentLoopAdapter):
             user = JUDGE_USER_PROMPT_TEMPLATE.format(
                 problem_statement=question,
                 model_answer=judge_context.filtered_prediction,
-                title=case.metadata['title'],
+                title=judge_rubric_statement(case.metadata['title']),
             )
             return JudgeRequest(
                 messages=[
