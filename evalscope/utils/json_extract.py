@@ -13,18 +13,21 @@ def extract_last_json_object(text: str) -> Optional[dict[str, Any]]:
     ``\\{.*\\}`` regex). Both break as soon as the model shows an example object before its
     answer, because the span then covers more than one object.
 
-    Scanning candidate ``{`` positions from the end and keeping the last one that
-    :meth:`json.JSONDecoder.raw_decode` accepts keeps the model's final answer. Callers that need a
-    hard failure keep raising on ``None`` themselves, so the failure mode does not change.
+    Candidate ``{`` positions are decoded from the end; the candidate whose object reaches
+    furthest into the text wins, so a nested object cannot shadow the outer payload that
+    contains it. Callers that need a hard failure keep raising on ``None`` themselves.
     """
     decoder = json.JSONDecoder()
-    for start in range(len(text) - 1, -1, -1):
-        if text[start] != '{':
-            continue
+    best: Optional[dict[str, Any]] = None
+    best_end = -1
+    position = len(text)
+    while True:
+        position = text.rfind('{', 0, position)
+        if position == -1:
+            return best
         try:
-            value, _ = decoder.raw_decode(text, start)
+            value, end = decoder.raw_decode(text, position)
         except json.JSONDecodeError:
             continue
-        if isinstance(value, dict):
-            return value
-    return None
+        if isinstance(value, dict) and end > best_end:
+            best, best_end = value, end

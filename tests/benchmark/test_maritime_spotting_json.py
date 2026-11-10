@@ -4,7 +4,9 @@ import pytest
 
 pytest.importorskip('shapely')  # maritime_ocr_bench extra
 
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.maritime_ocr_bench.scoring.spotting_json_quantization_eval import normalize_spotting_payload
+from evalscope.config import TaskConfig
 
 V2_PAYLOAD = '{"images": [{"content": [{"type": "text", "text": "A1", "pos": [0, 0, 10, 0, 10, 10, 0, 10]}]}]}'
 
@@ -31,3 +33,9 @@ def test_text_without_a_payload_reports_no_object() -> None:
 
     assert payload['parse_ok'] is False
     assert payload['parse_error'] == 'no json object found'
+
+
+def test_evaluation_version_tracks_spotting_json_extraction() -> None:
+    adapter = get_benchmark('maritime_ocr_bench', TaskConfig(model='mock', datasets=['maritime_ocr_bench']))
+
+    assert adapter.benchmark_meta.evaluation_version == 'v1.1'
