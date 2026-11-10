@@ -3,33 +3,40 @@
 
 ## Overview
 
-LawBench evaluates Chinese legal knowledge through 20 tasks covering memorization, understanding and application. This native adapter follows the [official zero-shot data and scoring code](https://github.com/open-compass/LawBench) at revision `e30981bb3ff54c41571f222e0b23e92d27375388`.
+LawBench evaluates Chinese legal knowledge and reasoning through 20 tasks covering memorization, understanding and application. It includes legal exams, case analysis, information extraction, document proofreading and legal consultation. See the [official project](https://github.com/open-compass/LawBench) for the benchmark and paper.
 
 ## Task Description
 
 - **Task Type**: Legal question answering, classification, extraction, generation and proofreading
-- **Input**: The official instruction followed by the question, separated by a newline
-- **Output**: A free-form Chinese response in the task's requested format
+- **Input**: A Chinese legal question or document with task instructions
+- **Output**: A Chinese response in the requested format
 - **Domain**: Chinese legal knowledge and legal reasoning
 
 ## Key Features
 
-- 10,000 samples: 500 per task; subsets `1-1`–`1-2`, `2-1`–`2-10`, and `3-1`–`3-8`
-- Covers article recitation, legal exams, proofreading, dispute classification, reading comprehension, entity/event extraction, summarization, argument mining, judgment prediction, damages calculation and consultation
-- Preserves official substring-based answer parsing, character F1, ROUGE-L and normalized imprisonment log distance
-- Task `2-1` uses official ChERRANT character-level corpus F0.5, computed once over the evaluated records
+- 10,000 samples, with 500 per task; select tasks using subsets `1-1`–`1-2`, `2-1`–`2-10`, and `3-1`–`3-8`
+- Task groups cover legal knowledge, document understanding and practical application
+- Data downloads automatically from [ModelScope](https://modelscope.cn/datasets/evalscope/LawBench)
+- Uses the official task-specific scoring rules; no LLM judge is required
 
 ## Evaluation Notes
 
-- Install the ordinary scoring dependency with `pip install 'evalscope[lawbench]'`.
-- The 20 official zero-shot task files load automatically from [ModelScope](https://modelscope.cn/datasets/evalscope/LawBench). Each file is an unchanged copy from the pinned official revision.
-- For offline data, set `dataset_args.lawbench.local_path` to the official checkout root, its `data/zero_shot` directory, or another directory containing the 20 `<task>.json` files.
-- Zero-shot only. Select individual tasks with `subset_list`; standard `limit`, `shuffle`, filters and `repeats` apply.
-- `lawbench_score` is the task's official score, usually in [0, 1]; imprisonment log-distance scores can be negative. Overall and category scores are unweighted means of represented task scores.
-- Officially skipped dispute/imprisonment references are omitted from score denominators but retained in abstention denominators. NER's upstream `anstention_rate` spelling is normalized to `abstention_rate`; the official CSV driver instead silently defaults this misspelled field to zero.
-- Task `2-1` additionally requires the official `evaluation/utils` directory and its ChERRANT dependencies (`ltp`, `pypinyin`, `opencc-python-reimplemented`, `timeout-decorator`, `python-Levenshtein`). Set `extra_params.cherrant_path` to that directory and optionally `cherrant_python` to a separate Python interpreter. Scoring runs in private temporary directories; tool errors and timeouts fail explicitly.
-- No LLM judge or OpenCompass runtime is required. This is LawBench, distinct from PLawBench.
-- When selecting task `2-1` (included by default), add `cherrant_path` to the generic Usage examples below. The complete configuration is:
+- Supports zero-shot evaluation. Set `subset_list` to evaluate selected tasks; use `limit` for a short trial.
+- `lawbench_score` follows each task's official metric. Higher is better; most scores are in [0, 1], while imprisonment prediction scores can be negative. Overall and category scores give equal weight to each evaluated task.
+- `abstention_rate` reports how often a task's answer parser finds no valid answer. Officially excluded reference answers do not contribute to the score.
+- This benchmark is distinct from PLawBench and does not require OpenCompass.
+- For offline data, set `local_path` to the official checkout, its `data/zero_shot` directory, or a directory containing the original `<task>.json` files.
+
+### Install and run ordinary tasks
+
+Install the ordinary scoring dependencies:
+
+```bash
+python -m pip install 'evalscope[lawbench]'
+```
+
+From an EvalScope source checkout, use `python -m pip install -e '.[lawbench]'` instead.
+The following example evaluates the legal exam subset; it does not need ChERRANT:
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -38,12 +45,51 @@ run_task(TaskConfig(
     model='your-model', eval_type='openai_api',
     api_url='http://localhost:8000/v1', api_key='EMPTY',
     datasets=['lawbench'],
-    dataset_args={'lawbench': {
-        'extra_params': {'cherrant_path': '/path/to/LawBench/evaluation/utils'},
-    }},
+    dataset_args={'lawbench': {'subset_list': ['1-2']}},
+    limit=2,
     generation_config={'temperature': 0, 'max_tokens': 1024},
 ))
 ```
+
+### Set up document proofreading (task 2-1)
+
+Task `2-1` uses ChERRANT to compare text corrections and compute F0.5 over the evaluated records. It needs additional Python packages and the official tool files; CPU execution is sufficient. The other 19 tasks do not need this setup.
+
+Install the optional dependencies and download the compatible tool version:
+
+```bash
+python -m pip install 'evalscope[lawbench-cherrant]'
+git clone --filter=blob:none --sparse https://github.com/open-compass/LawBench.git
+git -C LawBench sparse-checkout set evaluation/utils
+git -C LawBench checkout e30981bb3ff54c41571f222e0b23e92d27375388
+```
+
+From an EvalScope source checkout, replace the first command with `python -m pip install -e '.[lawbench-cherrant]'`.
+Run the following example from the directory containing the downloaded `LawBench` folder. To evaluate all 20 tasks, remove `subset_list`.
+
+```python
+from pathlib import Path
+
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='your-model', eval_type='openai_api',
+    api_url='http://localhost:8000/v1', api_key='EMPTY',
+    datasets=['lawbench'],
+    dataset_args={'lawbench': {
+        'subset_list': ['2-1'],
+        'extra_params': {
+            'cherrant_path': str(Path('LawBench/evaluation/utils').resolve()),
+            # 'cherrant_python': '/absolute/path/to/cherrant-env/bin/python',
+        },
+    }},
+    limit=2,
+    generation_config={'temperature': 0, 'max_tokens': 1024},
+))
+```
+
+If these dependencies are installed in a separate Python environment, set `extra_params.cherrant_python` to that environment's absolute Python executable path. Install the optional dependencies with that interpreter's `python -m pip`; creating a separate environment is optional.
+The generic Usage examples below select all tasks, so they also need `cherrant_path` configured as shown above.
 
 
 ## Properties
@@ -100,7 +146,7 @@ run_task(TaskConfig(
 {
   "input": [
     {
-      "id": "ac43c78e",
+      "id": "d793572c",
       "content": "回答以下问题，只需直接给出法条内容:\n民法商法农民专业合作社法第三十三条的内容是什么？"
     }
   ],
@@ -126,7 +172,7 @@ run_task(TaskConfig(
 |-----------|------|---------|-------------|
 | `cherrant_path` | `str` | `` | Official LawBench evaluation/utils directory; required for task 2-1. |
 | `cherrant_python` | `str` | `` | Python executable with ChERRANT dependencies; defaults to the current interpreter. |
-| `cherrant_timeout` | `float` | `600.0` | Timeout in seconds for each ChERRANT subprocess. |
+| `cherrant_timeout` | `float` | `600.0` | Maximum wait in seconds for each proofreading scoring step. |
 
 ## Usage
 

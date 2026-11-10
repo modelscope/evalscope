@@ -57,6 +57,31 @@ def test_correction_failure_is_not_a_zero_score(toolkit: Path) -> None:
         score_corrections(_rows(), toolkit, sys.executable, 30)
 
 
+@pytest.mark.parametrize('code', [
+    'import evalscope_cherrant_missing_dependency',
+    'raise ImportError("incompatible dependency")',
+])
+def test_missing_dependency_explains_installation_in_selected_interpreter(toolkit: Path, code: str) -> None:
+    (toolkit / 'parallel_to_m2.py').write_text(code)
+    with pytest.raises(RuntimeError, match='ChERRANT dependencies are missing or incompatible') as error:
+        score_corrections(_rows(), toolkit, sys.executable, 30)
+
+    message = str(error.value)
+    assert sys.executable in message
+    assert '-m pip install' in message
+    assert 'evalscope[lawbench-cherrant]' in message
+    assert '.[lawbench-cherrant]' in message
+    assert 'extra_params.cherrant_python' in message
+    assert 'Original error:' in message
+
+
+def test_missing_interpreter_explains_python_configuration(toolkit: Path, tmp_path: Path) -> None:
+    python = str(tmp_path / 'missing-python')
+    with pytest.raises(RuntimeError, match='extra_params.cherrant_python') as error:
+        score_corrections(_rows(), toolkit, python, 30)
+    assert python in str(error.value)
+
+
 def test_correction_timeout_is_reported(toolkit: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def timeout(*args: Any, **kwargs: Any) -> None:
         raise subprocess.TimeoutExpired(args[0], kwargs['timeout'])

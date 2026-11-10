@@ -3,6 +3,7 @@
 import math
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from pathlib import Path
@@ -15,8 +16,9 @@ def validate_toolkit(toolkit: Path) -> Path:
     for script in ('parallel_to_m2.py', 'compare_m2_for_evaluation.py'):
         if not (toolkit / script).is_file():
             raise FileNotFoundError(
-                f'ChERRANT requires {toolkit / script}; set extra_params.cherrant_path '
-                'to the official LawBench evaluation/utils directory.'
+                f'LawBench task 2-1 requires the official ChERRANT tools; missing {toolkit / script}. '
+                'Download the LawBench repository and set extra_params.cherrant_path to its evaluation/utils directory. '
+                'See https://evalscope.readthedocs.io/en/latest/benchmarks/lawbench.html for installation steps.'
             )
     return toolkit
 
@@ -73,8 +75,25 @@ def score_corrections(rows: List[Dict[str, str]], toolkit: Path, python: str, ti
                 )
             except subprocess.TimeoutExpired as exc:
                 raise RuntimeError(f'ChERRANT timed out after {timeout} seconds per subprocess.') from exc
+            except FileNotFoundError as exc:
+                raise RuntimeError(
+                    f'Cannot start ChERRANT with Python {python!r}. '
+                    'Set extra_params.cherrant_python to an existing Python executable with '
+                    'the lawbench-cherrant optional dependencies installed.'
+                ) from exc
             except subprocess.CalledProcessError as exc:
-                raise RuntimeError(f'ChERRANT failed: {exc.stderr[-2000:]}') from exc
+                details = (exc.stderr or '')[-2000:]
+                if re.search(r'(?:ModuleNotFoundError|ImportError):', details):
+                    install = shlex.join([python, '-m', 'pip', 'install', 'evalscope[lawbench-cherrant]'])
+                    source_install = shlex.join([python, '-m', 'pip', 'install', '-e', '.[lawbench-cherrant]'])
+                    raise RuntimeError(
+                        f'ChERRANT dependencies are missing or incompatible in Python {python!r}. '
+                        f'Install the optional dependencies in that interpreter with: {install}. '
+                        f'For a source checkout, use: {source_install}. '
+                        'If using a separate environment, set extra_params.cherrant_python to its Python executable. '
+                        f'Original error: {details}'
+                    ) from exc
+                raise RuntimeError(f'ChERRANT failed: {details}') from exc
             output = result.stdout
 
     lines = output.splitlines()
