@@ -87,7 +87,7 @@ def get_enclave_types(
             from ms_enclave.sandbox.model import E2BSandboxConfig, E2BSandboxManagerConfig, SandboxType
         except ImportError as exc:
             raise ImportError(
-                "The 'e2b' sandbox engine requires ms-enclave with E2B support: pip install -U 'ms-enclave[e2b]'"
+                "The 'e2b' sandbox engine requires ms-enclave with E2B support: pip install -U 'evalscope[sandbox]'"
             ) from exc
         return SandboxType.E2B, E2BSandboxConfig, E2BSandboxManager, E2BSandboxManagerConfig
 

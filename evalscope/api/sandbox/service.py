@@ -154,6 +154,7 @@ class SandboxService:
         # In-flight starts are shared by concurrent callers on the service loop.
         self._manager_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task['SandboxManager']] = {}
         self._pool_starts: Dict[Tuple[SandboxEngine, str], asyncio.Task[None]] = {}
+        self._sandbox_creates: Set[asyncio.Task[Any]] = set()
         self._runtime = AsyncioLoopThread(name='SandboxServiceLoop')
         self._state_lock = threading.Lock()
         self._phase = _ServicePhase.OPEN
@@ -372,11 +373,18 @@ class SandboxService:
         manager_config: Optional[Dict[str, Any]] = None,
     ) -> SandboxHandle:
         """Create a single per-sample sandbox and return its handle."""
-        manager = await self._get_or_create_manager(engine, manager_config)
-        sandbox_type, _, _, _ = get_enclave_types(engine)
-        sandbox_id = await manager.create_sandbox(sandbox_type, sandbox_config)
-        logger.debug(f'SandboxService: sandbox {sandbox_id} created (engine={engine.value}).')
-        return SandboxHandle(manager, sandbox_id, service=self)
+        task = asyncio.current_task()
+        # E2B creates can wait for capacity until shutdown cancels them.
+        if engine is SandboxEngine.E2B:
+            self._sandbox_creates.add(task)
+        try:
+            manager = await self._get_or_create_manager(engine, manager_config)
+            sandbox_type, _, _, _ = get_enclave_types(engine)
+            sandbox_id = await manager.create_sandbox(sandbox_type, sandbox_config)
+            logger.debug(f'SandboxService: sandbox {sandbox_id} created (engine={engine.value}).')
+            return SandboxHandle(manager, sandbox_id, service=self)
+        finally:
+            self._sandbox_creates.discard(task)
 
     # ------------------------------------------------------------------
     # Shutdown
@@ -413,6 +421,7 @@ class SandboxService:
         """Drain accepted work and close every manager on the service loop."""
         await self._cancel_tasks(list(self._pool_starts.values()))
         await self._cancel_tasks(list(self._manager_starts.values()))
+        await self._cancel_tasks(list(self._sandbox_creates))
         self._pool_starts.clear()
         self._manager_starts.clear()
 

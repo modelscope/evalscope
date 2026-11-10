@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from swebench.harness.run_evaluation import GIT_APPLY_CMDS
 
 from evalscope.api.agent import ExecResult
 from evalscope.api.sandbox import SandboxConfigError, SandboxEngine
@@ -38,7 +39,7 @@ class FakeEnv:
     async def exec(self, command: list[str], **kwargs: Any) -> ExecResult:
         self.calls.append((command, kwargs))
         text = command[-1]
-        for index, prefix in enumerate(swe.GIT_APPLY_CMDS):
+        for index, prefix in enumerate(GIT_APPLY_CMDS):
             if text.startswith(prefix + ' /tmp/'):
                 return ExecResult(returncode=0 if self.apply[index] else 1, stdout=f'apply {index}')
         if command[0] == 'cat':
@@ -88,8 +89,8 @@ def test_patch_order(outcomes: tuple[bool, ...]) -> None:
         result = swe.eval_instance({'instance_id': 'demo'}, 'patch', task_config=None, log_dir=root)
         from swebench.harness.constants import APPLY_PATCH_FAIL, DOCKER_PATCH
         expected_count = next((i + 1 for i, success in enumerate(outcomes) if success), 3)
-        apply_commands = [command[-1] for command, _ in env.calls if any(command[-1].startswith(c) for c in swe.GIT_APPLY_CMDS)]
-        assert apply_commands == [f'{cmd} {DOCKER_PATCH}' for cmd in swe.GIT_APPLY_CMDS[:expected_count]]
+        apply_commands = [command[-1] for command, _ in env.calls if any(command[-1].startswith(c) for c in GIT_APPLY_CMDS)]
+        assert apply_commands == [f'{cmd} {DOCKER_PATCH}' for cmd in GIT_APPLY_CMDS[:expected_count]]
         assert result['resolved'] == any(outcomes)
         assert result['completed'] == any(outcomes)
         if not any(outcomes):

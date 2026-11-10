@@ -70,9 +70,6 @@ def get_remote_docker_image_from_id(
     return f'{username}/sweb.eval.{arch}.{updated_instance_id}:latest'
 
 
-GIT_APPLY_CMDS = ['git apply --verbose', 'git apply --verbose --reject', 'patch --batch --fuzz=5 -p1 -i']
-
-
 def _eval_sandbox_config(task_config: Optional['TaskConfig'], test_spec: 'TestSpec') -> Dict[str, Any]:
     from swebench.harness.constants import DOCKER_WORKDIR
 
@@ -104,9 +101,10 @@ class _HarnessRun:
 async def _run_harness(
     env: EnclaveAgentEnvironment, instance_id: str, patch_text: str, eval_script: str, timeout: int
 ) -> _HarnessRun:
-    from swebench.harness.constants import APPLY_PATCH_FAIL, DOCKER_PATCH, DOCKER_WORKDIR
-
     try:
+        from swebench.harness.constants import APPLY_PATCH_FAIL, DOCKER_PATCH, DOCKER_WORKDIR
+        from swebench.harness.run_evaluation import GIT_APPLY_CMDS
+
         with tempfile.TemporaryDirectory() as staging:
             Path(staging, PurePosixPath(DOCKER_PATCH).name).write_text(patch_text)
             Path(staging, 'eval.sh').write_text(eval_script)

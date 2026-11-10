@@ -437,6 +437,54 @@ class TestSandboxServiceCache:
 
         asyncio.run(_run())
 
+    @pytest.mark.parametrize('engine', [SandboxEngine.DOCKER, SandboxEngine.E2B])
+    def test_shutdown_handles_pending_sandbox_creation(self, service, engine: SandboxEngine) -> None:
+        entered, cancelled = threading.Event(), threading.Event()
+        release = asyncio.Event()
+        manager = MagicMock()
+        manager.start = AsyncMock()
+        manager.stop = AsyncMock()
+
+        async def create(*args: Any) -> str:
+            entered.set()
+            try:
+                await release.wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+            return 'late-sandbox'
+
+        manager.create_sandbox = create
+
+        async def run() -> None:
+            with patch.object(service, '_construct_manager', return_value=manager):
+                owner_loop = service._runtime.loop
+                creating = asyncio.create_task(service.create_sandbox(engine, {}))
+                assert await asyncio.to_thread(entered.wait, 1)
+                shutdown = asyncio.create_task(service.shutdown_all_async())
+                try:
+                    if engine is SandboxEngine.DOCKER:
+                        while service._phase.value == 'open':
+                            await asyncio.sleep(0)
+                        assert not shutdown.done() and not creating.done()
+                        owner_loop.call_soon_threadsafe(release.set)
+                    await asyncio.wait_for(shutdown, 1)
+                    if engine is SandboxEngine.E2B:
+                        with pytest.raises(asyncio.CancelledError):
+                            await creating
+                        assert cancelled.is_set()
+                    else:
+                        await creating
+                        assert not cancelled.is_set()
+                    manager.stop.assert_awaited_once()
+                finally:
+                    if not owner_loop.is_closed():
+                        owner_loop.call_soon_threadsafe(release.set)
+                    await asyncio.gather(creating, return_exceptions=True)
+                    await service.shutdown_all_async()
+
+        asyncio.run(run())
+
     def test_shutdown_waits_for_accepted_manager_operation(self, service):
         operation_started = threading.Event()
         release_operation = threading.Event()

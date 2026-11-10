@@ -69,10 +69,10 @@ E2B 支持[官方服务](https://e2b.dev/)和[阿里云 Agent Sandbox](https://h
 
 ### 安装与凭据
 
-需要 Python ≥3.11，以及已支持 E2B 的 ms-enclave 版本。以下示例运行 SWE-bench，因此同时安装对应基准依赖：
+需要 Python ≥3.11。`evalscope[sandbox]` 包含 Docker 和 E2B 依赖。以下示例运行 SWE-bench，因此安装 `evalscope[swe_bench]`，其中已包含沙箱依赖：
 
 ```bash
-pip install -U 'evalscope[swe_bench]' 'ms-enclave[e2b]'
+pip install -U 'evalscope[swe_bench]'
 export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```

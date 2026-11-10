@@ -69,10 +69,10 @@ E2B supports the [official service](https://e2b.dev/) and [Aliyun Agent Sandbox]
 
 ### Installation and Credentials
 
-Requires Python ≥3.11 and an ms-enclave version with E2B support. The example below runs SWE-bench, so install its benchmark dependencies as well:
+Requires Python ≥3.11. `evalscope[sandbox]` includes Docker and E2B dependencies. The example below runs SWE-bench, so install `evalscope[swe_bench]`, which also includes the sandbox dependencies:
 
 ```bash
-pip install -U 'evalscope[swe_bench]' 'ms-enclave[e2b]'
+pip install -U 'evalscope[swe_bench]'
 export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```

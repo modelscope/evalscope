@@ -9,6 +9,7 @@ import math
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -237,15 +238,14 @@ def test_task_missing_key_and_read_only_validation(monkeypatch: pytest.MonkeyPat
 
 
 def test_missing_e2b_types_and_sdk(monkeypatch: pytest.MonkeyPatch) -> None:
-    from ms_enclave.sandbox.boxes import e2b_connection
-
     from evalscope.api.sandbox import e2b as e2b_module
+
     monkeypatch.setenv('E2B_API_KEY', 'placeholder')
-    monkeypatch.setattr(e2b_connection, '_E2B_IMPORT_ERROR', ImportError('not installed'))
-    with pytest.raises(ImportError, match='ms-enclave'):
-        TaskConfig(model='mock', eval_type='mock_llm', sandbox={'enabled': True, 'engine': 'e2b'})
-    monkeypatch.setattr(e2b_connection, '_E2B_IMPORT_ERROR', None)
-    monkeypatch.setattr(e2b_module, 'get_enclave_types', lambda engine: (_ for _ in ()).throw(ImportError('upgrade ms-enclave[e2b]')))
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, 'e2b', None)  # `import e2b` fails as if the SDK were not installed
+        with pytest.raises(ImportError, match=r"pip install 'ms-enclave\[e2b\]'"):
+            TaskConfig(model='mock', eval_type='mock_llm', sandbox={'enabled': True, 'engine': 'e2b'})
+    monkeypatch.setattr(e2b_module, 'get_enclave_types', MagicMock(side_effect=ImportError('upgrade ms-enclave[e2b]')))
     with pytest.raises(ImportError, match='upgrade'):
         TaskConfig(model='mock', eval_type='mock_llm', sandbox={'enabled': True, 'engine': 'e2b'})
 
@@ -386,6 +386,48 @@ def test_e2b_service_mapping_and_shutdown(monkeypatch: pytest.MonkeyPatch) -> No
         service.shutdown_all()
     assert original == {'api_key': 'placeholder'}
     managers[0].stop.assert_awaited_once()
+
+
+def test_service_shutdown_cancels_real_manager_capacity_waiter(monkeypatch: pytest.MonkeyPatch) -> None:
+    from e2b import AsyncSandbox
+    from ms_enclave.sandbox.model import E2BSandboxConfig
+
+    from evalscope.api.sandbox import SandboxService
+
+    remote = SimpleNamespace(sandbox_id='remote-test', kill=AsyncMock())
+    create = AsyncMock(return_value=remote)
+    monkeypatch.setattr(AsyncSandbox, 'create', create)
+    service = SandboxService()
+    config = {'api_key': 'placeholder', 'max_sandboxes': 1}
+    waiting = threading.Event()
+
+    async def resolve(*args: object, **kwargs: object) -> str:
+        waiting.set()
+        return 'explicit'
+
+    async def run() -> None:
+        owner_loop = service._runtime.loop
+        manager = await service.get_or_create_manager(SandboxEngine.E2B, config)
+        sandbox_config = E2BSandboxConfig(template='explicit')
+        await service.create_sandbox(SandboxEngine.E2B, sandbox_config, config)
+        monkeypatch.setattr(manager._templates, 'resolve', resolve)
+        queued = asyncio.create_task(service.create_sandbox(SandboxEngine.E2B, sandbox_config, config))
+        try:
+            assert await asyncio.to_thread(waiting.wait, 1)
+            await asyncio.wait_for(service.shutdown_all_async(), 1)
+            with pytest.raises(asyncio.CancelledError):
+                await queued
+            stats = await manager.get_stats()
+            assert stats['total_sandboxes'] == 0 and stats['running'] is False
+            create.assert_awaited_once()
+            remote.kill.assert_awaited_once()
+        finally:
+            if not owner_loop.is_closed():
+                await asyncio.wrap_future(service._runtime.submit(manager.stop()))
+            await asyncio.gather(queued, return_exceptions=True)
+            await service.shutdown_all_async()
+
+    asyncio.run(run())
 
 
 def test_manager_cache_distinguishes_secret_values() -> None:
