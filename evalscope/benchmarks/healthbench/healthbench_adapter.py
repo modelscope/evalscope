@@ -106,6 +106,7 @@ VERSION_FILE = {
 @register_benchmark(
     BenchmarkMeta(
         name='health_bench',
+        evaluation_version='v1.1',
         pretty_name='HealthBench',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MEDICAL],
         description="""

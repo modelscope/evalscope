@@ -64,6 +64,7 @@ def strip_choice_prefix(choice: str, letter: str) -> str:
 @register_benchmark(
     BenchmarkMeta(
         name='pmc_vqa',
+        evaluation_version='v1.1',
         pretty_name='PMC-VQA',
         dataset_id='evalscope/PMC-VQA',
         hf_dataset_id='RadGenome/PMC-VQA',

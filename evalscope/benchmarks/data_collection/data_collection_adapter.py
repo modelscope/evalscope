@@ -33,6 +33,7 @@ SAMPLE_COLUMNS = [
 @register_benchmark(
     BenchmarkMeta(
         name=DataCollection.NAME,
+        evaluation_version='v1.1',
         pretty_name='Data-Collection',
         dataset_id='',  # dataset_id need to be set
         description="""

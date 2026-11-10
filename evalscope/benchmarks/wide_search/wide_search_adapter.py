@@ -91,6 +91,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 @register_benchmark(
     BenchmarkMeta(
         name='wide_search',
+        evaluation_version='v1.1',
         pretty_name='WideSearch',
         tags=[Tags.AGENT, Tags.MULTI_TURN, Tags.RETRIEVAL],
         description=DESCRIPTION,
