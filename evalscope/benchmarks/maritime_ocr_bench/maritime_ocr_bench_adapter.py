@@ -67,6 +67,7 @@ Each task type uses a specialized scoring method:
         hf_dataset_id='ml-resources/MaritimeOCRBench',
         subset_list=SUBSET_LIST,
         metric_list=['normalized_score'],
+        evaluation_version='v1.1',
         eval_split='test',
         prompt_template='{question}',
     )
