@@ -64,7 +64,7 @@ select other published conditions
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
         name='longpi_bench',
         pretty_name='LongPIBench',
         dataset_id='evalscope/LongPIBench',
