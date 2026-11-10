@@ -1,14 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import json
-from pathlib import Path
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, download_dataset_file
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, ScoreStatus, Tags
+from evalscope.constants import ScoreStatus, Tags
 from evalscope.report import Report
 
 from .scoring import score_response
@@ -58,7 +56,7 @@ LawBench evaluates Chinese legal knowledge and reasoning across memorization, un
 - `lawbench_score` follows each task's official metric. Higher is better; most scores are in [0, 1], while imprisonment prediction scores can be negative. Overall and category scores give equal weight to each evaluated task.
 - `abstention_rate` reports how often a task's answer parser finds no valid answer. Officially excluded reference answers do not contribute to the score.
 - This benchmark is distinct from PLawBench and does not require OpenCompass.
-- For offline data, set `local_path` to the official checkout, its `data/zero_shot` directory, or a directory containing the original `<task>.json` files.
+- For offline evaluation, set `local_path` to a downloaded copy of the ModelScope dataset, including its `README.md` subset configuration and data files.
 """,
     )
 )
@@ -77,32 +75,6 @@ class LawBenchAdapter(DefaultDataAdapter):
         if self.aggregation != 'mean':
             raise ValueError('LawBench requires mean aggregation for its official task scores.')
         self.category_map = {task: [CATEGORIES[task[0]]] for task in TASKS}
-
-    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Use the standard hub loader, with support for original local JSON directories."""
-        if subset not in TASKS:
-            raise ValueError(f'Unknown LawBench subset: {subset!r}')
-        root = Path(self.dataset_id).expanduser()
-        if not root.is_dir():
-            return super().load_subset(subset, data_loader)
-        for prefix in ('data/zero_shot', 'zero_shot', ''):
-            if (root / prefix / f'{subset}.json').is_file():
-                break
-        path = download_dataset_file(
-            str(root), f'{prefix}/{subset}.json'.lstrip('/'), data_source=HubType.LOCAL, revision=self.dataset_revision
-        )
-        records = json.loads(Path(path).read_text(encoding='utf-8'))
-        if not isinstance(records, list):
-            raise ValueError('LawBench task JSON must contain a list of records.')
-        return DictDataLoader(
-            dict_list=[{**record, 'task': subset} for record in records],
-            sample_fields=self.record_to_sample,
-            filter_func=self.sample_filter,
-            limit=self.limit,
-            repeats=self.repeats,
-            shuffle=self.shuffle,
-            seed=self.seed,
-        ).load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         for field in ('instruction', 'question', 'answer'):

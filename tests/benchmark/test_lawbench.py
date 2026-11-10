@@ -20,10 +20,26 @@ def _adapter(path: Path, subsets: list[str], **kwargs: Any) -> DataAdapter:
     ))
 
 
-def test_native_loader_preserves_prompt_and_standard_repeats(tmp_path: Path) -> None:
+@pytest.fixture
+def local_dataset(tmp_path: Path) -> Path:
+    # Keep local dataset caches separate across fixtures and test runs.
+    path = tmp_path / f'lawbench-{tmp_path.parent.name}-{tmp_path.name}'
+    path.mkdir()
+    (path / 'README.md').write_text('''---
+configs:
+- config_name: '1-2'
+  data_files:
+  - split: zero_shot
+    path: 1-2.json
+---
+''')
+    return path
+
+
+def test_native_loader_preserves_prompt_and_standard_repeats(local_dataset: Path) -> None:
     records = [{'instruction': '选择答案', 'question': f'题目{i}', 'answer': '正确答案：A'} for i in range(4)]
-    (tmp_path / '1-2.json').write_text(json.dumps(records))
-    adapter = _adapter(tmp_path, ['1-2'], repeats=2, limit=2)
+    (local_dataset / '1-2.json').write_text(json.dumps(records))
+    adapter = _adapter(local_dataset, ['1-2'], repeats=2, limit=2)
     samples = list(adapter.load_dataset()['1-2'])
     assert len(samples) == 4
     assert [s.id for s in samples] == [0, 1, 2, 3]
@@ -123,12 +139,13 @@ def test_proofreading_is_rejected_before_dataset_loading(
         _adapter(tmp_path, subsets)
 
 
-def test_native_run_and_cache_replay_are_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_native_run_and_cache_replay_are_offline(
+    tmp_path: Path, local_dataset: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from evalscope import run_task
     from evalscope.models.mockllm import MockLLM
 
-    data = tmp_path / 'data'
-    data.mkdir()
+    data = local_dataset
     (data / '1-2.json').write_text(json.dumps([
         {'instruction': '选择', 'question': '题目一', 'answer': '正确答案：A'},
         {'instruction': '选择', 'question': '题目二', 'answer': '正确答案：B'},

@@ -27,7 +27,7 @@ LawBench evaluates Chinese legal knowledge and reasoning across memorization, un
 - `lawbench_score` follows each task's official metric. Higher is better; most scores are in [0, 1], while imprisonment prediction scores can be negative. Overall and category scores give equal weight to each evaluated task.
 - `abstention_rate` reports how often a task's answer parser finds no valid answer. Officially excluded reference answers do not contribute to the score.
 - This benchmark is distinct from PLawBench and does not require OpenCompass.
-- For offline data, set `local_path` to the official checkout, its `data/zero_shot` directory, or a directory containing the original `<task>.json` files.
+- For offline evaluation, set `local_path` to a downloaded copy of the ModelScope dataset, including its `README.md` subset configuration and data files.
 
 
 ## Properties
@@ -83,7 +83,7 @@ LawBench evaluates Chinese legal knowledge and reasoning across memorization, un
 {
   "input": [
     {
-      "id": "62323d98",
+      "id": "8a9e83b6",
       "content": "回答以下问题，只需直接给出法条内容:\n民法商法农民专业合作社法第三十三条的内容是什么？"
     }
   ],
