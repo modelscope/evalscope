@@ -1,12 +1,14 @@
 # 安装
 
+EvalScope 需要 **Python >= 3.11**，框架本身不设版本上限。可选集成可能有额外的版本限制。
+
 ## 方式1. 使用 pip 安装（推荐）
 
 我们推荐使用 conda 来管理环境，并使用 pip 安装依赖。
 
 1. 创建 conda 环境（可选）
 ```shell
-# 建议使用 python 3.11
+# 以下以最低支持版本 Python 3.11 为例，也可以使用更高版本
 conda create -n evalscope python=3.11
 conda activate evalscope
 ```

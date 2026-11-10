@@ -176,6 +176,8 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ### 安装
 
+需要 **Python >= 3.11**，EvalScope 本身不设版本上限。可选集成可能有额外的版本限制。
+
 ```shell
 pip install evalscope
 ```
