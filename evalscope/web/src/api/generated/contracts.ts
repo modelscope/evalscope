@@ -446,6 +446,10 @@ export interface ReportCategory {
   subsets: ReportSubset[];
 }
 export interface ReportSubset {
+  ci_display?: string | null;
+  ci_flags?: string[] | null;
+  ci_high?: number | null;
+  ci_low?: number | null;
   is_aggregate?: boolean;
   metadata?: {
     [k: string]: any;
