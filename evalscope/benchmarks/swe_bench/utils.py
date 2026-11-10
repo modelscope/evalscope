@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+from evalscope.api.agent import prepare_environment
 from evalscope.api.sandbox import (
     SandboxConfigError,
     SandboxEngine,
@@ -106,7 +107,6 @@ async def _run_harness(
     from swebench.harness.constants import APPLY_PATCH_FAIL, DOCKER_PATCH, DOCKER_WORKDIR
 
     try:
-        await env.prepare()
         with tempfile.TemporaryDirectory() as staging:
             Path(staging, PurePosixPath(DOCKER_PATCH).name).write_text(patch_text)
             Path(staging, 'eval.sh').write_text(eval_script)
@@ -151,23 +151,24 @@ def eval_instance(
     instance_id = instance[KEY_INSTANCE_ID]
     env_kwargs = task_sandbox_env_kwargs(task_config)
     engine = env_kwargs['engine']
+    arch = resolve_swebench_arch(instance_id, force_arch, engine)
+    test_spec = make_test_spec(instance, namespace=dockerhub_username or DEFAULT_DOCKERHUB_USERNAME, arch=arch)
+    patch_text = pred or ''
+    instance_log_dir = Path(log_dir) / 'swebench_log' / instance_id
+    instance_log_dir.mkdir(parents=True, exist_ok=True)
+    (instance_log_dir / 'patch.diff').write_text(patch_text)
+    (instance_log_dir / 'eval.sh').write_text(test_spec.eval_script)
+    env = EnclaveAgentEnvironment(
+        **env_kwargs,
+        sandbox_config=_eval_sandbox_config(task_config, test_spec),
+        timeout=EVAL_COMMAND_TIMEOUT_S,
+        expected_duration=timeout,
+    )
+    prepare_environment(env, sample_id=instance_id)
     report: Dict[str, Any] = {}
     completed = False
     run = None
     try:
-        arch = resolve_swebench_arch(instance_id, force_arch, engine)
-        test_spec = make_test_spec(instance, namespace=dockerhub_username or DEFAULT_DOCKERHUB_USERNAME, arch=arch)
-        patch_text = pred or ''
-        instance_log_dir = Path(log_dir) / 'swebench_log' / instance_id
-        instance_log_dir.mkdir(parents=True, exist_ok=True)
-        (instance_log_dir / 'patch.diff').write_text(patch_text)
-        (instance_log_dir / 'eval.sh').write_text(test_spec.eval_script)
-        env = EnclaveAgentEnvironment(
-            **env_kwargs,
-            sandbox_config=_eval_sandbox_config(task_config, test_spec),
-            timeout=EVAL_COMMAND_TIMEOUT_S,
-            expected_duration=timeout,
-        )
         run = AsyncioLoopRunner.run(_run_harness(env, instance_id, patch_text, test_spec.eval_script, timeout))
         output_path = instance_log_dir / LOG_TEST_OUTPUT
         output_path.write_text(

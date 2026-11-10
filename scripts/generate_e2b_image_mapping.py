@@ -1,4 +1,4 @@
-"""Generate the deterministic bundled E2B image mapping from a private CSV export."""
+"""Regenerate the bundled E2B image mapping from a CSV image catalog."""
 
 import argparse
 import csv
@@ -35,7 +35,7 @@ def build_mapping(rows: Iterable[Mapping[str, str]], datasets: Sequence[str]) ->
         mapping[source] = target
     if conflicts:
         raise ValueError(f'Conflicting source images: {sorted(conflicts)[:10]}')
-    return dict(sorted(mapping.items()))
+    return mapping
 
 
 def write_mapping(path: Path, mapping: Mapping[str, str]) -> None:
@@ -48,7 +48,7 @@ def write_mapping(path: Path, mapping: Mapping[str, str]) -> None:
 
 
 def main() -> None:
-    """Read the supplied CSV without copying private source data into the package."""
+    """Filter the catalog and write the bundled compressed mapping."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--csv', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)

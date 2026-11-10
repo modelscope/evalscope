@@ -1,4 +1,3 @@
-import traceback
 from typing import TYPE_CHECKING, Dict, List, Literal
 
 from evalscope.api.dataset import Dataset

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+from evalscope.api.agent import prepare_environment
 from evalscope.api.sandbox import SandboxConfigError, merge_sandbox_config_dicts, task_sandbox_env_kwargs
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
@@ -237,9 +238,10 @@ def eval_instance(
         expected_duration=timeout,
     )
 
+    prepare_environment(env, sample_id=instance_id)
+
     async def _run() -> Tuple[str, Optional[str]]:
         try:
-            await env.prepare()
             await env.put_dir(workspace, '/workspace')
             await env.put_dir(test_patch_dir, '/tests')
             run = await env.exec(['bash', '/workspace/entryscript.sh'], timeout=timeout)

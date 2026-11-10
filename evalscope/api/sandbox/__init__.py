@@ -12,7 +12,6 @@ Public surface:
 * :class:`PoolHandle` / :class:`SandboxHandle` – caller-facing handles
 """
 
-from .compat import adapt_sandbox_config, memory_limit_to_mib, validate_e2b_fields
 from .config_builder import (
     build_docker_image,
     build_sandbox_config,
@@ -30,7 +29,6 @@ from .docker_image import (
     prepare_docker_image,
 )
 from .engine import (
-    IMAGE_SANDBOX_ENGINES,
     SandboxConfigError,
     SandboxEngine,
     get_enclave_types,
@@ -53,10 +51,6 @@ __all__ = [
     'PoolHandle',
     'SandboxEngine',
     'SandboxConfigError',
-    'IMAGE_SANDBOX_ENGINES',
-    'adapt_sandbox_config',
-    'memory_limit_to_mib',
-    'validate_e2b_fields',
     'resolve_task_engine',
     'require_docker_engine',
     'sandbox_image_arch',

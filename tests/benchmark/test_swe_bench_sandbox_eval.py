@@ -168,6 +168,21 @@ PRO_METADATA = {'instance_id': 'demo', 'base_commit': 'abc', 'fail_to_pass': "['
 PRO_RESOURCES = {'run_script': 'echo test', 'parser_script': 'print(1)', 'base_dockerfile': '', 'instance_dockerfile': ''}
 
 
+@pytest.mark.parametrize('pro_case', [False, True])
+def test_grading_preparation_error_propagates(
+    pro_case: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env = FakeEnv(failure='prepare')
+    install_harness(monkeypatch, env)
+    with pytest.raises(RuntimeError, match='prepare failed'):
+        if pro_case:
+            pro.eval_instance(PRO_METADATA, 'patch', PRO_RESOURCES, 'image', task_config=None, log_dir=str(tmp_path))
+        else:
+            swe.eval_instance({'instance_id': 'demo'}, 'patch', task_config=None, log_dir=str(tmp_path))
+    assert env.closed == 1
+    assert env.uploads == [] and env.calls == []
+
+
 def test_pro_protocol(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     env = FakeEnv()
     install_harness(monkeypatch, env)
@@ -198,7 +213,7 @@ def test_pro_test_patch_upload_failure(tmp_path: Path, monkeypatch: pytest.Monke
 
 # Feature: e2b-sandbox, Property 19: Infrastructure failures cannot become resolved evaluations.
 @settings(max_examples=100, deadline=None)
-@given(st.sampled_from(['prepare', 'upload', 'apply', 'timeout', 'report', 'output', '']), st.booleans())
+@given(st.sampled_from(['upload', 'apply', 'timeout', 'report', 'output', '']), st.booleans())
 def test_eval_fail_closed(failure: str, resolved: bool) -> None:
     with pytest.MonkeyPatch.context() as patch, tempfile.TemporaryDirectory() as root:
         env = FakeEnv(apply=(False, False, False) if failure == 'apply' else (True, True, True), failure=failure)
@@ -211,7 +226,7 @@ def test_eval_fail_closed(failure: str, resolved: bool) -> None:
             assert env.closed == 1
 
 
-        if failure in ['prepare', 'upload', 'timeout', 'output', '']:
+        if failure in ['upload', 'timeout', 'output', '']:
             env.closed = 0
             result = pro.eval_instance(PRO_METADATA, 'patch', PRO_RESOURCES, 'image', task_config=None, log_dir=root)
             assert result['completed'] == (not failure)

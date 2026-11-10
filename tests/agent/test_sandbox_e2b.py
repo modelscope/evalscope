@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -20,16 +20,14 @@ from hypothesis import strategies as st
 from evalscope.api.sandbox import (
     SandboxConfigError,
     SandboxEngine,
-    adapt_sandbox_config,
     build_sandbox_config,
     get_enclave_types,
-    memory_limit_to_mib,
     require_docker_engine,
     resolve_engine,
     resolve_task_engine,
     task_sandbox_env_kwargs,
 )
-from evalscope.api.sandbox.compat import validate_e2b_fields
+from evalscope.api.sandbox.compat import adapt_sandbox_config, memory_limit_to_mib, validate_e2b_fields
 from evalscope.api.sandbox.e2b import load_e2b_image_mapping, with_e2b_image_mapping
 from evalscope.config import TaskConfig
 
@@ -135,7 +133,7 @@ def test_field_errors_and_defaults() -> None:
     assert adapt_sandbox_config(SandboxEngine.E2B, config) == {'image': 'image', 'user': 'root'}
 
 
-def mapping_script():
+def mapping_script() -> ModuleType:
     spec = importlib.util.spec_from_file_location('generate_e2b_mapping', ROOT / 'scripts/generate_e2b_image_mapping.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -357,8 +355,6 @@ def test_environment_defaults() -> None:
     with pytest.raises(SandboxConfigError, match='volumes'):
         env.merge_sandbox_config({'volumes': {'host': {}}})
     assert 'volumes' not in env._sandbox_config_dict
-
-
 
 
 def test_e2b_service_mapping_and_shutdown(monkeypatch: pytest.MonkeyPatch) -> None:
