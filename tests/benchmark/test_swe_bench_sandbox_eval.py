@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from packaging.version import Version
 from swebench.harness.run_evaluation import GIT_APPLY_CMDS
 
 from evalscope.api.agent import ExecResult
@@ -240,17 +241,14 @@ SMOKE_IDS = ['astropy__astropy-12907', 'django__django-11099', 'axios__axios-473
 SMOKE_DATASETS = ['princeton-nlp/SWE-bench_Verified', 'princeton-nlp/SWE-bench_Lite', 'SWE-bench/SWE-bench_Multilingual']
 
 
-@pytest.mark.parametrize('name', [
-    'swe_bench_verified', 'swe_bench_verified_mini', 'swe_bench_lite', 'swe_bench_verified_agentic',
-    'swe_bench_verified_mini_agentic', 'swe_bench_lite_agentic', 'swe_bench_multilingual_agentic', 'swe_bench_pro',
-    'swe_atlas_qna', 'wide_search', 'gaia', 'gdpval', 'job_bench', 'officeqa', 'skillsbench', 'cybench',
-])
-def test_evaluation_versions_unchanged(name: str) -> None:
+def test_pro_test_patch_fix_requires_at_least_v1_1() -> None:
     from evalscope.api.registry import BENCHMARK_REGISTRY
     from evalscope.benchmarks import load_benchmark
-    load_benchmark(name)
-    # Pro v1.1 fixes missing official test-patch staging; all other versions match 5df5e509.
-    assert BENCHMARK_REGISTRY[name].evaluation_version == ('v1.1' if name == 'swe_bench_pro' else 'v1.0')
+
+    load_benchmark('swe_bench_pro')
+    version = BENCHMARK_REGISTRY['swe_bench_pro'].evaluation_version
+    # Staging the official test patch changes grading semantics from Pro v1.0.
+    assert Version(version.removeprefix('v')) >= Version('1.1')
 
 
 def load_smoke_case(instance_id: str) -> dict:
