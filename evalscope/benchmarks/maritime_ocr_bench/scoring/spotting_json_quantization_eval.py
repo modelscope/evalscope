@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 if TYPE_CHECKING:
     import pandas as pd
 
+from evalscope.utils.json_extract import extract_last_json_object
+
 from .spotting_quantization_eval import evaluate_layout_sample as legacy_evaluate_layout_sample
 from .spotting_quantization_eval import evaluate_text_sample as legacy_evaluate_text_sample
 from .spotting_quantization_eval import parse_all_pairs as legacy_parse_all_pairs
@@ -49,18 +51,6 @@ def _clean_response_text(text: Any) -> str:
             cleaned = block_match.group(1).strip()
         cleaned = _strip_outer_wrappers(cleaned)
     return cleaned.strip()
-
-
-def _extract_json_candidate(text: str) -> Optional[str]:
-    text = _clean_response_text(text)
-    if not text:
-        return None
-
-    start = text.find('{')
-    end = text.rfind('}')
-    if start != -1 and end != -1 and end > start:
-        return text[start : end + 1]
-    return None
 
 
 def _format_coord(value: float) -> str:
@@ -229,18 +219,14 @@ def _parse_v2_items(data: Dict[str, Any]) -> Tuple[List[SpottingItem], bool, Opt
 
 
 def _try_parse_json_payload(text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    candidate = _extract_json_candidate(text)
-    if not candidate:
+    cleaned = _clean_response_text(text)
+    if not cleaned:
         return None, 'no json object found'
 
-    try:
-        parsed = json.loads(candidate)
-    except Exception as exc:
-        return None, str(exc)
-
-    if not isinstance(parsed, dict):
-        return None, 'json payload must be an object'
-    return parsed, None
+    payload = extract_last_json_object(cleaned)
+    if payload is None:
+        return None, 'no json object found'
+    return payload, None
 
 
 def normalize_spotting_payload(text: Any, expected_format: ExpectedSpottingFormat = 'auto') -> Dict[str, Any]:

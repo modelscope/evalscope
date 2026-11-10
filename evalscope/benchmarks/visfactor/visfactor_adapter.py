@@ -60,7 +60,7 @@ _IMAGE_PATTERN = re.compile(r'<IMAGE_(\d+)>')
             dimensions={'scope': 'categories'},
         ),
         eval_split='test',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class VisFactorAdapter(VisionLanguageAdapter):
@@ -119,13 +119,17 @@ class VisFactorAdapter(VisionLanguageAdapter):
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        if self._task_config and self.repeats > 1 and any(s.generation_index is None for s in sample_scores):
+            raise ValueError('VisFactor repeats require generation_index; use rerun_review=True for legacy reviews.')
         rows = []
         category_names = {}
         for sample_score in sample_scores:
             metadata = sample_score.sample_metadata or {}
             category_id = str(metadata['category_id'])
             category_names[category_id] = str(metadata['category_name'])
-            rows.append((category_id, int(metadata['eval_index']), float(sample_score.score.main_value)))
+            # AND variants within one attempt, never across independent generations.
+            item_id = (int(metadata['eval_index']), sample_score.generation_index or 0)
+            rows.append((category_id, item_id, float(sample_score.score.main_value)))
 
         category_scores = aggregate_item_accuracy(rows)
         if not category_scores:

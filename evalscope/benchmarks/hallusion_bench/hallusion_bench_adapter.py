@@ -62,7 +62,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
         aggregation='mean',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
     )
 )
 class HallusionBenchAdapter(VisionLanguageAdapter):
@@ -106,6 +106,10 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        if self._task_config and self.repeats > 1 and any(s.generation_index is None for s in sample_scores):
+            raise ValueError(
+                'HallusionBench repeats require generation_index; use rerun_review=True for legacy reviews.'
+            )
 
         def compute_aAcc(scores: List[SampleScore]):
             total = len(scores)
@@ -134,7 +138,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                 # The grouping key must include category. VD and VS reuse the same
                 # subcategory/set_id/figure_id/question_id numbering, so dropping category
                 # merges distinct figures/questions across categories and corrupts the metric.
-                key = f'{category}_{subcategory}_{set_id}_{group_id}'
+                key = (str(category), str(subcategory), str(set_id), str(group_id), ss.generation_index or 0)
                 groups[key].append(ss.score.main_value)
             if not groups:
                 return 0.0, 0
