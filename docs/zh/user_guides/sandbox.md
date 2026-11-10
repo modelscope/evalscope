@@ -65,7 +65,7 @@ run_task(task_config)
 
 ## 使用 E2B 远端沙箱
 
-E2B 支持官方服务和阿里云 Agent Sandbox，运行评测的机器无需安装 Docker。
+E2B 支持[官方服务](https://e2b.dev/)和[阿里云 Agent Sandbox](https://help.aliyun.com/zh/functioncompute/product-overview-of-fc-agent-sandbox)，运行评测的机器无需安装 Docker。
 
 ### 安装与凭据
 
