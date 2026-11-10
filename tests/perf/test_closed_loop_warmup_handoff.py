@@ -199,6 +199,44 @@ def test_duration_rechecked_after_dispatch_wait(
     assert request_ids == ([0] if duration is not None else [0, 1])
 
 
+def test_request_queued_behind_the_semaphore_is_not_sent_after_the_deadline(tmp_path) -> None:
+    """With the default in_flight_task_multiplier=2, the next task is created while the first
+    request is in flight. Once that request outlives --duration, the queued task must not go out."""
+    output_dir = tmp_path / 'deadline'
+    output_dir.mkdir()
+
+    class SlowServer(LocalOpenAIServer):
+
+        async def handle(self, request: Any) -> Any:
+            await asyncio.sleep(0.5)
+            return await super().handle(request)
+
+    async def run() -> int:
+        server = SlowServer()
+        port = await server.start()
+        try:
+            args = _make_args(
+                number=10,
+                parallel=1,
+                duration=0.25,
+                url=f'http://127.0.0.1:{port}/v1/chat/completions',
+                prompt='hello',
+                stream=False,
+                no_test_connection=True,
+                outputs_dir=str(output_dir),
+            )
+            args.outputs_dir = str(output_dir)
+            assert args.in_flight_task_multiplier == 2
+            await run_benchmark(args)
+            return server.request_count
+        finally:
+            await server.close()
+
+    assert asyncio.run(run()) == 1
+    with sqlite3.connect(os.path.join(str(output_dir), 'benchmark_data.db')) as con:
+        assert con.execute('SELECT COUNT(*) FROM result').fetchone()[0] == 1
+
+
 def test_duration_none_dispatches_everything() -> None:
     args = _make_args(number=4, parallel=2)
     client = _run(args, _stream(warmup=2, measured=4))
