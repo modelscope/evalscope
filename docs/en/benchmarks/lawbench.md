@@ -24,7 +24,7 @@ LawBench evaluates Chinese legal knowledge and reasoning across memorization, un
 - Supports zero-shot evaluation. Set `subset_list` to evaluate selected tasks; use `limit` for a short trial.
 - Document proofreading (task `2-1`) is not supported. The overall score covers the 19 supported tasks and is not the complete 20-task LawBench score.
 - Install scoring dependencies with `pip install 'evalscope[lawbench]'`.
-- `lawbench_score` follows each task's official metric. Higher is better; most scores are in [0, 1], while imprisonment prediction scores can be negative. Overall and category scores give equal weight to each evaluated task.
+- `lawbench_score` follows each task's official metric. Higher is better; most scores are in [0, 1], while imprisonment prediction scores can be negative. The overall score gives equal weight to each evaluated task. Category `score` uses the framework's sample-weighted average; category `macro_score` provides the unweighted mean of task scores.
 - `abstention_rate` reports how often a task's answer parser finds no valid answer. Officially excluded reference answers do not contribute to the score.
 - This benchmark is distinct from PLawBench and does not require OpenCompass.
 - For offline evaluation, set `local_path` to a downloaded copy of the ModelScope dataset, including its `README.md` subset configuration and data files.
@@ -83,7 +83,7 @@ LawBench evaluates Chinese legal knowledge and reasoning across memorization, un
 {
   "input": [
     {
-      "id": "8a9e83b6",
+      "id": "e90afde0",
       "content": "回答以下问题，只需直接给出法条内容:\n民法商法农民专业合作社法第三十三条的内容是什么？"
     }
   ],

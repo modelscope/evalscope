@@ -103,22 +103,22 @@ def test_native_aggregation_keeps_official_denominators(tmp_path: Path) -> None:
     assert aggregates['abstention_rate'].num == 3
 
 
-def test_native_report_weights_tasks_equally(tmp_path: Path) -> None:
+def test_native_report_keeps_overall_task_mean_and_standard_category_scores(tmp_path: Path) -> None:
     from evalscope.api.metric import AggScore
     adapter = _adapter(tmp_path, ['1-1', '2-2', '2-3'])
     scores = {task: [AggScore(metric_name='lawbench_score', aggregation='mean', score=value, num=count)]
               for task, value, count in [('1-1', 1, 1), ('2-2', 0, 8), ('2-3', 0.5, 2)]}
     report = adapter.generate_report(scores, 'scripted', '')
-    assert report.score == 0.5
-    assert {c.name[0]: c.score for c in report.metrics[0].categories} == {
-        'memorization': 1.0, 'understanding': 0.25,
-    }
     from evalscope.report import Report
     restored = Report.model_validate_json(report.model_dump_json())
-    assert restored.score == 0.5
-    assert {c.name[0]: c.score for c in restored.metrics[0].categories} == {
-        'memorization': 1.0, 'understanding': 0.25,
-    }
+    for item in (report, restored):
+        assert item.score == 0.5
+        assert {c.name[0]: c.score for c in item.metrics[0].categories} == {
+            'memorization': 1.0, 'understanding': 0.1,
+        }
+        assert {c.name[0]: c.macro_score for c in item.metrics[0].categories} == {
+            'memorization': 1.0, 'understanding': 0.25,
+        }
 
 
 def test_native_loader_rejects_unsupported_task_and_fewshot(tmp_path: Path) -> None:

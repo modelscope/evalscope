@@ -207,12 +207,8 @@ class Category(BaseModel):
     def _compute_aggregates(self) -> Self:
         real = [s for s in self.subsets if not s.is_aggregate]
         self.num = sum(s.num for s in real)
-        # Preserve a producer's task-macro score through JSON reload, as Metric does.
-        if 'score' in self.model_fields_set:
-            self.score = normalize_score(self.score)
-        else:
-            self.num_correct = _sum_correct(real)
-            self.score = normalize_score(micro_mean(real)) if real else 0.0
+        self.num_correct = _sum_correct(real)
+        self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
 
