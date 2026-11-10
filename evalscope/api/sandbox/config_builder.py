@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import ValidationError
 
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.logger import get_logger
 
 from .compat import adapt_sandbox_config
@@ -40,7 +41,7 @@ def build_sandbox_config(
 ) -> Any:
     """Instantiate the engine-specific ``SandboxConfig`` from a dict."""
     _, config_cls, _, _ = get_enclave_types(engine)
-    adapted = adapt_sandbox_config(engine, dict(cfg_dict or {}), expected_duration=expected_duration)
+    adapted = adapt_sandbox_config(engine, get_secret_value(cfg_dict or {}), expected_duration=expected_duration)
     try:
         return config_cls.model_validate(adapted)
     except ValidationError as exc:

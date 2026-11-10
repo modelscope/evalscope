@@ -22,8 +22,9 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Set, Tuple, TypeVar
 
-from pydantic import SecretStr, ValidationError
+from pydantic import ValidationError
 
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.asyncio_runtime import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
 
@@ -128,11 +129,7 @@ class SandboxHandle:
 def _freeze(cfg: Optional[Dict[str, Any]]) -> str:
     """Produce a stable, hashable representation of a manager config dict."""
     try:
-        return json.dumps(
-            cfg or {},
-            sort_keys=True,
-            default=lambda value: value.get_secret_value() if isinstance(value, SecretStr) else str(value),
-        )
+        return json.dumps(get_secret_value(cfg or {}), sort_keys=True, default=str)
     except Exception:
         return repr(cfg or {})
 
@@ -307,6 +304,7 @@ class SandboxService:
             await asyncio.gather(*tasks, return_exceptions=True)
 
     def _construct_manager(self, engine: SandboxEngine, manager_config: Dict[str, Any]) -> 'SandboxManager':
+        manager_config = get_secret_value(manager_config)
         _, _, manager_cls, manager_config_cls = get_enclave_types(engine)
         if engine is SandboxEngine.E2B:
             manager_config = with_e2b_image_mapping(manager_config)

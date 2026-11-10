@@ -30,6 +30,7 @@ from evalscope.api.sandbox import (
 from evalscope.api.sandbox.compat import adapt_sandbox_config, memory_limit_to_mib, validate_e2b_fields
 from evalscope.api.sandbox.e2b import load_e2b_image_mapping, with_e2b_image_mapping
 from evalscope.config import TaskConfig
+from evalscope.utils.argument_utils import get_secret_value
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -199,8 +200,10 @@ def test_task_secret_serialization(secret: str, depth: int) -> None:
         'manager_config': payload, 'default_config': payload}, sandbox_manager_config=payload)
     assert secret not in json.dumps(task.to_dict())
     assert secret not in str(task)
-    assert secret in str(task.sandbox.manager_config)
-    assert secret in str(task._to_update_dict()['sandbox_manager_config'])
+    assert secret not in repr(task)
+    assert secret not in repr(task.sandbox)
+    assert get_secret_value(task.sandbox.manager_config) == payload
+    assert get_secret_value(task._to_update_dict()['sandbox_manager_config']) == payload
     from evalscope.evaluation_versioning import _fingerprint_task_mapping, _scrub_secrets
     raw = task.to_dict()
     raw['sandbox'] = task.sandbox.model_dump(mode='json')

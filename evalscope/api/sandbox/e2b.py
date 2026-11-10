@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any, Dict
 
 from pydantic import ValidationError
 
+from evalscope.utils.argument_utils import get_secret_value
+
 from .compat import validate_e2b_fields
 from .engine import SandboxConfigError, SandboxEngine, get_enclave_types
 
@@ -49,4 +51,4 @@ def check_e2b_task_config(sandbox: 'SandboxTaskConfig', *, external_agent: bool)
         manager_config_cls.model_validate(sandbox.manager_config or {})
     except ValidationError as exc:
         raise SandboxConfigError(f'Invalid e2b sandbox.manager_config: {exc}') from exc
-    validate_e2b_fields(sandbox.default_config or {})
+    validate_e2b_fields(get_secret_value(sandbox.default_config or {}))

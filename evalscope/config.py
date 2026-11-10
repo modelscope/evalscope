@@ -37,18 +37,6 @@ AgentConfigUnion = Annotated[
 logger = get_logger()
 
 
-_MASKED_SECRET = '**********'
-
-
-def _mask_api_keys(value: Any) -> Any:
-    """Copy nested sandbox settings, masking every nonempty api_key value."""
-    if isinstance(value, list):
-        return [_mask_api_keys(item) for item in value]
-    if not isinstance(value, dict):
-        return value
-    return {key: (_MASKED_SECRET if key == 'api_key' and val else _mask_api_keys(val)) for key, val in value.items()}
-
-
 def _secretize_api_keys(value: Any) -> Any:
     if isinstance(value, SecretStr):
         return value
@@ -142,6 +130,11 @@ class SandboxTaskConfig(BaseArgument):
     pool_size: Optional[int] = None
     """Warm-pool size for pooled execution.  Defaults to ``eval_batch_size``
     when ``None``."""
+
+    @field_validator('default_config', 'manager_config', mode='before')
+    @classmethod
+    def _secretize_settings(cls, value: Any) -> Any:
+        return _secretize_api_keys(value)
 
 
 class JudgeModelConfig(BaseArgument):
@@ -515,6 +508,11 @@ class TaskConfig(BaseArgument):
     def _validate_sandbox(cls, v: Any) -> Any:
         return cls._coerce_sandbox_config(v)
 
+    @field_validator('sandbox_manager_config', mode='before')
+    @classmethod
+    def _secretize_sandbox_manager_config(cls, value: Any) -> Any:
+        return _secretize_api_keys(value)
+
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 
     @model_validator(mode='after')
@@ -762,8 +760,6 @@ class TaskConfig(BaseArgument):
         result['generation_config'] = self._dump_generation_config(mode=dump_mode)
         result['sandbox'] = self._dump_sandbox(purpose)
         result['agent_config'] = self._dump_agent_config(mode=dump_mode)
-        if json_mode:
-            result['sandbox_manager_config'] = _mask_api_keys(result.get('sandbox_manager_config'))
         return result
 
     def _dump_model(self, json_mode: bool) -> Any:
@@ -774,7 +770,7 @@ class TaskConfig(BaseArgument):
     def _dump_sandbox(self, purpose: str) -> Any:
         if purpose == 'update':
             return self.sandbox
-        return _mask_api_keys(self.sandbox.model_dump(mode='json')) if self.sandbox is not None else None
+        return self.sandbox.model_dump(mode='json') if self.sandbox is not None else None
 
     def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:
         if not isinstance(self.generation_config, GenerateConfig):
