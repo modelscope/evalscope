@@ -463,6 +463,11 @@ METRIC_DEFINITIONS['non_refusal_completion_score'] = MetricEntry(
     baseline='quality.score.ratio', metric_name='Non-refusal Completion Score'
 )
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
+# LawBench combines official task metrics; imprisonment log distance can yield negative scores.
+METRIC_DEFINITIONS['lawbench_score'] = MetricEntry(baseline='quality.score.unbounded', metric_name='LawBench Score')
+METRIC_DEFINITIONS['abstention_rate'] = MetricEntry(
+    baseline='diagnostic.parse_status.ratio', display_name='Abstention Rate'
+)
 for _registered, _reported in {
     'decision_nll': 'nll',
     'decision_brier': 'brier',

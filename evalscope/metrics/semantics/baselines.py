@@ -154,6 +154,7 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         value_range=_POINTS_100_RANGE,
         display_multiplier=1.0,
     ),
+    'quality.score.unbounded': _plain_number('quality.score.unbounded', 'Score', display_precision=4),
     'quality.judge_score.unbounded': _plain_number(
         'quality.judge_score.unbounded',
         'Judge Score',
