@@ -23,6 +23,29 @@ from ..benchmark import DataAdapter
 logger = get_logger()
 
 
+def _effective_prediction(model_output: Optional[ModelOutput]) -> str:
+    """Recover the assistant answer text used for scoring.
+
+    The answer normally lives in the ``text`` content blocks. Some reasoning
+    models (DeepSeek-V4 and similar) occasionally fold the whole answer into
+    the chain-of-thought ``reasoning`` block and then emit the stop token, so
+    a separate ``text`` block never appears. In that case fall back to the
+    reasoning content so the answer extractor can still score it.
+    """
+    if model_output is None or not model_output.choices:
+        return ''
+    completion = model_output.completion
+    if completion and completion.strip():
+        return completion
+    msg = model_output.choices[0].message
+    reasons = [
+        b.reasoning
+        for b in (getattr(msg, 'content', None) or [])
+        if getattr(b, 'type', None) == 'reasoning' and getattr(b, 'reasoning', None)
+    ]
+    return '\n'.join(reasons)
+
+
 class DefaultDataAdapter(DataAdapter):
     """
     Default Data Adapter for the benchmark evaluation system.
@@ -732,7 +755,7 @@ class DefaultDataAdapter(DataAdapter):
         if task_state.output is None:
             prediction = ''
         else:
-            prediction = task_state.output.completion
+            prediction = _effective_prediction(task_state.output)
 
         filtered_prediction = ''
         try:
@@ -855,7 +878,7 @@ class DefaultDataAdapter(DataAdapter):
         references: List[str] = []
 
         for ts in task_states:
-            pred = ts.output.completion
+            pred = _effective_prediction(ts.output)
             original_predictions.append(pred)
             filtered_predictions.append(self.filter_prediction(pred, ts))
             references.append(ts.target)
