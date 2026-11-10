@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult, NativeAgentConfig
@@ -226,9 +228,9 @@ def test_native_preparation_failure_skips_verifier(monkeypatch) -> None:
     verifier = AsyncMock(side_effect=AssertionError('verifier must not run'))
     monkeypatch.setattr(adapter, '_build_environment', lambda _: env)
     monkeypatch.setattr(adapter, '_run_verifier', verifier)
-    result = adapter._on_inference(model=type('Model', (), {'name': 'mock'})(),
-                                   sample=Sample(id=0, input='task', target=''))
-    assert result.output.metadata['sandbox_prepare_error'] == 'RuntimeError: sandbox unavailable'
+    with pytest.raises(RuntimeError, match='sandbox unavailable'):
+        adapter._on_inference(model=type('Model', (), {'name': 'mock'})(),
+                              sample=Sample(id=0, input='task', target=''))
     verifier.assert_not_awaited()
     assert env.closed
 

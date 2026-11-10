@@ -102,9 +102,7 @@ def run_native_agent(
     all_tools = sample_tools + [t for t in registered_tool_infos if t not in sample_tools]
     handlers, all_tools = apply_bash_command_timeout_defaults(handlers, all_tools, cfg.command_timeout)
 
-    reason = prepare_environment(environment, sample_id=sample.id, close_on_failure=owns_environment)
-    if reason is not None:
-        return InferenceResult.prepare_failure(model.name, reason)
+    prepare_environment(environment, sample_id=sample.id, close_on_failure=owns_environment)
 
     if environment is not None:
         try:

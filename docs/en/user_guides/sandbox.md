@@ -179,7 +179,7 @@ Docker settings such as volume mounts, port mappings and privileged mode cannot 
 | Concurrency or lifetime quota exceeded | Reduce concurrency, shorten `sandbox_timeout`, or adjust the provider quota |
 | Unsupported field or benchmark | Follow the configuration error or use Docker |
 
-Sandbox preparation failures skip model calls and count as zero. Resuming from cache retries environment preparation for those samples. Sandboxes are released on normal completion. After an unexpected exit, use the `run_id` from the log to find and clean up resources left by that run:
+Sandbox preparation failures skip model calls and stop the evaluation with an error by default. Set `TaskConfig(ignore_errors=True)` explicitly to skip failed samples and continue. Failed samples are not scored or saved to the prediction cache, so resuming from cache retries them. Sandboxes are released on normal completion. After an unexpected exit, use the `run_id` from the log to find and clean up resources left by that run:
 
 ```bash
 npx --yes @e2b/cli sandbox list --metadata 'run_id=<run-id>' --format json

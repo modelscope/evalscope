@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import Model
-from evalscope.api.sandbox.engine import SandboxConfigError
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.logger import get_logger
 
@@ -35,29 +34,24 @@ logger = get_logger()
 
 def prepare_environment(
     environment: Optional[AgentEnvironment], *, sample_id: Any, close_on_failure: bool = True
-) -> Optional[str]:
-    """Prepare before model I/O; return runtime failures and raise configuration errors."""
+) -> None:
+    """Prepare before model I/O, releasing owned resources if preparation raises."""
     if environment is None:
-        return None
+        return
 
-    async def _prepare() -> Optional[str]:
+    async def _prepare() -> None:
         try:
             await environment.prepare()
-            return None
-        except Exception as exc:
+        except Exception:
             if close_on_failure:
                 try:
                     await environment.close()
                 except Exception as close_exc:
                     # Cleanup must not replace the preparation error.
                     logger.warning(f'Environment cleanup failed for sample {sample_id}: {close_exc}')
-            if isinstance(exc, SandboxConfigError):
-                raise
-            reason = f'{type(exc).__name__}: {exc}'
-            logger.warning(f'Sandbox preparation failed for sample {sample_id}; skipping model calls: {reason}')
-            return reason
+            raise
 
-    return AsyncioLoopRunner.run(_prepare())
+    AsyncioLoopRunner.run(_prepare())
 
 
 def run_agent_loop(

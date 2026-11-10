@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import pytest
 
 from evalscope.api.dataset import MemoryDataset, Sample
-from evalscope.api.evaluator import InferenceResult, TaskState
+from evalscope.api.evaluator import TaskState
 from evalscope.api.evaluator.cache import CacheManager, ModelResult, ReviewResult
 from evalscope.api.model import ModelOutput
 from evalscope.utils.io_utils import OutputsStructure
@@ -56,29 +56,6 @@ def _write_review_cache(manager: CacheManager, subset: str, rows: list[Dict[str,
         for row in rows:
             f.write(json.dumps(row) + '\n')
     return review_file
-
-
-def test_latest_preparation_failure_retries_without_discarding_other_predictions(tmp_path: Path) -> None:
-    manager = _make_manager(tmp_path)
-    samples = [Sample(id=index, input='question', target='answer') for index in range(2)]
-    dataset = MemoryDataset(samples, name='default')
-    try:
-        for sample in samples:
-            manager.save_prediction_cache('default', TaskState(
-                model='mock-model', sample=sample, completed=True,
-                output=ModelOutput.from_content(model='mock-model', content='answer'),
-            ))
-        manager.save_prediction_cache('default', TaskState(
-            model='mock-model', sample=samples[0], completed=True,
-            output=InferenceResult.prepare_failure('mock-model', 'temporarily unavailable').output,
-        ))
-        manager.close()
-        cached, remaining = manager.filter_prediction_cache('default', dataset)
-        assert [state.sample_id for state in cached] == [1]
-        assert [sample.id for sample in remaining] == [0]
-        assert len(Path(manager.get_prediction_cache_path('default')).read_text().splitlines()) == 3
-    finally:
-        manager.close()
 
 
 @pytest.fixture

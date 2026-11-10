@@ -295,91 +295,46 @@ def test_prepare_idempotent(operations: list[str]) -> None:
     asyncio.run(run())
 
 
-# Feature: e2b-sandbox, Property 17: Preparation failures bypass model and scoring I/O and count as zero.
+# Preparation errors propagate before model calls; the evaluator owns ignore_errors.
 @settings(max_examples=100)
-@given(st.text(min_size=1, max_size=60), st.lists(st.sampled_from(['accuracy', 'resolved', 'score', 'pass']),
-       min_size=1, max_size=4, unique=True), st.sampled_from([RuntimeError, TimeoutError, ConnectionError]), st.booleans())
-def test_prepare_failure_short_circuit(reason: str, metrics: list[str], error_type: type, dict_metrics: bool) -> None:
+@given(st.text(min_size=1, max_size=60), st.sampled_from([RuntimeError, TimeoutError, ConnectionError, SandboxConfigError]))
+def test_prepare_failure_propagates(reason: str, error_type: type[Exception]) -> None:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.api.benchmark.adapters import AgentLoopAdapter
     from evalscope.api.dataset import Sample
-    from evalscope.api.evaluator import PREPARE_FAILURE_KEY, InferenceResult, TaskState, get_prepare_failure
-    from evalscope.api.model import ModelOutput
-    from evalscope.constants import ScoreStatus
+
     adapter = AgentLoopAdapter(
-        benchmark_meta=BenchmarkMeta(name='failure-test', dataset_id='fake',
-                                     metric_list=[{name: {}} for name in metrics] if dict_metrics else metrics,
-                                     primary_metric=metrics[0]),
+        benchmark_meta=BenchmarkMeta(name='failure-test', dataset_id='fake', metric_list=['accuracy']),
         task_config=TaskConfig(model='mock', eval_type='mock_llm'),
     )
-    environment = SimpleNamespace(prepare=AsyncMock(side_effect=error_type(reason)), close=AsyncMock())
+    error = error_type(reason)
+    environment = SimpleNamespace(prepare=AsyncMock(side_effect=error), close=AsyncMock())
     adapter.build_environment = lambda sample: environment
     adapter._resolve_strategy = lambda sample, ac: None
     adapter._resolve_tools = lambda sample, ac: ({}, [])
     model = SimpleNamespace(name='mock', generate=MagicMock(side_effect=AssertionError('model must not run')))
     sample = Sample(id=0, input='task', target='target')
-    result = adapter._on_inference(model, sample)
+    with pytest.raises(error_type) as caught:
+        adapter._on_inference(model, sample)
+    assert caught.value.args == error.args
     environment.close.assert_awaited_once()
     model.generate.assert_not_called()
-    restored = ModelOutput.model_validate_json(result.output.model_dump_json())
-    assert get_prepare_failure(restored) == f'{error_type.__name__}: {reason}'
-    state = TaskState(model='mock', sample=sample, completed=True, output=restored)
-    from evalscope.api.dataset import MemoryDataset
-    from evalscope.api.evaluator.cache import CacheManager, ModelResult
-    from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list
-    with tempfile.TemporaryDirectory() as root:
-        manager = CacheManager(OutputsStructure(root, is_make=True), 'mock', 'failure-test')
-        manager.save_prediction_cache('default', state)
-        manager.close()
-        dataset = MemoryDataset([sample], name='default')
-        row = jsonl_to_list(manager.get_prediction_cache_path('default'))[0]
-        cached = ModelResult.model_validate(row).to_task_state(dataset=dataset)
-        assert get_prepare_failure(cached.output) == get_prepare_failure(restored)
-        reused, remaining = manager.filter_prediction_cache('default', dataset)
-        assert reused == [] and len(remaining) == 1
-        state.output = ModelOutput.from_content(model='mock', content='recovered')
-        manager.save_prediction_cache('default', state)
-        manager.close()
-        reused, remaining = manager.filter_prediction_cache('default', dataset)
-        assert len(reused) == 1 and len(remaining) == 0
-    state.output = restored
-    adapter.match_score = MagicMock(side_effect=AssertionError('scorer must not run'))
-    adapter.filter_prediction = MagicMock(side_effect=AssertionError('filter must not run'))
-    adapter.score_with_judge_contracts = MagicMock(side_effect=AssertionError('judge must not run'))
-    score = adapter.calculate_metrics(state).score
-    assert score.value == dict.fromkeys(metrics, 0.0)
-    assert score.status == ScoreStatus.SUCCESS
-    assert score.metadata[PREPARE_FAILURE_KEY] == get_prepare_failure(restored)
-    adapter.match_score.assert_not_called()
-    adapter.filter_prediction.assert_not_called()
-    adapter.score_with_judge_contracts.assert_not_called()
-
-
-def test_prepare_config_error() -> None:
-    from evalscope.api.agent import prepare_environment
-    error = SandboxConfigError('bad local configuration')
-    env = SimpleNamespace(prepare=AsyncMock(side_effect=error), close=AsyncMock())
-    with pytest.raises(SandboxConfigError) as caught:
-        prepare_environment(env, sample_id=0)
-    assert caught.value is error
-    env.close.assert_awaited_once()
 
 
 @pytest.mark.parametrize('owned', [False, True])
 @pytest.mark.parametrize('cleanup_fails', [False, True])
 @pytest.mark.parametrize('error_type', [RuntimeError, SandboxConfigError])
-def test_prepare_failure_preserves_error_and_ownership(owned: bool, cleanup_fails: bool, error_type: type) -> None:
+def test_prepare_failure_preserves_error_and_ownership(
+    owned: bool, cleanup_fails: bool, error_type: type[Exception]
+) -> None:
     from evalscope.api.agent import prepare_environment
 
     error = error_type('preparation failed')
     env = SimpleNamespace(prepare=AsyncMock(side_effect=error),
                           close=AsyncMock(side_effect=RuntimeError('cleanup failed') if cleanup_fails else None))
-    if error_type is SandboxConfigError:
-        with pytest.raises(SandboxConfigError) as caught:
-            prepare_environment(env, sample_id=0, close_on_failure=owned)
-        assert caught.value is error
-    else:
-        assert prepare_environment(env, sample_id=0, close_on_failure=owned) == 'RuntimeError: preparation failed'
+    with pytest.raises(error_type) as caught:
+        prepare_environment(env, sample_id=0, close_on_failure=owned)
+    assert caught.value is error
     assert env.close.await_count == int(owned)
 
 
@@ -404,24 +359,6 @@ def test_environment_defaults() -> None:
     assert 'volumes' not in env._sandbox_config_dict
 
 
-def test_batch_prepare_failure() -> None:
-    from evalscope.api.benchmark import BenchmarkMeta
-    from evalscope.api.benchmark.adapters import DefaultDataAdapter
-    from evalscope.api.dataset import Sample
-    from evalscope.api.evaluator import InferenceResult, TaskState
-    from evalscope.api.metric import SampleScore, Score
-    from evalscope.api.model import ModelOutput
-    adapter = DefaultDataAdapter(benchmark_meta=BenchmarkMeta(name='batch', dataset_id='fake', metric_list=['accuracy']),
-                                 task_config=TaskConfig(model='mock', eval_type='mock_llm'))
-    failed = TaskState(model='mock', sample=Sample(id=0, input='task', target='target'), completed=True,
-                       output=InferenceResult.prepare_failure('mock', 'failure').output)
-    good = TaskState(model='mock', sample=Sample(id=1, input='task', target='target'), completed=True,
-                     output=ModelOutput.from_content(model='mock', content='ok'))
-    adapter.batch_match_score = MagicMock(return_value=[Score(value={'accuracy': 1.0})])
-    scores = adapter.batch_calculate_metrics([failed, good], [SampleScore(sample_id=0, score=Score(value={'accuracy': 1.0})),
-                                                              SampleScore(sample_id=1, score=Score(value={'accuracy': 0.0}))])
-    assert [s.score.value for s in scores] == [{'accuracy': 0.0}, {'accuracy': 1.0}]
-    assert adapter.batch_match_score.call_args.kwargs['task_states'] == [good]
 
 
 def test_e2b_service_mapping_and_shutdown(monkeypatch: pytest.MonkeyPatch) -> None:

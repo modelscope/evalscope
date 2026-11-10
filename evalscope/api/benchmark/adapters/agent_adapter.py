@@ -247,9 +247,7 @@ class AgentLoopAdapter(AgentAdapter):
             raise ValueError('AgentLoop max_steps must be greater than 0.')
         initial_messages = self.build_initial_messages(sample)
         environment = self.build_environment(sample)
-        reason = prepare_environment(environment, sample_id=sample.id)
-        if reason is not None:
-            return InferenceResult.prepare_failure(model.name, reason)
+        prepare_environment(environment, sample_id=sample.id)
 
         result: AgentLoopResult = run_agent_loop(
             model=model,

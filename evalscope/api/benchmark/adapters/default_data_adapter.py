@@ -8,13 +8,7 @@ from typing_extensions import override
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.dataset.loader import dataset_loading_session
-from evalscope.api.evaluator import (
-    PREPARE_FAILURE_KEY,
-    InferenceResult,
-    InferenceReturn,
-    TaskState,
-    get_prepare_failure,
-)
+from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
@@ -734,10 +728,6 @@ class DefaultDataAdapter(DataAdapter):
         """
         assert task_state.completed, 'TaskState must be completed before calculating metrics.'
 
-        reason = get_prepare_failure(task_state.output)
-        if reason is not None:
-            return self._prepare_failure_sample_score(task_state, reason)
-
         # Extract the raw prediction from the model output
         if task_state.output is None:
             prediction = ''
@@ -850,40 +840,11 @@ class DefaultDataAdapter(DataAdapter):
         """
         return None  # Default implementation does not support batch scoring
 
-    def _prepare_failure_sample_score(self, task_state: TaskState, reason: str) -> SampleScore:
-        """Count preparation failures as zero without invoking rules or judges."""
-        names = [metric if isinstance(metric, str) else next(iter(metric)) for metric in self.metric_list]
-        score = Score(
-            value={name: 0.0 for name in names},
-            main_score_name=names[0] if names else None,
-            prediction='',
-            extracted_prediction='',
-            explanation=f'Sandbox preparation failed: {reason}',
-            metadata={PREPARE_FAILURE_KEY: reason},
-        )
-        return SampleScore(
-            score=score,
-            sample_id=task_state.sample_id,
-            group_id=task_state.group_id,
-            generation_index=(task_state.sample_id % self.repeats) if self.repeats > 1 else 0,
-            sample_metadata=task_state.metadata,
-        )
-
     @override
     def batch_calculate_metrics(
         self, task_states: List[TaskState], sample_scores: List[SampleScore]
     ) -> List[SampleScore]:
         """Batch calculate metrics for a list of task states with tqdm progress and batch processing."""
-        # Batch scorers must not overwrite preparation failures with a real score.
-        active_states, active_scores = [], []
-        for index, (state, score) in enumerate(zip(task_states, sample_scores)):
-            reason = get_prepare_failure(state.output)
-            if reason is not None:
-                sample_scores[index] = self._prepare_failure_sample_score(state, reason)
-            else:
-                active_states.append(state)
-                active_scores.append(score)
-        task_states = active_states
         total = len(task_states)
         if total == 0:
             return sample_scores
@@ -907,8 +868,8 @@ class DefaultDataAdapter(DataAdapter):
         )
 
         if batch_scores is not None:
-            assert len(batch_scores) == len(active_scores), 'Batch scores length must match sample scores length.'
-            for batch_score, sample_score in zip(batch_scores, active_scores):
+            assert len(batch_scores) == len(sample_scores), 'Batch scores length must match sample scores length.'
+            for batch_score, sample_score in zip(batch_scores, sample_scores):
                 sample_score.score.value.update(batch_score.value)
 
         return sample_scores

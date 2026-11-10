@@ -16,7 +16,7 @@ from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentAdapter
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
-from evalscope.api.evaluator import InferenceResult, TaskState, get_prepare_failure
+from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
@@ -292,8 +292,6 @@ class SkillsBenchAdapter(AgentAdapter):
                     extract_final_answer=lambda loop_result, strategy: strategy.extract_final_answer(loop_result),
                     environment_override=env,
                 )
-                if get_prepare_failure(result.output) is not None:
-                    return result
                 AsyncioLoopRunner.run(self._run_verifier(env, sample))
                 return result
             finally:
