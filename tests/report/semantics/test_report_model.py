@@ -25,6 +25,37 @@ class _StubAdapter:
         self.pretty_name = name
 
 
+@pytest.mark.parametrize('score', [0.0, 0.25])
+def test_explicit_category_score_survives_round_trip(score: float) -> None:
+    subsets = [Subset(name='large', score=0.0, num=8), Subset(name='small', score=0.5, num=2)]
+    category = Category(name='tasks', subsets=subsets, score=score)
+    restored = Category.model_validate_json(category.model_dump_json())
+    assert restored.score == score
+    assert restored.num == 10
+    assert restored.macro_score == 0.25
+    assert Category(name='default', subsets=subsets).score == 0.1
+
+
+def test_report_round_trip_preserves_producer_category_score() -> None:
+    report = ReportGenerator.generate_report(
+        {
+            'large': [AggScore(metric_name='f1', aggregation='mean', score=0.0, num=8)],
+            'small': [AggScore(metric_name='f1', aggregation='mean', score=0.5, num=2)],
+        },
+        'model',
+        _StubAdapter('conll2003', MetricSelector(name='f1', aggregation='mean')),
+    )
+    category = report.metrics[0].categories[0]
+    category.score = category.macro_score
+
+    restored = Report.from_dict(report.to_dict())
+
+    assert restored.metrics[0].categories[0].score == 0.25
+    assert restored.metrics[0].categories[0].macro_score == 0.25
+    assert restored.metrics[0].categories[0].num == 10
+    assert restored.score == report.score == 0.1
+
+
 def _scores() -> Dict[str, List[AggScore]]:
     return {
         'test': [
