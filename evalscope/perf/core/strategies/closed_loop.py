@@ -56,6 +56,9 @@ class _MeasurementWindow:
                 return 'transition'
             if self.closed:
                 return None
+        elif self.expired:
+            # Queued behind the semaphore until after the deadline: never sent.
+            return None
 
         self.measured_sent += 1
         if self.deadline is None and self.duration is not None:
