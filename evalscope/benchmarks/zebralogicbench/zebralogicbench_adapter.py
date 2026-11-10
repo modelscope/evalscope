@@ -106,7 +106,7 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
         subset_list=['grid_mode'],
         few_shot_num=0,
         eval_split='test',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         prompt_template=PROMPT_TEMPLATE,
         metric_list=[
             'puzzle_acc',
@@ -155,9 +155,22 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
             stack: List[int] = []
             last_json_start: int | None = None
             last_json_str: str | None = None
+            in_string = False
+            escaped = False
 
             for i, char in enumerate(s):
-                if char == '{':
+                # Braces inside a JSON string literal are data, not structure.
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif char == '\\':
+                        escaped = True
+                    elif char == '"':
+                        in_string = False
+                    continue
+                if char == '"' and stack:
+                    in_string = True
+                elif char == '{':
                     if not stack:
                         last_json_start = i
                     stack.append(i)
