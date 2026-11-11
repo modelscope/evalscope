@@ -129,7 +129,7 @@ manager_config = {
 }
 ```
 
-This configuration uses Hangzhou. To change regions, update both `api_url` and `domain`, and make sure `E2B_API_KEY` belongs to the selected provider. EvalScope also accepts Aliyun's older service-domain format, `*.e2b.fc.aliyuncs.com`; use the `sandbox.aliyuncs.com` endpoints above for new configurations.
+This configuration uses Hangzhou. To change regions, update both `api_url` and `domain`, and make sure `E2B_API_KEY` belongs to the selected provider.
 
 ### Endpoints and Compatibility
 
@@ -154,17 +154,15 @@ For an unmapped image, prepare a template with the benchmark's dependencies and 
 | SWE-bench Verified, Verified Mini, Lite, and their Agentic variants | Supported | Supported |
 | [SWE-bench Multilingual Agentic](../benchmarks/swe_bench_multilingual_agentic.md), [SWE-bench Pro](../benchmarks/swe_bench_pro.md) | Supported | Supported |
 | [SWE-Atlas QnA](../benchmarks/swe_atlas_qna.md) | Supported | Supported |
-| [WideSearch](../benchmarks/wide_search.md), [HumanEval](../benchmarks/humaneval.md) | Supported | Requires a template with the benchmark's dependencies |
+| [WideSearch](../benchmarks/wide_search.md) | Supported | Requires a template with the benchmark's dependencies |
+| [HumanEval](../benchmarks/humaneval.md), [MBPP](../benchmarks/mbpp.md), [LiveCodeBench](../benchmarks/live_code_bench.md) | Supported | Requires a template with the benchmark's dependencies |
+| [HumanEvalPlus](../benchmarks/humaneval_plus.md), [MBPPPlus](../benchmarks/mbpp_plus.md) | Requires an image or template with NumPy | Requires a template with NumPy |
+| [BigCodeBench](../benchmarks/bigcodebench.md), [BigCodeBench-Hard](../benchmarks/bigcodebench_hard.md) | Supported | Requires a suitable evaluation template |
+| [DS-1000](../benchmarks/ds1000.md), [SciCode](../benchmarks/scicode.md) | Requires an image or template with the dependencies and test data | Requires a suitable evaluation template |
 
-E2B support for other code evaluation benchmarks depends on the languages, tools and dependencies in the image. Check the corresponding benchmark documentation.
+For custom environments, prepare dependencies, test data and working directories as described in each benchmark's documentation. Use [native agent mode](agent/native.md) for agent evaluations.
 
-The following benchmarks do not currently support E2B: `gaia`, `officeqa`, `job_bench`, `gdpval`, `skillsbench` and `cybench`. Use Docker instead.
-
-Agent runs using this page's `sandbox` configuration currently support [native agents](agent/native.md), but not [external agents](agent/bridge.md). The following benchmarks configure their execution environments separately:
-
-- [Terminal-Bench](../third_party/terminal_bench.md) runs through Harbor. Install `harbor[e2b]`, set `E2B_API_KEY`, then select Harbor's E2B backend by setting `environment_type='e2b'` in `dataset_args.<benchmark>.extra_params`. That backend does not use this page's `sandbox.manager_config` or image mapping. See the corresponding benchmark documentation for task resource requirements.
-- [DeepSWE](../benchmarks/deep_swe.md) currently uses Pier's Docker environment in its EvalScope adapter.
-- [AutomationBench](../benchmarks/automation_bench.md) uses its official Python runtime, without going through the sandbox engine described here.
+[Terminal-Bench 2.0/2.1](../third_party/terminal_bench.md) can also use E2B through Harbor: install `harbor[e2b]` and set `environment_type='e2b'` in the benchmark's `extra_params`.
 
 ### Set Concurrency and Sandbox Lifetime
 

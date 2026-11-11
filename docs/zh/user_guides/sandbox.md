@@ -129,7 +129,7 @@ manager_config = {
 }
 ```
 
-上例使用杭州地域。切换地域时，请同时修改 `api_url` 和 `domain`，并确认 `E2B_API_KEY` 属于当前服务商。这里也兼容阿里云早期的 `*.e2b.fc.aliyuncs.com` 域名格式；新配置使用上面的 `sandbox.aliyuncs.com` 地址即可。
+上例使用杭州地域。切换地域时，请同时修改 `api_url` 和 `domain`，并确认 `E2B_API_KEY` 属于当前服务商。
 
 ### 服务地址与兼容性
 
@@ -154,17 +154,15 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 | SWE-bench Verified、Verified Mini、Lite，以及对应的 Agentic 版本 | 支持 | 支持 |
 | [SWE-bench Multilingual Agentic](../benchmarks/swe_bench_multilingual_agentic.md)、[SWE-bench Pro](../benchmarks/swe_bench_pro.md) | 支持 | 支持 |
 | [SWE-Atlas QnA](../benchmarks/swe_atlas_qna.md) | 支持 | 支持 |
-| [WideSearch](../benchmarks/wide_search.md)、[HumanEval](../benchmarks/humaneval.md) | 支持 | 需指定包含相应依赖的模板 |
+| [WideSearch](../benchmarks/wide_search.md) | 支持 | 需指定包含相应依赖的模板 |
+| [HumanEval](../benchmarks/humaneval.md)、[MBPP](../benchmarks/mbpp.md)、[LiveCodeBench](../benchmarks/live_code_bench.md) | 支持 | 需指定包含相应依赖的模板 |
+| [HumanEvalPlus](../benchmarks/humaneval_plus.md)、[MBPPPlus](../benchmarks/mbpp_plus.md) | 需准备包含 NumPy 的镜像或模板 | 需准备包含 NumPy 的模板 |
+| [BigCodeBench](../benchmarks/bigcodebench.md)、[BigCodeBench-Hard](../benchmarks/bigcodebench_hard.md) | 支持 | 需准备对应评测模板 |
+| [DS-1000](../benchmarks/ds1000.md)、[SciCode](../benchmarks/scicode.md) | 需准备对应依赖和测试数据的镜像或模板 | 需准备对应评测模板 |
 
-其他代码评测基准能否使用 E2B，取决于镜像中的语言、工具和依赖是否满足要求，请查阅对应基准文档。
+使用自备环境时，请按各基准文档准备依赖、测试数据和工作目录。Agent 评测请使用[原生 Agent 模式](agent/native.md)。
 
-以下基准暂不支持 E2B：`gaia`、`officeqa`、`job_bench`、`gdpval`、`skillsbench`、`cybench`。请选择 Docker。
-
-通过本页 `sandbox` 配置运行 Agent 时，目前仅支持[原生 Agent](agent/native.md)，不支持[外部 Agent](agent/bridge.md)。以下基准的运行环境另行配置：
-
-- [Terminal-Bench](../third_party/terminal_bench.md) 通过 Harbor 运行。安装 `harbor[e2b]` 并设置 `E2B_API_KEY` 后，可在 `dataset_args.<基准名>.extra_params` 中设置 `environment_type='e2b'` 来选择 Harbor 的 E2B 后端。该后端不使用本页的 `sandbox.manager_config` 和镜像映射，具体任务的资源要求见对应基准文档。
-- [DeepSWE](../benchmarks/deep_swe.md) 当前适配器使用 Pier 的 Docker 环境。
-- [AutomationBench](../benchmarks/automation_bench.md) 使用官方 Python 运行时，不经过本页的沙箱引擎。
+[Terminal-Bench 2.0／2.1](../third_party/terminal_bench.md) 也可通过 Harbor 使用 E2B：安装 `harbor[e2b]`，在基准的 `extra_params` 中设置 `environment_type='e2b'`。
 
 ### 调整并发和运行时长
 
