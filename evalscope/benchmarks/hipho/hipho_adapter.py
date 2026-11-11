@@ -117,7 +117,7 @@ range from text-only problems to diagram-based problems.
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='hipho',
         pretty_name='HiPhO',
         dataset_id='evalscope/HiPhO',

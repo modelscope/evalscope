@@ -51,7 +51,7 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='imo_answerbench',
         pretty_name='IMO-AnswerBench',
         dataset_id='evalscope/imo-answerbench',

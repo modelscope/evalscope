@@ -25,7 +25,7 @@ OPEN_TYPE = 'free_form'
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='math_vista',
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',

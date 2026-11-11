@@ -35,7 +35,7 @@ LANGUAGE_NAMES = {
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='gsm8k_indic',
         pretty_name='GSM8K-Indic',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],
