@@ -122,4 +122,5 @@ def load_local_file_dataset(
         limit=limit,
         repeats=repeats,
         shuffle=shuffle,
+        seed=adapter.seed,
     ).load()

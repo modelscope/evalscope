@@ -186,4 +186,5 @@ def test_load_local_file_dataset_passes_loader_args(monkeypatch) -> None:
         'limit': 5,
         'repeats': 2,
         'shuffle': True,
+        'seed': 42,
     }
