@@ -54,7 +54,10 @@ def test_explicit_images_and_templates_take_precedence(overrides: dict[str, Any]
     assert resolve_sandbox_config(DEFAULTS, sandbox_config(default_config=overrides)) == {**DEFAULTS, **overrides}
 
 
-@pytest.mark.parametrize('source', ['python:3.11-slim', 'docker.io/python:3.11-slim'])
+@pytest.mark.parametrize(
+    'source',
+    ['python:3.11-slim', 'docker.io/python:3.11-slim', ' python:3.11-slim ', ' docker.io/python:3.11-slim '],
+)
 def test_custom_image_mapping_takes_precedence(source: str) -> None:
     sandbox = sandbox_config()
     sandbox.manager_config = {**ALIYUN, 'image_mapping': {source: 'custom-registry/python:3.11'}}

@@ -55,8 +55,13 @@ def resolve_sandbox_config(defaults: Dict[str, Any], sandbox: Optional['SandboxT
 
     _, _, _, manager_config_cls = get_enclave_types(SandboxEngine.E2B)
     manager = manager_config_cls.model_validate(sandbox.manager_config)
-    image = defaults['image']
-    if manager.provider == 'aliyun' and not any(key in manager.image_mapping for key in (image, f'docker.io/{image}')):
+    if manager.provider != 'aliyun':
+        return config
+
+    from ms_enclave.sandbox.utils.e2b_helpers import normalize_image_ref
+
+    image = normalize_image_ref(defaults['image'])
+    if not any(normalize_image_ref(source) == image for source in manager.image_mapping):
         config.pop('image')
         config['template'] = 'base'
     return config
