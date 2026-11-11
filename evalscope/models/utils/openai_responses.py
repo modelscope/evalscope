@@ -15,7 +15,7 @@ from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, par
 from evalscope.utils import get_secret_value
 from evalscope.utils.uri_utils import file_as_data_uri, is_data_uri, is_http_url
 
-from .openai import openai_assistant_content
+from .openai import _uses_openai_reasoning_defaults, openai_assistant_content
 
 try:
     from openai.types.responses import Response
@@ -115,17 +115,20 @@ def openai_response_tool_choice(tool_choice: ToolChoice) -> Union[str, Dict[str,
     return tool_choice
 
 
-def openai_response_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
+def openai_response_params(
+    model: str, config: GenerateConfig, tools: bool, base_url: Optional[str] = None
+) -> Dict[str, Any]:
     params: Dict[str, Any] = {'model': model}
+    openai_reasoning = _uses_openai_reasoning_defaults(model, base_url)
     if config.stream is not None:
         params['stream'] = config.stream
     if config.timeout is not None:
         params['timeout'] = config.timeout
     if config.max_tokens is not None:
         params['max_output_tokens'] = config.max_tokens
-    if config.temperature is not None:
+    if config.temperature is not None and not openai_reasoning:
         params['temperature'] = config.temperature
-    if config.top_p is not None:
+    if config.top_p is not None and not openai_reasoning:
         params['top_p'] = config.top_p
     if config.top_logprobs is not None:
         params['top_logprobs'] = config.top_logprobs

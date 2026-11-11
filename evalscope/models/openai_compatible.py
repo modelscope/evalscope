@@ -292,6 +292,7 @@ class OpenAICompatibleAPI(ModelAPI):
             model=self.model_name,
             config=config,
             tools=tools,
+            base_url=self.base_url,
         )
 
     def validate_request_params(self, params: Dict[str, Any]):
