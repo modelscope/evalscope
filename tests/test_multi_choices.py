@@ -156,6 +156,20 @@ def test_parse_answers_zh_multiple_correct_slash_and_ideographic_comma() -> None
     assert parse_answers_zh(_make_state('推理过程\n答案：A，C'), multiple_correct=True) == {'A', 'C'}
 
 
+def test_parse_answers_zh_multiple_correct_connector_words() -> None:
+    """Chinese conjunction words between labels separate them, like the English connectors.
+
+    Regression test: the label capture stopped at ``和``/``或``/``与``, so '答案：A和C' kept only
+    'A' and a correct multi-select answer was scored as wrong.
+    """
+    assert parse_answers_zh(_make_state('推理过程\n答案：A和C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A 和 C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A或C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A与C'), multiple_correct=True) == {'A', 'C'}
+    # A concatenated label group still splits into its single labels, as the English parser does.
+    assert parse_answers_zh(_make_state('推理过程\n答案：AB和D'), multiple_correct=True) == {'A', 'B', 'D'}
+
+
 def test_parse_answers_zh_multiple_correct_space_separated() -> None:
     """A space between labels ('A, C', 'A C') does not end a Chinese multi-select answer.
 

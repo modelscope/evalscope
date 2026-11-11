@@ -166,13 +166,17 @@ _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*
 _LATEX_LABEL_PREFIX_RE = re.compile(r'(?:(?:\$+|\\\(|\\(?:boxed|fbox|text|textbf|mathbf|mathrm)\s*\{)\s*)*')
 
 _PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,，/、]*)')
-_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9 ,，/、]*)')
+# The Chinese plain-label pattern also accepts the conjunction characters, so a multi-select
+# answer such as 'A和C' stays one capture instead of stopping at '和'.
+_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9 ,，/、和或与]*)')
 
 _LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
 
 # Words a model may place between two labels when listing several of them ('A and B').
 _LABEL_CONNECTORS = {'and', 'or'}
 _LABEL_CONNECTOR_RE = re.compile(r'\s+(?:and|or)\s+', re.IGNORECASE)
+# The same connectors in Chinese, with or without surrounding spaces ('A和C', 'A 或 C').
+_LABEL_CONNECTOR_ZH_RE = re.compile(r'\s*(?:和|或|与)\s*')
 
 
 # A closing emphasis run and any punctuation a model put after it: '45**.' or '45*,'.  That punctuation
@@ -354,14 +358,27 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
     matched = matched.strip().rstrip('。.')
 
     if multiple_correct:
-        # Handle comma-separated or continuous letters. Mirror the English path: an ideographic
-        # comma or a slash between labels is a separator, so normalize them to a plain comma
-        # before splitting. Without this, a multi-select answer such as '答案：A、C' or '答案：A/C'
-        # kept only its first label and was scored as wrong.
-        matched = matched.replace(' 和 ', '').replace(' ', '')
+        # A conjunction between two labels ('A和C', 'A 或 C') separates them the way the English
+        # 'and'/'or' connectors do. The label capture used to stop at the conjunction, so
+        # '答案：A和C' kept only 'A' and a correct multi-select answer was scored as wrong.
+        matched = _LABEL_CONNECTOR_ZH_RE.sub(',', matched)
+        matched = matched.replace(' ', '')
+        # An ideographic comma or a slash between labels is also a separator; normalize both to
+        # a plain comma so '答案：A、C' and '答案：A/C' do not keep only their first label.
         matched = matched.replace('，', ',').replace('、', ',').replace('/', ',')
-        answers = set(matched.split(',')) if ',' in matched else set(matched)
-        return answers if answers.issubset(allowed_options) else set()
+
+        # One label per separator when the reply listed them that way.
+        split_comma = set(matched.split(','))
+        if split_comma.issubset(allowed_options):
+            return split_comma
+
+        # 'AB,CD' also lists the labels one by one; split it into single characters, matching the
+        # English parser so a concatenated answer is not scored as no answer.
+        split_nothing = set(matched.replace(',', ''))
+        if split_nothing.issubset(allowed_options):
+            return split_nothing
+
+        return set()
     else:
         # Single answer
         return {matched} if matched in allowed_options else set()
