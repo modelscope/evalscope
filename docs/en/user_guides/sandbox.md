@@ -84,7 +84,7 @@ export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```
 
-The example needs two keys: `DASHSCOPE_API_KEY` calls the model, and `E2B_API_KEY` creates sandboxes. Use an official E2B key for the official service, or an Aliyun-issued E2B-compatible key for Aliyun.
+The example uses DashScope and reads its model API key from `DASHSCOPE_API_KEY`. You can use any OpenAI-compatible service by replacing `model`, `api_url` and `api_key` below. Set `E2B_API_KEY` to the sandbox API key issued by your selected sandbox provider.
 
 For other code evaluation benchmarks, replace `[swe_bench]` with `[sandbox]` in the installation command. You do not need to install `ms-enclave[e2b]` separately.
 

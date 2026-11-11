@@ -84,7 +84,7 @@ export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```
 
-这里需要两份密钥：`DASHSCOPE_API_KEY` 用于调用示例中的模型，`E2B_API_KEY` 用于创建沙箱。使用官方 E2B 时填写官方密钥，使用阿里云时填写阿里云提供的 E2B 兼容密钥。
+示例使用 DashScope，模型密钥通过 `DASHSCOPE_API_KEY` 传入。你也可以使用任意 OpenAI 兼容服务，将下方的 `model`、`api_url` 和 `api_key` 替换为对应配置。`E2B_API_KEY` 用于创建沙箱，需填写所选沙箱服务商提供的密钥。
 
 如果运行其他代码评测基准，可将安装命令中的 `[swe_bench]` 换成 `[sandbox]`；无需再单独安装 `ms-enclave[e2b]`。
 
