@@ -3,6 +3,7 @@
 import base64
 import os
 import shutil
+import uuid
 from typing import Any, Dict, List, Optional, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -13,7 +14,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_metric, register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64, safe_filename
+from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.uri_utils import data_uri_to_base64, is_data_uri, is_http_url
 
@@ -162,13 +163,14 @@ class SeedTTSEvalAdapter(DefaultDataAdapter):
         if audio_content is None:
             return None
 
-        audio_id = safe_filename(str(sample.metadata.get('filename') or sample.id))
+        # Keep each generation immutable, including repeated samples and cache replays.
+        audio_id = uuid.uuid4().hex
         audio_format = audio_content.format
         output_path = os.path.join(
             output_dir,
             'audios',
             'seed_tts_eval',
-            f'{audio_id}_{sample.group_id}.{audio_format}',
+            f'{audio_id}.{audio_format}',
         )
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 

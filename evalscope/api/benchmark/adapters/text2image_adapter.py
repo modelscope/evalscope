@@ -1,6 +1,7 @@
 import base64
 import os
 import re
+import uuid
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
@@ -153,7 +154,9 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
         else:
-            image_id = f'{sample.metadata.get(FileConstants.ID) or sample.id}_{sample.group_id}'
+            # Dataset IDs and group IDs repeat across generations and subsets. Cache the
+            # unique artifact path so later inference cannot overwrite a reviewed image.
+            image_id = uuid.uuid4().hex
             output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
             # Concurrent workers share this directory, so creation must tolerate a parallel winner.
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
