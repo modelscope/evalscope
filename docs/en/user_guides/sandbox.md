@@ -76,10 +76,10 @@ To run without deploying Docker, choose [official E2B](https://e2b.dev/) or [Ali
 
 ### Install Dependencies and Set API Keys
 
-This example uses SWE-bench. EvalScope 1.14.1 on PyPI does not yet include E2B integration, so install from the `main` branch. This command also installs the SWE-bench and sandbox dependencies:
+This example uses SWE-bench. Install the evaluation and sandbox dependencies:
 
 ```bash
-pip install -U 'evalscope[swe_bench] @ git+https://github.com/modelscope/evalscope.git@main'
+pip install -U 'evalscope[swe_bench]'
 export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```

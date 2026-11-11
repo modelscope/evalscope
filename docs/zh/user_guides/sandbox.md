@@ -76,10 +76,10 @@ run_task(task_config)
 
 ### 安装依赖并准备密钥
 
-下面以 SWE-bench 为例。PyPI 上的 EvalScope 1.14.1 尚未包含 E2B 接入，请安装 `main` 分支的源码版本；这条命令会同时安装 SWE-bench 和沙箱依赖：
+下面以 SWE-bench 为例，安装评测和沙箱依赖：
 
 ```bash
-pip install -U 'evalscope[swe_bench] @ git+https://github.com/modelscope/evalscope.git@main'
+pip install -U 'evalscope[swe_bench]'
 export DASHSCOPE_API_KEY='<your-model-api-key>'
 export E2B_API_KEY='<your-sandbox-api-key>'
 ```
