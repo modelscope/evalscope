@@ -26,13 +26,56 @@
     "sandbox_config": {},
     "category": "llm"
   },
-  "statistics": {},
-  "sample_example": {},
-  "readme": {
-    "en": "# CLUEWSC\n\n\n## Overview\n\nCLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE). Each item asks whether a pronoun in a sentence refers to a given noun phrase, which requires commonsense reasoning rather than surface cues.\n\n## Task Description\n\n- **Task Type**: Binary coreference resolution as single-choice (Chinese)\n- **Input**: A Chinese sentence, a pronoun and a candidate referent\n- **Output**: A (是, refers to it) or B (否, does not)\n- **Domain**: Chinese commonsense reasoning\n\n## Key Features\n\n- Official FewCLUE splits: `test_public` (976 items, balanced labels), `dev_few_all` (159) and `train_few_all` (160)\n- Same question wording as the OpenCompass `FewCLUE_cluewsc_gen` configuration, so scores are comparable\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on `test_public`; set `eval_split='dev_few_all'` to score the dev split.\n- Set `few_shot_num` to draw demonstrations from `train_few_all`.\n- Answers should follow the format: \"答案：[LETTER]\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cluewsc` |\n| **Dataset ID** | [evalscope/cluewsc](https://modelscope.cn/datasets/evalscope/cluewsc/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2107.07498) |\n| **Tags** | `Chinese`, `MCQ`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test_public` |\n| **Train Split** | `train_few_all` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\n以下是一些示例问题：\n\n{fewshot}\n\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cluewsc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cluewsc'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "",
-    "content_hash": "45de32bdb780e750addf523ef3932c6f",
-    "needs_translation": true
+  "statistics": {
+    "total_samples": 976,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 976,
+        "prompt_length_mean": 182.99,
+        "prompt_length_min": 135,
+        "prompt_length_max": 271,
+        "prompt_length_std": 23.2,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 182.99,
+      "min": 135,
+      "max": 271,
+      "std": 23.2
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-11-11T22:21:03.744930"
   },
-  "updated_at": "2026-11-11T20:16:14.905286"
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e440caf5",
+          "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\n\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆”？\n选项：\nA) 是\nB) 否\n"
+        }
+      ],
+      "choices": [
+        "是",
+        "否"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "idx": 1180
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CLUEWSC\n\n\n## Overview\n\nCLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE). Each item asks whether a pronoun in a sentence refers to a given noun phrase, which requires commonsense reasoning rather than surface cues.\n\n## Task Description\n\n- **Task Type**: Binary coreference resolution as single-choice (Chinese)\n- **Input**: A Chinese sentence, a pronoun and a candidate referent\n- **Output**: A (是, refers to it) or B (否, does not)\n- **Domain**: Chinese commonsense reasoning\n\n## Key Features\n\n- Official FewCLUE splits: `test_public` (976 items, balanced labels), `dev_few_all` (159) and `train_few_all` (160)\n- Same question wording as the OpenCompass `FewCLUE_cluewsc_gen` configuration, so scores are comparable\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on `test_public`; set `eval_split='dev_few_all'` to score the dev split.\n- Set `few_shot_num` to draw demonstrations from `train_few_all`.\n- Answers should follow the format: \"答案：[LETTER]\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cluewsc` |\n| **Dataset ID** | [evalscope/cluewsc](https://modelscope.cn/datasets/evalscope/cluewsc/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2107.07498) |\n| **Tags** | `Chinese`, `MCQ`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test_public` |\n| **Train Split** | `train_few_all` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 976 |\n| Prompt Length (Mean) | 182.99 chars |\n| Prompt Length (Min/Max) | 135 / 271 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e440caf5\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\\n\\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\\n此处，“他”是否指代“毛豆”？\\n选项：\\nA) 是\\nB) 否\\n\"\n    }\n  ],\n  \"choices\": [\n    \"是\",\n    \"否\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"idx\": 1180\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\n以下是一些示例问题：\n\n{fewshot}\n\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cluewsc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cluewsc'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CLUEWSC\n\n\n## 概述\n\nCLUEWSC 是 [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE) 中的中文 Winograd 模式挑战（Winograd Schema Challenge）任务。每道题判断句子中的代词是否指代给定的名词短语，需要依靠常识推理而非表面线索。\n\n## 任务描述\n\n- **任务类型**：二分类指代消解，以单项选择形式评测（中文）\n- **输入**：一个中文句子、其中的代词和一个候选指代对象\n- **输出**：A（是，指代该对象）或 B（否，不指代）\n- **领域**：中文常识推理\n\n## 主要特点\n\n- 使用 FewCLUE 官方划分：`test_public`（976 条，标签均衡）、`dev_few_all`（159 条）和 `train_few_all`（160 条）\n- 问题措辞与 OpenCompass `FewCLUE_cluewsc_gen` 配置一致，分数可对比\n\n## 评估说明\n\n- 默认在 `test_public` 上进行 **0-shot** 评估；设置 `eval_split='dev_few_all'` 可评估开发集。\n- 设置 `few_shot_num` 可从 `train_few_all` 中抽取示例。\n- 答案应遵循格式：\"答案：[LETTER]\"\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cluewsc` |\n| **数据集ID** | [evalscope/cluewsc](https://modelscope.cn/datasets/evalscope/cluewsc/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2107.07498) |\n| **标签** | `Chinese`, `MCQ`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估分割** | `test_public` |\n| **训练分割** | `train_few_all` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 976 |\n| 提示词长度（平均） | 182.99 字符 |\n| 提示词长度（最小/最大） | 135 / 271 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e440caf5\",\n      \"content\": \"回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\\\"答案：[LETTER]\\\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\\n\\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\\n此处，“他”是否指代“毛豆”？\\n选项：\\nA) 是\\nB) 否\\n\"\n    }\n  ],\n  \"choices\": [\n    \"是\",\n    \"否\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"idx\": 1180\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n<details>\n<summary>少样本模板</summary>\n\n```text\n以下是一些示例问题：\n\n{fewshot}\n\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n</details>\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cluewsc \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cluewsc'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "content_hash": "ace3361ee793da6656baa1797e33abcf",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-11T22:21:03.760881",
+  "translation_updated_at": "2026-11-11T22:21:24"
 }

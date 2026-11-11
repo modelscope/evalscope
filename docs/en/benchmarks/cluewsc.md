@@ -40,11 +40,36 @@ CLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://githu
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 976 |
+| Prompt Length (Mean) | 182.99 chars |
+| Prompt Length (Min/Max) | 135 / 271 chars |
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "e440caf5",
+      "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\n\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆”？\n选项：\nA) 是\nB) 否\n"
+    }
+  ],
+  "choices": [
+    "是",
+    "否"
+  ],
+  "target": "A",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "idx": 1180
+  }
+}
+```
 
 ## Prompt Template
 
