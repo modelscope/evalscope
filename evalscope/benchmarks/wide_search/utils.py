@@ -231,7 +231,13 @@ class WideSearchSession:
         self,
         column_map: Optional[Dict[str, str]] = None,
         primary_key_maps: Optional[Dict[str, Dict[str, str]]] = None,
+        preprocess: bool = True,
     ) -> tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Dict[str, Any]]:
+        """Return the aligned gold and response tables.
+
+        ``preprocess=False`` stops before the column preprocessors, giving the raw strings that the
+        primary-key judge must see: its mapping is applied to these raw values, as in the official evaluator.
+        """
         diagnostics: Dict[str, Any] = {'stage': 'align'}
         if self.error or self.response_df is None:
             diagnostics['error'] = self.error or 'response_df is None'
@@ -251,6 +257,8 @@ class WideSearchSession:
         answer_df.drop_duplicates(subset=self.unique_columns, inplace=True)
         for column, value_map in (primary_key_maps or {}).items():
             response_df[column] = response_df[column].apply(lambda value: value_map.get(value, value))
+        if not preprocess:
+            return answer_df, response_df, diagnostics
         for column, pipeline in self.evaluation['eval_pipeline'].items():
             for preprocess_name in pipeline.get('preprocess', []):
                 preprocess = PREPROCESSORS[preprocess_name]
