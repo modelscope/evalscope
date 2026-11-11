@@ -22,6 +22,7 @@ from evalscope.benchmarks.wide_search.utils import (
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
+from evalscope.run import evaluate_model
 
 try:
     import evalscope.agent.environments.enclave  # noqa: F401
@@ -233,16 +234,24 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual(sample_score.group_id, 2)
         self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
 
-    def test_rule_only_judge_is_rejected(self) -> None:
+    def test_rule_only_judge_is_rejected_before_evaluation(self) -> None:
         config = TaskConfig(
             model='mock',
+            eval_type='mock_llm',
             datasets=['wide_search'],
             judge={'strategy': JudgeStrategy.RULE, 'models': {'model_id': 'mock'}},
         )
 
-        # ``get_benchmark`` is the only construction path, so the run fails before generation.
-        with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
-            get_benchmark('wide_search', config=config)
+        # Metadata construction is allowed; evaluation must reject this before model loading.
+        get_benchmark('wide_search', config=config)
+        with (
+            patch('evalscope.api.registry.create_evaluator') as create_evaluator,
+            patch('evalscope.api.model.model.get_model_with_task_config') as load_model,
+        ):
+            with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
+                evaluate_model(config, outputs=Mock())
+            create_evaluator.assert_not_called()
+            load_model.assert_not_called()
 
     @unittest.skipUnless(_ENCLAVE_AVAILABLE, 'ms_enclave (sandbox extra) is not installed')
     def test_docker_uses_unified_sandbox_config(self) -> None:

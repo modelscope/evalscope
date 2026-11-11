@@ -37,7 +37,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def task_stub(engine: str, enabled: bool = True) -> SimpleNamespace:
-    return SimpleNamespace(sandbox=SimpleNamespace(enabled=enabled, engine=engine, manager_config={'api_key': 'placeholder'}))
+    sandbox = SimpleNamespace(
+        enabled=enabled, engine=engine, default_config={}, manager_config={'api_key': 'placeholder'}
+    )
+    return SimpleNamespace(sandbox=sandbox)
 
 
 # Feature: e2b-sandbox, Property 12: Shared engine resolution follows the enabled/image-engine decision table.
