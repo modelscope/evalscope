@@ -172,8 +172,7 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 
 [官方 E2B Hobby 账号](https://e2b.dev/docs/sandbox)的存活时长上限为 3600 秒，运行 SWE-bench Pro 时也请保留示例中的 `sandbox_timeout=3600`。其他套餐和阿里云的限制以账号配额为准。
 
-```{dropdown} E2B 参数参考
-:open:
+### E2B 参数参考
 
 服务商根据地址识别，不根据密钥识别：`api_url` 或 `domain` 的主机名以 `.aliyuncs.com` 结尾时，启用阿里云镜像映射；其他地址使用默认兼容模式。阿里云服务若使用自定义代理域名，可能无法被这条规则识别。
 
@@ -206,7 +205,6 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 SWE-bench 在评分时会另建沙箱，默认存活时长为测试脚本超时加 600 秒；显式设置 `sandbox_timeout` 后，取两者中的较小值。测试脚本默认超时为 SWE-bench 1800 秒、SWE-bench Pro 3600 秒。
 
 Docker 的目录挂载、端口映射和特权模式不能直接用于 E2B，不支持的配置会报错。更多参数见 [ms-enclave 文档](https://github.com/modelscope/ms-enclave)。
-```
 
 ### 常见问题与清理
 

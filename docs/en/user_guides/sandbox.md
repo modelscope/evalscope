@@ -172,8 +172,7 @@ For custom environments, prepare dependencies, test data and working directories
 
 [Official E2B Hobby accounts](https://e2b.dev/docs/sandbox) have a maximum sandbox lifetime of 3600 seconds. Keep `sandbox_timeout=3600` from the example when running SWE-bench Pro as well. Limits for other plans and Aliyun depend on your account quota.
 
-```{dropdown} E2B parameter reference
-:open:
+### E2B Parameter Reference
 
 Provider handling is determined by the endpoint, not the key. If the hostname in either `api_url` or `domain` ends in `.aliyuncs.com`, Aliyun image mapping is enabled. Other endpoints use the default compatibility path. An Aliyun service behind a custom proxy domain may be missed by this rule.
 
@@ -206,7 +205,6 @@ Place environment settings in `sandbox.default_config`:
 SWE-bench creates a separate sandbox for grading. Its default lifetime is the test script timeout plus 600 seconds; if `sandbox_timeout` is explicitly set, the smaller value applies. The default test script timeout is 1800 seconds for SWE-bench and 3600 seconds for SWE-bench Pro.
 
 Docker volume mounts, port mappings and privileged mode cannot be used directly with E2B; unsupported settings produce an error. For more options, see the [ms-enclave documentation](https://github.com/modelscope/ms-enclave).
-```
 
 ### Troubleshooting and Cleanup
 
