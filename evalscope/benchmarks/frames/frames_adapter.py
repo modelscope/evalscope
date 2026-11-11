@@ -36,7 +36,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 @register_benchmark(
     BenchmarkMeta(
         name='frames',
-        evaluation_version='v1.2',
+        evaluation_version='v1.1',
         pretty_name='FRAMES',
         tags=[Tags.REASONING, Tags.LONG_CONTEXT],
         description="""

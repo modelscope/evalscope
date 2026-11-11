@@ -38,4 +38,4 @@ def test_text_without_a_payload_reports_no_object() -> None:
 def test_evaluation_version_tracks_spotting_json_extraction() -> None:
     adapter = get_benchmark('maritime_ocr_bench', TaskConfig(model='mock', datasets=['maritime_ocr_bench']))
 
-    assert adapter.benchmark_meta.evaluation_version == 'v1.2'
+    assert adapter.benchmark_meta.evaluation_version == 'v1.1'

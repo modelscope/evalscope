@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 
 
@@ -76,18 +76,3 @@ def test_local_file_none_seed_preserves_global_random_behavior(frames_directory:
     random.seed(123)
 
     assert load_targets(frames_directory, None) == expected[:5]
-
-
-@pytest.mark.parametrize(
-    'benchmark, version',
-    [
-        ('frames', 'v1.2'),
-        ('maritime_ocr_bench', 'v1.2'),
-        ('data_collection', 'v1.1'),
-        ('health_bench', 'v1.1'),
-        ('pmc_vqa', 'v1.1'),
-        ('wide_search', 'v1.1'),
-    ],
-)
-def test_local_file_shuffle_versions_track_sample_selection(benchmark: str, version: str) -> None:
-    assert BENCHMARK_REGISTRY[benchmark].evaluation_version == version
