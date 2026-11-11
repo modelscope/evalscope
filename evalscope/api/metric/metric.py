@@ -1,8 +1,9 @@
+import inspect
+import threading
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Iterable, List, Union
+from typing import TYPE_CHECKING, Any, Callable, Hashable, Iterable, List, Union
 
 from evalscope.utils import get_logger
-from evalscope.utils.function_utils import thread_safe
 
 logger = get_logger()
 
@@ -37,26 +38,59 @@ class Metric(ABC):
         return self.apply([prediction], [reference])[0]
 
 
+def _metric_config_key(value: Any) -> Hashable:
+    """Freeze configuration containers without conflating their value types."""
+    if isinstance(value, dict):
+        return type(value), frozenset((_metric_config_key(k), _metric_config_key(v)) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        return type(value), tuple(_metric_config_key(item) for item in value)
+    if isinstance(value, (set, frozenset)):
+        return type(value), frozenset(_metric_config_key(item) for item in value)
+    hash(value)
+    return type(value), value
+
+
 class SingletonMetric(Metric):
-    """Singleton base class for metrics."""
+    """Reuse one initialized scorer per concrete class and constructor configuration.
 
-    _instance = None
+    Implement initialization in ``_init_once``. Instances remain cached for the process
+    lifetime, as model loading may otherwise repeat for every scored sample. Opaque
+    unhashable options bypass caching; they are never identified by their repr.
+    """
 
-    @thread_safe
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+    _instances: dict[Hashable, 'SingletonMetric'] = {}
+    _initialization_locks: dict[Hashable, Any] = {}
+    _cache_lock = threading.RLock()
 
-    def __init__(self, *args, **kwargs):
-        cls = self.__class__
-        if hasattr(self, '_init_done'):
-            return
+    def __new__(cls, *args: Any, **kwargs: Any) -> 'SingletonMetric':
+        bound = inspect.signature(cls._init_once).bind(None, *args, **kwargs)
+        bound.apply_defaults()
+        try:
+            key = (cls, _metric_config_key(bound.arguments))
+        except TypeError:
+            return cls._create_instance(*args, **kwargs)
+
+        # Keep the short cache bookkeeping lock separate from heavyweight model loading.
+        with SingletonMetric._cache_lock:
+            lock = SingletonMetric._initialization_locks.setdefault(key, threading.RLock())
+        with lock:
+            if key not in SingletonMetric._instances:
+                # Publish only after success. A waiter can retry a failed load with a fresh object.
+                SingletonMetric._instances[key] = cls._create_instance(*args, **kwargs)
+            return SingletonMetric._instances[key]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # __new__ completes initialization before making an instance available to other callers.
+        pass
+
+    @classmethod
+    def _create_instance(cls, *args: Any, **kwargs: Any) -> 'SingletonMetric':
+        instance = super().__new__(cls)
         logger.info(f'Initializing {cls.__name__}...')
-        self._init_once(*args, **kwargs)
-        self._init_done = True
+        instance._init_once(*args, **kwargs)
+        return instance
 
-    def _init_once(self, *args, **kwargs):
+    def _init_once(self, *args: Any, **kwargs: Any) -> None:
         pass
 
 
