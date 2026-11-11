@@ -1,4 +1,6 @@
 """CLUEWSC maps FewCLUE true/false labels to A/B and reads the Chinese answer line."""
+import json
+
 import pytest
 
 from evalscope.api.evaluator import TaskState
@@ -23,6 +25,36 @@ def test_record_to_sample(label, target):
     assert sample.target == target
     assert sample.choices == ['是', '否']
     assert sample.input.endswith('此处，“它”是否指代“舌头”？')
+
+
+def test_offline_run_scores_local_split(tmp_path, monkeypatch):
+    from evalscope import run_task
+    from evalscope.models.mockllm import MockLLM
+
+    data = tmp_path / 'cluewsc'
+    data.mkdir()
+    (data / 'README.md').write_text(
+        '---\nconfigs:\n- config_name: default\n  data_files:\n  - split: test_public\n    path: test_public.jsonl\n---\n'
+    )
+    rows = [{**RECORD, 'idx': i, 'label': label} for i, label in enumerate(['true', 'false'])]
+    (data / 'test_public.jsonl').write_text('\n'.join(json.dumps(r, ensure_ascii=False) for r in rows))
+    monkeypatch.setattr(MockLLM, 'default_output', '答案：A')
+
+    work = tmp_path / 'run'
+    run_task(
+        TaskConfig(
+            model='offline-cluewsc',
+            eval_type='mock_llm',
+            datasets=['cluewsc'],
+            dataset_args={'cluewsc': {'local_path': str(data)}},
+            no_timestamp=True,
+            work_dir=str(work),
+        )
+    )
+
+    report = json.loads((work / 'reports/offline-cluewsc/cluewsc.json').read_text())
+    metric = report['metrics'][0]
+    assert (metric['score'], metric['num']) == (0.5, 2)
 
 
 def test_extracts_answer_line():
