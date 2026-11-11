@@ -15,13 +15,13 @@ CLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://githu
 ## Key Features
 
 - Official FewCLUE splits: `test_public` (976 items, balanced labels), `dev_few_all` (159) and `train_few_all` (160)
-- Same question wording as the OpenCompass `FewCLUE_cluewsc_gen` configuration, so scores are comparable
+- Reproduces the OpenCompass `FewCLUE_cluewsc_gen_c68933` prompt and answer extraction, so scores are directly comparable
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation on `test_public`; set `eval_split='dev_few_all'` to score the dev split.
 - Set `few_shot_num` to draw demonstrations from `train_few_all`.
-- Answers should follow the format: "答案：[LETTER]"
+- The first uppercase letter in the response is taken as the answer, as in OpenCompass `first_capital_postprocess`; `acc` is the share of items answered correctly.
 
 
 ## Properties
@@ -43,8 +43,8 @@ CLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://githu
 | Metric | Value |
 |--------|-------|
 | Total Samples | 976 |
-| Prompt Length (Mean) | 182.99 chars |
-| Prompt Length (Min/Max) | 135 / 271 chars |
+| Prompt Length (Mean) | 108.99 chars |
+| Prompt Length (Min/Max) | 61 / 197 chars |
 
 ## Sample Example
 
@@ -54,8 +54,8 @@ CLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://githu
 {
   "input": [
     {
-      "id": "e440caf5",
-      "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\n\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆”？\n选项：\nA) 是\nB) 否\n"
+      "id": "493fe800",
+      "content": "不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆“？\nA. 是\nB. 否\n请从”A“，”B“中进行选择。\n答："
     }
   ],
   "choices": [
@@ -75,31 +75,12 @@ CLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://githu
 
 **Prompt Template:**
 ```text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
-
-问题：{question}
-选项：
-{choices}
-
+{question}
+A. 是
+B. 否
+请从”A“，”B“中进行选择。
+答：
 ```
-
-<details>
-<summary>Few-shot Template</summary>
-
-```text
-以下是一些示例问题：
-
-{fewshot}
-
-回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
-
-问题：{question}
-选项：
-{choices}
-
-```
-
-</details>
 
 ## Usage
 

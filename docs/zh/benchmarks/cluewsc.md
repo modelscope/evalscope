@@ -15,13 +15,13 @@ CLUEWSC 是 [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE) 中的中文 Win
 ## 主要特点
 
 - 使用 FewCLUE 官方划分：`test_public`（976 条，标签均衡）、`dev_few_all`（159 条）和 `train_few_all`（160 条）
-- 问题措辞与 OpenCompass `FewCLUE_cluewsc_gen` 配置一致，分数可对比
+- 复现 OpenCompass `FewCLUE_cluewsc_gen_c68933` 的提示词与答案提取方式，分数可直接对比
 
 ## 评估说明
 
 - 默认在 `test_public` 上进行 **0-shot** 评估；设置 `eval_split='dev_few_all'` 可评估开发集。
 - 设置 `few_shot_num` 可从 `train_few_all` 中抽取示例。
-- 答案应遵循格式："答案：[LETTER]"
+- 取回答中第一个大写字母作为答案，与 OpenCompass `first_capital_postprocess` 一致；`acc` 为答对题目的比例。
 
 
 ## 属性
@@ -43,8 +43,8 @@ CLUEWSC 是 [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE) 中的中文 Win
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 976 |
-| 提示词长度（平均） | 182.99 字符 |
-| 提示词长度（最小/最大） | 135 / 271 字符 |
+| 提示词长度（平均） | 108.99 字符 |
+| 提示词长度（最小/最大） | 61 / 197 字符 |
 
 ## 样例示例
 
@@ -54,8 +54,8 @@ CLUEWSC 是 [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE) 中的中文 Win
 {
   "input": [
     {
-      "id": "e440caf5",
-      "content": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 A,B 中的一个。\n\n问题：不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆”？\n选项：\nA) 是\nB) 否\n"
+      "id": "493fe800",
+      "content": "不过，在面子上，毛豆还下不来，一半是因为他确实很生气；另一半也是因为，他毛豆怎么能与他们做一路人。所以，他必须生气。有几次大王问他累不累，要不要喝水，后面的人立即送上矿泉水瓶子，他不理睬。\n此处，“他”是否指代“毛豆“？\nA. 是\nB. 否\n请从”A“，”B“中进行选择。\n答："
     }
   ],
   "choices": [
@@ -75,31 +75,12 @@ CLUEWSC 是 [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE) 中的中文 Win
 
 **提示模板：**
 ```text
-回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
-
-问题：{question}
-选项：
-{choices}
-
+{question}
+A. 是
+B. 否
+请从”A“，”B“中进行选择。
+答：
 ```
-
-<details>
-<summary>少样本模板</summary>
-
-```text
-以下是一些示例问题：
-
-{fewshot}
-
-回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。
-
-问题：{question}
-选项：
-{choices}
-
-```
-
-</details>
 
 ## 使用方法
 
