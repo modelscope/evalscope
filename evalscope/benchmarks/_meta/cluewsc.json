@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "pretty_name": "CLUEWSC",
+    "dataset_id": "evalscope/cluewsc",
+    "paper_url": "https://arxiv.org/abs/2107.07498",
+    "tags": [
+      "Reasoning",
+      "MCQ",
+      "Chinese"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test_public",
+    "train_split": "train_few_all",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nCLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE). Each item asks whether a pronoun in a sentence refers to a given noun phrase, which requires commonsense reasoning rather than surface cues.\n\n## Task Description\n\n- **Task Type**: Binary coreference resolution as single-choice (Chinese)\n- **Input**: A Chinese sentence, a pronoun and a candidate referent\n- **Output**: A (是, refers to it) or B (否, does not)\n- **Domain**: Chinese commonsense reasoning\n\n## Key Features\n\n- Official FewCLUE splits: `test_public` (976 items, balanced labels), `dev_few_all` (159) and `train_few_all` (160)\n- Same question wording as the OpenCompass `FewCLUE_cluewsc_gen` configuration, so scores are comparable\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on `test_public`; set `eval_split='dev_few_all'` to score the dev split.\n- Set `few_shot_num` to draw demonstrations from `train_few_all`.\n- Answers should follow the format: \"答案：[LETTER]\"\n",
+    "prompt_template": "回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n",
+    "system_prompt": "",
+    "few_shot_prompt_template": "以下是一些示例问题：\n\n{fewshot}\n\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# CLUEWSC\n\n\n## Overview\n\nCLUEWSC is the Chinese Winograd Schema Challenge task of [FewCLUE](https://github.com/CLUEbenchmark/FewCLUE). Each item asks whether a pronoun in a sentence refers to a given noun phrase, which requires commonsense reasoning rather than surface cues.\n\n## Task Description\n\n- **Task Type**: Binary coreference resolution as single-choice (Chinese)\n- **Input**: A Chinese sentence, a pronoun and a candidate referent\n- **Output**: A (是, refers to it) or B (否, does not)\n- **Domain**: Chinese commonsense reasoning\n\n## Key Features\n\n- Official FewCLUE splits: `test_public` (976 items, balanced labels), `dev_few_all` (159) and `train_few_all` (160)\n- Same question wording as the OpenCompass `FewCLUE_cluewsc_gen` configuration, so scores are comparable\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation on `test_public`; set `eval_split='dev_few_all'` to score the dev split.\n- Set `few_shot_num` to draw demonstrations from `train_few_all`.\n- Answers should follow the format: \"答案：[LETTER]\"\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cluewsc` |\n| **Dataset ID** | [evalscope/cluewsc](https://modelscope.cn/datasets/evalscope/cluewsc/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2107.07498) |\n| **Tags** | `Chinese`, `MCQ`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test_public` |\n| **Train Split** | `train_few_all` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n<details>\n<summary>Few-shot Template</summary>\n\n```text\n以下是一些示例问题：\n\n{fewshot}\n\n回答下面的单项选择题，请选出其中的正确答案。你的回答的全部内容应该是这样的格式：\"答案：[LETTER]\"（不带引号），其中 [LETTER] 是 {letters} 中的一个。\n\n问题：{question}\n选项：\n{choices}\n\n```\n\n</details>\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cluewsc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cluewsc'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "45de32bdb780e750addf523ef3932c6f",
+    "needs_translation": true
+  },
+  "updated_at": "2026-11-11T20:16:14.905286"
+}

@@ -42,6 +42,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
 | `cl_bench` | [CL-bench](../../benchmarks/cl_bench.md) | `InstructionFollowing`, `Reasoning` |
+| `cluewsc` | [CLUEWSC](../../benchmarks/cluewsc.md) | `Chinese`, `MCQ`, `Reasoning` |
 | `cmath` | [CMATH](../../benchmarks/cmath.md) | `Chinese`, `Math`, `Reasoning` |
 | `cmmlu` | [C-MMLU](../../benchmarks/cmmlu.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](../../benchmarks/coin_flip.md) | `Reasoning`, `Yes/No` |
@@ -214,6 +215,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
 ../../benchmarks/cl_bench.md
+../../benchmarks/cluewsc.md
 ../../benchmarks/cmath.md
 ../../benchmarks/cmmlu.md
 ../../benchmarks/coin_flip.md
