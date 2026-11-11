@@ -362,3 +362,21 @@ def test_extract_answer_line_without_marker() -> None:
 def test_extract_answer_line_drops_punctuation_after_closing_bold(text: str, expected: str) -> None:
     # The closing '**' used to survive when punctuation followed it: '**ANSWER: 45**.' -> '45**.' (#2027).
     assert extract_answer_line(text) == expected
+
+
+@pytest.mark.parametrize('text', ['**Answer**: 45', '**ANSWER**: **45**', '**Final Answer**: 45', '*Answer*: 45'])
+def test_extract_answer_line_reads_a_bold_answer_key(text: str) -> None:
+    # The bold run closes before the colon, so the marker was not found and no answer was read.
+    assert extract_answer_line(text) == '45'
+
+
+@pytest.mark.parametrize(
+    'reply', ['**Answer**: (B) Second', '**Answer**: B. The second option.', '**Answer**: B\n\nNote: A is wrong.']
+)
+def test_parse_answers_reads_a_bold_answer_key(reply: str) -> None:
+    # Without the marker the reply fell back to its last capital letter ('S', 'T', 'N'; none is an option).
+    assert parse_answers(_make_state(f'reasoning\n{reply}')) == {'B'}
+
+
+def test_parse_answers_zh_reads_a_bold_answer_key() -> None:
+    assert parse_answers_zh(_make_state('推理\n**答案**：B。Note: A is wrong.')) == {'B'}

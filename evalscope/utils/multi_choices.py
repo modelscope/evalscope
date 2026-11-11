@@ -153,9 +153,10 @@ def format_example(
 
 
 # The answer marker itself.  Locating markers separately from the label keeps a greedy label
-# pattern from swallowing the next marker, which would hide it from the scan below.
-_ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*:\s*\**\s*')
-_ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
+# pattern from swallowing the next marker, which would hide it from the scan below.  Emphasis may
+# close before the colon ('**Answer**: B'), as the simple-evals parser accepts by stripping '**'.
+_ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*\**\s*:\s*\**\s*')
+_ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*\**\s*[:：]\s*\**\s*')
 
 # A label the model may wrap the way the options are printed, optionally listing several labels:
 # '(A)', '[A]', '(A, C)', '(A/C)'.  Only label-shaped content is accepted, so bracketed prose
@@ -184,8 +185,9 @@ def extract_answer_line(text: str) -> Optional[str]:
     """Text after the last 'ANSWER:' marker, up to the end of its line, without bold markers.
 
     The marker is matched like the multiple-choice parser does, in any case and inside or around
-    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Punctuation after a closing
-    bold run is dropped with it ('**ANSWER: 45**.' -> '45'); unbolded values keep theirs ('ANSWER: 3.5.').
+    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', '**Answer**: 45', 'Answer: 45').  Punctuation
+    after a closing bold run is dropped with it ('**ANSWER: 45**.' -> '45'); unbolded values keep theirs
+    ('ANSWER: 3.5.').
     Returns None without a marker.
     """
     markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
