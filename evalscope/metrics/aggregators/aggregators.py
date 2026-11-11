@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def collect_metric_names(scores: List[SampleScore]) -> List[str]:
@@ -18,6 +21,17 @@ def collect_metric_names(scores: List[SampleScore]) -> List[str]:
         for metric_name in sample_score.score.value:
             metric_names.setdefault(metric_name, None)
     return list(metric_names)
+
+
+def has_binary_outcomes(scores: List[SampleScore], metric_name: str) -> bool:
+    """Require success/failure outcomes before estimating a pass probability."""
+    if any(score.score.value[metric_name] not in (0, 1) for score in scores if metric_name in score.score.value):
+        logger.warning(
+            f'Skipping pass aggregation for metric {metric_name!r}: outcomes must be binary (0 or 1). '
+            'The mean is retained; use mean aggregation for partial-credit or continuous metrics.'
+        )
+        return False
+    return True
 
 
 def collect_planned_attempts(
@@ -212,6 +226,8 @@ class MeanPassAtK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
+            if not has_binary_outcomes(scores, metric_name):
+                continue
             group_attempts = collect_planned_attempts(scores, metric_name)
             prefixes = eligible_prefixes(group_attempts)
             if not prefixes:
@@ -355,6 +371,8 @@ class MeanPassHatK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
+            if not has_binary_outcomes(scores, metric_name):
+                continue
             group_attempts = collect_planned_attempts(scores, metric_name)
             prefixes = eligible_prefixes(group_attempts)
             if not prefixes:
