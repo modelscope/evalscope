@@ -164,6 +164,22 @@ agent_config=NativeAgentConfig(
 )
 ```
 
+[Keenable](https://docs.keenable.ai/mcp-server) 也提供匿名访问的托管搜索 MCP，无需注册账号或 API key 即可使用
+`search_web_pages` 和 `fetch_page_content`。免费访问有速率限制，可选的 `X-API-Key` 请求头可提高限额：
+
+```python
+agent_config=NativeAgentConfig(
+    mcp_servers=[
+        MCPServerConfigHTTP(
+            name='keenable_search',
+            url='https://api.keenable.ai/mcp-public',
+            tools=['search_web_pages', 'fetch_page_content'],  # 匿名访问，无需 API key
+            # headers={'X-API-Key': os.environ['KEENABLE_API_KEY']},  # 可选，提高限额
+        ),
+    ],
+)
+```
+
 任何 Streamable HTTP 的搜索 MCP 服务器都可以这样接入：换掉 `url` 和 `tools` 即可，服务器需要鉴权时再补上 `headers`。
 
 ### 接入方式

@@ -165,6 +165,23 @@ agent_config=NativeAgentConfig(
 )
 ```
 
+[Keenable](https://docs.keenable.ai/mcp-server) is another hosted option with anonymous access. It exposes
+`search_web_pages` and `fetch_page_content` without an account or API key; free access is rate limited, and an optional
+`X-API-Key` header raises the limits:
+
+```python
+agent_config=NativeAgentConfig(
+    mcp_servers=[
+        MCPServerConfigHTTP(
+            name='keenable_search',
+            url='https://api.keenable.ai/mcp-public',
+            tools=['search_web_pages', 'fetch_page_content'],  # anonymous, no API key
+            # headers={'X-API-Key': os.environ['KEENABLE_API_KEY']},  # optional, higher limits
+        ),
+    ],
+)
+```
+
 Any Streamable HTTP search MCP server works the same way: swap `url` and `tools`, and add `headers` when the server
 requires a token.
 
