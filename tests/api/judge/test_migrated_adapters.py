@@ -775,3 +775,15 @@ def test_swe_atlas_qna_empty_rubric_skips_judge_and_excludes() -> None:
     assert score.explanation == 'rubric must contain at least one item'
     assert score.metadata['excluded_reason'] == 'rubric must contain at least one item'
     assert judge.calls == []
+
+
+def test_llm_recall_reads_a_judge_verdict_that_follows_latex_prose() -> None:
+    """A judge that explains itself first quotes the answers, LaTeX braces included."""
+    adapter = get_benchmark('math_500', TaskConfig(datasets=['math_500'], judge={'strategy': 'llm_recall'}))
+    reply = 'The response says one half, the reference is \\frac{1}{2}.\n{"verdict": "A"}'
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.calculate_metrics(make_state('It is one half.', '\\frac{1}{2}')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.main_value == 1.0

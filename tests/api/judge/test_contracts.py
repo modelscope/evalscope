@@ -5,6 +5,7 @@ score instead of a parse failure.
 """
 from typing import Literal
 
+import pytest
 from pydantic import BaseModel, Field
 
 from evalscope.api.judge import OutputContract
@@ -235,3 +236,26 @@ def test_accepts_an_escaped_quote_inside_a_string_field():
 
 def test_rejects_prose_holding_two_objects():
     assert not GRADE.parse('First {"verdict": "A"} then {"verdict": "B"}').ok
+
+
+@pytest.mark.parametrize(
+    'reply',
+    [
+        'The response equals the reference \\frac{1}{2}.\n{"verdict": "A"}',
+        'Both give \\boxed{5}.\n```json\n{"verdict": "A"}\n```',
+        'The prediction lists {1, 2}, as the gold does.</think>\n{"verdict": "A"}',
+        'The screen is 5" wide, as the reference says.\n{"verdict": "A"}',
+        'Unbalanced \\left\\{ x \\right. in the explanation.\n{"verdict": "A"}',
+        'The response omits an opening "{" brace, as the gold does.\n{"verdict": "A"}',
+    ],
+)
+def test_accepts_one_object_after_text_with_braces_or_quotes(reply):
+    # Braces and quotes in the surrounding text used to count as extra objects or swallow the verdict.
+    assert GRADE.parse(reply).value.verdict == 'A'
+
+
+def test_rejects_two_objects_after_text_with_braces():
+    result = GRADE.parse('Both give \\boxed{5}. {"verdict": "A"} {"verdict": "B"}')
+
+    assert not result.ok
+    assert 'exactly one' in result.error

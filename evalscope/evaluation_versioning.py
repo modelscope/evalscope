@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
-SHARED_SCORING_VERSION = 'v1.1'
+SHARED_SCORING_VERSION = 'v1.2'
 """Version of shared judge rendering and metric failure semantics used in cache identities."""
 _VERSION_RE = re.compile(r'^v\d+\.\d+$')
 _SECRET_KEYS = {

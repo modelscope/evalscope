@@ -6,7 +6,7 @@ satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
 
 import json
-from typing import Any, List, Literal, Optional, Sequence, Type, get_args, get_origin
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Type, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,56 +53,44 @@ class OutputContract(BaseModel):
         if not response:
             return ParseResult.failure('empty response')
 
-        payloads = _payloads(response)
-        if not payloads:
-            return ParseResult.failure('no JSON object found in the reply')
+        payloads, error = _payloads(response)
         if len(payloads) > 1:
             return ParseResult.failure(f'{len(payloads)} JSON objects found where exactly one is required')
+        if not payloads:
+            if error is not None:
+                return ParseResult.failure(f'reply is not valid JSON: {error}')
+            return ParseResult.failure('no JSON object found in the reply')
 
         try:
-            data = json.loads(payloads[0])
-        except json.JSONDecodeError as exc:
-            return ParseResult.failure(f'reply is not valid JSON: {exc}')
-        if not isinstance(data, dict):
-            return ParseResult.failure(f'reply is a {type(data).__name__}, not a JSON object')
-
-        try:
-            return ParseResult.success(self.schema_model.model_validate(data))
+            return ParseResult.success(self.schema_model.model_validate(payloads[0]))
         except Exception as exc:
             return ParseResult.failure(f'reply does not satisfy {self.schema_model.__name__}: {exc}')
 
 
-def _payloads(response: str) -> List[str]:
-    """Return every top-level JSON object in the reply.
+def _payloads(response: str) -> Tuple[List[Dict[str, Any]], Optional[json.JSONDecodeError]]:
+    """Return every JSON object in the reply that is not nested in another, and the first malformed one's error.
 
-    Scanning rather than anchoring lets a reasoning judge wrap its answer in a ``<think>`` block
-    or a fence; requiring exactly one object keeps a two-verdict reply a failure, not a coin flip.
+    Scanning rather than anchoring lets a reasoning judge wrap its answer in a ``<think>`` block,
+    a fence or an explanation; requiring exactly one object keeps a two-verdict reply a failure,
+    not a coin flip. Decoding from each ``{`` skips braces and quotes in the surrounding text
+    (``\\frac{1}{2}``, ``5" wide``) that do not start an object.
     """
-    found: List[str] = []
-    depth = 0
-    start = 0
-    in_string = False
-    escaped = False
-    for index, char in enumerate(response):
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == '\\':
-                escaped = True
-            elif char == '"':
-                in_string = False
+    decoder = json.JSONDecoder()
+    found: List[Dict[str, Any]] = []
+    error: Optional[json.JSONDecodeError] = None
+    index = response.find('{')
+    while index != -1:
+        try:
+            value, end = decoder.raw_decode(response, index)
+        except json.JSONDecodeError as exc:
+            # An object cut off by the end of the reply is missing, not malformed.
+            if exc.pos < len(response):
+                error = error or exc
+            index = response.find('{', index + 1)
             continue
-        if char == '"':
-            in_string = True
-        elif char == '{':
-            if depth == 0:
-                start = index
-            depth += 1
-        elif char == '}' and depth:
-            depth -= 1
-            if depth == 0:
-                found.append(response[start : index + 1])
-    return found
+        found.append(value)
+        index = response.find('{', end)
+    return found, error
 
 
 def _describe(field: Any) -> str:
