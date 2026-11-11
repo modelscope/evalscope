@@ -19,6 +19,7 @@ from .config_builder import (
     ensure_docker_image_built,
     merge_sandbox_config_dicts,
     normalize_docker_build_context,
+    resolve_sandbox_config,
     should_build_docker_image,
 )
 from .docker_image import (
@@ -60,6 +61,7 @@ __all__ = [
     'build_and_acquire_pool_sync',
     'build_docker_image',
     'build_sandbox_config',
+    'resolve_sandbox_config',
     'DockerImageBuilder',
     'DockerImageResult',
     'DockerImageSpec',

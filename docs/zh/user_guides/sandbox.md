@@ -145,7 +145,9 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 
 阿里云不能直接从 Docker Hub 构建模板。EvalScope 为下表中的 SWE-bench 和 SWE-Atlas 镜像提供了内置映射，会自动选择预先准备的阿里云镜像，不会现场转换或上传。其他非阿里云地址不使用这张映射表。
 
-没有映射时，请先准备包含基准依赖的模板，再将模板名或 ID 填入 `sandbox.default_config.template`。指定模板后会跳过镜像映射和构建，环境及资源规格以该模板为准。
+WideSearch、HumanEval、MBPP 和 LiveCodeBench 默认使用阿里云内置的 `base` 模板，无需另行配置。该模板当前提供 Python 3.13，Docker 默认使用 Python 3.11；需要其他环境时，可显式指定 `image` 或 `template`。
+
+其他自定义镜像没有映射时，请先准备包含基准依赖的模板，再将模板名或 ID 填入 `sandbox.default_config.template`。指定模板后会跳过镜像映射和构建，环境及资源规格以该模板为准。
 
 ### 支持的基准
 
@@ -154,13 +156,13 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 | SWE-bench Verified、Verified Mini、Lite，以及对应的 Agentic 版本 | 支持 | 支持 |
 | [SWE-bench Multilingual Agentic](../benchmarks/swe_bench_multilingual_agentic.md)、[SWE-bench Pro](../benchmarks/swe_bench_pro.md) | 支持 | 支持 |
 | [SWE-Atlas QnA](../benchmarks/swe_atlas_qna.md) | 支持 | 支持 |
-| [WideSearch](../benchmarks/wide_search.md) | 支持 | 需指定包含相应依赖的模板 |
-| [HumanEval](../benchmarks/humaneval.md)、[MBPP](../benchmarks/mbpp.md)、[LiveCodeBench](../benchmarks/live_code_bench.md) | 支持 | 需指定包含相应依赖的模板 |
+| [WideSearch](../benchmarks/wide_search.md) | 支持 | 支持，自动选择 `base` 模板 |
+| [HumanEval](../benchmarks/humaneval.md)、[MBPP](../benchmarks/mbpp.md)、[LiveCodeBench](../benchmarks/live_code_bench.md) | 支持 | 支持，自动选择 `base` 模板 |
 | [HumanEvalPlus](../benchmarks/humaneval_plus.md)、[MBPPPlus](../benchmarks/mbpp_plus.md) | 需准备包含 NumPy 的镜像或模板 | 需准备包含 NumPy 的模板 |
 | [BigCodeBench](../benchmarks/bigcodebench.md)、[BigCodeBench-Hard](../benchmarks/bigcodebench_hard.md) | 支持 | 需准备对应评测模板 |
 | [DS-1000](../benchmarks/ds1000.md)、[SciCode](../benchmarks/scicode.md) | 需准备对应依赖和测试数据的镜像或模板 | 需准备对应评测模板 |
 
-使用自备环境时，请按各基准文档准备依赖、测试数据和工作目录。Agent 评测请使用[原生 Agent 模式](agent/native.md)。
+使用自备环境时，请按各基准文档准备依赖、测试数据和工作目录。WideSearch 还需要沙箱能够访问搜索服务和目标网站。Agent 评测请使用[原生 Agent 模式](agent/native.md)。
 
 [Terminal-Bench 2.0／2.1](../third_party/terminal_bench.md) 也可通过 Harbor 使用 E2B：安装 `harbor[e2b]`，在基准的 `extra_params` 中设置 `environment_type='e2b'`。
 

@@ -26,7 +26,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import merge_sandbox_config_dicts, task_sandbox_env_kwargs
+from evalscope.api.sandbox import resolve_sandbox_config, task_sandbox_env_kwargs
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
 
@@ -174,12 +174,12 @@ class WideSearchAdapter(AgentLoopAdapter):
         check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='WideSearch Docker environment')
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 
-        sandbox_config = merge_sandbox_config_dicts(
+        sandbox_config = resolve_sandbox_config(
             {
                 'image': self.docker_image_default,
                 'network_enabled': True,
             },
-            self._task_sandbox_config(),
+            sandbox,
         )
         return EnclaveAgentEnvironment(
             **task_sandbox_env_kwargs(self._task_config),

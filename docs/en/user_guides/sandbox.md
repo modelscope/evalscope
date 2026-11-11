@@ -145,7 +145,9 @@ In a test with one SWE-bench image, preparing a new template took about 10–22 
 
 Aliyun cannot build templates directly from Docker Hub. EvalScope includes mappings for the SWE-bench and SWE-Atlas images listed below and automatically selects prepared Aliyun images, without converting or uploading images at runtime. Non-Aliyun endpoints do not use this mapping table.
 
-For an unmapped image, prepare a template with the benchmark's dependencies and set `sandbox.default_config.template` to its name or ID. Specifying a template skips image mapping and builds; its environment and resource specifications apply.
+WideSearch, HumanEval, MBPP and LiveCodeBench use Aliyun's built-in `base` template by default, with no additional configuration. This template currently provides Python 3.13, while Docker defaults to Python 3.11. To use a different environment, explicitly set `image` or `template`.
+
+For other custom images without a mapping, prepare a template with the benchmark's dependencies and set `sandbox.default_config.template` to its name or ID. Specifying a template skips image mapping and builds; its environment and resource specifications apply.
 
 ### Supported Benchmarks
 
@@ -154,13 +156,13 @@ For an unmapped image, prepare a template with the benchmark's dependencies and 
 | SWE-bench Verified, Verified Mini, Lite, and their Agentic variants | Supported | Supported |
 | [SWE-bench Multilingual Agentic](../benchmarks/swe_bench_multilingual_agentic.md), [SWE-bench Pro](../benchmarks/swe_bench_pro.md) | Supported | Supported |
 | [SWE-Atlas QnA](../benchmarks/swe_atlas_qna.md) | Supported | Supported |
-| [WideSearch](../benchmarks/wide_search.md) | Supported | Requires a template with the benchmark's dependencies |
-| [HumanEval](../benchmarks/humaneval.md), [MBPP](../benchmarks/mbpp.md), [LiveCodeBench](../benchmarks/live_code_bench.md) | Supported | Requires a template with the benchmark's dependencies |
+| [WideSearch](../benchmarks/wide_search.md) | Supported | Supported; selects the `base` template automatically |
+| [HumanEval](../benchmarks/humaneval.md), [MBPP](../benchmarks/mbpp.md), [LiveCodeBench](../benchmarks/live_code_bench.md) | Supported | Supported; selects the `base` template automatically |
 | [HumanEvalPlus](../benchmarks/humaneval_plus.md), [MBPPPlus](../benchmarks/mbpp_plus.md) | Requires an image or template with NumPy | Requires a template with NumPy |
 | [BigCodeBench](../benchmarks/bigcodebench.md), [BigCodeBench-Hard](../benchmarks/bigcodebench_hard.md) | Supported | Requires a suitable evaluation template |
 | [DS-1000](../benchmarks/ds1000.md), [SciCode](../benchmarks/scicode.md) | Requires an image or template with the dependencies and test data | Requires a suitable evaluation template |
 
-For custom environments, prepare dependencies, test data and working directories as described in each benchmark's documentation. Use [native agent mode](agent/native.md) for agent evaluations.
+For custom environments, prepare dependencies, test data and working directories as described in each benchmark's documentation. WideSearch also needs network access to search services and target websites. Use [native agent mode](agent/native.md) for agent evaluations.
 
 [Terminal-Bench 2.0/2.1](../third_party/terminal_bench.md) can also use E2B through Harbor: install `harbor[e2b]` and set `environment_type='e2b'` in the benchmark's `extra_params`.
 
