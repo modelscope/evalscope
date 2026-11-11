@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
 
 
@@ -435,7 +436,9 @@ def _bootstrap_interval(values: List[float]) -> Tuple[float, float]:
     n = len(values)
     array = np.asarray(values, dtype=float)
     means = np.empty(_BOOTSTRAP_B, dtype=float)
-    batch_size = 250
+    # Batch size follows a memory budget (~16MB per index matrix), not a fixed count:
+    # a fixed batch would scale peak memory linearly with the subset size.
+    batch_size = max(1, 2_000_000 // max(1, n))
     start = 0
     while start < _BOOTSTRAP_B:
         count = min(batch_size, _BOOTSTRAP_B - start)
@@ -476,82 +479,73 @@ class MeanAndCI(Mean):
     that selects this aggregator, not an identity vocabulary name.
     """
 
-    def __init__(self):
+    def __init__(self, repeats: int = 1):
+        if isinstance(repeats, bool) or not isinstance(repeats, int) or repeats < 1:
+            raise ValueError('MeanAndCI requires a positive integer repeats count.')
+        if repeats > 1:
+            raise ValueError(
+                f'MeanAndCI does not support repeats={repeats}; repeated generations are not '
+                'independent samples and an item-sampling interval over them would be wrong. '
+                'Use repeats=1 (interval over the mean of generations is a different estimator) '
+                'or bayes_at_n, which models repeat groups.'
+            )
         self.name = 'mean_and_ci'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        if not scores:
-            return []
-
+        # Delegate the mean itself to Mean so the two aggregators cannot drift; the
+        # duplicate-sample_id check stays here because Mean has none.
         seen_ids: Dict[Any, None] = {}
         for score in scores:
             if score.sample_id in seen_ids:
                 raise ValueError(
                     f'Sample {score.sample_id!r} appears more than once; repeated generations are '
-                    'not independent samples and mean_and_ci does not support repeats. '
-                    'Aggregate repeats with mean_and_pass_at_k-style aggregators instead.'
+                    'not independent samples and mean_and_ci does not support repeats.'
                 )
             seen_ids[score.sample_id] = None
-            # The dataset loader gives every generation its own sample_id and marks the
-            # repeat structure on group_id/generation_index, so duplicate-ID checks alone
-            # cannot see repeats. Any repeat structure at all means the observations are
-            # not independent items — reject, this v1 aggregator is item-sampling only.
-            if score.group_id is not None or score.generation_index is not None:
-                raise ValueError(
-                    'mean_and_ci requires one independent observation per item; scores carry '
-                    f'repeat structure (group_id={score.group_id!r}, '
-                    f'generation_index={score.generation_index!r}). Repeated generations are '
-                    'not independent samples — aggregate repeats with mean_and_pass_at_k-style '
-                    'aggregators instead.'
-                )
 
         metric_values: Dict[str, List[float]] = defaultdict(list)
-        metric_sample_ids: Dict[str, List[Any]] = defaultdict(list)
         for score in scores:
             for metric_name, value in score.score.value.items():
-                metric_values[metric_name].append(value)
-                metric_sample_ids[metric_name].append(score.sample_id)
+                # Key the values by the *canonicalized* name: the rows coming back from
+                # Mean.__call__ were canonicalized by AggScore's identity validator, so
+                # a raw ambiguous key (e.g. 'score' -> 'legacy_metric') would not match.
+                canonical_name = canonicalize_producer_identity(metric_name, 'mean').name
+                metric_values[canonical_name].append(value)
 
-        aggregated_scores: List[AggScore] = []
-        for metric_name, values in metric_values.items():
-            if not values:
-                continue
-            n = len(values)
+        aggregated_scores = super().__call__(scores)
+        for entry in aggregated_scores:
+            # The emitted identity stays 'mean': Mean.__call__ stamps self.name, which is
+            # the registry selector, not the identity. Downstream consumers look up
+            # aggregation == 'mean' and must keep finding these rows.
+            entry.aggregation = 'mean'
+            values = metric_values[entry.metric_name]
+            finite_values = [v for v in values if isfinite(v)]
+            # A non-finite score would silently turn the Wilson interval into [0, 1]
+            # (max(0.0, nan) is 0.0), so the interval uses the finite subset and reports
+            # its size instead of pretending the full n is behind it.
             is_ratio = all(v in (0, 1) for v in values)
             if is_ratio:
-                ci_low, ci_high = _wilson_interval(values)
+                ci_low, ci_high = _wilson_interval(finite_values)
                 ci_method = 'wilson'
             else:
-                ci_low, ci_high = _bootstrap_interval(values)
+                ci_low, ci_high = _bootstrap_interval(finite_values)
                 ci_method = 'bootstrap'
 
             flags: List[str] = []
-            if n < _LOW_CONFIDENCE_N:
+            if len(finite_values) < _LOW_CONFIDENCE_N:
                 flags.append('low_confidence')
-            # The percentage-point width policy is meaningful only for binary proportions;
-            # applying it to a continuous metric would make the flag depend on the unit
-            # (rescaling the same scores flips it). A scale-aware continuous policy is a
-            # follow-up, not a silent reuse of this threshold.
             if is_ratio and (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
                 flags.append('wide_interval')
 
-            aggregated_scores.append(
-                AggScore(
-                    score=self.agg_func(values),
-                    metric_name=metric_name,
-                    aggregation='mean',
-                    num=n,
-                    num_correct=int(sum(values)) if is_ratio else None,
-                    ids=metric_sample_ids[metric_name],
-                    metadata={
-                        'ci': {
-                            'low': ci_low,
-                            'high': ci_high,
-                            'level': 0.95,
-                            'method': ci_method,
-                            'flags': flags,
-                        },
-                    },
-                )
-            )
+            entry.metadata = {
+                **(entry.metadata or {}),
+                'ci': {
+                    'low': ci_low,
+                    'high': ci_high,
+                    'level': 0.95,
+                    'method': ci_method,
+                    'flags': flags,
+                    'valid_n': len(finite_values),
+                },
+            }
         return aggregated_scores

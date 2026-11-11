@@ -240,6 +240,7 @@ class DefaultDataAdapter(DataAdapter):
             # NOTE: subset_list and limit is applied here if specified
             limit = self.few_shot_num if is_fewshot else self.limit
             repeats = 1 if is_fewshot else self.repeats
+            self._validate_effective_repeats(repeats)
             dataset_dict = DatasetDict.from_dataset(
                 dataset=subset_data, subset_list=self.subset_list, limit=limit, repeats=repeats
             )
@@ -277,7 +278,10 @@ class DefaultDataAdapter(DataAdapter):
             sample_fields=self.record_to_sample,  # Custom sample conversion function
             filter_func=self.sample_filter,
             limit=self.limit if not self.reformat_subset else None,  # Limit number of samples if specified
-            repeats=1 if self.reformat_subset else self.repeats,  # Number of repetitions for each sample
+            repeats=(
+                self._validate_effective_repeats(1 if self.reformat_subset else self.repeats)
+                or (1 if self.reformat_subset else self.repeats)
+            ),  # Number of repetitions for each sample
             shuffle=self.shuffle,  # Shuffle dataset if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             seed=self.seed,
@@ -895,6 +899,21 @@ class DefaultDataAdapter(DataAdapter):
             raise ValueError('Bayes@N requires an adapter using the default configured aggregation.')
         return result
 
+    def _validate_effective_repeats(self, effective_repeats: int) -> None:
+        """Reject mean_and_ci configurations whose effective repeat count exceeds one.
+
+        Called at the two points where the *effective* repeats are decided (fewshot and
+        reformatted-subset paths force 1; the plain path uses the configured value), so an
+        unsupported configuration fails before any dataset download or inference.
+        """
+        if self.aggregation == 'mean_and_ci' and effective_repeats > 1:
+            raise ValueError(
+                f'aggregation "mean_and_ci" does not support repeats={effective_repeats}; repeated '
+                'generations are not independent samples. Use repeats=1 with mean_and_ci, compute the '
+                'interval over the mean of repeated generations, or use bayes_at_n which models repeat '
+                'groups.'
+            )
+
     @override
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
@@ -912,16 +931,13 @@ class DefaultDataAdapter(DataAdapter):
         """
         # Get the configured aggregation implementation
         aggregate_cls = get_aggregation(self.aggregation)
-        if self.aggregation == 'mean_and_ci' and self.repeats > 1:
-            # Reject at the configuration boundary: with repeats the loader emits one
-            # observation per generation, which the item-sampling interval cannot treat
-            # as independent samples.
-            raise ValueError(
-                f'aggregation "mean_and_ci" does not support repeats={self.repeats}; repeated '
-                'generations are not independent samples. Use repeats=1 or an '
-                'aggregation that models repeat groups (bayes_at_n).'
-            )
-        aggregator = aggregate_cls(repeats=self.repeats) if self.aggregation == 'bayes_at_n' else aggregate_cls()
+        # mean_and_ci, like bayes_at_n, is configured with the repeat count: it rejects
+        # repeats>1 itself (item-sampling intervals need independent observations).
+        aggregator = (
+            aggregate_cls(repeats=self.repeats)
+            if self.aggregation in ('bayes_at_n', 'mean_and_ci')
+            else aggregate_cls()
+        )
 
         # Compute aggregated scores
         agg_scores = aggregator(sample_scores)

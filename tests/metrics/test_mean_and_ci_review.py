@@ -26,11 +26,20 @@ def repeat_scores(questions: int, repeats: int):
     return scores
 
 
-def test_real_repeat_loading_is_rejected():
-    # 2 questions x 100 repeats: duplicate-ID checks alone would accept 200
-    # observations; the group/generation structure must be rejected instead.
-    with pytest.raises(ValueError, match='repeat structure'):
-        MeanAndCI()(repeat_scores(questions=2, repeats=100))
+def test_real_repeat_count_is_rejected_at_construction():
+    # Config-driven (review: do not infer repeats from data shape — a dataset where one
+    # item yields several scores is legitimate). The repeat count is known at
+    # construction, same as bayes_at_n.
+    with pytest.raises(ValueError, match='does not support repeats'):
+        MeanAndCI(repeats=100)
+    with pytest.raises(ValueError, match='does not support repeats'):
+        MeanAndCI(repeats=2)
+
+    # hand-built repeat-shaped data must still be caught by the duplicate-id check
+    with pytest.raises(ValueError, match='more than once'):
+        MeanAndCI()(
+            [SampleScore(sample_id='dup', score=Score(value={'accuracy': 1.0})) for _ in range(2)]
+        )
 
 
 def test_plain_scores_without_repeat_structure_pass():
@@ -66,13 +75,13 @@ def test_string_category_is_not_split_into_characters():
 def test_width_flag_is_unit_invariant():
     # 100 alternating 3/4 scores: bootstrap interval [3.4, 3.6] must NOT be flagged.
     values = [3.0 if i % 2 == 0 else 4.0 for i in range(100)]
-    scores = [SampleScore(sample_id=f's-{i}', score=Score(value={'score': v})) for i, v in enumerate(values)]
+    scores = [SampleScore(sample_id=f's-{i}', score=Score(value={'judge_score': v})) for i, v in enumerate(values)]
     ci = MeanAndCI()(scores)[0]
     assert (ci.metadata['ci']['flags']) == [] or 'wide_interval' not in ci.metadata['ci']['flags']
 
     # dividing by 1000 must not change the assessment either
     scaled = [v / 1000 for v in values]
-    scores_scaled = [SampleScore(sample_id=f's-{i}', score=Score(value={'score': v})) for i, v in enumerate(scaled)]
+    scores_scaled = [SampleScore(sample_id=f's-{i}', score=Score(value={'judge_score': v})) for i, v in enumerate(scaled)]
     ci_scaled = MeanAndCI()(scores_scaled)[0]
     assert 'wide_interval' not in ci_scaled.metadata['ci']['flags']
 
