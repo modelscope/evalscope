@@ -50,6 +50,16 @@ class Metrics:
     # Embedding / Rerank-specific
     INPUT_TOKEN_THROUGHPUT = 'Input Throughput (tok/s)'
 
+    # Service-reliability rates (share of total requests, %). The split follows the
+    # reliability taxonomy used in performance reviews: rate limiting (429), server
+    # faults (5xx), client-side timeouts, and connection failures are counted
+    # separately because their remediation differs.
+    ERROR_RATE = 'Error Rate (%)'
+    TIMEOUT_RATE = 'Timeout Rate (%)'
+    RATE_LIMITED_RATE = '429 Rate (%)'
+    SERVER_ERROR_RATE = 'Server Error Rate (5xx, %)'
+    DISCONNECT_RATE = 'Disconnect Rate (%)'
+
     # Multi-turn specific
     AVERAGE_INPUT_TURNS_PER_REQUEST = 'Avg Turns/Request'
     AVERAGE_CACHED_PERCENT = 'KV Cache Hit Rate (%)'

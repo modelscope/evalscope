@@ -54,6 +54,10 @@ class BenchmarkData:
     generated_text: str = ''
     error: Optional[str] = None
     status_code: Optional[int] = None  # HTTP status code; set for non-200 responses
+    failure_kind: Optional[str] = None
+    # Structured failure category for requests that never produced a response:
+    # 'timeout' / 'connection' / 'client_error'. Set by the transport layer; None
+    # when the request got an HTTP response (status_code tells that story).
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
 
@@ -180,6 +184,11 @@ class MetricsAccumulator:
     # --- Request counts ---
     n_total: int = 0
     n_success: int = 0
+    n_timeouts: int = 0
+    n_rate_limited: int = 0
+    n_server_errors: int = 0
+    n_disconnections: int = 0
+    n_client_errors: int = 0
 
     # --- Wall-clock time window (private; exposed via wall_time property) ---
     _wall_start: Optional[float] = field(default=None, repr=False)
@@ -322,6 +331,21 @@ class MetricsAccumulator:
                 self.total_decoded_tokens_per_iter += data.decoded_tokens_per_iter
                 self.n_decoded_samples += 1
 
+        if not data.success:
+            # Reliability taxonomy (see perf_constants): classify by HTTP status first
+            # (429 / 5xx are server answers), then by the transport-reported kind, so a
+            # rate-limited request is never double-counted as a timeout.
+            if data.status_code == 429:
+                self.n_rate_limited += 1
+            elif data.status_code is not None and data.status_code >= 500:
+                self.n_server_errors += 1
+            elif data.failure_kind == 'timeout':
+                self.n_timeouts += 1
+            elif data.failure_kind == 'connection':
+                self.n_disconnections += 1
+            else:
+                self.n_client_errors += 1
+
         self._update_wall_time(data)
 
     def _update_wall_time(self, data: BenchmarkData) -> None:
@@ -442,12 +466,24 @@ class MetricsAccumulator:
             cache_request_coverage_percent = cache_token_coverage_percent = -1
             avg_first_turn_ttft = avg_subsequent_turn_ttft = -1
 
+        n_total = self.n_total
+        error_rate = _safe_div(self.n_failed * 100.0, n_total, default=0.0) if n_total else -1
+        timeout_rate = _safe_div(self.n_timeouts * 100.0, n_total, default=0.0) if n_total else -1
+        rate_limited_rate = _safe_div(self.n_rate_limited * 100.0, n_total, default=0.0) if n_total else -1
+        server_error_rate = _safe_div(self.n_server_errors * 100.0, n_total, default=0.0) if n_total else -1
+        disconnect_rate = _safe_div(self.n_disconnections * 100.0, n_total, default=0.0) if n_total else -1
+
         return BenchmarkMetrics(
             concurrency=self.concurrency,
             rate=self.rate,
             total_requests=self.n_total,
             succeed_requests=self.n_success,
             failed_requests=self.n_failed,
+            error_rate=error_rate,
+            timeout_rate=timeout_rate,
+            rate_limited_rate=rate_limited_rate,
+            server_error_rate=server_error_rate,
+            disconnect_rate=disconnect_rate,
             stream_requests=self.n_stream_total,
             non_stream_requests=self.n_non_stream_total,
             total_time=t,
@@ -518,6 +554,13 @@ class BenchmarkMetrics:
     stream_requests: int = 0
     non_stream_requests: int = 0
     total_time: float = 0.0
+
+    # --- Service-reliability rates (share of total requests) ---
+    error_rate: float = -1
+    timeout_rate: float = -1
+    rate_limited_rate: float = -1
+    server_error_rate: float = -1
+    disconnect_rate: float = -1
 
     # --- Latency averages ---
     avg_latency: float = -1
@@ -594,6 +637,17 @@ class BenchmarkMetrics:
             Metrics.FAILED_REQUESTS: self.failed_requests,
             Metrics.STREAM_REQUESTS: self.stream_requests,
             Metrics.NON_STREAM_REQUESTS: self.non_stream_requests,
+            Metrics.ERROR_RATE: round(self.error_rate, 2) if self.error_rate >= 0 else self.error_rate,
+            Metrics.TIMEOUT_RATE: round(self.timeout_rate, 2) if self.timeout_rate >= 0 else self.timeout_rate,
+            Metrics.RATE_LIMITED_RATE: (
+                round(self.rate_limited_rate, 2) if self.rate_limited_rate >= 0 else self.rate_limited_rate
+            ),
+            Metrics.SERVER_ERROR_RATE: (
+                round(self.server_error_rate, 2) if self.server_error_rate >= 0 else self.server_error_rate
+            ),
+            Metrics.DISCONNECT_RATE: (
+                round(self.disconnect_rate, 2) if self.disconnect_rate >= 0 else self.disconnect_rate
+            ),
             Metrics.REQUEST_THROUGHPUT: round(self.qps, r),
             Metrics.AVERAGE_LATENCY: round(self.avg_latency, r),
             Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, r),

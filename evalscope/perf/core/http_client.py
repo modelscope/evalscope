@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import aiohttp
 
@@ -103,18 +103,18 @@ class AioHttpClient:
             logger.error(
                 f'TimeoutError: total_timeout: {self.total_timeout}, connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
-            return self._failure_record(body, str(e), start_time)
+            return self._failure_record(body, str(e), start_time, failure_kind='timeout')
         except aiohttp.ClientConnectionError as e:
             logger.error(e)
-            return self._failure_record(body, str(e), start_time)
+            return self._failure_record(body, str(e), start_time, failure_kind='connection')
         except Exception as e:
             if propagate_unexpected_errors:
                 raise
             logger.error(e)
-            return self._failure_record(body, str(e), start_time)
+            return self._failure_record(body, str(e), start_time, failure_kind='client_error')
 
     @staticmethod
-    def _failure_record(body, error: str, start_time: float) -> BenchmarkData:
+    def _failure_record(body, error: str, start_time: float, failure_kind: Optional[str] = None) -> BenchmarkData:
         """Build a BenchmarkData for a request that never produced a response.
 
         The start time is captured before request preparation so failures cover
@@ -124,6 +124,7 @@ class AioHttpClient:
         return BenchmarkData(
             success=False,
             error=error,
+            failure_kind=failure_kind,
             is_stream=is_stream_body(body),
             start_time=start_time,
             completed_time=time.perf_counter(),

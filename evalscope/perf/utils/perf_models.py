@@ -46,6 +46,11 @@ class BenchmarkSummary(BaseModel):
     total_requests: int = Field(0, alias=Metrics.TOTAL_REQUESTS)
     succeed_requests: int = Field(0, alias=Metrics.SUCCEED_REQUESTS)
     failed_requests: int = Field(0, alias=Metrics.FAILED_REQUESTS)
+    error_rate: float = Field(0.0, alias=Metrics.ERROR_RATE)
+    timeout_rate: float = Field(0.0, alias=Metrics.TIMEOUT_RATE)
+    rate_limited_rate: float = Field(0.0, alias=Metrics.RATE_LIMITED_RATE)
+    server_error_rate: float = Field(0.0, alias=Metrics.SERVER_ERROR_RATE)
+    disconnect_rate: float = Field(0.0, alias=Metrics.DISCONNECT_RATE)
     stream_requests: int = Field(0, alias=Metrics.STREAM_REQUESTS)
     non_stream_requests: int = Field(0, alias=Metrics.NON_STREAM_REQUESTS)
     request_throughput: float = Field(0.0, alias=Metrics.REQUEST_THROUGHPUT)
@@ -136,7 +141,14 @@ class BenchmarkSummary(BaseModel):
         rows.append((Metrics.NUMBER_OF_CONCURRENCY, _fmt(Metrics.NUMBER_OF_CONCURRENCY, self.concurrency)))
         rows.append((Metrics.REQUEST_RATE, _fmt(Metrics.REQUEST_RATE, self.request_rate)))
         rows.append(
-            ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}')
+            ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}'),
+        )
+        rows.append(
+            (
+                'Error / Timeout / 429 / 5xx / Disconnect (%)',
+                f'{self.error_rate} / {self.timeout_rate} / {self.rate_limited_rate} / '
+                f'{self.server_error_rate} / {self.disconnect_rate}',
+            )
         )
         if self.stream_requests > 0 and self.non_stream_requests > 0:
             rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
