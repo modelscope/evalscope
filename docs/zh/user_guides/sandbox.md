@@ -129,7 +129,7 @@ manager_config = {
 }
 ```
 
-上例使用杭州地域。切换地域时，请同时修改 `api_url` 和 `domain`，并确认 `E2B_API_KEY` 属于当前服务商。旧版 `<id>.<region>.e2b.fc.aliyuncs.com` 域名也可使用。
+上例使用杭州地域。切换地域时，请同时修改 `api_url` 和 `domain`，并确认 `E2B_API_KEY` 属于当前服务商。这里也兼容阿里云早期的 `*.e2b.fc.aliyuncs.com` 域名格式；新配置使用上面的 `sandbox.aliyuncs.com` 地址即可。
 
 ### 服务地址与兼容性
 
@@ -160,7 +160,11 @@ SWE-bench 单镜像实测：新建模板约需 10–22 秒，复用后约 1–2 
 
 以下基准暂不支持 E2B：`gaia`、`officeqa`、`job_bench`、`gdpval`、`skillsbench`、`cybench`。请选择 Docker。
 
-Agent 评测目前仅支持[原生 Agent](agent/native.md)，不支持[外部 Agent](agent/bridge.md)。通过 Harbor/Pier 运行的 Terminal-Bench、DeepSWE 和 AutomationBench 使用各自的执行环境，不能通过 `sandbox.engine` 切换到 E2B。
+通过本页 `sandbox` 配置运行 Agent 时，目前仅支持[原生 Agent](agent/native.md)，不支持[外部 Agent](agent/bridge.md)。以下基准的运行环境另行配置：
+
+- [Terminal-Bench](../third_party/terminal_bench.md) 通过 Harbor 运行。安装 `harbor[e2b]` 并设置 `E2B_API_KEY` 后，可在 `dataset_args.<基准名>.extra_params` 中设置 `environment_type='e2b'` 来选择 Harbor 的 E2B 后端。该后端不使用本页的 `sandbox.manager_config` 和镜像映射，具体任务的资源要求见对应基准文档。
+- [DeepSWE](../benchmarks/deep_swe.md) 当前适配器使用 Pier 的 Docker 环境。
+- [AutomationBench](../benchmarks/automation_bench.md) 使用官方 Python 运行时，不经过本页的沙箱引擎。
 
 ### 调整并发和运行时长
 

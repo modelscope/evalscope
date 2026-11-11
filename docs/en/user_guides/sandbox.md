@@ -129,7 +129,7 @@ manager_config = {
 }
 ```
 
-This configuration uses Hangzhou. To change regions, update both `api_url` and `domain`, and make sure `E2B_API_KEY` belongs to the selected provider. Legacy domains such as `<id>.<region>.e2b.fc.aliyuncs.com` are also supported.
+This configuration uses Hangzhou. To change regions, update both `api_url` and `domain`, and make sure `E2B_API_KEY` belongs to the selected provider. EvalScope also accepts Aliyun's older service-domain format, `*.e2b.fc.aliyuncs.com`; use the `sandbox.aliyuncs.com` endpoints above for new configurations.
 
 ### Endpoints and Compatibility
 
@@ -160,7 +160,11 @@ E2B support for other code evaluation benchmarks depends on the languages, tools
 
 The following benchmarks do not currently support E2B: `gaia`, `officeqa`, `job_bench`, `gdpval`, `skillsbench` and `cybench`. Use Docker instead.
 
-Agent evaluations currently support [native agents](agent/native.md), but not [external agents](agent/bridge.md). Terminal-Bench, DeepSWE and AutomationBench runs managed by Harbor/Pier use their own execution environments; `sandbox.engine` cannot switch them to E2B.
+Agent runs using this page's `sandbox` configuration currently support [native agents](agent/native.md), but not [external agents](agent/bridge.md). The following benchmarks configure their execution environments separately:
+
+- [Terminal-Bench](../third_party/terminal_bench.md) runs through Harbor. Install `harbor[e2b]`, set `E2B_API_KEY`, then select Harbor's E2B backend by setting `environment_type='e2b'` in `dataset_args.<benchmark>.extra_params`. That backend does not use this page's `sandbox.manager_config` or image mapping. See the corresponding benchmark documentation for task resource requirements.
+- [DeepSWE](../benchmarks/deep_swe.md) currently uses Pier's Docker environment in its EvalScope adapter.
+- [AutomationBench](../benchmarks/automation_bench.md) uses its official Python runtime, without going through the sandbox engine described here.
 
 ### Set Concurrency and Sandbox Lifetime
 
