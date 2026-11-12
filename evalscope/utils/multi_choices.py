@@ -153,9 +153,10 @@ def format_example(
 
 
 # The answer marker itself.  Locating markers separately from the label keeps a greedy label
-# pattern from swallowing the next marker, which would hide it from the scan below.
-_ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*:\s*\**\s*')
-_ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
+# pattern from swallowing the next marker, which would hide it from the scan below.  Emphasis may
+# close before the colon ('**Answer**: B'), as the simple-evals parser accepts by stripping '**'.
+_ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*\**\s*:\s*\**\s*')
+_ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*\**\s*[:：]\s*\**\s*')
 
 # A label the model may wrap the way the options are printed, optionally listing several labels:
 # '(A)', '[A]', '(A, C)', '(A/C)'.  Only label-shaped content is accepted, so bracketed prose
@@ -181,22 +182,25 @@ _CLOSING_EMPHASIS_RE = re.compile(r'\*+[\s.,;:!?)\]]*$')
 
 
 def extract_answer_line(text: str) -> Optional[str]:
-    """Text after the last 'ANSWER:' marker, up to the end of its line, without bold markers.
+    """Text after the last 'ANSWER:' marker carrying a value, up to its line end, without bold markers.
 
     The marker is matched like the multiple-choice parser does, in any case and inside or around
-    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Punctuation after a closing
-    bold run is dropped with it ('**ANSWER: 45**.' -> '45'); unbolded values keep theirs ('ANSWER: 3.5.').
-    Returns None without a marker.
+    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', '**Answer**: 45', 'Answer: 45').  Punctuation
+    after a closing bold run is dropped with it ('**ANSWER: 45**.' -> '45'); unbolded values keep theirs
+    ('ANSWER: 3.5.').
+    Returns None without a marker carrying a value.
     """
     markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
-    if not markers:
-        return None
-    marker = markers[-1]
-    value = text[marker.end() :].split('\n', 1)[0].strip()
-    has_opening_emphasis = marker.group(0).rstrip().endswith('*') or text[: marker.start()].endswith('*')
-    if has_opening_emphasis:
-        value = _CLOSING_EMPHASIS_RE.sub('', value)
-    return value.strip('*').strip()
+    for marker in reversed(markers):
+        value = text[marker.end() :].split('\n', 1)[0].strip()
+        has_opening_emphasis = marker.group(0).rstrip().endswith('*') or text[: marker.start()].endswith('*')
+        if has_opening_emphasis:
+            value = _CLOSING_EMPHASIS_RE.sub('', value)
+        value = value.strip('*').strip()
+        # An echoed prompt placeholder must not hide an earlier real answer.
+        if value and not value.upper().startswith(('[LETTER]', '[ANSWER]')):
+            return value
+    return None
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
