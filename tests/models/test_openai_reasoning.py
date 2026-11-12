@@ -166,6 +166,13 @@ def _sampling_config() -> GenerateConfig:
     return GenerateConfig(max_tokens=256, temperature=0.0, top_p=0.9)
 
 
+@pytest.fixture
+def warning_messages(monkeypatch):
+    messages = []
+    monkeypatch.setattr('evalscope.models.openai_compatible.logger.warning', messages.append)
+    return messages
+
+
 def test_reasoning_model_on_openai_endpoint_uses_max_completion_tokens():
     params = openai_completion_params('o3-mini', _sampling_config(), tools=False, base_url=_OPENAI_BASE_URL)
     assert params['max_completion_tokens'] == 256
@@ -224,7 +231,52 @@ def test_model_api_builds_reasoning_safe_defaults_for_openai():
 
     api = OpenAICompatibleAPI(model_name='o3-mini', base_url=_OPENAI_BASE_URL, api_key='sk-test')
     params = api.completion_params(_sampling_config(), tools=False)
+    api.validate_request_params(params)
     assert params['max_completion_tokens'] == 256
     assert 'max_tokens' not in params
     assert 'temperature' not in params
     assert 'top_p' not in params
+
+
+def test_model_api_warns_once_per_omitted_sampling_param(warning_messages):
+    from evalscope.models.openai_compatible import OpenAICompatibleAPI
+
+    api = OpenAICompatibleAPI(model_name='o3-mini', base_url=_OPENAI_BASE_URL, api_key='sk-test')
+    api.completion_params(GenerateConfig(temperature=0.0), tools=False)
+    api.completion_params(GenerateConfig(temperature=0.0), tools=False)
+    api.completion_params(GenerateConfig(top_p=0.9), tools=False)
+
+    assert sum('temperature' in message for message in warning_messages) == 1
+    assert sum('top_p' in message for message in warning_messages) == 1
+
+
+def test_responses_api_warns_once_for_omitted_sampling_params(warning_messages):
+    from evalscope.models.openai_responses import OpenAIResponsesAPI
+
+    api = OpenAIResponsesAPI(model_name='gpt-5.1', base_url=_OPENAI_BASE_URL, api_key='sk-test')
+    api.response_params(_sampling_config(), tools=False)
+    api.response_params(_sampling_config(), tools=False)
+
+    assert len(warning_messages) == 1
+    assert 'temperature' in warning_messages[0]
+    assert 'top_p' in warning_messages[0]
+
+
+def test_responses_api_builds_reasoning_safe_request():
+    from evalscope.models.openai_responses import OpenAIResponsesAPI
+
+    api = OpenAIResponsesAPI(model_name='gpt-5.1', base_url=_OPENAI_BASE_URL, api_key='sk-test')
+    request, _, _ = api._build_request([], tools=[], tool_choice='auto', config=_sampling_config())
+    assert request['max_output_tokens'] == 256
+    assert 'max_tokens' not in request
+    assert 'temperature' not in request
+    assert 'top_p' not in request
+
+
+@pytest.mark.parametrize('model,base_url', [('o3-mini', 'https://vllm.internal/v1'), ('gpt-4o', _OPENAI_BASE_URL)])
+def test_model_api_does_not_warn_when_sampling_params_are_kept(warning_messages, model, base_url):
+    from evalscope.models.openai_compatible import OpenAICompatibleAPI
+
+    api = OpenAICompatibleAPI(model_name=model, base_url=base_url, api_key='sk-test')
+    api.completion_params(_sampling_config(), tools=False)
+    assert not warning_messages
