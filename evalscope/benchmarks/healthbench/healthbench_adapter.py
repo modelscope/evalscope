@@ -35,6 +35,8 @@ Your job is to look at a conversation and a rubric item, and score the last turn
 <<rubric_item>>
 
 # Instructions
+Interpret the completion exactly as written, including its conditions and qualifiers. Recommendations for different conditions are not contradictory merely because their values differ. Do not remove a condition when assessing a claim. Base a failed criterion on an actual error or omission in the completion, rather than on an invented claim or uncertainty about a fact.
+
 Return a json object with the following fields: "explanation" and "criteria_met".
 - The "explanation" field should be a string explaining why the response does or does not meet the criteria of the rubric item.
 - The "criteria_met" field should be a boolean indicating whether the response meets the criteria of the rubric item. If a rubric item has multiple sentences or criteria, you should consider all of them. If any of the criteria is not met, the answer should be false. Only return true is all of the criteria are met.

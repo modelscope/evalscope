@@ -7,32 +7,15 @@ import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser, ContentText
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.mt_bench.mt_bench_adapter import MTBenchAdapter
 from evalscope.benchmarks.prbench.prbench_adapter import PRBenchAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeScoreType, ScoreStatus
-from evalscope.metrics.judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
-
-
-class ScriptedJudge:
-    score_type = JudgeScoreType.PATTERN
-    score_mapping = {'A': 1.0, 'B': 0.0}
-    prompt_template = DEFAULT_PROMPT_TEMPLATE
-    system_prompt = None
-    build_prompt = LLMJudge.build_prompt
-
-    def __init__(self, replies: List[str]) -> None:
-        self.replies = replies
-        self.judge_id = self.model_id = 'scripted'
-        self.calls: List[Any] = []
-
-    def generate(self, messages):
-        self.calls.append(messages)
-        reply = self.replies[min(len(self.calls) - 1, len(self.replies) - 1)]
-        return ModelOutput.from_content('scripted', [ContentText(text=reply)])
+from evalscope.metrics.judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE
+from tests.api.judge.helpers import ScriptedJudge, make_state
 
 
 class TransportFailingJudge(ScriptedJudge):
@@ -44,9 +27,33 @@ class TransportFailingJudge(ScriptedJudge):
         raise RuntimeError('judge transport unavailable')
 
 
-def make_state(prediction: str, target: str) -> TaskState:
-    sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
-    return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+@pytest.mark.parametrize(('judge', 'expected'), [
+    (ScriptedJudge(['{"explanation": "The condition is preserved.", "criteria_met": true}']), 1.0),
+    (ScriptedJudge(['{"explanation": "The condition is omitted.", "criteria_met": false}']), 0.0),
+    (ScriptedJudge(['not JSON']), None),
+    (ScriptedJudge(['[ERROR] judge transport unavailable']), None),
+    (TransportFailingJudge(), None),
+])
+def test_health_bench_contract_preserves_zero_verdicts_and_excludes_invalid_replies(
+    judge: ScriptedJudge, expected: float | None,
+) -> None:
+    config = TaskConfig(model='m', datasets=['health_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('health_bench', config)
+    adapter.llm_judge = judge
+    state = make_state('The outcomes apply under different conditions.', '')
+    state.metadata = {
+        'prompt': [{'role': 'user', 'content': 'Explain the conditional recommendations.'}],
+        'rubrics': [{'criterion': 'Preserves each condition.', 'points': 5, 'tags': ['axis:accuracy']}],
+    }
+
+    score = adapter.score_with_judge_contracts(state.output.completion, state.output.completion, '', state)
+
+    assert len(judge.calls) == 1
+    if expected is None:
+        assert score.status is ScoreStatus.EXCLUDED and score.value == {}
+    else:
+        assert score.status is ScoreStatus.SUCCESS
+        assert score.value == {'overall_score': expected, 'accuracy': expected}
 
 
 @pytest.mark.parametrize('answers', [[], [''], [' '], [r'\frac{'], ['1', r'\frac{']])

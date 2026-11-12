@@ -253,6 +253,26 @@ automatically scored 0, so `Num` may be lower than the sample count; an explicit
 available. A custom `prompt_template` should state the grading criteria only; the reply format is appended automatically.
 ```
 
+For judge APIs that support [JSON mode](https://help.aliyun.com/zh/model-studio/qwen-structured-output),
+you can request valid JSON through the judge model's generation settings:
+
+```python
+judge = {
+    'strategy': 'llm',
+    'models': [{
+        'model_id': 'YOUR_JUDGE_MODEL',
+        # Keep the judge's API URL, credentials, and other generation settings here.
+        'generation_config': {
+            'extra_body': {'response_format': {'type': 'json_object'}},
+        },
+    }],
+}
+```
+
+Set this on `judge.models`, rather than on the evaluated model. This option depends on the API provider and is
+not enabled automatically. EvalScope still validates the schema and excludes invalid replies; valid JSON alone
+does not establish that the judge's assessment is correct.
+
 ```python
 import os
 from evalscope import TaskConfig, run_task

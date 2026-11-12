@@ -318,9 +318,9 @@ class WideSearchSession:
         row_scores = inner_scores.min(axis=1)
         true_positive_rows = float(row_scores.sum())
         true_positive_items = float(inner_scores.sum().sum())
-        _, response_df, _ = self.frames(column_map, primary_key_maps)
+        answer_df, response_df, _ = self.frames(column_map, primary_key_maps)
         prediction_rows = len(response_df) if response_df is not None else 0
-        gold_rows = len(self.answer_df)
+        gold_rows = len(answer_df) if answer_df is not None else 0
         row_precision = true_positive_rows / prediction_rows if prediction_rows else 0.0
         row_recall = true_positive_rows / gold_rows if gold_rows else 0.0
         item_precision = (

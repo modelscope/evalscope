@@ -21,7 +21,7 @@ from evalscope.benchmarks.wide_search.utils import EVAL_COLUMN_PROMPT
 from evalscope.benchmarks.wide_search.wide_search_adapter import _column_score_model
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
-from tests.api.judge.test_migrated_adapters import ScriptedJudge, make_state
+from tests.api.judge.helpers import ScriptedJudge, make_state
 
 
 def test_deepsearch_prompt_example_is_a_complete_schema_valid_object() -> None:
@@ -114,3 +114,25 @@ def test_cl_bench_rationale_is_requested_inside_the_json_object() -> None:
     prompt = '\n'.join(message.text for message in judge.calls[0])
     assert 'JSON Grading Rationale field' in prompt
     assert 'Do not write analysis outside the JSON object' in prompt
+    assert 'must be a list of strings, not a list of objects' in prompt
+
+
+def test_plawbench_missing_dataset_section_is_excluded_before_reduction() -> None:
+    config = TaskConfig(model='m', datasets=['plawbench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('plawbench', config)
+    judge = ScriptedJudge([json.dumps({'score_details': {'conclusion': {'total_points': 5}}})])
+    adapter.llm_judge = judge
+    state = make_state('Response', '')
+    state.metadata = {
+        'judge_type': 'case_analysis', 'prompt': 'Question',
+        'rubrics': json.dumps([{'tags': '结论得分', 'points': 10}]), 'max_points': 10,
+    }
+
+    score = adapter.score_with_judge_contracts('Response', 'Response', '', state)
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.judge_summary.failures == {'parse_error': 1}
+    assert len(judge.calls) == 1
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'JSON Schema:' in prompt and '结论' in prompt

@@ -1,4 +1,5 @@
 """The judge output contract: accept one complete JSON object without recovering fragments."""
+import json
 from typing import Literal
 
 import pytest
@@ -275,6 +276,15 @@ def test_accepts_an_escaped_quote_inside_a_string_field():
     result = GRADE.parse('{"reasoning": "the answer is \\"42\\"", "verdict": "A"}')
 
     assert result.value.verdict == 'A'
+
+
+def test_reasoning_with_math_quotes_and_newlines_must_be_json_escaped() -> None:
+    reasoning = 'Compare "x" with ' + r'\boxed{902}' + '\nThe answers match.'
+
+    result = GRADE.parse(json.dumps({'reasoning': reasoning, 'verdict': 'A'}))
+
+    assert result.ok and result.value.reasoning == reasoning
+    assert not GRADE.parse('{"reasoning": "' + reasoning + '", "verdict": "A"}').ok
 
 
 def test_rejects_prose_holding_two_objects():

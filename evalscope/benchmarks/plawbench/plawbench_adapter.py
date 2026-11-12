@@ -2,7 +2,7 @@
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -20,6 +20,7 @@ from .utils import (
     JUDGE_TYPE_CASE_ANALYSIS,
     JUDGE_TYPE_LEGAL_QA,
     JUDGE_USER_PROMPTS,
+    RUBRIC_TAG_TO_JUDGE_KEY,
     TASK_INSTRUCTIONS,
     USER_PROMPTS,
     build_conversation,
@@ -170,6 +171,21 @@ class PLawBenchAdapter(DefaultDataAdapter):
         metadata = context.task_state.metadata or {}
         judge_type = metadata['judge_type']
         schema = CaseAnalysisGrade if judge_type == JUDGE_TYPE_CASE_ANALYSIS else TotalPointsGrade
+        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
+            sections = parse_rubric_sections(metadata['rubrics'])
+            section_names = dict.fromkeys(
+                RUBRIC_TAG_TO_JUDGE_KEY[section['tags']]
+                for section in sections
+                if section.get('tags') in RUBRIC_TAG_TO_JUDGE_KEY
+            )
+            details_schema = create_model(
+                'CaseAnalysisScoreDetails', **{name: (SectionScore, ...) for name in section_names}
+            )
+            schema = create_model(
+                'CaseAnalysisGrade',
+                __base__=CaseAnalysisGrade,
+                score_details=(details_schema, Field(description='Use the exact Chinese section names in the schema.')),
+            )
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             current_metadata = judge_context.task_state.metadata or {}
@@ -186,7 +202,12 @@ class PLawBenchAdapter(DefaultDataAdapter):
             return JudgeRequest(
                 messages=[
                     ChatMessageSystem(content=system_prompt),
-                    ChatMessageUser(content=user_prompt + case.output_contract.instruction()),
+                    ChatMessageUser(
+                        content=user_prompt
+                        + case.output_contract.instruction()
+                        + '\n\nJSON Schema:\n'
+                        + json.dumps(case.output_contract.schema_model.model_json_schema(), ensure_ascii=False)
+                    ),
                 ]
             )
 
