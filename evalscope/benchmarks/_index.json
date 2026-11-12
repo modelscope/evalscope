@@ -56,6 +56,7 @@
  "chinese_simpleqa": "evalscope.benchmarks.chinese_simple_qa.csimple_qa_adapter",
  "cl_bench": "evalscope.benchmarks.cl_bench.cl_bench_adapter",
  "claw_eval": "evalscope.benchmarks.claw_eval.claw_eval_adapter",
+ "cluewsc": "evalscope.benchmarks.cluewsc.cluewsc_adapter",
  "cmath": "evalscope.benchmarks.cmath.cmath_adapter",
  "cmmlu": "evalscope.benchmarks.cmmlu.cmmlu_adapter",
  "cmmmu": "evalscope.benchmarks.cmmmu.cmmmu_adapter",
