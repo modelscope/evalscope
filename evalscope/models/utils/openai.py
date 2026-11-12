@@ -6,6 +6,7 @@ from collections import defaultdict
 from collections.abc import AsyncIterable, Iterable
 from copy import copy
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from urllib.parse import urlsplit
 
 from openai import APIStatusError, OpenAIError
 from openai.types.chat import (
@@ -273,8 +274,40 @@ def openai_chat_messages(
     return [openai_chat_message(message, system_role, reasoning_format, base_url=base_url) for message in messages]
 
 
-def openai_completion_params(model: str, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
+_OPENAI_REASONING_MODEL_PATTERN = re.compile(r'^(?:o[1-9](?:-|$)|gpt-[5-9])')
+
+
+def is_openai_reasoning_model(model: str) -> bool:
+    """Return True when the model belongs to an OpenAI reasoning family (o-series, gpt-5 or later)."""
+    name = model.rsplit('/', 1)[-1].strip().lower()
+    return _OPENAI_REASONING_MODEL_PATTERN.match(name) is not None
+
+
+def is_openai_official_endpoint(base_url: Optional[str]) -> bool:
+    """Return True when ``base_url`` points at OpenAI's own API host."""
+    if not base_url:
+        return False
+    return urlsplit(base_url).hostname == 'api.openai.com'
+
+
+def _uses_openai_reasoning_defaults(model: str, base_url: Optional[str]) -> bool:
+    """True when the request goes to api.openai.com for a reasoning model.
+
+    Those models reject ``max_tokens`` (they take ``max_completion_tokens``) and reject a
+    ``temperature`` other than 1, so the sampling parameters have to be left out. Other
+    OpenAI-compatible endpoints keep the historical parameters.
+    """
+    return is_openai_official_endpoint(base_url) and is_openai_reasoning_model(model)
+
+
+def openai_completion_params(
+    model: str,
+    config: GenerateConfig,
+    tools: bool,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
     params: Dict[str, Any] = dict(model=model)
+    openai_reasoning = _uses_openai_reasoning_defaults(model, base_url)
     # handle stream option
     if config.stream is not None:
         params['stream'] = config.stream
@@ -283,7 +316,10 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
     if config.timeout is not None:
         params['timeout'] = config.timeout
     if config.max_tokens is not None:
-        params['max_tokens'] = config.max_tokens
+        if openai_reasoning:
+            params['max_completion_tokens'] = config.max_tokens
+        else:
+            params['max_tokens'] = config.max_tokens
     if config.frequency_penalty is not None:
         params['frequency_penalty'] = config.frequency_penalty
     if config.stop_seqs is not None:
@@ -296,9 +332,9 @@ def openai_completion_params(model: str, config: GenerateConfig, tools: bool) ->
         params['logit_bias'] = config.logit_bias
     if config.seed is not None:
         params['seed'] = config.seed
-    if config.temperature is not None:
+    if config.temperature is not None and not openai_reasoning:
         params['temperature'] = config.temperature
-    if config.top_p is not None:
+    if config.top_p is not None and not openai_reasoning:
         params['top_p'] = config.top_p
     if config.top_k is not None:
         params['top_k'] = config.top_k
