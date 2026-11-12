@@ -59,18 +59,17 @@ def str_to_chat_messages(messages_str: str) -> List[ChatMessage]:
 
 
 def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> Optional[int]:
-    """Return bin index for a total token count using OPENAI_MRCR_BINS.
-    First and last bins inclusive both ends, middle bins left-inclusive right-exclusive.
+    """Return the official MRCR bin for a total token count.
+
+    The first bin is inclusive at both ends; subsequent bins are left-exclusive and right-inclusive.
     Counts outside all ranges have no bin.
     """
-    last = len(bins) - 1
     for i, (left, right) in enumerate(bins):
-        if i == 0 or i == last:
+        if i == 0:
             if left <= total_tokens <= right:
                 return i
-        else:
-            if left <= total_tokens < right:
-                return i
+        elif left < total_tokens <= right:
+            return i
     return None
 
 

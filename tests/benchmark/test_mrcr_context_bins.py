@@ -42,10 +42,11 @@ def adapter(monkeypatch: pytest.MonkeyPatch) -> OpenAIMRCRAdapter:
 
 @pytest.mark.parametrize(('tokens', 'expected'), [
     (0, None), (4095, None), (4096, 0), (8191, 0), (8192, 0), (8193, 1),
-    (16383, 1), (16384, 2), (32768, 3), (65536, 4), (131072, 5), (262144, 6),
-    (524288, 7), (1048576, 7), (1048577, None), (2097152, None),
+    (16383, 1), (16384, 1), (16385, 2), (32768, 2), (32769, 3), (65536, 3),
+    (65537, 4), (131072, 4), (131073, 5), (262144, 5), (262145, 6),
+    (524288, 6), (524289, 7), (1048576, 7), (1048577, None), (2097152, None),
 ])
-def test_bucket_boundaries_preserve_existing_in_range_policy(tokens: int, expected: int | None) -> None:
+def test_bucket_boundaries_match_official_card(tokens: int, expected: int | None) -> None:
     assert bin_index_for(tokens) == expected
 
 
@@ -87,7 +88,7 @@ def test_missing_or_unknown_bin_does_not_drop_a_scored_sample(adapter: OpenAIMRC
     assert adapter.aggregate_scores([]) == []
 
 
-@pytest.mark.parametrize(('tokens', 'bounds'), [(100, None), (2097152, None), (5001, (4096, 8192)), (16384, (16384, 32768))])
+@pytest.mark.parametrize(('tokens', 'bounds'), [(100, None), (2097152, None), (5001, (4096, 8192)), (16384, (8192, 16384))])
 def test_rereview_repairs_legacy_prediction_bin_and_survives_concurrency(
     adapter: OpenAIMRCRAdapter, tokens: int, bounds: tuple[int, int] | None
 ) -> None:
