@@ -2499,46 +2499,11 @@
     "ReportSubset": {
       "additionalProperties": false,
       "properties": {
-        "ci_display": {
+        "ci": {
           "anyOf": [
             {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "ci_flags": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "ci_high": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "ci_low": {
-          "anyOf": [
-            {
-              "type": "number"
+              "additionalProperties": true,
+              "type": "object"
             },
             {
               "type": "null"
