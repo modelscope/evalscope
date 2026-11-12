@@ -103,6 +103,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         metric_list=list(METRIC_NAMES),
         primary_metric=MetricSelector(name='success_rate', aggregation='pass_at_k', dimensions={'scope': 'all'}),
         paper_url='https://arxiv.org/abs/2508.07999',
+        evaluation_version='v1.1',
     )
 )
 class WideSearchAdapter(AgentLoopAdapter):
@@ -242,7 +243,9 @@ class WideSearchAdapter(AgentLoopAdapter):
         session = self._session(context)
         column_map = self._mapping(completed_cases, 'column_alignment')
         if stage == 1:
-            answer_df, response_df, _ = session.frames(column_map)
+            # The returned map is applied before preprocessing, so the judge must align raw values;
+            # normalized keys such as ``mit`` never match the raw ``MIT`` they were meant to map.
+            answer_df, response_df, _ = session.frames(column_map, preprocess=False)
             if answer_df is None or response_df is None:
                 return []
             cases = []

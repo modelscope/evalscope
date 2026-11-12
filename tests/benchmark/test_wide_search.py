@@ -1,3 +1,4 @@
+import ast
 import json
 import tempfile
 import unittest
@@ -17,6 +18,7 @@ from evalscope.benchmarks.wide_search.utils import (
     aggregate_official_scores,
     date_near,
     extract_number,
+    norm_str,
     number_near,
     url_match,
 )
@@ -233,6 +235,57 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual(sample_score.sample_id, 3)
         self.assertEqual(sample_score.group_id, 2)
         self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
+
+    def test_primary_key_judge_aligns_raw_keys(self) -> None:
+        aliases = {'mit': 'massachusettsinstituteoftechnology', 'oxforduniversity': 'universityofoxford'}
+
+        def entity(value: str) -> str:
+            return aliases.get(norm_str(value), norm_str(value))
+
+        def vocabulary(prompt: str, heading: str) -> list:
+            return ast.literal_eval(prompt.split(f'{heading}\n', 1)[1].split('\n', 1)[0])
+
+        def align(messages: list) -> ModelOutput:
+            # A faithful judge: pair entries naming the same entity, keyed exactly as they were shown.
+            prompt = messages[-1].content
+            response = vocabulary(prompt, 'The vocabulary to be aligned is as follows:')
+            reference = vocabulary(prompt, 'The reference vocabulary is as follows:')
+            mapping = {
+                origin: target for origin in response for target in reference if entity(origin) == entity(target)
+            }
+            return ModelOutput.from_content(model='mock', content=json.dumps({'mapping': mapping}))
+
+        config = TaskConfig(
+            model='mock',
+            datasets=['wide_search'],
+            judge={'strategy': JudgeStrategy.LLM, 'models': {'model_id': 'mock'}},
+        )
+        adapter = get_benchmark('wide_search', config=config)
+        adapter.llm_judge = Mock(generate=Mock(side_effect=align))
+        sample = Sample(
+            input='question',
+            target='id,value\nMassachusetts Institute of Technology,one\nUniversity of Oxford,two\n',
+            metadata={
+                'instance_id': 'ws_en_001',
+                'language': 'en',
+                'evaluation': _evaluation(),
+            },
+        )
+        task_state = TaskState(
+            model='mock',
+            sample=sample,
+            output=ModelOutput.from_content(
+                model='mock', content='| id | value |\n| --- | --- |\n| MIT | one |\n| Oxford University | two |'
+            ),
+            completed=True,
+        )
+
+        sample_score = adapter.calculate_metrics(task_state)
+
+        self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
+        prompt = adapter.llm_judge.generate.call_args.args[0][-1].content
+        self.assertIn("['MIT', 'Oxford University']", prompt)
+        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.1')
 
     def test_rule_only_judge_is_rejected_before_evaluation(self) -> None:
         config = TaskConfig(
