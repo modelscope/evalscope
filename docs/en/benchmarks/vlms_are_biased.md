@@ -18,6 +18,8 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 - Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants
 - Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`
 - The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets
+- The default data is **v2**: optical-illusion target features are red and named in the questions, IDs are globally unique, and the truncated identification image is repaired
+- Both hubs are pinned to matching v2 snapshots; sample metadata preserves the v2 `ID`, the original `legacy_ID`, and the selected data version
 
 ## Evaluation Notes
 
@@ -26,7 +28,9 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 - Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization
 - Accuracy is also reported by topic, matching the official lmms-eval integration
 - `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`
-- The six official dataset splits are exposed as separate EvalScope subsets and evaluated by default; select only `main` to reproduce the paper's headline benchmark
+- The six official dataset splits are evaluated as separate EvalScope subsets by default; select only `main` for the primary counting evaluation
+- Default v2 runs use evaluation version **v1.1**. For the paper's v1 data, explicitly set `dataset_args={'vlms_are_biased': {'default_subset': 'v1-legacy', 'subset_list': ['main']}}`; these runs are labeled **v1 legacy** and use evaluation version **v1.0**. The legacy `identification` split retains the upstream truncated-image defect
+- v1 and v2 results are not directly interchangeable. Start a new output directory after changing data versions; do not use `rerun_review` to reuse predictions for changed images or prompts. Historical unpinned runs require inspection of their saved inputs/IDs to establish the data version
 - Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens
 - [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)
 
@@ -49,18 +53,18 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 | Metric | Value |
 |--------|-------|
 | Total Samples | 11,594 |
-| Prompt Length (Mean) | 90.01 chars |
-| Prompt Length (Min/Max) | 60 / 138 chars |
+| Prompt Length (Mean) | 88.3 chars |
+| Prompt Length (Min/Max) | 60 / 130 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
-| `main` | 2,784 | 91.52 | 78 | 129 |
+| `main` | 2,784 | 89.97 | 78 | 129 |
 | `identification` | 1,392 | 83.27 | 68 | 102 |
-| `withtitle` | 2,784 | 91.52 | 78 | 129 |
+| `withtitle` | 2,784 | 89.97 | 78 | 129 |
 | `original` | 458 | 85.03 | 60 | 130 |
-| `remove_background_q1q2` | 2,784 | 94.23 | 78 | 138 |
+| `remove_background_q1q2` | 2,784 | 90.19 | 78 | 125 |
 | `remove_background_q3` | 1,392 | 83.91 | 70 | 102 |
 
 **Image Statistics:**
@@ -81,13 +85,13 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 {
   "input": [
     {
-      "id": "3872fe66",
+      "id": "0d71a23a",
       "content": [
         {
-          "image": "[BASE64_IMAGE: png, ~1.9KB]"
+          "image": "[BASE64_IMAGE: png, ~1.6KB]"
         },
         {
-          "text": "Are the horizontal and vertical lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}."
+          "text": "Are the two red lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}."
         }
       ]
     }
@@ -96,7 +100,9 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
   "id": 0,
   "group_id": 0,
   "metadata": {
-    "id": "VerticalHorizontal_001_Q1_notitle_px384",
+    "id": "illusion-verticalhorizontal-001-diff0-notitle-q1-384",
+    "legacy_id": "VerticalHorizontal_001_Q1_notitle_px384",
+    "data_version": "v2",
     "topic": "Optical Illusion",
     "sub_topic": "Vertical-Horizontal illusion",
     "type_of_question": "Q1",

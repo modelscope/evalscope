@@ -3,32 +3,36 @@
 
 ## 概述
 
-VLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客观视觉问题时，是依据图像内容作答，还是依赖于记忆中的先验知识。该基准测试使用反事实图像（counterfactual images），这些图像的可见属性与常见概念相冲突，例如带有四条纹的阿迪达斯风格标志，或拥有异常腿数的动物。
+VLMs Are Biased (VLMBias) 评估视觉语言模型是依据图像中的客观视觉信息回答问题，还是依赖记忆中的先验知识。该基准使用反事实图像，其可见属性与常见概念相冲突，例如带有四条条纹的 Adidas 风格标志或腿数异常的动物。
 
 ## 任务描述
 
-- **任务类型**：自由形式的视觉问答（计数与识别）
-- **输入**：一张反事实图像或对照图像，配以计数、二元识别或简短回答类问题
-- **输出**：一个数字、`Yes`/`No`，或用花括号括起的简短身份标识
-- **领域**：动物、商标、旗帜、国际象棋棋子、游戏棋盘、视错觉和图案网格
+- **任务类型**：用于计数和识别的自由格式视觉问答
+- **输入**：一张反事实或对照图像，配有一个计数、二元识别或简答题
+- **输出**：一个数字、`Yes`/`No`，或用花括号括起来的简短身份标识
+- **领域**：动物、标志、旗帜、国际象棋棋子、棋盘、视错觉和图案网格
 
-## 核心特性
+## 主要特点
 
-- 主要的 `main` 划分包含 2,784 个客观视觉问题，覆盖 1,392 张反事实图像，分辨率分别为 384、768 和 1152 像素
-- 五个官方分析划分涵盖二元识别、图像内标题注入、原始未修改对照图像，以及去除背景的变体
+- 主要的 `main` 子集包含 2,784 个客观视觉问题，基于 1,392 张分辨率为 384、768 和 1152 像素的反事实图像
+- 五个官方分析子集涵盖二元识别、图像内标题注入、原始未修改对照以及背景移除变体
 - 每条反事实记录同时提供视觉上正确的 `ground_truth` 和基于先验知识的 `expected_bias`
-- 该基准测试涵盖七个主题和十九个子主题，支持细粒度分析，无需创建合成的 EvalScope 子集
+- 该基准暴露了七个主题和十九个子主题，以便进行详细分析，而无需创建合成的 EvalScope 子集
+- 默认数据为 **v2**：视错觉目标特征为红色并在问题中命名，ID 全局唯一，且修复了截断的识别图像
+- 两个 Hub 均固定到匹配的 v2 快照；样本元数据保留 v2 `ID`、原始 `legacy_ID` 以及选定的数据版本
 
 ## 评估说明
 
-- 数据集提示词按原文使用，包括其要求的花括号答案格式
-- 主要指标：**准确率**（`acc`），采用官方提供的大小写不敏感比较方法（去除外层花括号后）；若精确文本匹配失败，则比较其中的数字序列
-- 次要指标：**偏见比率**（`bias_ratio`，越低越好），即在相同归一化条件下，预测结果与 `expected_bias` 一致的比例
-- 准确率也按主题分别报告，与官方 lmms-eval 集成一致
-- `original` 划分不计算 `bias_ratio`，因为这些对照样本未定义 `expected_bias`
-- 六个官方数据集划分作为独立的 EvalScope 子集公开，并默认全部参与评估；若仅选择 `main` 子集，可复现论文中的主要基准结果
-- 生成应具有确定性且简洁；官方 lmms-eval 设置使用 `temperature=0`，最多生成 32 个新 token
-- [论文](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [项目主页](https://vlmsarebiased.github.io/)
+- 数据集提示词逐字使用，包括其要求的花括号答案格式
+- 主要指标：**Accuracy** (`acc`)，在去除外层花括号后使用官方的不区分大小写比较；如果精确文本匹配失败，则比较数字序列
+- 次要指标：**Bias Ratio** (`bias_ratio`，越低越好)，即在相同归一化条件下预测结果与 `expected_bias` 匹配的比例
+- Accuracy 也按主题报告，以匹配官方的 lmms-eval 集成
+- 对于 `original` 子集省略 `bias_ratio`，因为这些对照记录未定义 `expected_bias`
+- 默认情况下，六个官方数据集子集作为单独的 EvalScope 子集进行评估；仅选择 `main` 进行主要的计数评估
+- 默认的 v2 运行使用评估版本 **v1.1**。对于论文的 v1 数据，请显式设置 `dataset_args={'vlms_are_biased': {'default_subset': 'v1-legacy', 'subset_list': ['main']}}`；这些运行标记为 **v1 legacy** 并使用评估版本 **v1.0**。遗留的 `identification` 子集保留了上游截断图像的缺陷
+- v1 和 v2 的结果不能直接互换。更改数据版本后请启动新的输出目录；不要使用 `rerun_review` 来复用针对已更改图像或提示词的预测结果。历史未固定的运行需要检查其保存的输入/ID 以确定数据版本
+- 生成过程应具有确定性且简洁；官方 lmms-eval 设置使用 `temperature=0` 且最多生成 32 个新 token
+- [论文](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [项目页面](https://vlmsarebiased.github.io/)
 
 
 ## 属性
@@ -41,7 +45,7 @@ VLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
 | **指标** | `accuracy`, `bias_ratio` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `main` |
+| **评估子集** | `main` |
 
 
 ## 数据统计
@@ -49,21 +53,21 @@ VLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 11,594 |
-| 提示词长度（平均） | 90.01 字符 |
-| 提示词长度（最小/最大） | 60 / 138 字符 |
+| 提示词长度（平均） | 88.3 字符 |
+| 提示词长度（最小/最大） | 60 / 130 字符 |
 
-**各子集统计信息：**
+**各子集统计：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
-| `main` | 2,784 | 91.52 | 78 | 129 |
+| `main` | 2,784 | 89.97 | 78 | 129 |
 | `identification` | 1,392 | 83.27 | 68 | 102 |
-| `withtitle` | 2,784 | 91.52 | 78 | 129 |
+| `withtitle` | 2,784 | 89.97 | 78 | 129 |
 | `original` | 458 | 85.03 | 60 | 130 |
-| `remove_background_q1q2` | 2,784 | 94.23 | 78 | 138 |
+| `remove_background_q1q2` | 2,784 | 90.19 | 78 | 125 |
 | `remove_background_q3` | 1,392 | 83.91 | 70 | 102 |
 
-**图像统计信息：**
+**图像统计：**
 
 | 指标 | 值 |
 |--------|-------|
@@ -81,13 +85,13 @@ VLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客
 {
   "input": [
     {
-      "id": "3872fe66",
+      "id": "0d71a23a",
       "content": [
         {
-          "image": "[BASE64_IMAGE: png, ~1.9KB]"
+          "image": "[BASE64_IMAGE: png, ~1.6KB]"
         },
         {
-          "text": "Are the horizontal and vertical lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}."
+          "text": "Are the two red lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}."
         }
       ]
     }
@@ -96,7 +100,9 @@ VLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客
   "id": 0,
   "group_id": 0,
   "metadata": {
-    "id": "VerticalHorizontal_001_Q1_notitle_px384",
+    "id": "illusion-verticalhorizontal-001-diff0-notitle-q1-384",
+    "legacy_id": "VerticalHorizontal_001_Q1_notitle_px384",
+    "data_version": "v2",
     "topic": "Optical Illusion",
     "sub_topic": "Vertical-Horizontal illusion",
     "type_of_question": "Q1",

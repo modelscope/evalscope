@@ -39,6 +39,8 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 - Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants
 - Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`
 - The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets
+- The default data is **v2**: optical-illusion target features are red and named in the questions, IDs are globally unique, and the truncated identification image is repaired
+- Both hubs are pinned to matching v2 snapshots; sample metadata preserves the v2 `ID`, the original `legacy_ID`, and the selected data version
 
 ## Evaluation Notes
 
@@ -47,7 +49,9 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
 - Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization
 - Accuracy is also reported by topic, matching the official lmms-eval integration
 - `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`
-- The six official dataset splits are exposed as separate EvalScope subsets and evaluated by default; select only `main` to reproduce the paper's headline benchmark
+- The six official dataset splits are evaluated as separate EvalScope subsets by default; select only `main` for the primary counting evaluation
+- Default v2 runs use evaluation version **v1.1**. For the paper's v1 data, explicitly set `dataset_args={'vlms_are_biased': {'default_subset': 'v1-legacy', 'subset_list': ['main']}}`; these runs are labeled **v1 legacy** and use evaluation version **v1.0**. The legacy `identification` split retains the upstream truncated-image defect
+- v1 and v2 results are not directly interchangeable. Start a new output directory after changing data versions; do not use `rerun_review` to reuse predictions for changed images or prompts. Historical unpinned runs require inspection of their saved inputs/IDs to establish the data version
 - Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens
 - [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)
 """
@@ -58,7 +62,9 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
         name='vlms_are_biased',
         pretty_name='VLMs Are Biased',
         dataset_id='evalscope/vlms-are-biased',
+        dataset_revision='2e92cd147b735190b8f6a35bccf1b750bce3c399',
         hf_dataset_id='anvo25/vlms-are-biased',
+        hf_dataset_revision='a6ebd68831ee7299d85631c929fea5016c03863f',
         subset_list=SUBSET_LIST,
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.REASONING],
         description=DESCRIPTION,
@@ -66,7 +72,7 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
         metric_list=['acc', 'bias_ratio'],
         primary_metric=MetricSelector(name='accuracy', dimensions={'scope': 'overall'}),
         eval_split='main',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class VLMsAreBiasedAdapter(VisionLanguageAdapter):
@@ -75,9 +81,18 @@ class VLMsAreBiasedAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.split_as_subset = True
+        self.data_version = 'v1-legacy' if self.default_subset == 'v1-legacy' else 'v2'
+        if self.data_version == 'v1-legacy':
+            self.benchmark_meta.evaluation_version = 'v1.0'
+            self.benchmark_meta.pretty_name = 'VLMs Are Biased (v1 legacy)'
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert one visual question into an EvalScope sample."""
+        if self.data_version == 'v2' and not record.get('legacy_ID'):
+            raise ValueError(
+                'VLMs Are Biased v2 requires legacy_ID. Select default_subset="v1-legacy" '
+                'explicitly when evaluating v1 data.'
+            )
         image = self._image_bytes_to_base64(record['image']['bytes'], guess_mimetype=True)
         expected_bias = record.get('expected_bias')
         return Sample(
@@ -92,6 +107,8 @@ class VLMsAreBiasedAdapter(VisionLanguageAdapter):
             target=str(record['ground_truth']).strip(),
             metadata={
                 'id': record['ID'],
+                'legacy_id': record.get('legacy_ID'),
+                'data_version': self.data_version,
                 'topic': record['topic'],
                 'sub_topic': record['sub_topic'],
                 'type_of_question': record['type_of_question'],
