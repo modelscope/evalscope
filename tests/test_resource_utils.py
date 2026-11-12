@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import zipfile
@@ -140,3 +141,41 @@ def test_check_nltk_data_does_not_extract_checksum_mismatch(
     pinned = MIRROR_MAP['averaged_perceptron_tagger_eng']['mirrors'][0]
     assert download_calls == [pinned]
     assert not (tmp_path / 'nltk_data/taggers/averaged_perceptron_tagger_eng.zip').exists()
+
+
+def test_check_nltk_data_makes_downloaded_directories_owner_private(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A group-writable ``~/nltk_data`` makes NLTK ignore a download that succeeded.
+
+    ``os.makedirs`` honours the process umask, and ``ZipInfo`` keeps the mode recorded when the archive was built, so
+    on a host running with ``umask 0002`` both the created directories and the extracted ones end up group-writable.
+    NLTK then refuses to read them, and the caller reports "still unavailable after download" for a healthy archive.
+    """
+    data = _FakeNltkData()
+    _install_fake_nltk(monkeypatch, data)
+    monkeypatch.setenv('HOME', str(tmp_path))
+
+    def fake_download(url: str, save_path: str, sha256: Optional[str] = None) -> None:
+        with zipfile.ZipFile(save_path, 'w') as archive:
+            archive.writestr('averaged_perceptron_tagger_eng/weights.json', '{}')
+        data.available = True
+
+    monkeypatch.setattr(resource_utils, 'download_url', fake_download)
+
+    # Simulate a shared host: every directory this call creates starts group-writable.
+    original_makedirs = os.makedirs
+
+    def group_writable_makedirs(name, mode=0o777, exist_ok=False):
+        original_makedirs(name, mode=mode, exist_ok=exist_ok)
+        os.chmod(name, os.stat(name).st_mode | 0o022)
+
+    monkeypatch.setattr(resource_utils.os, 'makedirs', group_writable_makedirs)
+
+    resource_utils.check_nltk_data('averaged_perceptron_tagger_eng')
+
+    directories = [path for path in (tmp_path / 'nltk_data').rglob('*') if path.is_dir()]
+    assert directories, 'the download should have created the resource directory tree'
+    for path in directories:
+        assert not path.stat().st_mode & 0o022, f'{path} stayed writable by group or other'

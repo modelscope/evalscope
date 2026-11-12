@@ -56,6 +56,20 @@ MIRROR_MAP: Dict[str, Dict[str, Any]] = {
 }
 
 
+def _make_owner_private(path: str) -> None:
+    """Remove group and other write bits so NLTK will trust a data directory it did not create itself.
+
+    Recurses into extracted archives: ``ZipInfo`` keeps the mode recorded at build time, so the directories inside
+    the archive land group-writable regardless of the process umask.
+    """
+    for root, dirnames, filenames in os.walk(path):
+        for name in [root, *dirnames, *(os.path.join(root, filename) for filename in filenames)]:
+            try:
+                os.chmod(name, os.stat(name).st_mode & ~0o022)
+            except OSError as exc:  # a read-only or foreign-owned entry is reported by the caller's lookup
+                logger.debug(f'Could not tighten permissions on {name}: {exc}')
+
+
 @lru_cache
 def check_nltk_data(name: str) -> None:
     """
@@ -76,6 +90,12 @@ def check_nltk_data(name: str) -> None:
         nltk_base = os.path.expanduser('~/nltk_data')
         extract_dir = os.path.join(nltk_base, meta['extract_dir'])
         os.makedirs(extract_dir, exist_ok=True)
+        # NLTK refuses to read a data directory that is writable by anyone but its owner. ``os.makedirs`` honours
+        # the process umask, so a host running with ``umask 0002`` (common on shared clusters) produced a
+        # group-writable ``~/nltk_data`` that every later ``nltk.data.find`` silently ignored, turning a
+        # successful download into "still unavailable after download".
+        _make_owner_private(nltk_base)
+        _make_owner_private(extract_dir)
         zip_path = os.path.join(extract_dir, meta['zip_name'])
         last_error = None
         for mirror in meta['mirrors']:
@@ -84,6 +104,7 @@ def check_nltk_data(name: str) -> None:
                 download_url(url, zip_path, sha256=mirror['sha256'])
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(extract_dir)
+                _make_owner_private(extract_dir)
                 return
             except Exception as e:
                 last_error = e
