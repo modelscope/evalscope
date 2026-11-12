@@ -20,6 +20,7 @@ logger = get_logger()
     BenchmarkMeta(
         name='openai_mrcr',
         pretty_name='OpenAI MRCR',
+        evaluation_version='v1.1',
         tags=[Tags.LONG_CONTEXT, Tags.RETRIEVAL],
         description="""
 ## Overview
@@ -222,7 +223,13 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         # Calculate sequence ratio with MRCR prefix handling
         ratio = grade(prediction=filtered_prediction, reference=reference, random_string_to_prepend=prefix)
 
-        bin_index = task_state.metadata.get('bin_index')
+        # Recompute rather than trusting bin assignments persisted by older evaluations.
+        input_tok_cnt = (task_state.metadata or {}).get('raw_input_tok_cnt')
+        bin_index = (
+            bin_index_for(input_tok_cnt + get_token_count(reference, self.tik_enc))
+            if input_tok_cnt is not None
+            else None
+        )
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
         score.value['mrcr_score'] = ratio
         score.metadata['bin_index'] = bin_index
@@ -238,6 +245,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
 
         Each bin appears as a separate metric in the report (e.g., mrcr_score@4096-8192).
         Bins with no samples are automatically excluded from the results.
+        Scores outside the bin ranges or without a known bin still contribute to the overall average.
 
         Args:
             sample_scores: List of individual sample scores
@@ -249,15 +257,16 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         if not sample_scores:
             return []
         bin_scores: Dict[int, List[float]] = {i: [] for i in range(len(OPENAI_MRCR_BINS))}
+        overall: List[float] = []
         for s in sample_scores:
             sc = s.score
-            if not sc or not sc.metadata or not sc.value or 'mrcr_score' not in sc.value:
+            if not sc or not sc.value or 'mrcr_score' not in sc.value:
                 continue
-            idx = sc.metadata.get('bin_index')
+            overall.append(sc.value['mrcr_score'])
+            idx = (sc.metadata or {}).get('bin_index')
             if idx is None or not (0 <= idx < len(OPENAI_MRCR_BINS)):
                 continue
             bin_scores[idx].append(sc.value['mrcr_score'])
-        overall = [v for vals in bin_scores.values() for v in vals]
         if not overall:
             return []
         agg: List[AggScore] = [

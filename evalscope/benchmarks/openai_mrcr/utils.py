@@ -58,9 +58,10 @@ def str_to_chat_messages(messages_str: str) -> List[ChatMessage]:
     return chat_messages
 
 
-def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
+def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> Optional[int]:
     """Return bin index for a total token count using OPENAI_MRCR_BINS.
     First and last bins inclusive both ends, middle bins left-inclusive right-exclusive.
+    Counts outside all ranges have no bin.
     """
     last = len(bins) - 1
     for i, (left, right) in enumerate(bins):
@@ -70,7 +71,7 @@ def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
         else:
             if left <= total_tokens < right:
                 return i
-    return 0  # fallback
+    return None
 
 
 def grade(prediction: str, reference: str, random_string_to_prepend: Optional[str]) -> float:
