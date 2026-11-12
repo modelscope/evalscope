@@ -192,6 +192,39 @@ def test_parse_answers_zh_wrapped_label() -> None:
         assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}\nNote: hope this helps.')) == {'B'}, answer_line
 
 
+def test_parse_answers_bracketed_labels_without_separator() -> None:
+    """A multi-select reply may print several labels with no separator: '[AD]', '[BCD]'.
+
+    Real AGIEval multi-select answers used exactly these lines. The bracketed pattern required a
+    ``','``/``'/'``/``'、'`` separator, so the reply fell back to the last capital letter instead
+    of reading every listed label.
+    """
+    for answer_line in ['答案：[AD]', '答案：[BD]', '答案：[ABD]', '答案：[BCD]', '答案：[AC]', '答案：[ABCD]']:
+        expected = set(answer_line.split('[')[1].split(']')[0])
+        assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}'), multiple_correct=True) == expected, answer_line
+    assert parse_answers(_make_state('reasoning\nANSWER: [AD]'), multiple_correct=True) == {'A', 'D'}
+
+
+def test_parse_answers_bracketed_labels_with_separator_or_space() -> None:
+    """The separating comma or space inside the brackets still reads as before."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A,D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
+
+
+def test_parse_answers_single_choice_bracket_unchanged() -> None:
+    """A single-answer sample keeps the strict bracket pattern; '[A]' is still one label."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A]')) == {'A'}
+    assert parse_answers(_make_state('reasoning\nANSWER: [A]')) == {'A'}
+
+
+def test_parse_answers_bracketed_non_labels_are_not_answers() -> None:
+    """Only tokens that are labels of the sample are accepted inside the brackets."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[注]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[1]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[see the diagram above]'), multiple_correct=True) == set()
+
+
 def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
     completion = 'The last line of your response should be ANSWER: [LETTER] and nothing else.'
     assert parse_answers(_make_state(completion)).isdisjoint({'A', 'B', 'C', 'D'})
