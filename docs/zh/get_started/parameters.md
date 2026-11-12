@@ -115,8 +115,6 @@
 | `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定。SWE-bench agentic 等基准的扩展参数请参见 [Agent 评测](../user_guides/agent/native.md#用例swe-bench-agentic) |
 | `sandbox_config` | `dict` | Sandbox配置（详见下方Sandbox参数） |
 
-`pass_at_k` 和 `pass_hat_k` 要求评分为二元结果（0 或 1）。若某指标包含小数、超出该范围或非有限的值，将记录警告并跳过该指标的 pass 聚合，保留普通均值；同一次评测中的其他二元指标不受影响。部分得分不会被阈值化或四舍五入为成功次数。
-
 **sandbox_config 配置项：**
 
 | 参数 | 类型 | 说明 | 默认值 |

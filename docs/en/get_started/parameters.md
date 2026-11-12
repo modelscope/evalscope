@@ -115,8 +115,6 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md), specify `{<param_name>:<value>}` as needed, where the type (`type`) and choices (`choices`) of `value` depend on the specific parameter. For SWE-bench agentic and similar benchmarks, see [Agent Evaluation](../user_guides/agent/native.md#swe-bench-agentic-benchmarks) |
 | `sandbox_config` | `dict` | Sandbox configuration (see Sandbox Parameters below) |
 
-`pass_at_k` and `pass_hat_k` require binary outcomes (0 or 1). If any present value for a metric is fractional, outside this range, or non-finite, its pass aggregates are omitted with a warning; its ordinary mean is retained. Other binary metrics in the same run are unaffected. No threshold or rounding is applied to partial credit.
-
 **sandbox_config Options:**
 
 | Parameter | Type | Description | Default |
