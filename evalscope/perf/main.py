@@ -18,6 +18,7 @@ from evalscope.utils.uri_utils import sanitize_endpoint
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark
+from .plugin import ApiRegistry
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
 from .utils.handler import (
@@ -145,6 +146,20 @@ def run_multi_benchmark(args: Arguments, output_path: str = None):
     return results
 
 
+def check_api_plugin(args: Arguments) -> None:
+    """Fail fast if the selected ``--api`` plugin cannot send HTTP requests.
+
+    Raises:
+        ValueError: If the plugin class does not override ``process_request``.
+    """
+    plugin_class = ApiRegistry.get_class(args.api)
+    if not plugin_class.implements_process_request():
+        raise ValueError(
+            f"API plugin '{args.api}' ({plugin_class.__name__}) does not implement process_request, "
+            'so it cannot be used for HTTP benchmarking. Use a different --api value, e.g. openai.'
+        )
+
+
 def run_perf_benchmark(args):
     """
     Run performance benchmark with given arguments.
@@ -162,6 +177,8 @@ def run_perf_benchmark(args):
         args = Arguments(**args)
     elif isinstance(args, Namespace):
         args = Arguments.from_args(args)
+
+    check_api_plugin(args)
 
     if args.seed is not None:
         seed_everything(args.seed)

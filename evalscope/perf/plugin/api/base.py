@@ -103,7 +103,15 @@ class ApiPluginBase:
         Returns:
             BenchmarkData: The benchmark data including response and timing info.
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            f'{type(self).__name__} does not implement process_request; '
+            'an API plugin must override it to send HTTP requests.'
+        )
+
+    @classmethod
+    def implements_process_request(cls) -> bool:
+        """Return whether this plugin class overrides ``process_request``."""
+        return cls.process_request is not ApiPluginBase.process_request
 
     @staticmethod
     def replace_values(input_json: Any, model: str, prompt: str):

@@ -105,13 +105,15 @@ class AioHttpClient:
             )
             return self._failure_record(body, str(e), start_time)
         except aiohttp.ClientConnectionError as e:
-            logger.error(e)
-            return self._failure_record(body, str(e), start_time)
+            error = str(e) or repr(e)
+            logger.error(error)
+            return self._failure_record(body, error, start_time)
         except Exception as e:
             if propagate_unexpected_errors:
                 raise
-            logger.error(e)
-            return self._failure_record(body, str(e), start_time)
+            error = str(e) or repr(e)
+            logger.error(error)
+            return self._failure_record(body, error, start_time)
 
     @staticmethod
     def _failure_record(body, error: str, start_time: float) -> BenchmarkData:
