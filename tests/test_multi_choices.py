@@ -380,3 +380,29 @@ def test_parse_answers_reads_a_bold_answer_key(reply: str) -> None:
 
 def test_parse_answers_zh_reads_a_bold_answer_key() -> None:
     assert parse_answers_zh(_make_state('推理\n**答案**：B。Note: A is wrong.')) == {'B'}
+
+
+@pytest.mark.parametrize(
+    'text',
+    [
+        'ANSWER: 45\n**Answer**: [LETTER]',
+        'ANSWER: 45\n**Answer**: [ANSWER]',
+        'ANSWER: 45\n**Answer**: ',
+        'ANSWER: 45\nUse **Answer**: [LETTER] as the format.',
+        'ANSWER: 45\nANSWER: [LETTER]',
+    ],
+)
+def test_extract_answer_line_ignores_trailing_placeholder_or_empty_marker(text: str) -> None:
+    assert extract_answer_line(text) == '45'
+
+
+@pytest.mark.parametrize(
+    'text, expected',
+    [('**Answer**: 2*3', '2*3'), ('**Answer**: 2**3', '2**3'), ('**Answer**: Pa**ris', 'Pa**ris')],
+)
+def test_bold_answer_key_preserves_literal_asterisks(text: str, expected: str) -> None:
+    assert extract_answer_line(text) == expected
+
+
+def test_bold_placeholder_does_not_hide_an_earlier_choice() -> None:
+    assert parse_answers(_make_state('ANSWER: A\n**Answer**: [LETTER]')) == {'A'}
