@@ -43,7 +43,7 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         self.assertEqual(value['precision'], 1.0)
         self.assertEqual(value['recall'], 0.5)
 
-    def test_grade_contract_parses_the_official_json_fence(self):
+    def test_grade_contract_rejects_fences_but_accepts_the_same_json_object(self) -> None:
         judge_response = """
         ```json
         {
@@ -57,14 +57,16 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         """
 
         result = GRADE_CONTRACT.parse(judge_response)
+        self.assertFalse(result.ok)
+        result = GRADE_CONTRACT.parse(judge_response.strip().removeprefix('```json').removesuffix('```').strip())
         self.assertTrue(result.ok)
         value, metadata = metrics_from_grade(result.value)
 
         self.assertEqual(value['f1'], 1.0)
         self.assertEqual(metadata['correctness_details'], {'Belgium': True, 'France': True})
 
-    def test_grade_contract_accepts_json_embedded_in_prose(self):
-        """A reasoning judge may explain before the JSON; the contract reads the single object."""
+    def test_grade_contract_rejects_json_embedded_in_prose(self) -> None:
+        """Explanations belong in the declared JSON field, not outside the object."""
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Only one expected answer is present.',
@@ -77,6 +79,8 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         }
 
         result = GRADE_CONTRACT.parse(f'Rating follows:\n{json.dumps(payload)}')
+        self.assertFalse(result.ok)
+        result = GRADE_CONTRACT.parse(json.dumps(payload))
         self.assertTrue(result.ok)
         value, _ = metrics_from_grade(result.value)
 

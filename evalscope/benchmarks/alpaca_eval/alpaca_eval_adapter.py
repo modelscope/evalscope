@@ -61,7 +61,7 @@ Here are the unordered outputs from the models. Each output is associated with a
 
 ## Task
 
-Evaluate the models based on the quality and relevance of their outputs, and select the model that generated the best output. Answer by providing the model identifier of the best model. We will use your output as the name of the best model, so make sure your output only contains one of the following model identifiers and nothing else (no quotes, no spaces, no new lines, ...): m or M.
+Evaluate the models based on the quality and relevance of their outputs, and select the model that generated the best output. Set the JSON verdict field to the model identifier of the best model: m or M.
 
 ## Best Model Identifier
 """.strip()  # noqa: E501

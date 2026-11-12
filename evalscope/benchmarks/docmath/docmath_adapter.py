@@ -15,8 +15,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-# The judge prompt requires the verdict as "[[YES]]" or "[[NO]]" after its explanation; a bare
-# "YES" anywhere in that explanation must not decide the score.
+# The judge returns its explanation and YES/NO verdict in one JSON object.
 class Equivalence(BaseModel):
     reasoning: str = ''
     verdict: Literal['YES', 'NO']

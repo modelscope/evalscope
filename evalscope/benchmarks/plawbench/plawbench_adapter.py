@@ -38,12 +38,14 @@ class SectionScore(BaseModel):
 class CaseAnalysisGrade(BaseModel):
     """The ``case_analysis`` judge reply; section denominators come from the dataset, not the judge."""
 
+    reasoning: str = ''
     score_details: Dict[str, SectionScore]
 
 
 class TotalPointsGrade(BaseModel):
     """The single-total judge reply for ``legal_qa`` / ``document_generation``."""
 
+    reasoning: str = ''
     total_points: float
     max_points: Optional[float] = None
 
@@ -85,8 +87,9 @@ rubric rather than against a single reference answer.
   - `defendant_statement` (6): drafting a statement of defense from the client's account and the opposing complaint.
 - Client statements are deliberately vague, emotional, or misleading, so models must detect traps instead of
   restating the client's claims.
-- Task prompts and judge prompts are ported verbatim from the official release, and the `case_analysis` rubric
-  retains its per-dimension point allocation.
+- Task prompts and grading criteria follow the official release, and the `case_analysis` rubric retains its
+  per-dimension point allocation. Judge output instructions are adapted to a single JSON object, with explanations
+  inside declared fields; scores are not guaranteed to match the official prompt format.
 
 ## Evaluation Notes
 
@@ -181,7 +184,10 @@ class PLawBenchAdapter(DefaultDataAdapter):
                 rubric_sections=rubric_sections,
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=system_prompt), ChatMessageUser(content=user_prompt)]
+                messages=[
+                    ChatMessageSystem(content=system_prompt),
+                    ChatMessageUser(content=user_prompt + case.output_contract.instruction()),
+                ]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:

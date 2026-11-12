@@ -200,7 +200,16 @@ TaskConfig(
 `judge.contract` 仅配置通用单 verdict Judge：`system_prompt`、`prompt_template`、`score_mapping` 和
 `score_type`。`pattern` 要求 Judge 在 JSON 中返回 `score_mapping` 之一；`numeric` 要求 JSON 分数位于
 `[0, 1]`。框架会在 prompt 中追加 JSON 格式要求，只解析一次普通模型回复；不使用 constrained decoding、
-正则提分或纠正性追问。无效回复显示为 unavailable，并从指标中排除，而非记为 0。
+正则提分或纠正性追问。
+
+最终回复的完整内容必须是一个符合声明 schema 的 JSON 对象，允许前后空白。不接受说明文字、思考块、
+Markdown 代码围栏、多个对象、重复键、非法 JSON 或不符合 schema 的回复。解释应放在声明的 JSON 字段内。
+解析器不会从无效回复中提取嵌套或后续对象。失败的 Judge 观测记为不可用，不会自动将被测答案判为 0 分；
+benchmark 明确定义的规则回退仍保留规则结果。排除观测可能改变参与评测的样本集合，应结合覆盖率和失败计数解读分数。
+模型层已分离到独立内容部分的推理不属于这里解析的最终文本。
+
+自定义裁判的 system 和 user prompt 都应遵守同一格式要求。即使保留评分标准，修改 benchmark 官方裁判的输出格式
+也可能影响结果。使用 `rerun_review=True`，可按当前约定重新计算已缓存的评分。
 
 对于经过 LLM 判定的样本，报告包含 `JudgeSummary`：覆盖率、失败计数与分歧。当 adapter 通过确定性的
 Judge 短路直接判定样本时，得分 metadata 会记录 `judge_skipped=true` 和 `judge_skip_reason`；Web review

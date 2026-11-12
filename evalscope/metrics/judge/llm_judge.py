@@ -29,7 +29,7 @@ B: INCORRECT"""  # noqa: E501
 
 
 DEFAULT_NUMERIC_SCORE_TEMPLATE = """Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
-Begin your evaluation by providing a short explanation. Be as objective as possible.
+Provide a short explanation in the JSON reasoning field. Be as objective as possible.
 Rate the response on a scale of 0 (worst) to 1 (best).
 
 [Question]

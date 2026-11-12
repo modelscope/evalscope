@@ -20,7 +20,7 @@ You will evaluate each rubric criterion using a binary satisfaction scale:
 1. **Understand the Criterion**: Carefully read and interpret what the rubric is asking for.
 2. **Search for Evidence**: Systematically review the document for relevant content that addresses the criterion.
 3. **Assess Completeness**: Evaluate whether the evidence satisfies or fails to satisfy the criterion.
-4. **Provide Reasoning**: Explain your evaluation with specific references to the document content.
+4. **Provide Reasoning**: Explain your evaluation with specific references to the document content in the JSON reasoning field.
 
 ## Important Guidelines
 
@@ -52,18 +52,16 @@ Evaluate whether the above document satisfies this specific rubric criterion.
 
 ## Required Response Format
 
-Provide your evaluation in the following JSON format:
+Return only one JSON object. Set verdict to Satisfied or Not Satisfied, score to 1.0 or 0.0 respectively, and confidence to a number in [0, 1]. Example:
 
-```json
 {{
-  "verdict": "[Not Satisfied/Satisfied]",
-  "score": [0.0/1.0],
-  "confidence": [0.0-1.0],
+  "verdict": "Satisfied",
+  "score": 1.0,
+  "confidence": 0.9,
   "reasoning": "Detailed explanation with specific evidence from the document",
   "evidence_quotes": ["Direct quote 1", "Direct quote 2"],
   "missing_elements": ["Element 1 that would improve satisfaction"]
 }}
-```
 
 Ensure your response is ONLY the JSON object, with no additional text.
 """
@@ -82,16 +80,14 @@ CHUNK_USER_PROMPT = """You are evaluating a large document in chunks. This is ch
 **Title**: {rubric_title}
 **Category**: {rubric_category}
 
-Please evaluate this chunk for evidence related to the rubric criterion. Your response should be in JSON format:
+Please evaluate this chunk for evidence related to the rubric criterion. Return only one JSON object with a boolean satisfaction and confidence_for_chunk in [0, 1]. Example:
 
-```json
 {{
   "relevant_evidence": ["Evidence point 1", "Evidence point 2"],
-  "satisfaction": true/false,
-  "confidence_for_chunk": [0.0-1.0],
+  "satisfaction": true,
+  "confidence_for_chunk": 0.9,
   "notes": "Any important observations"
 }}
-```
 """
 
 SYNTHESIS_USER_PROMPT = """Based on the following evidence collected from the document:
@@ -103,11 +99,11 @@ Evaluate whether the document satisfies the rubric criterion:
 **Title**: {rubric_title}
 **Category**: {rubric_category}
 
-Provide your final evaluation in JSON format:
+Return only one JSON object. Set verdict to Satisfied or Not Satisfied, score to 1.0 or 0.0 respectively, and confidence to a number in [0, 1]. Example:
 {{
-  "verdict": "[Not Satisfied/Satisfied]",
-  "score": [0.0/1.0],
-  "confidence": [0.0-1.0],
+  "verdict": "Satisfied",
+  "score": 1.0,
+  "confidence": 0.9,
   "reasoning": "Synthesis of evidence",
   "evidence_quotes": ["Evidence point 1"],
   "missing_elements": ["Missing element 1"]

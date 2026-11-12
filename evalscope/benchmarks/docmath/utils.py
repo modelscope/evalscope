@@ -3,8 +3,7 @@ Your input is a problem and two answers, Answer 1 and Answer 2. You need to chec
 Your task is to determine if two answers are equivalent, without attempting to solve the original problem.
 Compare the answers to verify they represent identical values or meaning, even when written in different forms or notations.
 
-Your output must follow the following format:
-1) Provide an explanation for why the answers are equivalent or not.
+Provide an explanation for why the answers are equivalent or not in the JSON reasoning field.
 """  # noqa: E501
 
 ORM_USER_TEMPLATE = """

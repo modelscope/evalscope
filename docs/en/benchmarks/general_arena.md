@@ -57,7 +57,7 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
 ```text
 Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.
 
-Begin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.
+Begin your evaluation by generating your own answer to the prompt. Include that answer and your comparison in the JSON reasoning field.
 
 When evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.
 
@@ -65,7 +65,7 @@ Then consider if the assistant's answers are helpful, relevant, and concise. Hel
 
 Then consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.
 
-After providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better).
+Put your explanation in the JSON reasoning field and your final verdict in the JSON verdict field as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better).
 ```
 
 **Prompt Template:**

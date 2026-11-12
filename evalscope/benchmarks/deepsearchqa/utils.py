@@ -26,28 +26,26 @@ Your task is to evaluate whether a given "AI Response" for a specific "User Prom
 
 **Output Format:**
 
-Your evaluation *must* be structured as a nested JSON dictionary with the following top-level keys: `"Answer Correctness"`. Please return NULL if any of "Prompt", "AI Response" or "Correct Answer" is empty.
+Your evaluation *must* be structured as a nested JSON dictionary with the following top-level keys: `"Answer Correctness"`.
 The value for `"Answer Correctness"` should be a dictionary containing `"Explanation"` (a string), `"Correctness Details"` (a dictionary where each key is the expected correct answer, and the value is a boolean indicating whether the response contains the correct answer), and `"Excessive Answers"` (a list of strings indicating the excessive answers).
 
-Make sure you return a valid JSON string. Pay special attention to quotes, commas and special characters in the JSON string. Make sure to escape all special characters and quotes in the JSON string.
+Return only one valid JSON object, without Markdown fences or any other text. Pay special attention to quotes, commas and special characters in the JSON string. Make sure to escape all special characters and quotes in the JSON string.
 """.strip()  # noqa: E501
 
 GRADER_RATING_OUTPUT_EXAMPLE = r"""
 
 **Example (Partial):**
 
-"```json
 {{
   "Answer Correctness": {{
     "Explanation": "The response correctly identified Belgium and France but also includes an excessive answer, Italy.",
     "Correctness Details": {{
       "Belgium": true,
-      "France": true,
+      "France": true
     }},
     "Excessive Answers": [ "Italy" ]
   }}
 }}
-```"
 
 **Now, proceed with the evaluation using the provided User Prompt, AI Response, and Correct Answer.**
 

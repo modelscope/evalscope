@@ -6,7 +6,7 @@ satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
 
 import json
-from typing import Any, List, Literal, Optional, Sequence, Type, get_args, get_origin
+from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Type, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -49,19 +49,13 @@ class OutputContract(BaseModel):
         )
 
     def parse(self, response: str) -> ParseResult:
-        """Parse one judge reply through the schema's normal Pydantic coercion rules."""
-        if not response:
+        """Validate the entire final reply as one JSON object, then apply the Pydantic schema."""
+        if not response or not response.strip():
             return ParseResult.failure('empty response')
 
-        payloads = _payloads(response)
-        if not payloads:
-            return ParseResult.failure('no JSON object found in the reply')
-        if len(payloads) > 1:
-            return ParseResult.failure(f'{len(payloads)} JSON objects found where exactly one is required')
-
         try:
-            data = json.loads(payloads[0])
-        except json.JSONDecodeError as exc:
+            data = json.loads(response, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+        except (ValueError, RecursionError) as exc:
             return ParseResult.failure(f'reply is not valid JSON: {exc}')
         if not isinstance(data, dict):
             return ParseResult.failure(f'reply is a {type(data).__name__}, not a JSON object')
@@ -72,42 +66,28 @@ class OutputContract(BaseModel):
             return ParseResult.failure(f'reply does not satisfy {self.schema_model.__name__}: {exc}')
 
 
-def _payloads(response: str) -> List[str]:
-    """Return every top-level JSON object in the reply.
+def _unique_object(pairs: Sequence[Tuple[str, Any]]) -> Dict[str, Any]:
+    """Reject ambiguous duplicate keys instead of silently taking the last value."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f'duplicate JSON key: {key!r}')
+        result[key] = value
+    return result
 
-    Scanning rather than anchoring lets a reasoning judge wrap its answer in a ``<think>`` block
-    or a fence; requiring exactly one object keeps a two-verdict reply a failure, not a coin flip.
-    """
-    found: List[str] = []
-    depth = 0
-    start = 0
-    in_string = False
-    escaped = False
-    for index, char in enumerate(response):
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == '\\':
-                escaped = True
-            elif char == '"':
-                in_string = False
-            continue
-        if char == '"':
-            in_string = True
-        elif char == '{':
-            if depth == 0:
-                start = index
-            depth += 1
-        elif char == '}' and depth:
-            depth -= 1
-            if depth == 0:
-                found.append(response[start : index + 1])
-    return found
+
+def _reject_constant(value: str) -> Any:
+    raise ValueError(f'invalid JSON constant: {value}')
 
 
 def _describe(field: Any) -> str:
     """Describe one schema field for the prompt, so the judge is told the exact allowed values."""
     annotation = field.annotation
+    nullable = type(None) in get_args(annotation)
+    if nullable:
+        variants = [item for item in get_args(annotation) if item is not type(None)]
+        if len(variants) == 1:
+            annotation = variants[0]
     if get_origin(annotation) is Literal:
         allowed = ' or '.join(f'"{value}"' for value in get_args(annotation))
         return f'exactly one of {allowed}'
@@ -130,8 +110,12 @@ def _describe(field: Any) -> str:
         if annotation is float
         else 'a list'
         if get_origin(annotation) is list
+        else 'an object'
+        if get_origin(annotation) is dict or isinstance(annotation, type) and issubclass(annotation, BaseModel)
         else 'a string'
     )
+    if nullable:
+        kind += ' or null'
     if bounds:
         return f'{kind} {" and ".join(bounds)}'
     return f'{kind}' + (f' ({field.description})' if field.description else '')

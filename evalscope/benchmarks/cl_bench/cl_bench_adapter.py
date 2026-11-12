@@ -41,6 +41,8 @@ GRADING_TEMPLATE = (
     "To receive a score of 1, the student's answer must perfectly satisfy every single requirement listed in the 【Rubrics】.\n"
     'If even one requirement is not fully met, the final score will be 0.\n'
     'Grading Process\n'
+    'Put your analysis in the JSON Grading Rationale field and the per-requirement results in '
+    'the JSON List of Requirement Satisfaction Status field. Do not write analysis outside the JSON object.\n'
     'Please strictly follow the steps below for analysis—no steps may be skipped:\n'
     'Step 1: Analyze the Standard Answer\n'
     'List all explicit requirements in the 【Rubrics】 item by item (including format, content, quantity, order, etc.).\n'
