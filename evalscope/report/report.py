@@ -164,20 +164,30 @@ def _sum_correct(items: List[Union['Subset', 'Category']]) -> Optional[int]:
     return sum(counts) if counts and None not in counts else None
 
 
+class CIInfo(BaseModel):
+    """Structured confidence interval for one subset.
+
+    A single optional nested object (not four nullable fields): a subset either
+    carries a complete interval or none at all, so ordinary reports serialize
+    without any ``ci`` key and the shape cannot vary row by row.
+    """
+
+    low: float
+    high: float
+    flags: List[str] = Field(default_factory=list)
+    method: Optional[str] = None
+    level: float = 0.95
+
+
 class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
     num_correct: Optional[int] = None
     """Samples scored 1 when the metric is binary; ``None`` otherwise."""
-    ci_low: Optional[float] = None
-    """Interval lower endpoint in the metric's own scale, when the aggregation carries one."""
-    ci_high: Optional[float] = None
-    """Interval upper endpoint in the metric's own scale."""
-    ci_flags: Optional[List[str]] = None
-    """Representativeness flags, e.g. ``['low_confidence']`` when n is small."""
-    ci_display: Optional[str] = None
-    """Display string rendered at the report boundary through the metric's semantics."""
+    ci: Optional[CIInfo] = None
+    """Confidence interval attached by the aggregation, when it carries one. Rendered
+    at the display boundary through the metric's semantics."""
     metadata: Optional[Dict[str, Any]] = None
     """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
@@ -390,8 +400,16 @@ class Report(BaseModel):
         return metric.score if metric is not None else None
 
     def to_dict(self) -> Dict[str, Any]:
-        # model_dump includes computed_field 'num' automatically
-        return self.model_dump()
+        """Serialize the report; subsets without an interval omit the ``ci`` key entirely,
+        so an ordinary (CI-free) report keeps the exact key shape it had before this
+        opt-in feature existed."""
+        data = self.model_dump()
+        for metric in data.get('metrics', []):
+            for category in metric.get('categories', []):
+                for subset in category.get('subsets', []):
+                    if subset.get('ci') is None:
+                        subset.pop('ci', None)
+        return data
 
     def to_json_str(self) -> str:
         return json.dumps(self.to_dict(), indent=4, ensure_ascii=False)
@@ -451,6 +469,9 @@ class Report(BaseModel):
             return pd.DataFrame()
 
         table = defaultdict(list)
+        ci_values: List[Optional[dict]] = []  # collected per row; the CI column is only
+        # added when some row actually carries an interval, so an opt-in feature does
+        # not change the shape of ordinary (CI-free) reports.
         for metric in self.metrics:
             metric_count = 0
             has_overall_subset = False
@@ -468,15 +489,10 @@ class Report(BaseModel):
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.num_correct].append(subset.num_correct)
                     table[ReportKey.score].append(subset.score)
-                    # CI lives in its own trailing column so the established column
-                    # positions (and the [-N:] slices consumers take) stay stable.
-                    table[ReportKey.ci].append(
-                        {
-                            'low': subset.ci_low,
-                            'high': subset.ci_high,
-                            'flags': subset.ci_flags,
-                            'display': subset.ci_display,
-                        }
+                    ci_values.append(
+                        None
+                        if subset.ci is None
+                        else {'low': subset.ci.low, 'high': subset.ci.high, 'flags': subset.ci.flags}
                     )
             # add overall metric when there are multiple subsets
             if metric_count > 1 and add_overall_metric and not has_overall_subset:
@@ -487,11 +503,13 @@ class Report(BaseModel):
                 table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
                 table[ReportKey.num_correct].append(metric.num_correct)
-                table[ReportKey.ci].append(None)
+                ci_values.append(None)
                 table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
                 break
+        if ci_values and any(v is not None for v in ci_values):
+            table[ReportKey.ci] = ci_values
         df = pd.DataFrame.from_dict(table, orient='columns')
         if ReportKey.num_correct in df:
             df[ReportKey.num_correct] = df[ReportKey.num_correct].astype('Int64')

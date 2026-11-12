@@ -432,6 +432,8 @@ def _bootstrap_interval(values: List[float]) -> Tuple[float, float]:
     """
     import numpy as np
 
+    if not values:
+        return float('nan'), float('nan')
     rng = np.random.default_rng(_BOOTSTRAP_SEED)
     n = len(values)
     array = np.asarray(values, dtype=float)
@@ -519,20 +521,26 @@ class MeanAndCI(Mean):
             # aggregation == 'mean' and must keep finding these rows.
             entry.aggregation = 'mean'
             values = metric_values[entry.metric_name]
-            finite_values = [v for v in values if isfinite(v)]
-            # A non-finite score would silently turn the Wilson interval into [0, 1]
-            # (max(0.0, nan) is 0.0), so the interval uses the finite subset and reports
-            # its size instead of pretending the full n is behind it.
+            # One rule for non-finite observations: the interval is only attached to a
+            # finite point estimate. Mean propagates nan/inf, so any non-finite
+            # observation makes the score non-finite and the entry simply carries no
+            # interval (the score itself already says "not measurable"); a finite score
+            # proves every observation is finite, so valid_n always equals num and there
+            # is exactly one population to describe. is_ratio deliberately reads the
+            # unfiltered values: on an empty list all() is True, which would misroute an
+            # all-nan metric into the Wilson branch.
+            if not isfinite(entry.score):
+                continue
             is_ratio = all(v in (0, 1) for v in values)
             if is_ratio:
-                ci_low, ci_high = _wilson_interval(finite_values)
+                ci_low, ci_high = _wilson_interval(values)
                 ci_method = 'wilson'
             else:
-                ci_low, ci_high = _bootstrap_interval(finite_values)
+                ci_low, ci_high = _bootstrap_interval(values)
                 ci_method = 'bootstrap'
 
             flags: List[str] = []
-            if len(finite_values) < _LOW_CONFIDENCE_N:
+            if entry.num < _LOW_CONFIDENCE_N:
                 flags.append('low_confidence')
             if is_ratio and (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
                 flags.append('wide_interval')
@@ -545,7 +553,7 @@ class MeanAndCI(Mean):
                     'level': 0.95,
                     'method': ci_method,
                     'flags': flags,
-                    'valid_n': len(finite_values),
+                    'valid_n': entry.num,
                 },
             }
         return aggregated_scores

@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from evalscope.api.metric import MetricSelector, SampleScore, Score
 from evalscope.metrics.aggregators import Mean
-from evalscope.report import Report, gen_table
+from evalscope.report import CIInfo, Report, gen_table
 from evalscope.report.generator import ReportGenerator
 
 
@@ -83,19 +83,15 @@ def test_ci_report_round_trips_through_service_route(tmp_path):
     report = make_report({'Art': [{'accuracy': 1.0}] * 40}, 'accuracy')
     metric = report.metrics[0]
     for subset in metric.categories[0].subsets:
-        subset.ci_low = 0.64
-        subset.ci_high = 0.95
-        subset.ci_flags = ['low_confidence']
-        subset.ci_display = '[64.0, 94.8] (low confidence, n=40)'
+        subset.ci = CIInfo(low=0.64, high=0.95, flags=['low_confidence'])
 
     report_file = tmp_path / 'report.json'
     report_file.write_text(json.dumps(report.to_dict()), encoding='utf-8')
 
     loaded = Report.model_validate_json(report_file.read_text(encoding='utf-8'))
     subset = loaded.metrics[0].categories[0].subsets[0]
-    assert subset.ci_low == 0.64 and subset.ci_high == 0.95
-    assert subset.ci_flags == ['low_confidence']
-    assert subset.ci_display == '[64.0, 94.8] (low confidence, n=40)'
+    assert subset.ci.low == 0.64 and subset.ci.high == 0.95
+    assert subset.ci.flags == ['low_confidence']
 
     # the dataframe table keeps the structured CI; a single-metric report adds no
     # OVERALL row, and an interval is never synthesized at aggregate level anyway

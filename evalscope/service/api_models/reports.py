@@ -43,10 +43,9 @@ class ReportSubset(ApiResponseModel):
     num_correct: Optional[int] = None
     is_aggregate: bool = False
     metadata: Optional[Dict[str, Any]] = None
-    ci_low: Optional[float] = None
-    ci_high: Optional[float] = None
-    ci_flags: Optional[List[str]] = None
-    ci_display: Optional[str] = None
+    ci: Optional[Dict[str, Any]] = None
+    """Structured confidence interval ({low, high, flags, method, level}); omitted when the
+    aggregation carries none."""
     """Interval fields, matching Subset; all optional so old payloads without them load
     unchanged."""
 

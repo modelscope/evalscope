@@ -328,7 +328,11 @@ def _group_items_by_model(items: List[dict]) -> List[dict]:
 
 
 def _report_to_service_dict(report: Report) -> dict:
-    """Serialize the persisted Report v2 contract without boundary-time reinjection."""
+    """Serialize the persisted Report v2 contract without boundary-time reinjection.
+
+    The strip lives in ``Report.to_dict``; this wrapper exists so payload sources other
+    than a persisted report get the same treatment.
+    """
     return report.to_dict()
 
 

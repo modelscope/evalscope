@@ -7,38 +7,23 @@ from pandas import DataFrame
 
 from evalscope.api.metric.semantics import MetricDirection, MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
-from evalscope.metrics.semantics import format_metric_value, get_semantics_resolver
+from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.semantics.primary import PrimarySelection, PrimarySelectionStatus, select_primary
 from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX
-from evalscope.report.report import Category, Metric, Report, Subset
+from evalscope.report.formatting import format_ci_value
+from evalscope.report.report import Category, CIInfo, Metric, Report, Subset
 from evalscope.utils import get_logger
 
 logger = get_logger()
 
 
 def _format_ci(ci: Optional[Dict[str, Any]], n: int, semantics: Optional[MetricSemantics]) -> Optional[str]:
-    """Render one subset's interval, or ``None`` when absent.
-
-    Endpoints are formatted through the metric's own semantics (display multiplier,
-    precision, unit) — the same treatment the score cell gets, so a 0-5 quality score
-    never renders as a percentage. NaN endpoints (non-CI metrics coexisting with
-    CI-bearing ones in the same DataFrame column) render as an empty cell. The
-    representativeness flags replace the numbers when they fire.
-    """
-    if not ci:
-        return None
-    ci_low, ci_high = ci.get('low'), ci.get('high')
-    if ci_low is None or ci_high is None or pd.isna(ci_low) or pd.isna(ci_high):
-        return None
-    flags = ci.get('flags') or []
-    interval = f'[{format_metric_value(ci_low, semantics)}, {format_metric_value(ci_high, semantics)}]'
-    notes = []
-    if 'low_confidence' in flags:
-        notes.append(f'low confidence, n={n}')
-    if 'wide_interval' in flags:
-        notes.append('wide interval')
-    return f'{interval} ({"; ".join(notes)})' if notes else interval
+    """Render one subset's interval, or ``None`` when absent. Thin wrapper over the
+    shared formatter in :mod:`evalscope.report.formatting` (single implementation for
+    the report generator and the combinator display path)."""
+    rendered = format_ci_value(ci, n, semantics)
+    return rendered or None
 
 
 if TYPE_CHECKING:
@@ -204,10 +189,7 @@ class ReportGenerator:
                             score=row['score'],
                             num=row['num'],
                             num_correct=num_correct,
-                            ci_low=row['ci']['low'] if row['ci'] else None,
-                            ci_high=row['ci']['high'] if row['ci'] else None,
-                            ci_flags=list(row['ci']['flags']) if row['ci'] else None,
-                            ci_display=_format_ci(row['ci'], row['num'], semantics),
+                            ci=CIInfo(**row['ci']) if row['ci'] else None,
                             metadata=row['metadata'],
                         )
                     )

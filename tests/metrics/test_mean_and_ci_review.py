@@ -69,7 +69,7 @@ def test_string_category_is_not_split_into_characters():
     category = report.metrics[0].categories[0]
     assert category.name == ('STEM',)  # one-element tuple, never ('S','T','E','M')
     subset = report.metrics[0].categories[0].subsets[0]
-    assert subset.ci_low is not None and subset.ci_display is not None
+    assert subset.ci is not None and subset.ci.low is not None
 
 
 def test_width_flag_is_unit_invariant():
