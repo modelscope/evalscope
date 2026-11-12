@@ -3,10 +3,14 @@ import pytest
 from evalscope.api.registry import BENCHMARK_REGISTRY
 from evalscope.benchmarks.ifbench.ifbench_adapter import IFBenchAdapter
 from evalscope.benchmarks.ifbench.instructions import (
+    AlphabetLoopChecker,
     CharacterCountUniqueWordsChecker,
     KeywordsMultipleChecker,
+    LastWordFirstNextChecker,
     NGramOverlapChecker,
     PersonNameCountChecker,
+    PronounCountChecker,
+    QuoteExplanationChecker,
     RepeatSpanChecker,
     SentenceAlphabetChecker,
     StopWordPercentageChecker,
@@ -18,7 +22,7 @@ def test_ifbench_evaluation_version_reflects_scoring_change() -> None:
     metadata = BENCHMARK_REGISTRY['ifbench']
 
     assert metadata.data_adapter is IFBenchAdapter
-    assert metadata.evaluation_version == 'v1.2'
+    assert metadata.evaluation_version == 'v1.3'
 
 
 @pytest.mark.parametrize(
@@ -204,3 +208,74 @@ def test_stop_word_percentage_still_scores_normal_responses() -> None:
 
     # A normal response with words should be scored without raising.
     assert checker.check_following('The quick brown fox jumps over the lazy dog.') is True
+
+
+@pytest.mark.parametrize(
+    'response',
+    [
+        'This is good.',
+        'That works.',
+        'Who did this?',
+        'Everyone agreed.',
+        'None of these.',
+    ],
+)
+def test_pronoun_count_accepts_non_personal_pronouns(response: str) -> None:
+    # Upstream IFBench counts demonstrative, interrogative and indefinite pronouns too, so a single
+    # "This is good." satisfies count:pronouns with N=1. The local set only held personal, possessive
+    # and reflexive pronouns and scored those responses as failures (issue #2065).
+    checker = PronounCountChecker('count:pronouns')
+    checker.build_description(N=1)
+
+    assert checker.check_following(response) is True
+
+
+def test_pronoun_count_still_requires_the_requested_number() -> None:
+    checker = PronounCountChecker('count:pronouns')
+    checker.build_description(N=3)
+
+    assert checker.check_following('He left it with them.') is True  # he, it, them
+    assert checker.check_following('He left it there.') is False  # he, it
+    assert checker.check_following('He left.') is False
+
+
+@pytest.mark.parametrize(
+    'response',
+    [
+        '',
+        '!!!',
+        '??? ...',
+    ],
+)
+def test_alphabet_loop_rejects_responses_without_words(response: str) -> None:
+    # ``words[0]`` used to raise IndexError on a wordless response. Upstream returns False.
+    checker = AlphabetLoopChecker('start:alphabet_end:letter')
+    checker.build_description()
+
+    assert checker.check_following(response) is False
+
+
+def test_alphabet_loop_still_scores_ordered_words() -> None:
+    checker = AlphabetLoopChecker('start:alphabet_end:letter')
+    checker.build_description()
+
+    assert checker.check_following('Apple banana cherry') is True
+    assert checker.check_following('Banana apple cherry') is False
+
+
+def test_last_word_first_next_rejects_a_wordless_sentence() -> None:
+    # Indexing ``split()[-1]``/``split()[0]`` used to raise IndexError when a sentence had no words.
+    checker = LastWordFirstNextChecker('last:first_next')
+    checker.build_description()
+
+    assert checker.check_following('Hello. ???') is False
+    assert checker.check_following('Cat sat. Sat down.') is True
+
+
+def test_quote_explanation_accepts_an_empty_response() -> None:
+    # ``strip(...)[-1]`` used to raise IndexError on an empty response. Upstream returns True.
+    checker = QuoteExplanationChecker('quote:explanation')
+    checker.build_description()
+
+    assert checker.check_following('') is True
+    assert checker.check_following('Hi') is True
