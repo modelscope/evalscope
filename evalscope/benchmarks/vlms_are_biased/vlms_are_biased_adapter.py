@@ -24,35 +24,27 @@ SUBSET_LIST = [
 DESCRIPTION = """
 ## Overview
 
-VLMs Are Biased (VLMBias) evaluates whether vision-language models answer objective visual questions from the image or fall back to memorized prior knowledge. It uses counterfactual images whose visible properties conflict with familiar concepts, such as an Adidas-style logo with four stripes or an animal with an unusual number of legs.
+VLMs Are Biased (VLMBias) tests whether vision-language models follow visual evidence when it conflicts with familiar concepts, such as a logo with an unusual number of stripes.
 
 ## Task Description
 
-- **Task Type**: Free-form visual question answering for counting and identification
-- **Input**: A counterfactual or control image paired with a counting, binary identification, or short-answer question
-- **Output**: A number, `Yes`/`No`, or a short identity enclosed in curly brackets
+- **Task Type**: Visual question answering for counting and identification
+- **Input**: A counterfactual or control image and a question
+- **Output**: A number, `Yes`/`No`, or a short answer in curly brackets
 - **Domain**: Animals, logos, flags, chess pieces, game boards, optical illusions, and patterned grids
 
 ## Key Features
 
-- The primary `main` split contains 2,784 objective visual questions over 1,392 counterfactual images at 384, 768, and 1152 pixel resolutions
-- Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants
-- Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`
-- The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets
-- The default data is **v2**: optical-illusion target features are red and named in the questions, IDs are globally unique, and the truncated identification image is repaired
-- Both hubs are pinned to matching v2 snapshots; sample metadata preserves the v2 `ID`, the original `legacy_ID`, and the selected data version
+- 11,594 image-question pairs across six splits; `main` contains 2,784 questions
+- Seven topics and nineteen sub-topics, with identification, title-injection, original-image, and background-removal analyses
+- Default data: **v2**, with revised optical-illusion images/questions, unique IDs, and a repaired identification image
 
 ## Evaluation Notes
 
-- The dataset prompt is used verbatim, including its required curly-bracket answer format
-- Primary metric: **Accuracy** (`acc`), using the official case-insensitive comparison after stripping outer braces; if exact text matching fails, digit sequences are compared
-- Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization
-- Accuracy is also reported by topic, matching the official lmms-eval integration
-- `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`
-- The six official dataset splits are evaluated as separate EvalScope subsets by default; select only `main` for the primary counting evaluation
-- Default v2 runs use evaluation version **v1.1**. For the paper's v1 data, explicitly set `dataset_args={'vlms_are_biased': {'default_subset': 'v1-legacy', 'subset_list': ['main']}}`; these runs are labeled **v1 legacy** and use evaluation version **v1.0**. The legacy `identification` split retains the upstream truncated-image defect
-- v1 and v2 results are not directly interchangeable. Start a new output directory after changing data versions; do not use `rerun_review` to reuse predictions for changed images or prompts. Historical unpinned runs require inspection of their saved inputs/IDs to establish the data version
-- Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens
+- Metrics: **Accuracy** (`acc`, overall and by topic) and **Bias Ratio** (`bias_ratio`, lower is better), using official answer normalization and digit matching; `original` omits Bias Ratio
+- All six splits run by default; set `subset_list=['main']` for the primary counting evaluation
+- For the paper's v1 data, set `default_subset='v1-legacy'` in `dataset_args`. Use a new output directory when switching versions. The legacy `identification` split retains a truncated image
+- Prompts are used verbatim. The official lmms-eval setup uses `temperature=0` and at most 32 new tokens
 - [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)
 """
 
