@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
+from evalscope.metrics.aggregators.ci import ratio_ci_metadata
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -97,14 +98,18 @@ class Mean(Aggregator):
         aggregated_scores = []
         for metric_name, values in metric_values.items():
             if values:  # Only process non-empty value lists
+                num_correct = int(sum(values)) if all(v in (0, 1) for v in values) else None
                 aggregated_scores.append(
                     AggScore(
                         score=self.agg_func(values),
                         metric_name=metric_name,
                         aggregation=self.name,
                         num=len(values),
-                        num_correct=int(sum(values)) if all(v in (0, 1) for v in values) else None,
+                        num_correct=num_correct,
                         ids=metric_sample_ids[metric_name],
+                        # Ratio metrics carry an interval estimate; continuous metrics need the
+                        # bootstrap planned as the second slice of #2011.
+                        metadata=ratio_ci_metadata(num_correct, len(values)) if num_correct is not None else None,
                     )
                 )
 
