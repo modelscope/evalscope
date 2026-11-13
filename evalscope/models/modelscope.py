@@ -284,8 +284,9 @@ class ModelScopeAPI(ModelAPI):
             if self.enable_thinking is not None:
                 template_kwargs['enable_thinking'] = self.enable_thinking
 
+            # Chat templates take messages as plain dicts; transformers>=5.23 calls `.items()` on each one.
             chat = self.tokenizer.apply_chat_template(
-                ms_messages,
+                [message.model_dump(exclude_none=True) for message in ms_messages],
                 **template_kwargs,
             )
         else:
