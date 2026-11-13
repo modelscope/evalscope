@@ -51,6 +51,12 @@ evalscope eval \
 - Output structure: `outputs/<timestamp>/{logs,predictions,reviews,reports,configs}`.
 - Inference concurrency: `eval_batch_size`.
 
+## Reusing Cached Evaluations
+
+With `use_cache`, the versions and effective settings of the collection's actual member benchmarks are checked. Changing a member's scoring configuration or evaluation version requires an explicit review rerun; older collection caches without member information also require this step.
+
+Set `use_cache` to the previous output directory and `rerun_review=True` to retain predictions and recompute scores. This does not regenerate model outputs or the prompts embedded in the compiled collection. If those need to change, regenerate the collection as needed and start a fresh evaluation.
+
 ## Metrics & Output
 
 The system outputs reports from five "observation perspectives":

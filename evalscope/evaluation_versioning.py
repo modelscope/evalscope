@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from evalscope.api.model.generate_config import GenerateConfig
 
 if TYPE_CHECKING:
-    from evalscope.api.benchmark import BenchmarkMeta
+    from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
     from evalscope.config import TaskConfig
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
@@ -27,6 +27,13 @@ _SECRET_KEYS = {
     'x-api-key',
     'x-auth-token',
 }
+
+
+class ResolvedBenchmarkDependency(BaseModel):
+    """Published version and effective settings of a composite benchmark's member."""
+
+    evaluation_version: str
+    benchmark: 'ResolvedBenchmarkSpec'
 
 
 class ResolvedBenchmarkSpec(BaseModel):
@@ -55,6 +62,21 @@ class ResolvedBenchmarkSpec(BaseModel):
     max_image_bytes: Optional[Union[int, str]] = None
     extra_params: Dict[str, Any] = Field(default_factory=dict)
     sandbox_config: Optional[Dict[str, Any]] = None
+    dependencies: Dict[str, ResolvedBenchmarkDependency] = Field(default_factory=dict)
+
+    @classmethod
+    def from_adapter(cls, adapter: 'DataAdapter', task_config: 'TaskConfig') -> 'ResolvedBenchmarkSpec':
+        """Resolve an adapter and its actual member benchmarks before validating cached reviews."""
+        members = adapter.evaluation_dependencies()
+        spec = cls.from_meta(adapter.benchmark_meta, task_config)
+        spec.dependencies = {
+            name: ResolvedBenchmarkDependency(
+                evaluation_version=member.benchmark_meta.evaluation_version,
+                benchmark=cls.from_adapter(member, task_config),
+            )
+            for name, member in sorted(members.items())
+        }
+        return spec
 
     @classmethod
     def from_meta(cls, meta: 'BenchmarkMeta', task_config: 'TaskConfig') -> 'ResolvedBenchmarkSpec':
@@ -182,7 +204,7 @@ def build_benchmark_identity(
     payload = {
         'shared_scoring_version': SHARED_SCORING_VERSION,
         'evaluation_version': evaluation_version,
-        'benchmark': spec.model_dump(mode='json'),
+        'benchmark': _fingerprint_benchmark_spec(spec),
         'task': _fingerprint_task_config(task_config),
     }
     encoded = _canonical_json(_scrub_secrets(payload)).encode('utf-8')
@@ -275,7 +297,7 @@ def legacy_identity_from_config(
         return None
     payload = {
         'evaluation_version': 'v1.0',
-        'benchmark': spec.model_dump(mode='json'),
+        'benchmark': _fingerprint_benchmark_spec(spec),
         'task': _fingerprint_task_mapping(task_config),
     }
     encoded = _canonical_json(_scrub_secrets(payload)).encode('utf-8')
@@ -330,6 +352,20 @@ def _canonicalize_generation_config(config: Any) -> Any:
             continue
         result[key] = value
     return result
+
+
+def _fingerprint_benchmark_spec(spec: ResolvedBenchmarkSpec) -> Dict[str, Any]:
+    """Include composite semantics while preserving existing fingerprints for ordinary benchmarks."""
+    payload = spec.model_dump(mode='json', exclude={'dependencies'})
+    if spec.dependencies:
+        payload['dependencies'] = {
+            name: {
+                'evaluation_version': dependency.evaluation_version,
+                'benchmark': _fingerprint_benchmark_spec(dependency.benchmark),
+            }
+            for name, dependency in spec.dependencies.items()
+        }
+    return payload
 
 
 def _fingerprint_task_config(task_config: 'TaskConfig') -> Dict[str, Any]:

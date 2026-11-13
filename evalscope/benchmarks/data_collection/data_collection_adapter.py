@@ -75,6 +75,17 @@ class DataCollectionAdapter(DefaultDataAdapter):
         """
         super().__init__(**kwargs)
 
+    def load_dataset(self) -> DatasetDict:
+        """Reuse the collection loaded for identity resolution, including its member adapters."""
+        if self.test_dataset is None:
+            return super().load_dataset()
+        return self.test_dataset
+
+    def evaluation_dependencies(self) -> Dict[str, DataAdapter]:
+        """Discover the effective child adapters before the collection cache is validated."""
+        self.load_dataset()
+        return self.dataset_adapters
+
     def load(self):
         dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern='*.jsonl', allow_local_file=True)
         dataset = load_local_file_dataset(

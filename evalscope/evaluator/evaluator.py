@@ -584,7 +584,7 @@ class DefaultEvaluator(Evaluator):
         if self.task_config.analysis_report and agg_score_dict:
             logger.info('Generating report analysis, please wait ...')
             meta = self.benchmark.benchmark_meta
-            spec = ResolvedBenchmarkSpec.from_meta(meta, self.task_config)
+            spec = ResolvedBenchmarkSpec.from_adapter(self.benchmark, self.task_config)
             identity = build_benchmark_identity(spec, meta.evaluation_version, self.task_config)
             analysis = report.generate_analysis(
                 self.task_config,
