@@ -2499,6 +2499,18 @@
     "ReportSubset": {
       "additionalProperties": false,
       "properties": {
+        "ci": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "is_aggregate": {
           "default": false,
           "type": "boolean"

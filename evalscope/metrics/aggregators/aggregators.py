@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
-from math import isfinite
+from math import isfinite, sqrt
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
 from evalscope.utils.logger import get_logger
 
@@ -403,4 +404,174 @@ class MeanPassHatK(Aggregator):
                     )
                 )
 
+        return aggregated_scores
+
+
+# --- Confidence interval support (issue: report score confidence intervals) ---
+
+_WILSON_Z = 1.959963984540054
+"""Two-sided 95% normal quantile for the Wilson score interval."""
+
+_BOOTSTRAP_B = 2000
+"""Resample count for the percentile bootstrap; the 2.5% tail is noisy at B=1000."""
+
+_BOOTSTRAP_SEED = 0
+"""Fixed seed so repeated aggregations of the same scores are bit-identical."""
+
+_LOW_CONFIDENCE_N = 30
+"""Below this sample count no interval is meaningful: flagged, not trusted."""
+
+_WIDE_INTERVAL_PTS = 15.0
+"""Interval width (in percentage points) above which a metric is flagged high-variance.
+
+Distinct from ``_LOW_CONFIDENCE_N``: the first flag means "too little data", this one means
+"enough data, but the metric itself is high-variance" — at p=0.5, n=30 already gives a
+~34pt width, so this flag only has independent meaning at n >= 30."""
+
+
+def _wilson_interval(values: List[float]) -> Tuple[float, float]:
+    """Wilson score interval for 0/1 values, on the same 0-1 scale as the mean.
+
+    Analytic (no resampling) and valid at p->0 and p->1, where the normal approximation
+    collapses to a zero-width interval. The interval is asymmetric; render as ``[lo, hi]``.
+    """
+    n = len(values)
+    p = sum(values) / n
+    denom = 1 + _WILSON_Z * _WILSON_Z / n
+    center = (p + _WILSON_Z * _WILSON_Z / (2 * n)) / denom
+    margin = _WILSON_Z * sqrt(p * (1 - p) / n + _WILSON_Z * _WILSON_Z / (4 * n * n)) / denom
+    return max(0.0, center - margin), min(1.0, center + margin)
+
+
+def _bootstrap_interval(values: List[float]) -> Tuple[float, float]:
+    """Percentile bootstrap interval for a continuous metric, same scale as the mean.
+
+    Fixed seed and batched resampling keep memory bounded and results reproducible.
+    """
+    import numpy as np
+
+    if not values:
+        return float('nan'), float('nan')
+    rng = np.random.default_rng(_BOOTSTRAP_SEED)
+    n = len(values)
+    array = np.asarray(values, dtype=float)
+    means = np.empty(_BOOTSTRAP_B, dtype=float)
+    # Batch size follows a memory budget (~16MB per index matrix), not a fixed count:
+    # a fixed batch would scale peak memory linearly with the subset size.
+    batch_size = max(1, 2_000_000 // max(1, n))
+    start = 0
+    while start < _BOOTSTRAP_B:
+        count = min(batch_size, _BOOTSTRAP_B - start)
+        index = rng.integers(0, n, size=(count, n))
+        means[start : start + count] = array[index].mean(axis=1)
+        start += count
+    return float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5))
+
+
+@register_aggregation(name='mean_and_ci')
+class MeanAndCI(Mean):
+    """Mean plus a 95% confidence interval and representativeness flags.
+
+    Ratio metrics (every sample value is 0 or 1) get the analytic Wilson interval;
+    continuous metrics get a percentile bootstrap. The resampling unit is the unit the
+    mean is taken over — the samples passed to this aggregator, i.e. one reported subset;
+    a reported mean-of-subset-means must be bootstrapped at that layer instead.
+
+    One ``AggScore`` per metric: the interval lives in its ``metadata`` under the ``ci``
+    key (numeric endpoints in the metric's own scale, level, method, flags) — a single
+    metric identity, losslessly saved with the report and formatted at the display
+    boundary. ``n`` counts scored samples (post fail-closed); the excluded count belongs
+    to the report layer, and the interval assumes exclusions are ignorable (MCAR).
+
+    The interval describes **item-sampling error**: it does not capture decoding
+    nondeterminism, prompt/template sensitivity, or judge variance. A narrow interval is
+    not evidence that the score is stable, and the flags are small-sample/precision
+    warnings — ``low_confidence`` means too few observations to support an interval
+    (a warning policy, not a universal rule), not proof that a dataset is or is not
+    representative. Display shows the interval alongside the flag.
+
+    Repeated generations of the same item are **not** independent samples; this v1
+    aggregator rejects them (via group_id/generation_index or duplicate sample_id)
+    instead of treating repeat count as sample count.
+
+    ``name`` is an instance attribute (same shape as ``MeanPassAtK``): the emitted
+    ``AggScore`` rows carry ``aggregation='mean'``, so 'mean_and_ci' is a registry key
+    that selects this aggregator, not an identity vocabulary name.
+    """
+
+    def __init__(self, repeats: int = 1):
+        if isinstance(repeats, bool) or not isinstance(repeats, int) or repeats < 1:
+            raise ValueError('MeanAndCI requires a positive integer repeats count.')
+        if repeats > 1:
+            raise ValueError(
+                f'MeanAndCI does not support repeats={repeats}; repeated generations are not '
+                'independent samples and an item-sampling interval over them would be wrong. '
+                'Use repeats=1 (interval over the mean of generations is a different estimator) '
+                'or bayes_at_n, which models repeat groups.'
+            )
+        self.name = 'mean_and_ci'
+
+    def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
+        # Delegate the mean itself to Mean so the two aggregators cannot drift; the
+        # duplicate-sample_id check stays here because Mean has none.
+        seen_ids: Dict[Any, None] = {}
+        for score in scores:
+            if score.sample_id in seen_ids:
+                raise ValueError(
+                    f'Sample {score.sample_id!r} appears more than once; repeated generations are '
+                    'not independent samples and mean_and_ci does not support repeats.'
+                )
+            seen_ids[score.sample_id] = None
+
+        metric_values: Dict[str, List[float]] = defaultdict(list)
+        for score in scores:
+            for metric_name, value in score.score.value.items():
+                # Key the values by the *canonicalized* name: the rows coming back from
+                # Mean.__call__ were canonicalized by AggScore's identity validator, so
+                # a raw ambiguous key (e.g. 'score' -> 'legacy_metric') would not match.
+                canonical_name = canonicalize_producer_identity(metric_name, 'mean').name
+                metric_values[canonical_name].append(value)
+
+        aggregated_scores = super().__call__(scores)
+        for entry in aggregated_scores:
+            # The emitted identity stays 'mean': Mean.__call__ stamps self.name, which is
+            # the registry selector, not the identity. Downstream consumers look up
+            # aggregation == 'mean' and must keep finding these rows.
+            entry.aggregation = 'mean'
+            values = metric_values[entry.metric_name]
+            # One rule for non-finite observations: the interval is only attached to a
+            # finite point estimate. Mean propagates nan/inf, so any non-finite
+            # observation makes the score non-finite and the entry simply carries no
+            # interval (the score itself already says "not measurable"); a finite score
+            # proves every observation is finite, so valid_n always equals num and there
+            # is exactly one population to describe. is_ratio deliberately reads the
+            # unfiltered values: on an empty list all() is True, which would misroute an
+            # all-nan metric into the Wilson branch.
+            if not isfinite(entry.score):
+                continue
+            is_ratio = all(v in (0, 1) for v in values)
+            if is_ratio:
+                ci_low, ci_high = _wilson_interval(values)
+                ci_method = 'wilson'
+            else:
+                ci_low, ci_high = _bootstrap_interval(values)
+                ci_method = 'bootstrap'
+
+            flags: List[str] = []
+            if entry.num < _LOW_CONFIDENCE_N:
+                flags.append('low_confidence')
+            if is_ratio and (ci_high - ci_low) * 100 > _WIDE_INTERVAL_PTS:
+                flags.append('wide_interval')
+
+            entry.metadata = {
+                **(entry.metadata or {}),
+                'ci': {
+                    'low': ci_low,
+                    'high': ci_high,
+                    'level': 0.95,
+                    'method': ci_method,
+                    'flags': flags,
+                    'valid_n': entry.num,
+                },
+            }
         return aggregated_scores

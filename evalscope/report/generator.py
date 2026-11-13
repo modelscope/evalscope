@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from pandas import DataFrame
@@ -9,10 +11,20 @@ from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.metrics.semantics.primary import PrimarySelection, PrimarySelectionStatus, select_primary
 from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX
-from evalscope.report.report import Category, Metric, Report, Subset
+from evalscope.report.formatting import format_ci_value
+from evalscope.report.report import Category, CIInfo, Metric, Report, Subset
 from evalscope.utils import get_logger
 
 logger = get_logger()
+
+
+def _format_ci(ci: Optional[Dict[str, Any]], n: int, semantics: Optional[MetricSemantics]) -> Optional[str]:
+    """Render one subset's interval, or ``None`` when absent. Thin wrapper over the
+    shared formatter in :mod:`evalscope.report.formatting` (single implementation for
+    the report generator and the combinator display path)."""
+    rendered = format_ci_value(ci, n, semantics)
+    return rendered or None
+
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -118,10 +130,10 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
-                    identity = agg_score_item.identity
-
                     if isinstance(categories, str):
                         categories = [categories]
+                    identity = agg_score_item.identity
+                    ci = (agg_score_item.metadata or {}).get('ci')
                     subsets.append(
                         dict(
                             name=subset_name,
@@ -129,6 +141,7 @@ class ReportGenerator:
                             num=agg_score_item.num,
                             num_correct=agg_score_item.num_correct,
                             metadata=agg_score_item.metadata,
+                            ci=ci,
                             identity_key=identity.key,
                             identity=identity,
                             categories=tuple(categories),
@@ -176,6 +189,7 @@ class ReportGenerator:
                             score=row['score'],
                             num=row['num'],
                             num_correct=num_correct,
+                            ci=CIInfo(**row['ci']) if row['ci'] else None,
                             metadata=row['metadata'],
                         )
                     )

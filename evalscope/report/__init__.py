@@ -49,6 +49,7 @@ else:
         ],
         'report': [
             'Category',
+            'CIInfo',
             'BenchmarkAnalysisContext',
             'ExecutionSubset',
             'ExecutionSummary',

@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from evalscope.api.metric import MetricSelector, SampleScore, Score
 from evalscope.metrics.aggregators import Mean
-from evalscope.report import Report, gen_table
+from evalscope.report import CIInfo, Report, gen_table
 from evalscope.report.generator import ReportGenerator
 
 
@@ -71,3 +71,31 @@ def test_report_saved_before_the_field_still_loads():
 
     assert report.metrics[0].num_correct is None
     assert 'Correct' not in gen_table(report_list=[report])
+
+
+def test_ci_report_round_trips_through_service_route(tmp_path):
+    """A CI-bearing report must survive save -> service load (review request: real
+    report save/load through the service route), with the interval metadata intact."""
+    import json
+
+    from evalscope.report.report import Report
+
+    report = make_report({'Art': [{'accuracy': 1.0}] * 40}, 'accuracy')
+    metric = report.metrics[0]
+    for subset in metric.categories[0].subsets:
+        subset.ci = CIInfo(low=0.64, high=0.95, flags=['low_confidence'])
+
+    report_file = tmp_path / 'report.json'
+    report_file.write_text(json.dumps(report.to_dict()), encoding='utf-8')
+
+    loaded = Report.model_validate_json(report_file.read_text(encoding='utf-8'))
+    subset = loaded.metrics[0].categories[0].subsets[0]
+    assert subset.ci.low == 0.64 and subset.ci.high == 0.95
+    assert subset.ci.flags == ['low_confidence']
+
+    # the dataframe table keeps the structured CI; a single-metric report adds no
+    # OVERALL row, and an interval is never synthesized at aggregate level anyway
+    df = loaded.to_dataframe()
+    assert 'CI' in df.columns
+    assert df['CI'].notna().all()
+    assert df['CI'].iloc[0]['low'] == 0.64

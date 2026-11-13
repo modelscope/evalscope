@@ -3,6 +3,7 @@ from .aggregators import (
     METRIC_WEIGHTS_KEY,
     ClippedMean,
     Mean,
+    MeanAndCI,
     MeanPassAtK,
     MeanPassHatK,
     MeanVoteAtK,
