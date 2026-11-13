@@ -21,6 +21,7 @@
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `banking77` | [BANKING77](../../benchmarks/banking77.md) | `MCQ` |
+| `bbeh` | [BBEH](../../benchmarks/bbeh.md) | `Reasoning` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
@@ -194,6 +195,7 @@
 ../../benchmarks/arxivrollbench.md
 ../../benchmarks/arxivrollbench_full.md
 ../../benchmarks/banking77.md
+../../benchmarks/bbeh.md
 ../../benchmarks/bbh.md
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
