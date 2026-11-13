@@ -56,6 +56,25 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='diagnostic.count.items',
         metric_name=Metrics.FAILED_REQUESTS,
     ),
+    #: Status-code-derived rates: already percentages (0-100).
+    Metrics.ERROR_RATE: MetricEntry(
+        baseline='diagnostic.parse_status.ratio',
+        metric_name=Metrics.ERROR_RATE,
+        value_range={'min': 0.0, 'max': 100.0},
+        display_multiplier=1.0,
+    ),
+    Metrics.RATE_LIMIT_RATE: MetricEntry(
+        baseline='diagnostic.parse_status.ratio',
+        metric_name=Metrics.RATE_LIMIT_RATE,
+        value_range={'min': 0.0, 'max': 100.0},
+        display_multiplier=1.0,
+    ),
+    Metrics.SERVER_ERROR_RATE: MetricEntry(
+        baseline='diagnostic.parse_status.ratio',
+        metric_name=Metrics.SERVER_ERROR_RATE,
+        value_range={'min': 0.0, 'max': 100.0},
+        display_multiplier=1.0,
+    ),
     Metrics.STREAM_REQUESTS: MetricEntry(
         baseline='diagnostic.count.items',
         metric_name=Metrics.STREAM_REQUESTS,
