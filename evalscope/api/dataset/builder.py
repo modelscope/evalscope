@@ -1,4 +1,5 @@
 import copy
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Union
 
 from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample, validate_dataset_repeats
@@ -92,8 +93,15 @@ def build_dataset_dict_from_record_map(
 def resolve_snapshot_or_local_path(
     adapter: 'DataAdapter',
     allow_file_pattern: Optional[Union[str, List[str]]] = None,
+    *,
+    allow_local_file: bool = False,
 ) -> str:
-    """Resolve an adapter dataset_id as a local path or downloaded snapshot root."""
+    """Resolve a snapshot root, accepting a direct local file only when explicitly enabled."""
+    if allow_local_file:
+        path = Path(adapter.dataset_id)
+        if path.is_file():
+            # Preserve symlink extensions and the filesystem meaning of ".." after directory symlinks.
+            return str(path.absolute())
     return DatasetHub(
         data_id_or_path=adapter.dataset_id,
         data_source=adapter.dataset_hub,
