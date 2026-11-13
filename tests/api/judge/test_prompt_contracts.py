@@ -16,7 +16,7 @@ from evalscope.benchmarks.deepsearchqa.utils import GRADE_CONTRACT as DEEPSEARCH
 from evalscope.benchmarks.deepsearchqa.utils import build_grader_prompt
 from evalscope.benchmarks.image_edit.gedit import vie_prompts
 from evalscope.benchmarks.image_edit.gedit.gedit_adapter import GEDIT_CONTRACT
-from evalscope.benchmarks.job_bench.job_bench_adapter import _RubricVerdict
+from evalscope.benchmarks.job_bench.job_bench_adapter import _rubric_verdict_model
 from evalscope.benchmarks.job_bench.utils import build_judge_prompt
 from evalscope.benchmarks.researchrubrics.utils import (
     BINARY_CONTRACT,
@@ -218,17 +218,20 @@ def test_charxiv_requests_declare_and_enforce_the_final_output_contract(
         assert score.judge_summary.failures == {'parse_error': 1}
 
 
-def test_job_bench_output_example_is_json_and_matches_the_schema() -> None:
-    prompt = build_judge_prompt({'rubric': '', 'criterion': ['first', 'second']}, 'artifact', False)
+@pytest.mark.parametrize('criteria_count', [0, 1, 2, 3])
+def test_job_bench_output_example_matches_the_declared_criteria_count(criteria_count: int) -> None:
+    criteria = [f'criterion {index}' for index in range(criteria_count)]
+    prompt = build_judge_prompt({'rubric': '', 'criterion': criteria}, 'artifact', False)
     example = prompt.split('## Output Format\n')[1].split('\n\nIMPORTANT:')[0]
     example = example[example.index('{'):example.rindex('}') + 1]
 
-    result = OutputContract(schema_model=_RubricVerdict).parse(example)
+    result = OutputContract(schema_model=_rubric_verdict_model(criteria_count)).parse(example)
 
     assert result.ok, result.error
+    assert len(result.value.criteria_results) == criteria_count
     assert 'true/false' not in example
     assert 'true or false' in prompt.split('IMPORTANT:')[1]
-    assert 'exactly 2 items' in prompt
+    assert f'exactly {criteria_count} items' in prompt
 
 
 def test_gedit_output_example_is_json_and_matches_the_schema() -> None:
@@ -250,6 +253,12 @@ def _job_bench_state(tmp_path: Path) -> TaskState:
         'rubric_json': [{'rubric': 'Complete answer', 'criterion': ['first', 'second'], 'weight': 2}],
     }
     return state
+
+
+def test_job_bench_empty_criteria_schema_accepts_an_empty_complete_verdict() -> None:
+    contract = OutputContract(schema_model=_rubric_verdict_model(0))
+
+    assert contract.parse('{"rubric_passed":true,"criteria_results":[]}').ok
 
 
 def test_job_bench_complete_criteria_pass_through_the_executor(tmp_path: Path) -> None:
@@ -359,12 +368,20 @@ def test_plawbench_finite_numeric_string_remains_supported() -> None:
     assert score.value['acc'] == 1.0
 
 
-def test_wide_search_fractional_column_score_is_rejected() -> None:
+@pytest.mark.parametrize('reply', [
+    '{"idx_0":0.5}',
+    '{"idx_0":0.0}',
+    '{"idx_0":1.0}',
+    '{"idx_0":true}',
+    '{"idx_0":false}',
+    '{"idx_0":2}',
+])
+def test_wide_search_non_integer_or_out_of_range_column_scores_are_rejected(reply: str) -> None:
     contract = OutputContract(schema_model=_column_score_model(1))
 
     assert contract.parse('{"idx_0":0}').ok
     assert contract.parse('{"idx_0":1}').ok
-    assert not contract.parse('{"idx_0":0.5}').ok
+    assert not contract.parse(reply).ok
 
 
 def test_strict_judge_scoring_versions_are_advanced() -> None:

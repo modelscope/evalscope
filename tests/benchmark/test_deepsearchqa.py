@@ -6,6 +6,8 @@ from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.deepsearchqa.utils import (
     GRADE_CONTRACT,
+    _answer_keys,
+    _reference_parts,
     aggregate_official_scores,
     metrics_from_grade,
     rule_fallback_score,
@@ -140,6 +142,26 @@ class TestDeepSearchQAUtils(unittest.TestCase):
                 self.assertEqual(score.status, ScoreStatus.EXCLUDED)
                 self.assertEqual(score.value, {})
                 self.assertEqual(score.judge_summary.failures, {'parse_error': 1})
+
+    def test_repeated_answers_keep_grouped_occurrences_in_the_dataset_denominator(self) -> None:
+        reference = (
+            '2021: Brazil, United States, China, Indonesia, India\n'
+            '2020: Brazil, United States, China, Indonesia, India\n'
+            '2019: Brazil, United States, China, Indonesia, India'
+        )
+        parts = _reference_parts(reference, 'Set Answer')
+        keys = _answer_keys(parts)
+
+        self.assertEqual(len(parts), 15)
+        self.assertEqual(len(set(keys)), 15)
+        score = self._judge_score({key: True for key in keys}, reference)
+        self.assertTrue(score.status.is_usable)
+        self.assertEqual(score.value['f1'], 1.0)
+
+        incomplete = {key: True for key in keys[:-1]}
+        score = self._judge_score(incomplete, reference)
+        self.assertEqual(score.status, ScoreStatus.EXCLUDED)
+        self.assertEqual(score.value, {})
 
     def test_single_answer_comma_is_not_split_into_dataset_keys(self) -> None:
         score = self._judge_score({'Washington': True}, 'Washington, D.C.', 'Single Answer')

@@ -7,6 +7,7 @@ satisfy the schema is a ``parse_error``, never a silently-zero score.
 
 import json
 import math
+from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Type, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -97,12 +98,13 @@ def _finite_json_float(value: str) -> float:
 
 
 def _reject_nonfinite_numbers(value: Any) -> None:
-    if isinstance(value, float) and not math.isfinite(value):
+    if isinstance(value, (float, Decimal)) and not math.isfinite(value):
         raise ValueError('numeric values must be finite')
     if isinstance(value, dict):
-        for item in value.values():
+        for key, item in value.items():
+            _reject_nonfinite_numbers(key)
             _reject_nonfinite_numbers(item)
-    elif isinstance(value, (list, tuple)):
+    elif isinstance(value, (list, tuple, set, frozenset)):
         for item in value:
             _reject_nonfinite_numbers(item)
 

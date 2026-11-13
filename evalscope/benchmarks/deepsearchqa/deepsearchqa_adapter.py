@@ -11,6 +11,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 
 from .utils import (
+    _answer_keys,
     _grade_model,
     _reference_parts,
     aggregate_official_scores,
@@ -134,7 +135,8 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                 reason='empty_model_output',
             )
 
-        expected_answers = _reference_parts(context.reference, context.task_state.metadata['answer_type'])
+        reference_parts = _reference_parts(context.reference, context.task_state.metadata['answer_type'])
+        expected_answers = _answer_keys(reference_parts)
         contract = OutputContract(schema_model=_grade_model(expected_answers))
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
@@ -144,9 +146,11 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                 answer_type=judge_context.task_state.metadata['answer_type'],
                 response=judge_context.filtered_prediction,
             )
-            prompt += '\n\nCorrectness Details must contain exactly these dataset-defined keys: ' + json.dumps(
+            prompt += '\n\nCorrectness Details must contain exactly these dataset-derived answer keys: ' + json.dumps(
                 case.metadata['expected_answers'], ensure_ascii=False
             )
+            if case.metadata['expected_answers'] != reference_parts:
+                prompt += '\nNumbered keys distinguish repeated answer parts by their order in the Correct Answer.'
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:

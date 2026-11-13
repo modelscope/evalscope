@@ -222,6 +222,12 @@ def _reference_parts(answer: str, answer_type: str) -> List[str]:
     return _split_reference(answer)
 
 
+def _answer_keys(parts: Sequence[str]) -> List[str]:
+    if len(parts) == len(set(parts)):
+        return list(parts)
+    return [f'{index}. {part}' for index, part in enumerate(parts, start=1)]
+
+
 def _split_reference(answer: str) -> List[str]:
     if not answer or not answer.strip():
         return []
@@ -245,7 +251,7 @@ def _split_reference(answer: str) -> List[str]:
         part = re.sub(r'^\s*(?:[-*•]+\s*)+', '', raw_part).strip()
         for candidate in _split_list_conjunction(part):
             candidate = re.sub(r'^and\s+', '', candidate, flags=re.IGNORECASE).strip()
-            if candidate and candidate not in parts:
+            if candidate:
                 parts.append(candidate)
     return parts
 

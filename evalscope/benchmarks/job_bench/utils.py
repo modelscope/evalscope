@@ -287,6 +287,22 @@ def build_judge_prompt(rubric: Dict[str, Any], file_contents: str, vision_used: 
     rubric_text = rubric.get('rubric', '')
     criteria = normalize_criteria(rubric)
     criteria_list_text = '\n'.join(f'Criterion {idx}: {criterion}' for idx, criterion in enumerate(criteria))
+    output_example = json.dumps(
+        {
+            'criteria_results': [
+                {
+                    'index': index,
+                    'passed': True,
+                    'reasoning': 'The criterion is satisfied.',
+                    'evidence': 'Evidence for the criterion.',
+                }
+                for index in range(len(criteria))
+            ],
+            'rubric_passed': True,
+            'overall_reasoning': 'All criteria are satisfied.' if criteria else 'No criteria require evaluation.',
+        },
+        indent=2,
+    )
     return f"""You are an evaluation judge. Your task is to evaluate ALL criteria for a single rubric.
 
 ## Rubric Description
@@ -309,14 +325,7 @@ The following are the contents of all output files to evaluate:
 
 ## Output Format
 Return your judgment as a JSON object with EXACTLY this structure (no markdown, no extra text):
-{{
-  "criteria_results": [
-    {{"index": 0, "passed": true, "reasoning": "The first criterion is satisfied.", "evidence": "Evidence for the first criterion."}},
-    {{"index": 1, "passed": false, "reasoning": "The second criterion is not satisfied.", "evidence": "Evidence for the second criterion."}}
-  ],
-  "rubric_passed": false,
-  "overall_reasoning": "The rubric failed because the second criterion is not satisfied."
-}}
+{output_example}
 
 IMPORTANT:
 - Set each "passed" value and "rubric_passed" to a JSON boolean: true or false.

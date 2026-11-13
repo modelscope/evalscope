@@ -1,5 +1,6 @@
 """The judge output contract: accept one complete JSON object without recovering fragments."""
 import json
+from decimal import Decimal
 from typing import Literal
 
 import pytest
@@ -219,6 +220,24 @@ def test_rejects_non_finite_unbounded_ratings(reply: str) -> None:
 
     assert not result.ok
     assert 'finite' in result.error
+
+
+def test_rejects_non_finite_numbers_in_nested_containers() -> None:
+    class Containers(BaseModel):
+        scores: set[float] = Field(default_factory=set)
+        labels: dict[float, str] = Field(default_factory=dict)
+
+    contract = OutputContract(schema_model=Containers)
+
+    assert not contract.parse('{"scores":["Infinity"]}').ok
+    assert not contract.parse('{"labels":{"Infinity":"invalid"}}').ok
+
+
+def test_rejects_non_finite_decimal_ratings() -> None:
+    class DecimalRating(BaseModel):
+        verdict: Decimal
+
+    assert not OutputContract(schema_model=DecimalRating).parse('{"verdict":"Infinity"}').ok
 
 
 # ---------------------------------------------------------------------------

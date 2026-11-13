@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -362,5 +362,5 @@ def _column_score_model(size: int) -> type[BaseModel]:
 
     return create_model(
         f'WideSearchColumnScore{size}',
-        **{f'idx_{index}': (Literal[0, 1], ...) for index in range(size)},
+        **{f'idx_{index}': (int, Field(strict=True, ge=0, le=1)) for index in range(size)},
     )
