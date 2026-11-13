@@ -53,3 +53,19 @@ def test_summary_reports_the_rates() -> None:
     summary = BenchmarkSummary.from_dict(message)
     assert summary.error_rate == 100.0
     assert 'Error Rate (%)' in summary.to_dict()
+
+
+def test_summary_table_shows_the_rates_when_requests_failed() -> None:
+    accumulator = _accumulate(429, 500, 400)
+    table = BenchmarkSummary.from_dict(accumulator.to_result().create_message()).to_table()
+
+    assert 'Error Rate (%)' in table
+    assert '429 Rate (%)' in table
+    assert '5xx Rate (%)' in table
+
+
+def test_summary_table_hides_the_rates_without_failures() -> None:
+    accumulator = MetricsAccumulator()
+    table = BenchmarkSummary.from_dict(accumulator.to_result().create_message()).to_table()
+
+    assert 'Error Rate (%)' not in table

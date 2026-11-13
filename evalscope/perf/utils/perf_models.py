@@ -141,6 +141,10 @@ class BenchmarkSummary(BaseModel):
         rows.append(
             ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}')
         )
+        if self.failed_requests > 0:
+            rows.append((Metrics.ERROR_RATE, _fmt(Metrics.ERROR_RATE, self.error_rate)))
+            rows.append((Metrics.RATE_LIMIT_RATE, _fmt(Metrics.RATE_LIMIT_RATE, self.rate_limit_rate)))
+            rows.append((Metrics.SERVER_ERROR_RATE, _fmt(Metrics.SERVER_ERROR_RATE, self.server_error_rate)))
         if self.stream_requests > 0 and self.non_stream_requests > 0:
             rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
         rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(Metrics.REQUEST_THROUGHPUT, self.request_throughput)))
