@@ -13,6 +13,7 @@ import pytest
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
 from evalscope.report import ReportRef  # noqa: E402
+from evalscope.service.prediction_cache import clear_prediction_cache  # noqa: E402
 from evalscope.service.report_meta_cache import clear_report_meta_cache  # noqa: E402
 
 
@@ -24,6 +25,7 @@ class TestReportEndpoints(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.client = create_app().test_client()
         clear_report_meta_cache()
+        clear_prediction_cache()
 
     def tearDown(self):
         import shutil
@@ -109,6 +111,76 @@ class TestReportEndpoints(unittest.TestCase):
             )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.get_json()['predictions']), 1)
+
+    def _write_prediction_sources(self, run_id: str, model_id: str, dataset: str, subset: str) -> Path:
+        """Create the review/prediction cache files the predictions endpoint reads,
+        and return the review file path so a test can mutate it."""
+        from evalscope.report.data_frames import get_prediction_source_paths
+
+        work_dir = str(Path(self.tmp) / run_id)
+        review_path, prediction_path = get_prediction_source_paths(work_dir, model_id, dataset, subset)
+        for path in (review_path, prediction_path):
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_text('{}\n', encoding='utf-8')
+        return Path(review_path)
+
+    def _get_predictions(self, headers=None):
+        import pandas as pd
+
+        frame = pd.DataFrame([{
+            'Index': '0',
+            'Input': 'question',
+            'Metadata': {},
+            'Generated': 'answer',
+            'Gold': 'answer',
+            'Pred': 'answer',
+            'Score': {},
+            'NScore': 1.0,
+        }])
+        with mock.patch(
+            'evalscope.service.blueprints.reports.get_model_prediction',
+            return_value=frame,
+        ) as mocked:
+            res = self.client.get(
+                '/api/v1/reports/runs/20260101_120000/models/model-a/predictions',
+                query_string={'root_path': self.tmp, 'dataset_name': 'gsm8k', 'subset_name': 'main'},
+                headers=headers or {},
+            )
+        return res, mocked
+
+    def test_predictions_sets_etag(self):
+        self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')
+        res, _ = self._get_predictions()
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.headers.get('ETag'))
+
+    def test_predictions_conditional_get_returns_304(self):
+        self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')
+        first, _ = self._get_predictions()
+        etag = first.headers['ETag']
+        second, mocked = self._get_predictions(headers={'If-None-Match': etag})
+        self.assertEqual(second.status_code, 304)
+        # The records cache served the revalidation without recomputing.
+        mocked.assert_not_called()
+
+    def test_predictions_changed_sources_invalidate_etag(self):
+        review_path = self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')
+        first, _ = self._get_predictions()
+        etag = first.headers['ETag']
+
+        # Rewriting a source cache file changes its fingerprint, so the old ETag
+        # must no longer revalidate and a fresh body is served.
+        import os
+        import time
+
+        time.sleep(0.01)
+        review_path.write_text('{}\n{}\n', encoding='utf-8')
+        os.utime(review_path, None)
+
+        res, mocked = self._get_predictions(headers={'If-None-Match': etag})
+        self.assertEqual(res.status_code, 200)
+        self.assertNotEqual(res.headers.get('ETag'), etag)
+        mocked.assert_called_once()
 
     def test_predictions_returns_multiple_gold_answers(self):
         import pandas as pd
