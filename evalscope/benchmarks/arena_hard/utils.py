@@ -6,10 +6,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
-
 
 def get_judge_score(result, reverse=False):
     """
@@ -126,14 +122,12 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
     tie_idx[len(tie_idx) // 2 :] = False
     Y[tie_idx] = 1.0
 
-    if len(np.unique(Y)) < 2:
-        logger.info('Warning: Only one class in the data')
-        elo_scores = pd.Series(INIT_RATING, index=models.index)
-        if np.all(Y == 1.0):
-            elo_scores[df['model_a'].iloc[0]] += SCALE  # Boost the winning model
-        elif np.all(Y == 0.0):
-            elo_scores[df['model_b'].iloc[0]] += SCALE  # Boost the winning model
-        return elo_scores.sort_values(ascending=False)
+    # Write the second copy from the other side (models swapped, outcome flipped). The likelihood is the
+    # same, since sigmoid(-z) = 1 - sigmoid(z), but the fit always sees both classes, so a model that won
+    # or lost every game is fitted like any other instead of needing a special case.
+    half = n // 2
+    X[half:] = -X[half:]
+    Y[half:] = 1.0 - Y[half:]
 
     from sklearn.linear_model import LogisticRegression
 

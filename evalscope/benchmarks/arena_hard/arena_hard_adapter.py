@@ -77,6 +77,7 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
         dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
         metric_list=['win_rate'],
         aggregation='elo',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='test',
