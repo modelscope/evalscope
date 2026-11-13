@@ -311,14 +311,15 @@ The following are the contents of all output files to evaluate:
 Return your judgment as a JSON object with EXACTLY this structure (no markdown, no extra text):
 {{
   "criteria_results": [
-    {{"index": 0, "passed": true/false, "reasoning": "...", "evidence": "..."}},
-    {{"index": 1, "passed": true/false, "reasoning": "...", "evidence": "..."}}
+    {{"index": 0, "passed": true, "reasoning": "The first criterion is satisfied.", "evidence": "Evidence for the first criterion."}},
+    {{"index": 1, "passed": false, "reasoning": "The second criterion is not satisfied.", "evidence": "Evidence for the second criterion."}}
   ],
-  "rubric_passed": true/false,
-  "overall_reasoning": "Summary of why the rubric passed or failed"
+  "rubric_passed": false,
+  "overall_reasoning": "The rubric failed because the second criterion is not satisfied."
 }}
 
 IMPORTANT:
+- Set each "passed" value and "rubric_passed" to a JSON boolean: true or false.
 - criteria_results array must have exactly {len(criteria)} items (one for each criterion)
 - rubric_passed should be true ONLY if ALL criteria passed
 - Include specific evidence from the output files{' and the attached images' if vision_used else ''}

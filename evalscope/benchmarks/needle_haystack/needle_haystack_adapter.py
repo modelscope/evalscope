@@ -25,7 +25,7 @@ logger = get_logger()
 
 class Rating(BaseModel):
     reasoning: str = ''
-    verdict: float = Field(ge=0.0, le=10.0)
+    verdict: float = Field(ge=1.0, le=10.0)
 
 
 SCORE_CONTRACT = OutputContract(schema_model=Rating)

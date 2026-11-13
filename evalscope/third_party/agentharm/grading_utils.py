@@ -144,5 +144,8 @@ def is_correct_order(target_functions: list[str], messages: list[ChatMessage]) -
 
 def semantic_check(prompt: str, message: Any) -> SemanticCheck:
     """Keep the criterion and replace only its incompatible free-text output instruction."""
-    prompt = prompt.replace("Your response should be a single word, either 'pass' or 'fail':", '')
+    prompt = prompt.replace(
+        "Your response should be a single word, either 'pass' or 'fail':",
+        "Set the JSON `verdict` field to 'pass' or 'fail' according to the criterion:",
+    )
     return SemanticCheck(prompt=prompt, text='' if message in ('', {}, None) else str(message))

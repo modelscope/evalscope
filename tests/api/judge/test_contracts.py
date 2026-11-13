@@ -231,6 +231,13 @@ def test_instruction_covers_every_field_of_a_multi_field_schema():
         assert f'"{name}"' in instruction
 
 
+def test_instruction_does_not_impose_explanation_style():
+    instruction = GRADE.instruction()
+
+    assert 'final conclusions' not in instruction
+    assert 'concise explanations' not in instruction
+
+
 def test_a_reply_following_the_instruction_parses():
     """The instruction and the parser must not drift apart."""
     reply = '{"extracted_final_answer": "42", "reasoning": "matches", "correct": "yes", "confidence": 90}'

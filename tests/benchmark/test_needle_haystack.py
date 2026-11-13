@@ -129,6 +129,19 @@ def test_judge_score_uses_the_same_metric_name_as_the_rule_score(monkeypatch: py
     assert score.main_score_name == 'acc'
 
 
+def test_judge_rating_uses_a_bounded_json_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = _adapter(monkeypatch, strategy='llm')
+    judge = ScriptedJudge(json.dumps({'reasoning': 'Aligned.', 'verdict': 10}))
+    adapter.llm_judge = judge
+
+    adapter.calculate_metrics(_state(0, NEEDLE, 1000, 0))
+
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'JSON `verdict` field as a number from 1 to 10' in prompt
+    assert 'final score in the form of a number' not in prompt
+    assert not needle_haystack_adapter.SCORE_CONTRACT.parse('{"verdict": 0}').ok
+
+
 def test_judge_is_asked_the_retrieval_question_without_the_haystack(monkeypatch: pytest.MonkeyPatch) -> None:
     """The official evaluator passes only the retrieval question to the grader, never the haystack prompt."""
     adapter = _adapter(monkeypatch, strategy='llm')

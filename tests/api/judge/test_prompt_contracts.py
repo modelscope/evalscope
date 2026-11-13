@@ -6,10 +6,16 @@ import pytest
 
 from evalscope.api.judge import OutputContract
 from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.charxiv.charxiv_adapter import DESCRIPTIVE_CONTRACT
+from evalscope.benchmarks.charxiv.utils import DESCRIPTIVE_GRADING_ICL
 from evalscope.benchmarks.cmmu.cmmu_adapter import GRADE_CONTRACT as CMMU_CONTRACT
 from evalscope.benchmarks.cmmu.prompt import EVALUATION_SYSTEM_PROMPT
 from evalscope.benchmarks.deepsearchqa.utils import GRADE_CONTRACT as DEEPSEARCH_CONTRACT
 from evalscope.benchmarks.deepsearchqa.utils import build_grader_prompt
+from evalscope.benchmarks.image_edit.gedit import vie_prompts
+from evalscope.benchmarks.image_edit.gedit.gedit_adapter import GEDIT_CONTRACT
+from evalscope.benchmarks.job_bench.job_bench_adapter import _RubricVerdict
+from evalscope.benchmarks.job_bench.utils import build_judge_prompt
 from evalscope.benchmarks.researchrubrics.utils import (
     BINARY_CONTRACT,
     BINARY_USER_PROMPT,
@@ -136,3 +142,85 @@ def test_plawbench_missing_dataset_section_is_excluded_before_reduction() -> Non
     assert len(judge.calls) == 1
     prompt = '\n'.join(message.text for message in judge.calls[0])
     assert 'JSON Schema:' in prompt and '结论' in prompt
+
+
+@pytest.mark.parametrize(('benchmark_name', 'legacy_instruction', 'json_instruction'), [
+    ('simple_qa', 'Simply reply with either', 'Set the JSON `verdict` field'),
+    ('chinese_simpleqa', '请只回复A、B、C之一', '将所选标签填入 JSON 的 `verdict` 字段'),
+    ('simple_vqa', 'Simply reply with either', 'Set the JSON `verdict` field'),
+])
+def test_three_way_qa_requests_require_a_json_verdict(
+    benchmark_name: str, legacy_instruction: str, json_instruction: str,
+) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    judge = ScriptedJudge(['{"verdict": "A"}'])
+    adapter.llm_judge = judge
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status.is_usable
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert legacy_instruction not in prompt
+    assert json_instruction in prompt
+    assert 'single JSON object and no other text' in prompt
+
+
+@pytest.mark.parametrize('category', list(DESCRIPTIVE_GRADING_ICL))
+def test_charxiv_descriptive_examples_are_json_and_match_the_schema(category: str) -> None:
+    rubric = DESCRIPTIVE_GRADING_ICL[category]
+    example = rubric.split('### Example Start ###')[1].split('### Example End ###')[0]
+    example = example[example.index('{'):example.rindex('}') + 1]
+    payload = json.loads(example)
+
+    for suffix in ('T1', 'T2', 'T3'):
+        reply = json.dumps({
+            'extract_answer_T1': payload[f'extract_answer_{suffix}'],
+            'score_T1': payload[f'score_{suffix}'],
+        })
+        result = DESCRIPTIVE_CONTRACT.parse(reply)
+        assert result.ok, f'{category} {suffix}: {result.error}'
+
+
+def test_job_bench_output_example_is_json_and_matches_the_schema() -> None:
+    prompt = build_judge_prompt({'rubric': '', 'criteria': ['first', 'second']}, 'artifact', False)
+    example = prompt.split('## Output Format\n')[1].split('\n\nIMPORTANT:')[0]
+    example = example[example.index('{'):example.rindex('}') + 1]
+
+    result = OutputContract(schema_model=_RubricVerdict).parse(example)
+
+    assert result.ok, result.error
+    assert 'true/false' not in example
+    assert 'true or false' in prompt.split('IMPORTANT:')[1]
+
+
+def test_gedit_output_example_is_json_and_matches_the_schema() -> None:
+    prompt = vie_prompts._context_no_delimit
+    example = prompt[prompt.index('{'):]
+
+    result = GEDIT_CONTRACT.parse(example)
+
+    assert result.ok, result.error
+
+
+def test_browsecomp_grader_describes_json_fields_instead_of_line_output() -> None:
+    config = TaskConfig(model='m', datasets=['browsecomp'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('browsecomp', config)
+    judge = ScriptedJudge([
+        '{"extracted_final_answer": "Shakespeare", "reasoning": "matches", '
+        '"correct": "yes", "confidence": 100}'
+    ])
+    adapter.llm_judge = judge
+    state = make_state('Explanation: known\nExact Answer: Shakespeare\nConfidence: 100%', 'Shakespeare')
+    state.metadata = {'question': 'Who wrote Hamlet?'}
+
+    score = adapter.calculate_metrics(state).score
+
+    assert score.status.is_usable
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'Populate the following JSON fields' in prompt
+    assert '\nextracted_final_answer:' not in prompt
+    assert '\nreasoning:' not in prompt
+    assert '\ncorrect:' not in prompt
+    assert '\nconfidence:' not in prompt
+    assert 'single JSON object and no other text' in prompt

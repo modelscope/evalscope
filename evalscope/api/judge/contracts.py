@@ -46,8 +46,6 @@ class OutputContract(BaseModel):
             '\n\nReply with a single JSON object and no other text, containing these required keys '
             '(additional keys are allowed):\n'
             f'{fields}\n'
-            'Finish checking before writing the reply. Include only your final conclusions, with concise explanations; '
-            'do not include drafts or self-corrections. '
             'Use valid JSON escaping for backslashes, double quotes, and newlines inside strings.'
         )
 
