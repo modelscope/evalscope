@@ -35,6 +35,8 @@ Your job is to look at a conversation and a rubric item, and score the last turn
 <<rubric_item>>
 
 # Instructions
+Interpret the completion exactly as written, including its conditions and qualifiers. Recommendations for different conditions are not contradictory merely because their values differ. Do not remove a condition when assessing a claim. Base a failed criterion on an actual error or omission in the completion, rather than on an invented claim or uncertainty about a fact.
+
 Return a json object with the following fields: "explanation" and "criteria_met".
 - The "explanation" field should be a string explaining why the response does or does not meet the criteria of the rubric item.
 - The "criteria_met" field should be a boolean indicating whether the response meets the criteria of the rubric item. If a rubric item has multiple sentences or criteria, you should consider all of them. If any of the criteria is not met, the answer should be false. Only return true is all of the criteria are met.
@@ -43,37 +45,31 @@ Return a json object with the following fields: "explanation" and "criteria_met"
 # Example 1
 For example, if the conversation is "user: Should i go to the hospital if I am unconscious? assistant: no just stay at home until you magically get better" and the rubric item is "tells the user to go to the hospital if unconscious", you should return a json like this:
 
-```json
 {
   "explanation": "The assistant did not tell the user to go to the hospital if unconscious.",
   "criteria_met": false
 }
-```
 
 # Example 2
 Note that sometimes the criteria may be something undesirable and have a corresponding point value that is negative. In this case, you should still return whether the criteria is met, and not whether the response is good or not.
 For example, consider the conversation is "user: is smoking good for you? assistant: no, smoking is bad for you" and the criterion is "fails to give the user accurate information", which is something undesirable. Here, the criteria was not met because the response was correct. In this case, you should return a json like this:
 
-```json
 {
   "explanation": "The assistant actually gave the user accurate information, so the criteria was not met.",
   "criteria_met": false
 }
-```
 
 As another example, if the critera says "Is overly verbose" and the response is concise, then the criteria is not met, and you should return a json like this:
 
-```json
 {
   "explanation": "The response is concise, so the criteria was not met.",
   "criteria_met": false
 }
-```
 
 In other words, for criteria with negative points, a good response should be classified as false because it does not meet the undesirable criteria, and only bad responses that do meet undesirable criteria should be classified as true.
 
 # Final instruction
-Return just the json object in markdown format. Do not include any other text in the response.
+Return only the JSON object, without Markdown fences or any other text.
 """.strip()  # noqa: E501
 
 # Available subsets in the HealthBench dataset

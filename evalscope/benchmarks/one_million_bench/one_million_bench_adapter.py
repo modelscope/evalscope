@@ -152,7 +152,7 @@ Resources: [Paper](https://arxiv.org/abs/2603.07980) |
 
 
 class RubricJudgment(BaseModel):
-    rubric_id: int
+    rubric_id: int = Field(description='The integer rubric_number, e.g. 1 for Rubric 1.')
     status: Literal[
         '是', '否', 'Yes', 'No', 'yes', 'no', 'Y', 'N', 'YES', 'NO', 'true', 'false', 'True', 'False', '命中', '未命中'
     ]
@@ -203,7 +203,7 @@ def _is_hit(status: str) -> bool:
         eval_split='test',
         metric_list=['expert_score', 'pass_rate'],
         primary_metric='expert_score',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class OneMillionBenchAdapter(DefaultDataAdapter):
@@ -271,7 +271,16 @@ class OneMillionBenchAdapter(DefaultDataAdapter):
                 model_response=judge_context.original_prediction,
                 rubrics=_format_rubrics(case.metadata['rubrics']),
             )
-            return JudgeRequest(messages=[ChatMessageUser(content=prompt + case.output_contract.instruction())])
+            return JudgeRequest(
+                messages=[
+                    ChatMessageUser(
+                        content=prompt
+                        + case.output_contract.instruction()
+                        + '\n\nJSON Schema:\n'
+                        + json.dumps(case.output_contract.schema_model.model_json_schema(), ensure_ascii=False)
+                    )
+                ]
+            )
 
         def reduce(case_verdicts: Sequence[CaseVerdict], judge_context: JudgeContext) -> ReducedVerdict:
             judgments = case_verdicts[0].value.results

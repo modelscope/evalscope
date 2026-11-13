@@ -271,7 +271,7 @@ class MTBenchAdapter(DefaultDataAdapter):
                 'Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant '
                 'to the user question displayed below. Your evaluation should consider correctness and helpfulness. '
                 "You will be given a reference answer and the assistant's answer. Begin by comparing the assistant's "
-                'answer with the reference answer and identify any mistakes.'
+                'answer with the reference answer and identify any mistakes in the JSON explanation field.'
             )
             reference_section = f'\n\n[The Start of Reference Answer]\n{reference}\n[The End of Reference Answer]'
         prompt = (
@@ -289,7 +289,7 @@ class MTBenchAdapter(DefaultDataAdapter):
             'Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to '
             'the user question displayed below. Your evaluation should consider factors such as the helpfulness, '
             'relevance, accuracy, depth, creativity, and level of detail of the response. You should focus on the '
-            "assistant's answer to the second user question. Begin your evaluation by providing a short explanation. "
+            "assistant's answer to the second user question. Provide a short explanation in the JSON explanation field. "
             'Be as objective as possible.'
         )
         if use_reference:
@@ -299,7 +299,7 @@ class MTBenchAdapter(DefaultDataAdapter):
                 'Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant '
                 'to the user question. Your evaluation should consider correctness and helpfulness. You will be given '
                 "a reference answer and the assistant's answer. You should focus on the assistant's answer to the "
-                "second question. Begin by comparing the assistant's answer with the reference answer and identify any mistakes."
+                "second question. Begin by comparing the assistant's answer with the reference answer and identify any mistakes in the JSON explanation field."
             )
             reference_section = (
                 '<|The Start of Reference Answer|>\n\n'

@@ -78,6 +78,22 @@ class TestWideSearchSession(unittest.TestCase):
         self.assertEqual(wrong['row_precision'], 0.5)
         self.assertEqual(wrong['item_precision'], 0.75)
 
+    def test_duplicate_gold_keys_use_the_same_denominator_as_matching(self) -> None:
+        gold = 'id,value\nA,one\nB,two\nA,one\n'
+        for rows in ('| A | one |\n| B | two |', '| A | one |\n| B | two |\n| A | one |'):
+            session = WideSearchSession.create('| id | value |\n| --- | --- |\n' + rows, gold, _evaluation())
+
+            values, diagnostics = session.score({})
+
+            self.assertEqual(diagnostics['gold_rows'], 2)
+            self.assertEqual(diagnostics['matched_rows'], 2)
+            self.assertEqual(values, {name: 1.0 for name in METRIC_NAMES})
+
+        session = WideSearchSession.create('| id | value |\n| --- | --- |\n| A | one |', gold, _evaluation())
+        values, _ = session.score({})
+        self.assertEqual(values['row_recall'], 0.5)
+        self.assertEqual(values['item_recall'], 0.5)
+
     def test_invalid_table_returns_zero_scores(self) -> None:
         values, diagnostics = self._score('not a table')
 
@@ -285,7 +301,7 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
         prompt = adapter.llm_judge.generate.call_args.args[0][-1].content
         self.assertIn("['MIT', 'Oxford University']", prompt)
-        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.1')
+        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.2')
 
     def test_rule_only_judge_is_rejected_before_evaluation(self) -> None:
         config = TaskConfig(

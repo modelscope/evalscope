@@ -84,7 +84,7 @@ Also note the following things:
     - For example, if the gold target is "Hyung Won Chung", you can consider the following predicted answers as correct: "Hyoong Won Choong", "Hyungwon Chung", or "Hyun Won Chung".
 
 
-Here is a new example. Simply reply with either CORRECT, INCORRECT, NOT_ATTEMPTED. Don't apologize or correct yourself if there was a mistake; we are just trying to grade the answer.
+Here is a new example. Set the JSON `verdict` field to A, B, or C according to the categories below. Don't apologize or correct yourself if there was a mistake; we are just trying to grade the answer.
 ```
 Question: {question}
 Gold target: {target}

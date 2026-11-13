@@ -1,7 +1,7 @@
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from evalscope.api.judge import OutputContract
 from evalscope.api.metric import AggScore, SampleScore
@@ -26,28 +26,26 @@ Your task is to evaluate whether a given "AI Response" for a specific "User Prom
 
 **Output Format:**
 
-Your evaluation *must* be structured as a nested JSON dictionary with the following top-level keys: `"Answer Correctness"`. Please return NULL if any of "Prompt", "AI Response" or "Correct Answer" is empty.
+Your evaluation *must* be structured as a nested JSON dictionary with the following top-level keys: `"Answer Correctness"`.
 The value for `"Answer Correctness"` should be a dictionary containing `"Explanation"` (a string), `"Correctness Details"` (a dictionary where each key is the expected correct answer, and the value is a boolean indicating whether the response contains the correct answer), and `"Excessive Answers"` (a list of strings indicating the excessive answers).
 
-Make sure you return a valid JSON string. Pay special attention to quotes, commas and special characters in the JSON string. Make sure to escape all special characters and quotes in the JSON string.
+Return only one valid JSON object, without Markdown fences or any other text. Pay special attention to quotes, commas and special characters in the JSON string. Make sure to escape all special characters and quotes in the JSON string.
 """.strip()  # noqa: E501
 
 GRADER_RATING_OUTPUT_EXAMPLE = r"""
 
 **Example (Partial):**
 
-"```json
 {{
   "Answer Correctness": {{
     "Explanation": "The response correctly identified Belgium and France but also includes an excessive answer, Italy.",
     "Correctness Details": {{
       "Belgium": true,
-      "France": true,
+      "France": true
     }},
     "Excessive Answers": [ "Italy" ]
   }}
 }}
-```"
 
 **Now, proceed with the evaluation using the provided User Prompt, AI Response, and Correct Answer.**
 
@@ -82,13 +80,12 @@ def build_grader_prompt(question: str, reference: str, answer_type: str, respons
 
 def rule_fallback_score(prediction: str, reference: str, answer_type: str) -> Tuple[Dict[str, float], Dict[str, Any]]:
     normalized_prediction = _normalize_text(prediction)
+    reference_parts = _reference_parts(reference, answer_type)
     if answer_type == 'Single Answer':
-        reference_parts = [reference.strip()] if reference.strip() else []
         correct = int(any(part and _normalize_text(part) in normalized_prediction for part in reference_parts))
-        expected = 1 if reference_parts else 0
+        expected = len(reference_parts)
         excessive = 0
     else:
-        reference_parts = _split_reference(reference)
         correct = sum(1 for part in reference_parts if part and _normalize_text(part) in normalized_prediction)
         expected = len(reference_parts)
         excessive = 0
@@ -117,6 +114,20 @@ class Grade(BaseModel):
 
 
 GRADE_CONTRACT = OutputContract(schema_model=Grade)
+
+
+def _grade_model(expected_answers: Sequence[str]) -> type[BaseModel]:
+    expected = set(expected_answers)
+
+    class ExpectedGrade(Grade):
+        @model_validator(mode='after')
+        def validate_expected_answers(self) -> 'ExpectedGrade':
+            actual = set(self.answer_correctness.correctness_details)
+            if actual != expected:
+                raise ValueError(f'Correctness Details keys must exactly match {sorted(expected)}')
+            return self
+
+    return ExpectedGrade
 
 
 def metrics_from_grade(grade: Grade) -> Tuple[Dict[str, float], Dict[str, Any]]:
@@ -205,13 +216,69 @@ def _normalize_text(text: str) -> str:
     return ' '.join(re.sub(r'[^\w\s]', ' ', text.lower()).split())
 
 
+def _reference_parts(answer: str, answer_type: str) -> List[str]:
+    if answer_type == 'Single Answer':
+        return [answer.strip()] if answer.strip() else []
+    return _split_reference(answer)
+
+
+def _answer_keys(parts: Sequence[str]) -> List[str]:
+    if len(parts) == len(set(parts)):
+        return list(parts)
+    return [f'{index}. {part}' for index, part in enumerate(parts, start=1)]
+
+
 def _split_reference(answer: str) -> List[str]:
-    if not answer:
+    if not answer or not answer.strip():
         return []
-    answer_text = answer.strip()
-    if not answer_text:
-        return []
-    return [part.strip() for part in re.split(r',|;|\n', answer_text) if part.strip()]
+
+    text = answer.strip()
+    raw_parts = []
+    start = 0
+    depth = 0
+    for index, char in enumerate(text):
+        if char in '([{':
+            depth += 1
+        elif char in ')]}':
+            depth = max(0, depth - 1)
+        elif depth == 0 and (char in ';\n' or char == ',' and not _is_numeric_comma(text, index)):
+            raw_parts.append(text[start:index])
+            start = index + 1
+    raw_parts.append(text[start:])
+
+    parts = []
+    for raw_part in raw_parts:
+        part = re.sub(r'^\s*(?:[-*•]+\s*)+', '', raw_part).strip()
+        for candidate in _split_list_conjunction(part):
+            candidate = re.sub(r'^and\s+', '', candidate, flags=re.IGNORECASE).strip()
+            if candidate:
+                parts.append(candidate)
+    return parts
+
+
+def _is_numeric_comma(text: str, index: int) -> bool:
+    return index > 0 and index + 1 < len(text) and text[index - 1].isdigit() and text[index + 1].isdigit()
+
+
+def _split_list_conjunction(text: str) -> List[str]:
+    parts = []
+    start = 0
+    depth = 0
+    for index, char in enumerate(text):
+        if char in '([{':
+            depth += 1
+        elif char in ')]}':
+            depth = max(0, depth - 1)
+        elif depth == 0 and text[index : index + 5].lower() == ' and ':
+            parts.append(text[start:index])
+            start = index + 5
+    if not parts:
+        return [text]
+    parts.append(text[start:])
+
+    numeric = all(re.fullmatch(r'\d+(?:\.\d+)?', part.strip()) for part in parts)
+    parenthesized = all('(' in part and ')' in part for part in parts)
+    return parts if numeric or parenthesized else [text]
 
 
 def _calculate_metric(true_positives: int, false_positives: int, false_negatives: int) -> Dict[str, float]:

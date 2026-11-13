@@ -246,9 +246,29 @@ run_task(task_cfg=task_cfg)
 完整的judge参数说明请[参考文档](../../get_started/parameters.md#judge参数)。
 
 ```{note}
-裁判模型以单个 JSON 对象回复。无法解析为 JSON 的回复会被**排除**在指标之外而不是记为 0 分，
-因此 `Num` 可能小于样本数。自定义 `prompt_template` 只需描述打分标准，回复格式要求会自动追加。
+裁判模型的最终回复必须完整地是一个 JSON 对象，不能包含对象外的说明、思考块或 Markdown 代码围栏。
+解释应放在声明的 JSON 字段内。无效裁判观测会被**排除**，不会自动记为 0 分，因此 `Num` 可能小于样本数；
+明确定义的规则回退仍然有效。自定义 `prompt_template` 只需描述打分标准，回复格式要求会自动追加。
 ```
+
+如果裁判 API 支持 [JSON 输出模式](https://help.aliyun.com/zh/model-studio/qwen-structured-output)，
+可以通过裁判模型的生成参数要求返回合法 JSON：
+
+```python
+judge = {
+    'strategy': 'llm',
+    'models': [{
+        'model_id': 'YOUR_JUDGE_MODEL',
+        # Keep the judge's API URL, credentials, and other generation settings here.
+        'generation_config': {
+            'extra_body': {'response_format': {'type': 'json_object'}},
+        },
+    }],
+}
+```
+
+请将该配置放在 `judge.models` 中，而不是被评测模型的生成参数中。是否支持该选项取决于 API 服务，框架不会自动开启。
+EvalScope 仍会校验字段结构并排除无效回复；JSON 格式合法也不代表裁判的判断一定正确。
 
 ```python
 import os

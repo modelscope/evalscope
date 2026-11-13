@@ -103,7 +103,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         metric_list=list(METRIC_NAMES),
         primary_metric=MetricSelector(name='success_rate', aggregation='pass_at_k', dimensions={'scope': 'all'}),
         paper_url='https://arxiv.org/abs/2508.07999',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class WideSearchAdapter(AgentLoopAdapter):
@@ -362,5 +362,5 @@ def _column_score_model(size: int) -> type[BaseModel]:
 
     return create_model(
         f'WideSearchColumnScore{size}',
-        **{f'idx_{index}': (float, Field(ge=0.0, le=1.0)) for index in range(size)},
+        **{f'idx_{index}': (int, Field(strict=True, ge=0, le=1)) for index in range(size)},
     )

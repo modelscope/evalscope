@@ -6,8 +6,8 @@ All the input images are AI-generated. All human in the images are AI-generated 
 
 You will have to give your output in this way (Keep your reasoning concise and short.):
 {
-"score" : [...],
-"reasoning" : "..."
+"score" : [5, 10],
+"reasoning" : "The edit partially follows the instruction and preserves the original scene."
 }"""
 
 _context = """You are a professional digital artist. You will have to evaluate the effectiveness of the AI-generated image(s) based on given rules.

@@ -40,31 +40,26 @@ Note that `origin` must be taken from the vocabulary to be aligned keeping the o
 
 For the `origin`, first find the `transform` that is the closest in meaning and then judge whether they correspond to each other. Those entities not correspond to each other could not output.
 
-Please output the alignment results in the following format:
-```json
+Return only one JSON object, without Markdown fences or any other text, in the following format:
 {{
     "mapping": {{
         "origin_str1": "transform_str1",
         "origin_str2": "transform_str2"
     }}
 }}
-```
 """  # noqa: E501
 
 EVAL_COLUMN_PROMPT = """You are an expert in grading answers. Your task is to score the responses to a certain question. Below, you will be provided with a set of standard answers, a set of responses to be graded, and specific grading criteria.
 
 Each answer and each response has an idx. Please score each pair of answers and responses in this set according to the following methods:
 1. The scoring range is from 0 to 1. A score of 1 indicates a completely correct answer. For deduction items, please refer to the specific grading criteria section.
-2. After reading the standard answers, responses to be graded, and grading criteria, please first analyze and judge them item by item according to the grading criteria.
+2. After reading the standard answers, responses to be graded, and grading criteria, analyze and judge them item by item according to the grading criteria without adding prose outside the JSON object.
 3. The score can only be an integer of 0 or 1.
 4. After the analysis and judgment, provide the final scoring results. Each pair should have a score. Reply with a single JSON object and no prose, as shown below:
-```json
 {{
-    "idx_xxx": score,
-    "idx_yyy": score,
-    ...
+    "idx_0": 1,
+    "idx_1": 0
 }}
-```
 
 ====== criterion-start ======
 {criterion}
@@ -74,7 +69,7 @@ Each answer and each response has an idx. Please score each pair of answers and 
 {response}
 ====== response-end ======
 
-Now start scoring. Please make sure to analyze each item step by step before providing the final scoring results.
+Now start scoring. Return only the JSON scoring results, without Markdown fences or any other text.
 
 """  # noqa: E501
 
@@ -323,9 +318,9 @@ class WideSearchSession:
         row_scores = inner_scores.min(axis=1)
         true_positive_rows = float(row_scores.sum())
         true_positive_items = float(inner_scores.sum().sum())
-        _, response_df, _ = self.frames(column_map, primary_key_maps)
+        answer_df, response_df, _ = self.frames(column_map, primary_key_maps)
         prediction_rows = len(response_df) if response_df is not None else 0
-        gold_rows = len(self.answer_df)
+        gold_rows = len(answer_df) if answer_df is not None else 0
         row_precision = true_positive_rows / prediction_rows if prediction_rows else 0.0
         row_recall = true_positive_rows / gold_rows if gold_rows else 0.0
         item_precision = (

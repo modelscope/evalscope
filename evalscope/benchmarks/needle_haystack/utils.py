@@ -93,7 +93,7 @@ def draw_score_chat(pivot_table, outpath, show_score=False):
 GENERAL_ORM_PROMPT = """You are an expert in verifying if the model answer is correct based on the reference answer.
 Your input is a question, a reference answer, and a model answer. You need to check if the model answer is correct based on the reference answer.
 You should focus on the correctness of the model answer compared to the reference answer, without attempting to solve the original question.
-You must provide your final score in the form of a number from 1 to 10, where:
+You must provide your final score in the JSON `verdict` field as a number from 1 to 10, where:
 
 Score 1: The answer is completely unrelated to the reference.
 Score 3: The answer has minor relevance but does not align with the reference.

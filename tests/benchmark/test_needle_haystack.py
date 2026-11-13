@@ -104,7 +104,7 @@ def _subset_scores(report: Report, identity: MetricIdentity) -> Dict[str, Tuple[
 
 def test_evaluation_version_marks_the_judge_question_change(monkeypatch: pytest.MonkeyPatch) -> None:
     """v1.1 keeps the cells as metric dimensions; v1.2 asks the judge only the retrieval question."""
-    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.2'
+    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.3'
 
 
 def test_rule_score_uses_a_stable_metric_name(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -127,6 +127,19 @@ def test_judge_score_uses_the_same_metric_name_as_the_rule_score(monkeypatch: py
     assert score.status is ScoreStatus.SUCCESS
     assert score.value == {'acc': pytest.approx(0.7)}
     assert score.main_score_name == 'acc'
+
+
+def test_judge_rating_uses_a_bounded_json_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = _adapter(monkeypatch, strategy='llm')
+    judge = ScriptedJudge(json.dumps({'reasoning': 'Aligned.', 'verdict': 10}))
+    adapter.llm_judge = judge
+
+    adapter.calculate_metrics(_state(0, NEEDLE, 1000, 0))
+
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'JSON `verdict` field as a number from 1 to 10' in prompt
+    assert 'final score in the form of a number' not in prompt
+    assert not needle_haystack_adapter.SCORE_CONTRACT.parse('{"verdict": 0}').ok
 
 
 def test_judge_is_asked_the_retrieval_question_without_the_haystack(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -205,7 +205,17 @@ in `generation_config.retries`.
 `score_mapping`, and `score_type`. `pattern` asks the Judge for a JSON verdict label selected from `score_mapping`;
 `numeric` asks for a JSON score in `[0, 1]`. The framework appends the JSON-format instruction, parses the normal
 model response once, and never uses constrained decoding, regex score extraction, or corrective follow-up prompts.
-An invalid reply is unavailable and excluded from the metric rather than reported as zero.
+The entire final response must be one complete JSON object that satisfies the declared schema; surrounding
+whitespace is allowed. Prose, reasoning blocks, Markdown fences, multiple objects, duplicate keys, malformed JSON,
+and schema violations are rejected. Explanations belong inside declared JSON fields. The parser never recovers a
+nested or later object from an invalid reply. A failed judge observation is unavailable, never automatically a zero
+for the evaluated answer; benchmarks with an explicit rule fallback retain that rule result. Failure counts and
+coverage must be considered alongside scores because excluded observations can change the evaluated sample set.
+Reasoning already separated into a distinct content part by the model layer is not part of the final text parsed here.
+
+Custom judge prompts must follow the same format requirement in both system and user messages. Adapting a benchmark's
+official judge output format can affect results even when its grading criteria are preserved. Use `rerun_review=True`
+to recompute cached reviews under the current contract.
 
 Reports include `JudgeSummary` with coverage, failure counts, and disagreement for samples reviewed by an LLM.
 When an adapter resolves a sample through a deterministic judge short-circuit, its score metadata records

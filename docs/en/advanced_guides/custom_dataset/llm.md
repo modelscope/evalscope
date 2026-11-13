@@ -247,11 +247,31 @@ LLM-based evaluation can conveniently assess the correctness of model outputs (o
 For a complete explanation of judge parameters, please refer to [documentation](../../get_started/parameters.md#judge-parameters).
 
 ```{note}
-The judge replies with a single JSON object. A reply that cannot be read as one is **excluded** from
-the metric rather than scored 0, so `Num` may be lower than the sample count. A
-custom `prompt_template` should state the grading criteria only; the reply format is appended
-automatically.
+The judge's entire final reply must be one JSON object, without prose, reasoning blocks, or Markdown fences.
+Put any explanation inside a declared JSON field. Invalid judge observations are **excluded** rather than
+automatically scored 0, so `Num` may be lower than the sample count; an explicitly defined rule fallback remains
+available. A custom `prompt_template` should state the grading criteria only; the reply format is appended automatically.
 ```
+
+For judge APIs that support [JSON mode](https://help.aliyun.com/zh/model-studio/qwen-structured-output),
+you can request valid JSON through the judge model's generation settings:
+
+```python
+judge = {
+    'strategy': 'llm',
+    'models': [{
+        'model_id': 'YOUR_JUDGE_MODEL',
+        # Keep the judge's API URL, credentials, and other generation settings here.
+        'generation_config': {
+            'extra_body': {'response_format': {'type': 'json_object'}},
+        },
+    }],
+}
+```
+
+Set this on `judge.models`, rather than on the evaluated model. This option depends on the API provider and is
+not enabled automatically. EvalScope still validates the schema and excludes invalid replies; valid JSON alone
+does not establish that the judge's assessment is correct.
 
 ```python
 import os

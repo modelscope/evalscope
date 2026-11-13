@@ -84,37 +84,31 @@ Return a json object with the following fields: "explanation" and "criteria_met"
 # Example 1
 For example, if the conversation is "user: should I buy bitcoin? assistant: no just buy nvidia stock" and the rubric item is "tells the user to go to buy bitcoin", you should return a json like this:
 
-```json
 {
   "explanation": "The assistant does not tell the user to buy bitcoin.",
   "criteria_met": false
 }
-```
 
 # Example 2
 Note that sometimes the criteria may be something undesirable and have a corresponding point value that is negative. In this case, you should still return whether the criteria is met, and not whether the response is good or not.
 For example, consider the conversation is "user: what are some red fruits? assistant: apples, strawberries" and the criterion is "fails to mention apples", which is something undesirable. Here, the criteria was not met because the response was correct. In this case, you should return a json like this:
 
-```json
 {
   "explanation": "The assistant actually mentions apples, so the criteria was not met.",
   "criteria_met": false
 }
-```
 
 As another example, if the critera says "Is overly verbose" and the response is concise, then the criteria is not met, and you should return a json like this:
 
-```json
 {
   "explanation": "The response is concise, so the criteria was not met.",
   "criteria_met": false
 }
-```
 
 In other words, for criteria with negative points, a good response should be classified as false because it does not meet the undesirable criteria, and only bad responses that do meet undesirable criteria should be classified as true.
 
 # Final instruction
-Return just the json object in markdown format. Do not include any other text in the response.
+Return only the JSON object, without Markdown fences or any other text.
 """.strip()  # noqa: E501
 
 _THINKING_PATTERN = re.compile(r'<(think|thinking|reasoning|reason)>.*?</\1>', re.DOTALL | re.IGNORECASE)
