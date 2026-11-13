@@ -167,7 +167,13 @@ _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*
 # labels often mirrors the option list without a separator ('[AD]', '[BCD]', '[A D]'), so the
 # labels may run together; the separator stays optional. This pattern is only consulted for
 # multiple-correct samples, leaving single-answer extraction unchanged.
-_MULTI_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]?\s*[A-Za-z\d])*)\s*[\)\]）】]')
+#
+# The optional separator and the whitespace around it share one character class: written as
+# '\s*[,，/、]?\s*', a single space belonged to either whitespace run, so on a malformed run
+# ('[A A ... !]') the engine explored every split - exponential in the number of labels, enough
+# for a short model reply to stall scoring. One class per separator run keeps the scan linear;
+# the labels are validated afterwards in `_label_prefix`, so bracketed prose stays unparseable.
+_MULTI_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:[\s,，/、]*[A-Za-z\d])*)\s*[\)\]）】]')
 
 # Math typesetting a model may wrap the label in: '$B$', '\\(B\\)', '\\boxed{B}', '$\\boxed{\\text{B}}$'.
 _LATEX_LABEL_PREFIX_RE = re.compile(r'(?:(?:\$+|\\\(|\\(?:boxed|fbox|text|textbf|mathbf|mathrm)\s*\{)\s*)*')

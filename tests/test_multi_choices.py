@@ -1,3 +1,7 @@
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 from evalscope.api.dataset import Sample
@@ -223,6 +227,50 @@ def test_parse_answers_bracketed_non_labels_are_not_answers() -> None:
     assert parse_answers_zh(_make_state('推理过程\n答案：[注]'), multiple_correct=True) == set()
     assert parse_answers_zh(_make_state('推理过程\n答案：[1]'), multiple_correct=True) == set()
     assert parse_answers_zh(_make_state('推理过程\n答案：[see the diagram above]'), multiple_correct=True) == set()
+
+
+def _parse_in_child_process(contents: list[str]) -> None:
+    """Read each content as a multi-select answer in a child interpreter, requiring a result.
+
+    A child process (rather than a timeout around an in-process call) so that a backtracking
+    regression surfaces as a failed test with a message, not as a hung test session.
+    """
+    script = textwrap.dedent(
+        f'''
+        from evalscope.api.dataset import Sample
+        from evalscope.api.evaluator import TaskState
+        from evalscope.api.model import ModelOutput
+        from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
+
+        for parse in (parse_answers, parse_answers_zh):
+            for content in {contents!r}:
+                state = TaskState(
+                    model='mock',
+                    sample=Sample(input='question', choices=['a', 'b', 'c', 'd'], target='A'),
+                    output=ModelOutput.from_content(model='mock', content=content),
+                )
+                assert parse(state, multiple_correct=True) == {{'A'}}, (parse.__name__, content)
+        '''
+    )
+    completed = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=15)
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_parse_answers_repeated_labels_with_invalid_suffix() -> None:
+    """A malformed label run must fail fast instead of backtracking exponentially.
+
+    The separator between labels is optional, and when the whitespace around it is written as
+    separate ``\\s*`` runs a single space can be claimed either way. On ``'[' + 'A ' * 40 + '!]'``
+    that made the multi-select bracket pattern explore every split (seconds at 24 labels,
+    exponential beyond) and stalled scoring on a malformed model reply. The run falls back to the
+    last label, as before; only the time to get there changed.
+    """
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40 + '!]', '答案：' + '[' + 'A ' * 40 + '!]'])
+
+
+def test_parse_answers_repeated_labels_without_closing_bracket() -> None:
+    """The same label run without a closing bracket must also return instead of backtracking."""
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40, '答案：' + '[' + 'A ' * 40])
 
 
 def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
