@@ -86,6 +86,7 @@ SUBSET_LIST = ['descriptive', 'reasoning']
         paper_url='https://arxiv.org/abs/2406.18521',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
+        evaluation_version='v1.1',
         eval_split='validation',
     )
 )
@@ -203,7 +204,7 @@ class CharXivAdapter(VisionLanguageAdapter):
                     ground_truth=judge_context.reference,
                     response=judge_context.original_prediction,
                 )
-            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt + case.output_contract.instruction())])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
             return ReducedVerdict(value={'acc': float(case_verdicts[0].value.score)})

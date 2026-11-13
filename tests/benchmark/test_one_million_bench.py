@@ -131,6 +131,10 @@ def test_official_weighted_score_and_negative_penalty() -> None:
     assert score.metadata['raw_score'] == 3
     assert score.metadata['max_score'] == 8
     assert 'rubricWeight: -2分' in judge.calls[0][0].text
+    schema = json.loads(judge.calls[0][0].text.split('\n\nJSON Schema:\n')[1])
+    rubric_id = schema['$defs']['RubricJudgment']['properties']['rubric_id']
+    assert rubric_id['type'] == 'integer'
+    assert 'rubric_number' in rubric_id['description']
 
 
 def test_expert_score_is_clipped_and_pass_threshold_is_inclusive() -> None:

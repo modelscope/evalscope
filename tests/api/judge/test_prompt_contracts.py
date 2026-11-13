@@ -182,8 +182,41 @@ def test_charxiv_descriptive_examples_are_json_and_match_the_schema(category: st
         assert result.ok, f'{category} {suffix}: {result.error}'
 
 
+@pytest.mark.parametrize('question_type', ['descriptive', 'reasoning'])
+@pytest.mark.parametrize('reply_kind', ['valid', 'fenced', 'numeric_answer'])
+def test_charxiv_requests_declare_and_enforce_the_final_output_contract(
+    question_type: str, reply_kind: str,
+) -> None:
+    adapter = get_benchmark('charxiv', TaskConfig(
+        model='m', datasets=['charxiv'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    descriptive = question_type == 'descriptive'
+    answer_key, score_key = ('extract_answer_T1', 'score_T1') if descriptive else ('extract_answer', 'score')
+    reply = json.dumps({answer_key: 5 if reply_kind == 'numeric_answer' else '5', score_key: 1})
+    if reply_kind == 'fenced':
+        reply = f'```json\n{reply}\n```'
+    judge = ScriptedJudge([reply])
+    adapter.llm_judge = judge
+    state = make_state('5', '5')
+    state.metadata = {'question_type': question_type, 'question_id': 10, 'reasoning_a_type': 3}
+
+    score = adapter.calculate_metrics(state).score
+
+    prompt = judge.calls[0][0].text
+    assert 'single JSON object and no other text' in prompt
+    assert f'"{answer_key}": a string' in prompt
+    assert len(judge.calls) == 1
+    if reply_kind == 'valid':
+        assert score.status is ScoreStatus.SUCCESS
+        assert score.value == {'acc': 1.0}
+    else:
+        assert score.status is ScoreStatus.EXCLUDED
+        assert score.value == {}
+        assert score.judge_summary.failures == {'parse_error': 1}
+
+
 def test_job_bench_output_example_is_json_and_matches_the_schema() -> None:
-    prompt = build_judge_prompt({'rubric': '', 'criteria': ['first', 'second']}, 'artifact', False)
+    prompt = build_judge_prompt({'rubric': '', 'criterion': ['first', 'second']}, 'artifact', False)
     example = prompt.split('## Output Format\n')[1].split('\n\nIMPORTANT:')[0]
     example = example[example.index('{'):example.rindex('}') + 1]
 
@@ -192,6 +225,7 @@ def test_job_bench_output_example_is_json_and_matches_the_schema() -> None:
     assert result.ok, result.error
     assert 'true/false' not in example
     assert 'true or false' in prompt.split('IMPORTANT:')[1]
+    assert 'exactly 2 items' in prompt
 
 
 def test_gedit_output_example_is_json_and_matches_the_schema() -> None:

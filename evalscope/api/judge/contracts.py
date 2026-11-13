@@ -93,28 +93,25 @@ def _describe(field: Any) -> str:
         allowed = ' or '.join(f'"{value}"' for value in get_args(annotation))
         return f'exactly one of {allowed}'
 
-    bounds = [
-        f'>= {meta.ge}'
-        if getattr(meta, 'ge', None) is not None
-        else f'<= {meta.le}'
-        if getattr(meta, 'le', None) is not None
-        else ''
-        for meta in field.metadata
-    ]
-    bounds = [bound for bound in bounds if bound]
-    kind = (
-        'true or false'
-        if annotation is bool
-        else 'an integer'
-        if annotation is int
-        else 'a number'
-        if annotation is float
-        else 'a list'
-        if get_origin(annotation) is list
-        else 'an object'
-        if get_origin(annotation) is dict or isinstance(annotation, type) and issubclass(annotation, BaseModel)
-        else 'a string'
-    )
+    bounds = []
+    for meta in field.metadata:
+        if getattr(meta, 'ge', None) is not None:
+            bounds.append(f'>= {meta.ge}')
+        if getattr(meta, 'le', None) is not None:
+            bounds.append(f'<= {meta.le}')
+
+    if annotation is bool:
+        kind = 'true or false'
+    elif annotation is int:
+        kind = 'an integer'
+    elif annotation is float:
+        kind = 'a number'
+    elif get_origin(annotation) is list:
+        kind = 'a list'
+    elif get_origin(annotation) is dict or isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        kind = 'an object'
+    else:
+        kind = 'a string'
     if nullable:
         kind += ' or null'
     if bounds:
