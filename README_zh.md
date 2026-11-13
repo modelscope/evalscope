@@ -77,6 +77,7 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ## 🎉 内容更新
 
+- 🔥 **[2026.11.13] v1.15.0** 新增安全、Agent 和法律评测基准，支持 E2B 远端沙箱、文生图 API 和看板运行对比；完善裁判输出协议、评分、缓存与压测。需要 **Python >= 3.11**。详见[发布说明](docs/release_notes/v1.15.0.md)。
 - 🔥 **[2026.11.12]** 新增 **E2B 远端沙箱**，支持官方 E2B 和阿里云 Agent Sandbox。SWE-bench Agentic、HumanEval、LiveCodeBench 等基准可在云端运行，本机无需安装 Docker。详见[沙箱使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 🔥 **[2026.10.09]** 新增 **System One Choice 评测**，以及 **ANLI**、**BoolQ**、**BANKING77**、**ContractNLI**、**RewardBench v1** 评测基准。五个新增基准均默认从 ModelScope 加载，也支持普通 LLM 评测。详见 [System One 评测](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/systemone.html)。
 - 🔥 **[2026.08.24] v1.11.0** 引入可发布的评测版本标识，保障基准结果可复现；优化评测报告语义与不完整运行处理，并增强多模态媒体加载和任务配置校验。
