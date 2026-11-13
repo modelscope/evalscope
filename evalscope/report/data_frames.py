@@ -449,6 +449,22 @@ def _build_prediction_row(
     }
 
 
+def get_prediction_source_paths(work_dir: str, model_name: str, dataset_name: str, subset_name: str) -> tuple[str, str]:
+    """Return the ``(review_cache_path, prediction_cache_path)`` that
+    :func:`get_model_prediction` reads for this model/dataset/subset.
+
+    Exposed so the service can fingerprint these files for conditional-GET /
+    caching without re-deriving the cache-key logic. Uses ``is_make=False`` so
+    statting the paths never creates directories.
+    """
+    outputs = OutputsStructure(work_dir, is_make=False)
+    cache_manager = CacheManager(outputs, model_name, dataset_name)
+    cache_key = 'default' if dataset_name == DataCollection.NAME else subset_name
+    review_cache_path = cache_manager.get_review_cache_path(cache_key)
+    prediction_cache_path = cache_manager.get_prediction_cache_path(cache_key)
+    return review_cache_path, prediction_cache_path
+
+
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     """Load all prediction / review rows for a given model + dataset subset.
 

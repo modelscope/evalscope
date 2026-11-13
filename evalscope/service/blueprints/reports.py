@@ -27,6 +27,7 @@ from evalscope.report.data_frames import (
     get_compare_report_df,
     get_comparison_quality_report_df,
     get_model_prediction,
+    get_prediction_source_paths,
     get_quality_metric_df,
     get_quality_report_df,
     get_report_analysis,
@@ -52,6 +53,12 @@ from evalscope.service.api_models import (
     ListReportsResponse,
     LoadReportResponse,
     PredictionsResponse,
+)
+from evalscope.service.prediction_cache import (
+    get_cached_records,
+    prediction_etag,
+    prediction_fingerprint,
+    store_records,
 )
 from evalscope.service.report_meta_cache import (
     Fingerprint,
@@ -669,14 +676,27 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'dataset_name and subset_name are required'}), 400
 
     try:
-        work_dir = os.path.join(_root_path(), ref.run_id)
-        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-        return json_response(
-            PredictionsResponse,
-            {
-                'predictions': _df_to_records(df),
-            },
-        )
+        root = _root_path()
+        work_dir = os.path.join(root, ref.run_id)
+
+        # Fingerprint the source cache files so an unchanged subset revalidates
+        # as 304 (no re-transfer of a large body) and the computed records are
+        # reused instead of re-read and re-deserialised on every browse.
+        review_path, prediction_path = get_prediction_source_paths(work_dir, ref.model_id, dataset_name, subset_name)
+        fingerprint = prediction_fingerprint(review_path, prediction_path)
+        cache_key = f'{os.path.realpath(root)}\x00{ref.run_id}\x00{ref.model_id}\x00{dataset_name}\x00{subset_name}'
+        etag = prediction_etag(cache_key, fingerprint)
+
+        records = get_cached_records(cache_key, fingerprint)
+        if records is None:
+            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+            records = _df_to_records(df)
+            store_records(cache_key, fingerprint, records)
+
+        resp = json_response(PredictionsResponse, {'predictions': records})
+        resp.set_etag(etag)
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp.make_conditional(request)
     except Exception:
         logger.error('Failed to get predictions', exc_info=True)
         return jsonify({'error': 'Failed to get predictions'}), 500
