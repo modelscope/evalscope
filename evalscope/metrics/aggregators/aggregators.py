@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
-from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
 from evalscope.metrics.aggregators.ci import ratio_ci_metadata
+from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
