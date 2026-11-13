@@ -1,0 +1,302 @@
+{
+  "meta": {
+    "pretty_name": "BBEH",
+    "dataset_id": "evalscope/bbeh",
+    "paper_url": "https://arxiv.org/abs/2502.19187",
+    "tags": [
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "boardgame_qa",
+      "boolean_expressions",
+      "buggy_tables",
+      "causal_understanding",
+      "disambiguation_qa",
+      "dyck_languages",
+      "geometric_shapes",
+      "hyperbaton",
+      "linguini",
+      "movie_recommendation",
+      "multistep_arithmetic",
+      "nycc",
+      "object_counting",
+      "object_properties",
+      "sarc_triples",
+      "shuffled_objects",
+      "spatial_reasoning",
+      "sportqa",
+      "temporal_sequence",
+      "time_arithmetic",
+      "web_of_lies",
+      "word_sorting",
+      "zebra_puzzles"
+    ],
+    "description": "## Overview\n\nBIG-Bench Extra Hard (BBEH) replaces each of the 23 tasks in BIG-Bench Hard with a new task that probes a similar reasoning skill but is much harder. Frontier models that saturate BBH score far lower on BBEH, so it separates general reasoning ability across models again.\n\n## Task Description\n\n- **Task Type**: General reasoning (free-form and multiple-choice answers)\n- **Input**: A task-specific question followed by the official answer-format instruction\n- **Output**: Step-by-step reasoning ending in `The answer is: <answer>`\n- **Domain**: Logical, temporal, spatial, causal, arithmetic, linguistic and commonsense reasoning, humour and sarcasm understanding\n\n## Key Features\n\n- 4,520 examples over 23 tasks (200 per task, 120 for Disambiguation QA)\n- BBEH Mini: the official 460-example subset (20 per task), selected with `extra_params={'mini': True}`\n- Answers are extracted and matched with the official `evaluate.py` from google-deepmind/bbeh\n- Long inputs: prompts average about 4,300 characters and reach 32,000 (Shuffled Objects and Zebra Puzzles average over 11,000)\n\n## Evaluation Notes\n\n- 0-shot, with the prompt suffix used in the BBEH paper.\n- `acc` per task uses the official fuzzy match (case-insensitive, `(a)` vs `a`, numeric equality, LaTeX `\\boxed{}` and markup removal).\n- The overall `acc` is the micro average over all examples, which the BBEH leaderboard reports as \"Micro Avg\".\n- The report adds the paper's headline metric, `accuracy` with `harmonic_mean` aggregation: the harmonic mean of per-task accuracies, with 1 percentage point added to each to handle zero scores, as in the paper.\n- Give models a generous `max_tokens`; the paper attributes below-random scores to answers cut off before the final line.",
+    "prompt_template": "{question}\n\nThink step by step, and when you provide the final answer, please use the prefix \"The answer is:\" without any modification, and provide the answer directly, with no formatting, no bolding, and no markup. For instance: \"The answer is: 42\" or \"The answer is: yes\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \"The answer is: (a)\".",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "mini": {
+        "type": "bool",
+        "description": "Evaluate BBEH Mini, the official 460-example subset (20 per task).",
+        "value": false
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 4520,
+    "subset_stats": [
+      {
+        "name": "boardgame_qa",
+        "sample_count": 200,
+        "prompt_length_mean": 7193.37,
+        "prompt_length_min": 2269,
+        "prompt_length_max": 14301,
+        "prompt_length_std": 2597.34,
+        "target_length_mean": 7.34
+      },
+      {
+        "name": "boolean_expressions",
+        "sample_count": 200,
+        "prompt_length_mean": 3120.27,
+        "prompt_length_min": 2352,
+        "prompt_length_max": 4165,
+        "prompt_length_std": 370.61,
+        "target_length_mean": 3
+      },
+      {
+        "name": "buggy_tables",
+        "sample_count": 200,
+        "prompt_length_mean": 5448.78,
+        "prompt_length_min": 4033,
+        "prompt_length_max": 7202,
+        "prompt_length_std": 786.47,
+        "target_length_mean": 4.64
+      },
+      {
+        "name": "causal_understanding",
+        "sample_count": 200,
+        "prompt_length_mean": 1349.26,
+        "prompt_length_min": 663,
+        "prompt_length_max": 2619,
+        "prompt_length_std": 508.65,
+        "target_length_mean": 3.95
+      },
+      {
+        "name": "disambiguation_qa",
+        "sample_count": 120,
+        "prompt_length_mean": 1193.55,
+        "prompt_length_min": 799,
+        "prompt_length_max": 2202,
+        "prompt_length_std": 255.93,
+        "target_length_mean": 3
+      },
+      {
+        "name": "dyck_languages",
+        "sample_count": 200,
+        "prompt_length_mean": 3277.7,
+        "prompt_length_min": 2167,
+        "prompt_length_max": 10978,
+        "prompt_length_std": 823.12,
+        "target_length_mean": 1.76
+      },
+      {
+        "name": "geometric_shapes",
+        "sample_count": 200,
+        "prompt_length_mean": 2836.78,
+        "prompt_length_min": 1836,
+        "prompt_length_max": 4897,
+        "prompt_length_std": 715.58,
+        "target_length_mean": 3
+      },
+      {
+        "name": "hyperbaton",
+        "sample_count": 200,
+        "prompt_length_mean": 4999.72,
+        "prompt_length_min": 2751,
+        "prompt_length_max": 7367,
+        "prompt_length_std": 1339.89,
+        "target_length_mean": 1
+      },
+      {
+        "name": "linguini",
+        "sample_count": 200,
+        "prompt_length_mean": 1344.07,
+        "prompt_length_min": 726,
+        "prompt_length_max": 2138,
+        "prompt_length_std": 339.57,
+        "target_length_mean": 9.78
+      },
+      {
+        "name": "movie_recommendation",
+        "sample_count": 200,
+        "prompt_length_mean": 1504.48,
+        "prompt_length_min": 1144,
+        "prompt_length_max": 2172,
+        "prompt_length_std": 188.92,
+        "target_length_mean": 3
+      },
+      {
+        "name": "multistep_arithmetic",
+        "sample_count": 200,
+        "prompt_length_mean": 1423.19,
+        "prompt_length_min": 1187,
+        "prompt_length_max": 1689,
+        "prompt_length_std": 132.15,
+        "target_length_mean": 3.76
+      },
+      {
+        "name": "nycc",
+        "sample_count": 200,
+        "prompt_length_mean": 1297.05,
+        "prompt_length_min": 1074,
+        "prompt_length_max": 1514,
+        "prompt_length_std": 89.31,
+        "target_length_mean": 3
+      },
+      {
+        "name": "object_counting",
+        "sample_count": 200,
+        "prompt_length_mean": 9205.75,
+        "prompt_length_min": 5899,
+        "prompt_length_max": 12884,
+        "prompt_length_std": 1583.89,
+        "target_length_mean": 3.28
+      },
+      {
+        "name": "object_properties",
+        "sample_count": 200,
+        "prompt_length_mean": 5714.45,
+        "prompt_length_min": 4397,
+        "prompt_length_max": 7127,
+        "prompt_length_std": 596.28,
+        "target_length_mean": 1.83
+      },
+      {
+        "name": "sarc_triples",
+        "sample_count": 200,
+        "prompt_length_mean": 1717.4,
+        "prompt_length_min": 1524,
+        "prompt_length_max": 2467,
+        "prompt_length_std": 126.18,
+        "target_length_mean": 5
+      },
+      {
+        "name": "shuffled_objects",
+        "sample_count": 200,
+        "prompt_length_mean": 13838.18,
+        "prompt_length_min": 10574,
+        "prompt_length_max": 17484,
+        "prompt_length_std": 1403.88,
+        "target_length_mean": 3
+      },
+      {
+        "name": "spatial_reasoning",
+        "sample_count": 200,
+        "prompt_length_mean": 6764.89,
+        "prompt_length_min": 1116,
+        "prompt_length_max": 32506,
+        "prompt_length_std": 5831.7,
+        "target_length_mean": 17.34
+      },
+      {
+        "name": "sportqa",
+        "sample_count": 200,
+        "prompt_length_mean": 2169.74,
+        "prompt_length_min": 1194,
+        "prompt_length_max": 3493,
+        "prompt_length_std": 376.44,
+        "target_length_mean": 8.63
+      },
+      {
+        "name": "temporal_sequence",
+        "sample_count": 200,
+        "prompt_length_mean": 4156.03,
+        "prompt_length_min": 2831,
+        "prompt_length_max": 5497,
+        "prompt_length_std": 826.75,
+        "target_length_mean": 5.49
+      },
+      {
+        "name": "time_arithmetic",
+        "sample_count": 200,
+        "prompt_length_mean": 1569.47,
+        "prompt_length_min": 1030,
+        "prompt_length_max": 2402,
+        "prompt_length_std": 302.58,
+        "target_length_mean": 18.29
+      },
+      {
+        "name": "web_of_lies",
+        "sample_count": 200,
+        "prompt_length_mean": 2959.66,
+        "prompt_length_min": 1491,
+        "prompt_length_max": 4320,
+        "prompt_length_std": 682.67,
+        "target_length_mean": 13.05
+      },
+      {
+        "name": "word_sorting",
+        "sample_count": 200,
+        "prompt_length_mean": 2436.12,
+        "prompt_length_min": 733,
+        "prompt_length_max": 6989,
+        "prompt_length_std": 1792.7,
+        "target_length_mean": 95.84
+      },
+      {
+        "name": "zebra_puzzles",
+        "sample_count": 200,
+        "prompt_length_mean": 11800.46,
+        "prompt_length_min": 5318,
+        "prompt_length_max": 15625,
+        "prompt_length_std": 3481.83,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 4285.09,
+      "min": 663,
+      "max": 32506,
+      "std": 3836.88
+    },
+    "target_length_mean": 9.68,
+    "computed_at": "2026-11-14T02:05:14.875791"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e18d4e3b",
+          "content": "A few players are playing a boardgame. The current state of the game is as follows. The bee has a football with a radius of 15 inches. The chihuahua has a banana-strawberry smoothie. The chihuahua lost her keys. The cobra suspects the truthfu ... [TRUNCATED 9092 chars] ... rkup. For instance: \"The answer is: 42\" or \"The answer is: yes\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \"The answer is: (a)\"."
+        }
+      ],
+      "target": "disproved",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "boardgame_qa",
+      "metadata": {
+        "mini": false
+      }
+    },
+    "subset": "boardgame_qa",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BBEH\n\n## Overview\n\nBIG-Bench Extra Hard (BBEH) replaces each of the 23 tasks in BIG-Bench Hard with a new task that probes a similar reasoning skill but is much harder. Frontier models that saturate BBH score far lower on BBEH, so it separates general reasoning ability across models again.\n\n## Task Description\n\n- **Task Type**: General reasoning (free-form and multiple-choice answers)\n- **Input**: A task-specific question followed by the official answer-format instruction\n- **Output**: Step-by-step reasoning ending in `The answer is: <answer>`\n- **Domain**: Logical, temporal, spatial, causal, arithmetic, linguistic and commonsense reasoning, humour and sarcasm understanding\n\n## Key Features\n\n- 4,520 examples over 23 tasks (200 per task, 120 for Disambiguation QA)\n- BBEH Mini: the official 460-example subset (20 per task), selected with `extra_params={'mini': True}`\n- Answers are extracted and matched with the official `evaluate.py` from google-deepmind/bbeh\n- Long inputs: prompts average about 4,300 characters and reach 32,000 (Shuffled Objects and Zebra Puzzles average over 11,000)\n\n## Evaluation Notes\n\n- 0-shot, with the prompt suffix used in the BBEH paper.\n- `acc` per task uses the official fuzzy match (case-insensitive, `(a)` vs `a`, numeric equality, LaTeX `\\boxed{}` and markup removal).\n- The overall `acc` is the micro average over all examples, which the BBEH leaderboard reports as \"Micro Avg\".\n- The report adds the paper's headline metric, `accuracy` with `harmonic_mean` aggregation: the harmonic mean of per-task accuracies, with 1 percentage point added to each to handle zero scores, as in the paper.\n- Give models a generous `max_tokens`; the paper attributes below-random scores to answers cut off before the final line.\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bbeh` |\n| **Dataset ID** | [evalscope/bbeh](https://modelscope.cn/datasets/evalscope/bbeh/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2502.19187) |\n| **Tags** | `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,520 |\n| Prompt Length (Mean) | 4285.09 chars |\n| Prompt Length (Min/Max) | 663 / 32506 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `boardgame_qa` | 200 | 7193.37 | 2269 | 14301 |\n| `boolean_expressions` | 200 | 3120.27 | 2352 | 4165 |\n| `buggy_tables` | 200 | 5448.78 | 4033 | 7202 |\n| `causal_understanding` | 200 | 1349.26 | 663 | 2619 |\n| `disambiguation_qa` | 120 | 1193.55 | 799 | 2202 |\n| `dyck_languages` | 200 | 3277.7 | 2167 | 10978 |\n| `geometric_shapes` | 200 | 2836.78 | 1836 | 4897 |\n| `hyperbaton` | 200 | 4999.72 | 2751 | 7367 |\n| `linguini` | 200 | 1344.07 | 726 | 2138 |\n| `movie_recommendation` | 200 | 1504.48 | 1144 | 2172 |\n| `multistep_arithmetic` | 200 | 1423.19 | 1187 | 1689 |\n| `nycc` | 200 | 1297.05 | 1074 | 1514 |\n| `object_counting` | 200 | 9205.75 | 5899 | 12884 |\n| `object_properties` | 200 | 5714.45 | 4397 | 7127 |\n| `sarc_triples` | 200 | 1717.4 | 1524 | 2467 |\n| `shuffled_objects` | 200 | 13838.18 | 10574 | 17484 |\n| `spatial_reasoning` | 200 | 6764.89 | 1116 | 32506 |\n| `sportqa` | 200 | 2169.74 | 1194 | 3493 |\n| `temporal_sequence` | 200 | 4156.03 | 2831 | 5497 |\n| `time_arithmetic` | 200 | 1569.47 | 1030 | 2402 |\n| `web_of_lies` | 200 | 2959.66 | 1491 | 4320 |\n| `word_sorting` | 200 | 2436.12 | 733 | 6989 |\n| `zebra_puzzles` | 200 | 11800.46 | 5318 | 15625 |\n\n## Sample Example\n\n**Subset**: `boardgame_qa`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e18d4e3b\",\n      \"content\": \"A few players are playing a boardgame. The current state of the game is as follows. The bee has a football with a radius of 15 inches. The chihuahua has a banana-strawberry smoothie. The chihuahua lost her keys. The cobra suspects the truthfu ... [TRUNCATED 9092 chars] ... rkup. For instance: \\\"The answer is: 42\\\" or \\\"The answer is: yes\\\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \\\"The answer is: (a)\\\".\"\n    }\n  ],\n  \"target\": \"disproved\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"boardgame_qa\",\n  \"metadata\": {\n    \"mini\": false\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n\nThink step by step, and when you provide the final answer, please use the prefix \"The answer is:\" without any modification, and provide the answer directly, with no formatting, no bolding, and no markup. For instance: \"The answer is: 42\" or \"The answer is: yes\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \"The answer is: (a)\".\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `mini` | `bool` | `False` | Evaluate BBEH Mini, the official 460-example subset (20 per task). |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bbeh \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bbeh'],\n    dataset_args={\n        'bbeh': {\n            # subset_list: ['boardgame_qa', 'boolean_expressions', 'buggy_tables']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BBEH\n\n## 概述\n\nBIG-Bench Extra Hard（BBEH）将 BIG-Bench Hard 中的 23 个任务逐一替换为考察相似推理能力、但难度大幅提升的新任务。在 BBH 上已接近满分的前沿模型在 BBEH 上的得分要低得多，因此它能重新拉开不同模型在通用推理能力上的差距。\n\n## 任务描述\n\n- **任务类型**：通用推理（自由作答与多项选择）\n- **输入**：任务相关的问题，后接官方的答案格式说明\n- **输出**：逐步推理，并以 `The answer is: <answer>` 结尾\n- **领域**：逻辑、时间、空间、因果、算术、语言与常识推理，以及幽默与讽刺理解\n\n## 主要特点\n\n- 共 23 个任务、4,520 个样本（每个任务 200 个，Disambiguation QA 为 120 个）\n- BBEH Mini：官方的 460 个样本子集（每个任务 20 个），通过 `extra_params={'mini': True}` 选择\n- 答案的提取与匹配使用 google-deepmind/bbeh 官方的 `evaluate.py`\n- 输入较长：提示词平均约 4,300 个字符，最长达 32,000 个字符（Shuffled Objects 和 Zebra Puzzles 平均超过 11,000 个字符）\n\n## 评估说明\n\n- 0-shot，使用 BBEH 论文中的提示词后缀。\n- 每个任务的 `acc` 使用官方的模糊匹配（不区分大小写、`(a)` 与 `a` 等价、数值相等、去除 LaTeX `\\boxed{}` 及标记）。\n- 整体 `acc` 为所有样本的微平均，即 BBEH 排行榜中的 \"Micro Avg\"。\n- 报告中额外给出论文的主要指标，即 `harmonic_mean` 聚合的 `accuracy`：对各任务准确率求调和平均，并按论文做法给每个准确率加 1 个百分点以处理零分。\n- 请为模型设置足够大的 `max_tokens`；论文指出，低于随机水平的得分多是因为回答在给出最终答案前被截断。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bbeh` |\n| **数据集ID** | [evalscope/bbeh](https://modelscope.cn/datasets/evalscope/bbeh/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2502.19187) |\n| **标签** | `Reasoning` |\n| **指标** | `accuracy` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估分割** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,520 |\n| 提示词长度（平均） | 4285.09 字符 |\n| 提示词长度（最小/最大） | 663 / 32506 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `boardgame_qa` | 200 | 7193.37 | 2269 | 14301 |\n| `boolean_expressions` | 200 | 3120.27 | 2352 | 4165 |\n| `buggy_tables` | 200 | 5448.78 | 4033 | 7202 |\n| `causal_understanding` | 200 | 1349.26 | 663 | 2619 |\n| `disambiguation_qa` | 120 | 1193.55 | 799 | 2202 |\n| `dyck_languages` | 200 | 3277.7 | 2167 | 10978 |\n| `geometric_shapes` | 200 | 2836.78 | 1836 | 4897 |\n| `hyperbaton` | 200 | 4999.72 | 2751 | 7367 |\n| `linguini` | 200 | 1344.07 | 726 | 2138 |\n| `movie_recommendation` | 200 | 1504.48 | 1144 | 2172 |\n| `multistep_arithmetic` | 200 | 1423.19 | 1187 | 1689 |\n| `nycc` | 200 | 1297.05 | 1074 | 1514 |\n| `object_counting` | 200 | 9205.75 | 5899 | 12884 |\n| `object_properties` | 200 | 5714.45 | 4397 | 7127 |\n| `sarc_triples` | 200 | 1717.4 | 1524 | 2467 |\n| `shuffled_objects` | 200 | 13838.18 | 10574 | 17484 |\n| `spatial_reasoning` | 200 | 6764.89 | 1116 | 32506 |\n| `sportqa` | 200 | 2169.74 | 1194 | 3493 |\n| `temporal_sequence` | 200 | 4156.03 | 2831 | 5497 |\n| `time_arithmetic` | 200 | 1569.47 | 1030 | 2402 |\n| `web_of_lies` | 200 | 2959.66 | 1491 | 4320 |\n| `word_sorting` | 200 | 2436.12 | 733 | 6989 |\n| `zebra_puzzles` | 200 | 11800.46 | 5318 | 15625 |\n\n## 样例示例\n\n**子集**: `boardgame_qa`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e18d4e3b\",\n      \"content\": \"A few players are playing a boardgame. The current state of the game is as follows. The bee has a football with a radius of 15 inches. The chihuahua has a banana-strawberry smoothie. The chihuahua lost her keys. The cobra suspects the truthfu ... [TRUNCATED 9092 chars] ... rkup. For instance: \\\"The answer is: 42\\\" or \\\"The answer is: yes\\\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \\\"The answer is: (a)\\\".\"\n    }\n  ],\n  \"target\": \"disproved\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"boardgame_qa\",\n  \"metadata\": {\n    \"mini\": false\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n\nThink step by step, and when you provide the final answer, please use the prefix \"The answer is:\" without any modification, and provide the answer directly, with no formatting, no bolding, and no markup. For instance: \"The answer is: 42\" or \"The answer is: yes\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \"The answer is: (a)\".\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `mini` | `bool` | `False` | 评估 BBEH Mini，即官方的 460 个样本子集（每个任务 20 个）。 |\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bbeh \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bbeh'],\n    dataset_args={\n        'bbeh': {\n            # subset_list: ['boardgame_qa', 'boolean_expressions', 'buggy_tables']  # 可选，用于评估特定子集\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "content_hash": "5ed7deefe75f71fd6ed8544bb36cef78",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-14T02:05:15.139142",
+  "translation_updated_at": "2026-11-14T02:06:49"
+}
