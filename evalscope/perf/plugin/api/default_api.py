@@ -176,6 +176,7 @@ class DefaultApiPlugin(ApiPluginBase):
                     if 'text/event-stream' in content_type:
                         output.is_stream = True
                         handler = StreamedResponseHandler()
+                        has_response_event = False
                         async for chunk_bytes in response.content.iter_any():
                             if not chunk_bytes:
                                 continue
@@ -204,6 +205,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                     output.error = json.dumps(data, ensure_ascii=False)
 
                                 if choices := data.get('choices'):
+                                    has_response_event = True
                                     if data.get('object') == 'text_completion':
                                         content = choices[0].get('text') or ''
                                         has_output = bool(content)
@@ -228,6 +230,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                     generated_text += content
                                     output.response_messages.append(data)
                                 if usage := data.get('usage'):
+                                    has_response_event = True
                                     output.prompt_tokens = usage.get('prompt_tokens')
                                     output.completion_tokens = usage.get('completion_tokens')
                                     # Extract real cached tokens from prompt_tokens_details
@@ -238,6 +241,11 @@ class DefaultApiPlugin(ApiPluginBase):
                                             output.real_cached_tokens = _cached
 
                                 most_recent_timestamp = timestamp
+
+                        if not has_response_event and output.error is None:
+                            output.error = 'SSE stream ended without any choices or usage events.'
+                            # Empty streams have no data timestamp, but their wait still contributes to wall time.
+                            most_recent_timestamp = time.perf_counter()
 
                         output.generated_text = generated_text
                         output.success = output.error is None
