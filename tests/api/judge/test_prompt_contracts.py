@@ -1,9 +1,11 @@
 """Judge prompt examples and rendered requests must agree with the JSON contract."""
 
 import json
+from pathlib import Path
 
 import pytest
 
+from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import OutputContract
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.charxiv.charxiv_adapter import DESCRIPTIVE_CONTRACT
@@ -27,6 +29,7 @@ from evalscope.benchmarks.wide_search.utils import EVAL_COLUMN_PROMPT
 from evalscope.benchmarks.wide_search.wide_search_adapter import _column_score_model
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
+from evalscope.evaluation_versioning import SHARED_SCORING_VERSION
 from tests.api.judge.helpers import ScriptedJudge, make_state
 
 
@@ -235,6 +238,146 @@ def test_gedit_output_example_is_json_and_matches_the_schema() -> None:
     result = GEDIT_CONTRACT.parse(example)
 
     assert result.ok, result.error
+
+
+def _job_bench_state(tmp_path: Path) -> TaskState:
+    output_dir = tmp_path / 'jobbench_output'
+    output_dir.mkdir()
+    (output_dir / 'answer.txt').write_text('artifact', encoding='utf-8')
+    state = make_state('artifact', '')
+    state.metadata = {
+        'artifact_dir': str(tmp_path),
+        'rubric_json': [{'rubric': 'Complete answer', 'criterion': ['first', 'second'], 'weight': 2}],
+    }
+    return state
+
+
+def test_job_bench_complete_criteria_pass_through_the_executor(tmp_path: Path) -> None:
+    adapter = get_benchmark('job_bench', TaskConfig(
+        model='m', datasets=['job_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge([
+        '{"rubric_passed":true,"criteria_results":[{"index":0,"passed":true},{"index":1,"passed":true}]}'
+    ])
+
+    score = adapter.score_with_judge_contracts('artifact', 'artifact', '', _job_bench_state(tmp_path))
+
+    assert score.status.is_usable
+    assert score.value['normalized_score'] == 1.0
+
+
+@pytest.mark.parametrize('reply', [
+    '{"rubric_passed":true}',
+    '{"rubric_passed":true,"criteria_results":[{"index":0,"passed":true}]}',
+    '{"rubric_passed":true,"criteria_results":['
+    '{"index":0,"passed":false},{"index":0,"passed":true},{"index":1,"passed":true}]}',
+    '{"rubric_passed":true,"criteria_results":['
+    '{"index":0,"passed":true},{"index":1,"passed":true},{"index":99,"passed":false}]}',
+])
+def test_job_bench_incomplete_or_ambiguous_criteria_are_excluded(reply: str, tmp_path: Path) -> None:
+    adapter = get_benchmark('job_bench', TaskConfig(
+        model='m', datasets=['job_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.score_with_judge_contracts('artifact', 'artifact', '', _job_bench_state(tmp_path))
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.judge_summary.failures == {'parse_error': 1}
+
+
+def _gedit_state() -> TaskState:
+    state = make_state('edited', '')
+    state.metadata = {'input_image': 'source', 'image_path': 'edited', 'instruction': 'edit'}
+    return state
+
+
+def test_gedit_valid_rating_pair_passes_through_the_executor() -> None:
+    adapter = get_benchmark('gedit', TaskConfig(
+        model='m', datasets=['gedit'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge(['{"score":[5,10]}', '{"score":[5,10]}'])
+
+    score = adapter.score_with_judge_contracts('edited', 'edited', '', _gedit_state())
+
+    assert score.status.is_usable
+    assert score.value == {'semantic_consistency': 5.0, 'perceptual_similarity': 5.0, 'normalized_score': 5.0}
+
+
+@pytest.mark.parametrize('reply', [
+    '{"score":[100,100]}',
+    '{"score":[-1,-1]}',
+    '{"score":[10]}',
+    '{"score":[10,10,0]}',
+])
+def test_gedit_invalid_rating_pairs_are_excluded(reply: str) -> None:
+    adapter = get_benchmark('gedit', TaskConfig(
+        model='m', datasets=['gedit'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge([reply, reply])
+
+    score = adapter.score_with_judge_contracts('edited', 'edited', '', _gedit_state())
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.judge_summary.failures == {'parse_error': 1}
+
+
+@pytest.mark.parametrize('reply', [
+    '{"total_points":1e309}',
+    '{"total_points":-1e309}',
+    '{"total_points":"Infinity"}',
+    '{"total_points":"-Infinity"}',
+])
+def test_plawbench_non_finite_points_are_excluded(reply: str) -> None:
+    adapter = get_benchmark('plawbench', TaskConfig(
+        model='m', datasets=['plawbench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge([reply])
+    state = make_state('Response', '')
+    state.metadata = {'judge_type': 'legal_qa', 'prompt': 'Question', 'rubrics': '', 'max_points': 12}
+
+    score = adapter.score_with_judge_contracts('Response', 'Response', '', state)
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.judge_summary.failures == {'parse_error': 1}
+
+
+def test_plawbench_finite_numeric_string_remains_supported() -> None:
+    adapter = get_benchmark('plawbench', TaskConfig(
+        model='m', datasets=['plawbench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    ))
+    adapter.llm_judge = ScriptedJudge(['{"total_points":"12"}'])
+    state = make_state('Response', '')
+    state.metadata = {'judge_type': 'legal_qa', 'prompt': 'Question', 'rubrics': '', 'max_points': 12}
+
+    score = adapter.score_with_judge_contracts('Response', 'Response', '', state)
+
+    assert score.status.is_usable
+    assert score.value['acc'] == 1.0
+
+
+def test_wide_search_fractional_column_score_is_rejected() -> None:
+    contract = OutputContract(schema_model=_column_score_model(1))
+
+    assert contract.parse('{"idx_0":0}').ok
+    assert contract.parse('{"idx_0":1}').ok
+    assert not contract.parse('{"idx_0":0.5}').ok
+
+
+def test_strict_judge_scoring_versions_are_advanced() -> None:
+    assert SHARED_SCORING_VERSION == 'v1.3'
+    expected_versions = {
+        'deepsearchqa': 'v1.1',
+        'gedit': 'v1.1',
+        'job_bench': 'v1.1',
+        'plawbench': 'v1.1',
+    }
+    for name, expected in expected_versions.items():
+        adapter = get_benchmark(name, TaskConfig(model='m', datasets=[name]))
+        assert adapter.benchmark_meta.evaluation_version == expected
 
 
 def test_browsecomp_grader_describes_json_fields_instead_of_line_output() -> None:

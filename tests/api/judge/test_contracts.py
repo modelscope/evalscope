@@ -18,6 +18,10 @@ class Rating(BaseModel):
     verdict: float = Field(ge=0.0, le=10.0)
 
 
+class UnboundedRating(BaseModel):
+    verdict: float
+
+
 class MultiField(BaseModel):
     extracted_final_answer: str = ''
     reasoning: str = ''
@@ -27,6 +31,7 @@ class MultiField(BaseModel):
 
 GRADE = OutputContract(schema_model=Grade)
 RATING = OutputContract(schema_model=Rating)
+UNBOUNDED_RATING = OutputContract(schema_model=UnboundedRating)
 MULTI = OutputContract(schema_model=MultiField)
 
 
@@ -203,6 +208,19 @@ def test_accepts_a_numeric_string_rating():
     assert RATING.parse('{"verdict": "8"}').value.verdict == 8.0
 
 
+@pytest.mark.parametrize('reply', [
+    '{"verdict": 1e309}',
+    '{"verdict": -1e309}',
+    '{"verdict": "Infinity"}',
+    '{"verdict": "-Infinity"}',
+])
+def test_rejects_non_finite_unbounded_ratings(reply: str) -> None:
+    result = UNBOUNDED_RATING.parse(reply)
+
+    assert not result.ok
+    assert 'finite' in result.error
+
+
 # ---------------------------------------------------------------------------
 # Prompt-side instruction
 # ---------------------------------------------------------------------------
@@ -222,6 +240,19 @@ def test_instruction_states_the_numeric_bounds():
 
     # Both bounds, not either: a judge told only the floor will happily return 42.
     assert 'a number >= 0.0 and <= 10.0' in instruction
+
+
+def test_instruction_renders_literals_as_json_values() -> None:
+    class LiteralValues(BaseModel):
+        number: Literal[0, 1]
+        flag: Literal[True, False]
+        text: Literal['A', 'B']
+
+    instruction = OutputContract(schema_model=LiteralValues).instruction()
+
+    assert 'exactly one of 0 or 1' in instruction
+    assert 'exactly one of true or false' in instruction
+    assert 'exactly one of "A" or "B"' in instruction
 
 
 def test_instruction_covers_every_field_of_a_multi_field_schema():

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -103,7 +103,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         metric_list=list(METRIC_NAMES),
         primary_metric=MetricSelector(name='success_rate', aggregation='pass_at_k', dimensions={'scope': 'all'}),
         paper_url='https://arxiv.org/abs/2508.07999',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class WideSearchAdapter(AgentLoopAdapter):
@@ -362,5 +362,5 @@ def _column_score_model(size: int) -> type[BaseModel]:
 
     return create_model(
         f'WideSearchColumnScore{size}',
-        **{f'idx_{index}': (float, Field(ge=0.0, le=1.0)) for index in range(size)},
+        **{f'idx_{index}': (Literal[0, 1], ...) for index in range(size)},
     )

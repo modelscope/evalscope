@@ -80,7 +80,7 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
         dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
         metric_list=['acc'],
         primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         subset_list=['english', 'chinese'],
         eval_split='test',
         system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',

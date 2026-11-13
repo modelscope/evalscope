@@ -301,7 +301,7 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
         prompt = adapter.llm_judge.generate.call_args.args[0][-1].content
         self.assertIn("['MIT', 'Oxford University']", prompt)
-        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.1')
+        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.2')
 
     def test_rule_only_judge_is_rejected_before_evaluation(self) -> None:
         config = TaskConfig(

@@ -134,6 +134,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
         eval_split='test',
         metric_list=['acc', 'conclusion_acc', 'fact_acc', 'reasoning_acc', 'law_acc'],
         primary_metric='accuracy',
+        evaluation_version='v1.1',
         aggregation='mean',
         prompt_template='{question}',
         extra_params=_EXTRA_PARAMS,

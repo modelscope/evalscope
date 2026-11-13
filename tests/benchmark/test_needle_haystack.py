@@ -104,7 +104,7 @@ def _subset_scores(report: Report, identity: MetricIdentity) -> Dict[str, Tuple[
 
 def test_evaluation_version_marks_the_judge_question_change(monkeypatch: pytest.MonkeyPatch) -> None:
     """v1.1 keeps the cells as metric dimensions; v1.2 asks the judge only the retrieval question."""
-    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.2'
+    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.3'
 
 
 def test_rule_score_uses_a_stable_metric_name(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -6,6 +6,7 @@ satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
 
 import json
+import math
 from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Type, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -55,14 +56,21 @@ class OutputContract(BaseModel):
             return ParseResult.failure('empty response')
 
         try:
-            data = json.loads(response, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+            data = json.loads(
+                response,
+                object_pairs_hook=_unique_object,
+                parse_constant=_reject_constant,
+                parse_float=_finite_json_float,
+            )
         except (ValueError, RecursionError) as exc:
             return ParseResult.failure(f'reply is not valid JSON: {exc}')
         if not isinstance(data, dict):
             return ParseResult.failure(f'reply is a {type(data).__name__}, not a JSON object')
 
         try:
-            return ParseResult.success(self.schema_model.model_validate(data))
+            value = self.schema_model.model_validate(data)
+            _reject_nonfinite_numbers(value.model_dump(mode='python'))
+            return ParseResult.success(value)
         except Exception as exc:
             return ParseResult.failure(f'reply does not satisfy {self.schema_model.__name__}: {exc}')
 
@@ -81,6 +89,24 @@ def _reject_constant(value: str) -> Any:
     raise ValueError(f'invalid JSON constant: {value}')
 
 
+def _finite_json_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f'JSON number is not finite: {value}')
+    return number
+
+
+def _reject_nonfinite_numbers(value: Any) -> None:
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError('numeric values must be finite')
+    if isinstance(value, dict):
+        for item in value.values():
+            _reject_nonfinite_numbers(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_nonfinite_numbers(item)
+
+
 def _describe(field: Any) -> str:
     """Describe one schema field for the prompt, so the judge is told the exact allowed values."""
     annotation = field.annotation
@@ -90,7 +116,7 @@ def _describe(field: Any) -> str:
         if len(variants) == 1:
             annotation = variants[0]
     if get_origin(annotation) is Literal:
-        allowed = ' or '.join(f'"{value}"' for value in get_args(annotation))
+        allowed = ' or '.join(json.dumps(value, ensure_ascii=False) for value in get_args(annotation))
         return f'exactly one of {allowed}'
 
     bounds = []
