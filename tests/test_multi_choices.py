@@ -1,3 +1,7 @@
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 from evalscope.api.dataset import Sample
@@ -190,6 +194,67 @@ def test_parse_answers_zh_wrapped_label() -> None:
         assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}')) == {'B'}, answer_line
         # A trailing English sentence would otherwise hand the fallback an unrelated capital
         assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}\nNote: hope this helps.')) == {'B'}, answer_line
+
+
+def test_parse_answers_bracketed_labels_without_separator() -> None:
+    """Joined labels such as '[AD]' are read as multiple choices."""
+    for answer_line in ['答案：[AD]', '答案：[BD]', '答案：[ABD]', '答案：[BCD]', '答案：[AC]', '答案：[ABCD]']:
+        expected = set(answer_line.split('[')[1].split(']')[0])
+        assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}'), multiple_correct=True) == expected, answer_line
+    assert parse_answers(_make_state('reasoning\nANSWER: [AD]'), multiple_correct=True) == {'A', 'D'}
+
+
+def test_parse_answers_bracketed_labels_with_separator_or_space() -> None:
+    """Comma and space separators are accepted inside brackets."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A,D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
+
+
+def test_parse_answers_single_choice_bracket_unchanged() -> None:
+    """Single-answer extraction still accepts a bracketed label."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A]')) == {'A'}
+    assert parse_answers(_make_state('reasoning\nANSWER: [A]')) == {'A'}
+
+
+def test_parse_answers_bracketed_non_labels_are_not_answers() -> None:
+    """Bracket contents must use the sample's option labels."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[注]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[1]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[see the diagram above]'), multiple_correct=True) == set()
+
+
+def _parse_in_child_process(contents: list[str]) -> None:
+    """Isolate parsing so a regex regression cannot hang the test runner."""
+    script = textwrap.dedent(
+        f'''
+        from evalscope.api.dataset import Sample
+        from evalscope.api.evaluator import TaskState
+        from evalscope.api.model import ModelOutput
+        from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
+
+        for parse in (parse_answers, parse_answers_zh):
+            for content in {contents!r}:
+                state = TaskState(
+                    model='mock',
+                    sample=Sample(input='question', choices=['a', 'b', 'c', 'd'], target='A'),
+                    output=ModelOutput.from_content(model='mock', content=content),
+                )
+                assert parse(state, multiple_correct=True) == {{'A'}}, (parse.__name__, content)
+        '''
+    )
+    completed = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=15)
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_parse_answers_repeated_labels_with_invalid_suffix() -> None:
+    """Malformed repeated labels return promptly through the existing fallback."""
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40 + '!]', '答案：' + '[' + 'A ' * 40 + '!]'])
+
+
+def test_parse_answers_repeated_labels_without_closing_bracket() -> None:
+    """Repeated labels without a closing bracket must not stall parsing."""
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40, '答案：' + '[' + 'A ' * 40])
 
 
 def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:

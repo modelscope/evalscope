@@ -163,6 +163,10 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*\**\s*[:：]\s*\**\s*')
 # such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
+# Accept multi-select forms such as '[AD]', '[A D]', and '[A,D]'.
+# Use one separator class to avoid ambiguous whitespace matching and exponential backtracking.
+_MULTI_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:[\s,，/、]*[A-Za-z\d])*)\s*[\)\]）】]')
+
 # Math typesetting a model may wrap the label in: '$B$', '\\(B\\)', '\\boxed{B}', '$\\boxed{\\text{B}}$'.
 _LATEX_LABEL_PREFIX_RE = re.compile(r'(?:(?:\$+|\\\(|\\(?:boxed|fbox|text|textbf|mathbf|mathrm)\s*\{)\s*)*')
 
@@ -249,6 +253,7 @@ def _last_labelled_answer(
     marker_re: re.Pattern,
     plain_label_re: re.Pattern,
     allowed_options: set[str],
+    bracketed_label_re: re.Pattern = _BRACKETED_LABEL_RE,
 ) -> Optional[str]:
     """Label of the last answer marker that is actually followed by one.
 
@@ -258,7 +263,7 @@ def _last_labelled_answer(
     for marker in reversed(list(marker_re.finditer(text))):
         tail = text[marker.end() :]
         tail = tail[_LATEX_LABEL_PREFIX_RE.match(tail).end() :]
-        for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
+        for label_re in (bracketed_label_re, plain_label_re):
             label = label_re.match(tail)
             if label is None:
                 continue
@@ -290,7 +295,13 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    matched = _last_labelled_answer(text, _ANSWER_MARKER_RE, _PLAIN_LABEL_RE, allowed_options)
+    matched = _last_labelled_answer(
+        text,
+        _ANSWER_MARKER_RE,
+        _PLAIN_LABEL_RE,
+        allowed_options,
+        bracketed_label_re=_MULTI_BRACKETED_LABEL_RE if multiple_correct else _BRACKETED_LABEL_RE,
+    )
 
     if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()
@@ -350,7 +361,13 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    matched = _last_labelled_answer(text, _ANSWER_MARKER_ZH_RE, _PLAIN_LABEL_ZH_RE, allowed_options)
+    matched = _last_labelled_answer(
+        text,
+        _ANSWER_MARKER_ZH_RE,
+        _PLAIN_LABEL_ZH_RE,
+        allowed_options,
+        bracketed_label_re=_MULTI_BRACKETED_LABEL_RE if multiple_correct else _BRACKETED_LABEL_RE,
+    )
 
     if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()
