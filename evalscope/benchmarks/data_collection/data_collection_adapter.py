@@ -76,7 +76,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
     def load(self):
-        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern='*.jsonl')
+        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern='*.jsonl', allow_local_file=True)
         dataset = load_local_file_dataset(
             adapter=self,
             dataset_path=dataset_path,

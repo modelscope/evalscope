@@ -110,15 +110,34 @@ def make_adapter(dataset_id: str) -> DummyAdapter:
     )
 
 
-def test_resolve_snapshot_or_local_path_uses_adapter_hub(tmp_path) -> None:
+@pytest.mark.parametrize('allow_local_file', [False, True])
+def test_resolve_snapshot_or_local_path_uses_adapter_hub(tmp_path, allow_local_file: bool) -> None:
     dataset_dir = tmp_path / 'dataset'
     dataset_dir.mkdir()
     adapter = make_adapter(str(dataset_dir))
 
-    assert resolve_snapshot_or_local_path(adapter) == str(dataset_dir.resolve())
+    assert resolve_snapshot_or_local_path(adapter, allow_local_file=allow_local_file) == str(dataset_dir.resolve())
 
 
-def test_resolve_snapshot_passes_effective_revision(monkeypatch) -> None:
+def test_resolve_local_file_requires_explicit_opt_in(tmp_path) -> None:
+    path = tmp_path / 'collection.jsonl'
+    path.write_text('{"value": 1}\n', encoding='utf-8')
+    adapter = make_adapter(str(path))
+
+    with pytest.raises(FileNotFoundError, match='Local dataset directory was not found'):
+        resolve_snapshot_or_local_path(adapter)
+    assert resolve_snapshot_or_local_path(adapter, allow_local_file=True) == str(path.resolve())
+
+
+def test_resolve_missing_local_path_with_file_opt_in(tmp_path) -> None:
+    adapter = make_adapter(str(tmp_path / 'missing.jsonl'))
+    adapter.dataset_hub = 'local'
+    with pytest.raises(FileNotFoundError, match='missing.jsonl'):
+        resolve_snapshot_or_local_path(adapter, allow_local_file=True)
+
+
+@pytest.mark.parametrize('allow_local_file', [False, True])
+def test_resolve_snapshot_passes_effective_revision(monkeypatch, allow_local_file: bool) -> None:
     captured: Dict[str, Any] = {}
 
     class CapturingDatasetHub:
@@ -141,7 +160,9 @@ def test_resolve_snapshot_passes_effective_revision(monkeypatch) -> None:
     )
     monkeypatch.setattr(builder, 'DatasetHub', CapturingDatasetHub)
 
-    assert resolve_snapshot_or_local_path(adapter, allow_file_pattern='data/*') == '/tmp/snapshot'
+    assert resolve_snapshot_or_local_path(
+        adapter, allow_file_pattern='data/*', allow_local_file=allow_local_file,
+    ) == '/tmp/snapshot'
     assert captured['data_id_or_path'] == 'hf/data'
     assert captured['data_source'] == 'huggingface'
     assert captured['revision'] == 'hf-revision'
