@@ -163,16 +163,8 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*\**\s*[:：]\s*\**\s*')
 # such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
-# The same wrapped form when several answers may be correct. A model that has to list several
-# labels often mirrors the option list without a separator ('[AD]', '[BCD]', '[A D]'), so the
-# labels may run together; the separator stays optional. This pattern is only consulted for
-# multiple-correct samples, leaving single-answer extraction unchanged.
-#
-# The optional separator and the whitespace around it share one character class: written as
-# '\s*[,，/、]?\s*', a single space belonged to either whitespace run, so on a malformed run
-# ('[A A ... !]') the engine explored every split - exponential in the number of labels, enough
-# for a short model reply to stall scoring. One class per separator run keeps the scan linear;
-# the labels are validated afterwards in `_label_prefix`, so bracketed prose stays unparseable.
+# Accept multi-select forms such as '[AD]', '[A D]', and '[A,D]'.
+# Use one separator class to avoid ambiguous whitespace matching and exponential backtracking.
 _MULTI_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:[\s,，/、]*[A-Za-z\d])*)\s*[\)\]）】]')
 
 # Math typesetting a model may wrap the label in: '$B$', '\\(B\\)', '\\boxed{B}', '$\\boxed{\\text{B}}$'.
@@ -267,7 +259,6 @@ def _last_labelled_answer(
 
     Reasoning models restate the required format and revise themselves mid-thought, so an
     earlier marker may carry an echoed placeholder or a choice the model went on to reject.
-    ``bracketed_label_re`` lets the multiple-correct path accept labels that run together.
     """
     for marker in reversed(list(marker_re.finditer(text))):
         tail = text[marker.end() :]

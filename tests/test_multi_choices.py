@@ -197,12 +197,7 @@ def test_parse_answers_zh_wrapped_label() -> None:
 
 
 def test_parse_answers_bracketed_labels_without_separator() -> None:
-    """A multi-select reply may print several labels with no separator: '[AD]', '[BCD]'.
-
-    Real AGIEval multi-select answers used exactly these lines. The bracketed pattern required a
-    ``','``/``'/'``/``'、'`` separator, so the reply fell back to the last capital letter instead
-    of reading every listed label.
-    """
+    """Joined labels such as '[AD]' are read as multiple choices."""
     for answer_line in ['答案：[AD]', '答案：[BD]', '答案：[ABD]', '答案：[BCD]', '答案：[AC]', '答案：[ABCD]']:
         expected = set(answer_line.split('[')[1].split(']')[0])
         assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}'), multiple_correct=True) == expected, answer_line
@@ -210,31 +205,27 @@ def test_parse_answers_bracketed_labels_without_separator() -> None:
 
 
 def test_parse_answers_bracketed_labels_with_separator_or_space() -> None:
-    """The separating comma or space inside the brackets still reads as before."""
+    """Comma and space separators are accepted inside brackets."""
     assert parse_answers_zh(_make_state('推理过程\n答案：[A,D]'), multiple_correct=True) == {'A', 'D'}
     assert parse_answers_zh(_make_state('推理过程\n答案：[A D]'), multiple_correct=True) == {'A', 'D'}
     assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
 
 
 def test_parse_answers_single_choice_bracket_unchanged() -> None:
-    """A single-answer sample keeps the strict bracket pattern; '[A]' is still one label."""
+    """Single-answer extraction still accepts a bracketed label."""
     assert parse_answers_zh(_make_state('推理过程\n答案：[A]')) == {'A'}
     assert parse_answers(_make_state('reasoning\nANSWER: [A]')) == {'A'}
 
 
 def test_parse_answers_bracketed_non_labels_are_not_answers() -> None:
-    """Only tokens that are labels of the sample are accepted inside the brackets."""
+    """Bracket contents must use the sample's option labels."""
     assert parse_answers_zh(_make_state('推理过程\n答案：[注]'), multiple_correct=True) == set()
     assert parse_answers_zh(_make_state('推理过程\n答案：[1]'), multiple_correct=True) == set()
     assert parse_answers_zh(_make_state('推理过程\n答案：[see the diagram above]'), multiple_correct=True) == set()
 
 
 def _parse_in_child_process(contents: list[str]) -> None:
-    """Read each content as a multi-select answer in a child interpreter, requiring a result.
-
-    A child process (rather than a timeout around an in-process call) so that a backtracking
-    regression surfaces as a failed test with a message, not as a hung test session.
-    """
+    """Isolate parsing so a regex regression cannot hang the test runner."""
     script = textwrap.dedent(
         f'''
         from evalscope.api.dataset import Sample
@@ -257,19 +248,12 @@ def _parse_in_child_process(contents: list[str]) -> None:
 
 
 def test_parse_answers_repeated_labels_with_invalid_suffix() -> None:
-    """A malformed label run must fail fast instead of backtracking exponentially.
-
-    The separator between labels is optional, and when the whitespace around it is written as
-    separate ``\\s*`` runs a single space can be claimed either way. On ``'[' + 'A ' * 40 + '!]'``
-    that made the multi-select bracket pattern explore every split (seconds at 24 labels,
-    exponential beyond) and stalled scoring on a malformed model reply. The run falls back to the
-    last label, as before; only the time to get there changed.
-    """
+    """Malformed repeated labels return promptly through the existing fallback."""
     _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40 + '!]', '答案：' + '[' + 'A ' * 40 + '!]'])
 
 
 def test_parse_answers_repeated_labels_without_closing_bracket() -> None:
-    """The same label run without a closing bracket must also return instead of backtracking."""
+    """Repeated labels without a closing bracket must not stall parsing."""
     _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40, '答案：' + '[' + 'A ' * 40])
 
 
