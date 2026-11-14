@@ -180,6 +180,8 @@ class MetricsAccumulator:
     # --- Request counts ---
     n_total: int = 0
     n_success: int = 0
+    n_rate_limited: int = 0  # failed requests answered with HTTP 429
+    n_server_error: int = 0  # failed requests answered with HTTP 5xx
 
     # --- Wall-clock time window (private; exposed via wall_time property) ---
     _wall_start: Optional[float] = field(default=None, repr=False)
@@ -241,6 +243,21 @@ class MetricsAccumulator:
     def n_failed(self) -> int:
         """Number of failed requests (derived from totals)."""
         return self.n_total - self.n_success
+
+    @property
+    def error_rate(self) -> float:
+        """Failed requests as a percentage (0-100) of all non-warmup requests."""
+        return self.n_failed / self.n_total * 100 if self.n_total else 0.0
+
+    @property
+    def rate_limit_rate(self) -> float:
+        """Requests answered with HTTP 429 as a percentage (0-100) of all requests."""
+        return self.n_rate_limited / self.n_total * 100 if self.n_total else 0.0
+
+    @property
+    def server_error_rate(self) -> float:
+        """Requests answered with HTTP 5xx as a percentage (0-100) of all requests."""
+        return self.n_server_error / self.n_total * 100 if self.n_total else 0.0
 
     @property
     def wall_time(self) -> float:
@@ -321,6 +338,14 @@ class MetricsAccumulator:
             if data.decoded_tokens_per_iter > 1:
                 self.total_decoded_tokens_per_iter += data.decoded_tokens_per_iter
                 self.n_decoded_samples += 1
+
+        else:
+            # Only failed requests carry a non-200 status code, so the error-class
+            # counts come from here: 429 is a capacity signal, 5xx a fault signal.
+            if data.status_code == 429:
+                self.n_rate_limited += 1
+            elif data.status_code is not None and 500 <= data.status_code < 600:
+                self.n_server_error += 1
 
         self._update_wall_time(data)
 
@@ -448,6 +473,9 @@ class MetricsAccumulator:
             total_requests=self.n_total,
             succeed_requests=self.n_success,
             failed_requests=self.n_failed,
+            error_rate=self.error_rate,
+            rate_limit_rate=self.rate_limit_rate,
+            server_error_rate=self.server_error_rate,
             stream_requests=self.n_stream_total,
             non_stream_requests=self.n_non_stream_total,
             total_time=t,
@@ -515,6 +543,12 @@ class BenchmarkMetrics:
     total_requests: int = 0
     succeed_requests: int = 0
     failed_requests: int = 0
+    error_rate: float = 0.0
+    """Failed requests as a percentage (0-100) of all non-warmup requests."""
+    rate_limit_rate: float = 0.0
+    """Requests answered with HTTP 429 as a percentage (0-100) of all requests."""
+    server_error_rate: float = 0.0
+    """Requests answered with HTTP 5xx as a percentage (0-100) of all requests."""
     stream_requests: int = 0
     non_stream_requests: int = 0
     total_time: float = 0.0
@@ -592,6 +626,9 @@ class BenchmarkMetrics:
             Metrics.TOTAL_REQUESTS: int(self.total_requests),
             Metrics.SUCCEED_REQUESTS: self.succeed_requests,
             Metrics.FAILED_REQUESTS: self.failed_requests,
+            Metrics.ERROR_RATE: round(self.error_rate, r),
+            Metrics.RATE_LIMIT_RATE: round(self.rate_limit_rate, r),
+            Metrics.SERVER_ERROR_RATE: round(self.server_error_rate, r),
             Metrics.STREAM_REQUESTS: self.stream_requests,
             Metrics.NON_STREAM_REQUESTS: self.non_stream_requests,
             Metrics.REQUEST_THROUGHPUT: round(self.qps, r),
