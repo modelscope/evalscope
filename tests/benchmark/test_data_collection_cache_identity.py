@@ -102,7 +102,7 @@ def test_rerun_review_reuses_predictions_and_records_new_child_semantics(collect
     assert 'multi_choice_acc' in review.read_text()
     snapshot = yaml_to_dict(str(_snapshot(changed)))
     dependency = snapshot['resolved_benchmarks']['data_collection']['dependencies']['general_mcq']
-    assert dependency['evaluation_version'] == 'v1.1'
+    assert dependency['evaluation_version'] == 'v1.2'
     assert dependency['benchmark']['extra_params']['multiple_correct'] is True
 
 
