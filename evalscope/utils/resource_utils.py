@@ -1,9 +1,10 @@
 import json
 import os
+import stat
 import zipfile
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
@@ -56,18 +57,87 @@ MIRROR_MAP: Dict[str, Dict[str, Any]] = {
 }
 
 
+def _tighten_entry(path: str) -> None:
+    """Remove the group and other write bits from a single entry, never following a symlink.
+
+    ``os.chmod`` resolves its argument, so tightening a symlink would change the permissions of whatever it points
+    at - possibly a file far outside the directory being installed. ``os.lstat`` exposes the link itself, and links
+    are left untouched.
+    """
+    try:
+        mode = os.lstat(path).st_mode
+        if stat.S_ISLNK(mode):
+            return
+        os.chmod(path, mode & ~0o022)
+    except OSError as exc:  # a read-only or foreign-owned entry is reported by the caller's lookup
+        logger.debug(f'Could not tighten permissions on {path}: {exc}')
+
+
+def _contains(parent: str, child: str) -> bool:
+    """Whether ``parent`` is ``child`` or one of its ancestors, on the same drive."""
+    try:
+        return os.path.commonpath([parent, child]) == parent
+    except ValueError:  # different drives on Windows
+        return False
+
+
+def _tighten_up_to(path: str, stop: str) -> None:
+    """Tighten ``path`` and every ancestor up to and including ``stop``.
+
+    Only the chain leading to the resource being installed is touched: the data directory NLTK reads, plus the
+    directories this call created to hold it. Siblings and anything above ``stop`` keep their permissions.
+
+    ``stop`` is normally an ancestor of ``path``. When it is not - a home directory reached through a symlink, or a
+    different drive on Windows - the chain simply ends at ``path`` rather than climbing into directories the caller
+    never named.
+    """
+    stop = os.path.abspath(stop)
+    chain = [os.path.abspath(path)]
+    while chain[-1] != stop:
+        parent = os.path.dirname(chain[-1])
+        if parent == chain[-1] or not _contains(stop, parent):
+            break
+        chain.append(parent)
+    for entry in chain:
+        _tighten_entry(entry)
+
+
 def _make_owner_private(path: str) -> None:
     """Remove group and other write bits so NLTK will trust a data directory it did not create itself.
 
-    Recurses into extracted archives: ``ZipInfo`` keeps the mode recorded at build time, so the directories inside
+    Recurses into a downloaded resource: ``ZipInfo`` keeps the mode recorded at build time, so the directories inside
     the archive land group-writable regardless of the process umask.
+
+    Every entry is visited through a path joined from the walk root, because ``os.walk`` reports bare names in
+    ``dirnames`` and a bare name passed to ``chmod`` resolves against the process working directory, not the tree
+    being walked. Symlinks are skipped rather than descended into or resolved.
     """
+    _tighten_entry(path)
     for root, dirnames, filenames in os.walk(path):
-        for name in [root, *dirnames, *(os.path.join(root, filename) for filename in filenames)]:
-            try:
-                os.chmod(name, os.stat(name).st_mode & ~0o022)
-            except OSError as exc:  # a read-only or foreign-owned entry is reported by the caller's lookup
-                logger.debug(f'Could not tighten permissions on {name}: {exc}')
+        for name in (*dirnames, *filenames):
+            _tighten_entry(os.path.join(root, name))
+
+
+def _archive_roots(extract_dir: str, names: Iterable[str]) -> List[str]:
+    """Return the top-level paths an archive installs under ``extract_dir``.
+
+    Only these are tightened. A pre-existing sibling resource sharing the same ``extract_dir`` (``corpora`` holds
+    many) must keep the permissions its owner gave it.
+    """
+    root = os.path.abspath(extract_dir)
+    roots: List[str] = []
+    for name in names:
+        top = name.replace('\\', '/').strip('/').split('/', 1)[0]
+        if not top or top == os.pardir:
+            continue
+        target = os.path.abspath(os.path.join(root, top))
+        try:
+            inside = os.path.commonpath([target, root]) == root
+        except ValueError:  # different drives on Windows
+            inside = False
+        if inside and target not in roots:
+            roots.append(target)
+    return roots
 
 
 @lru_cache
@@ -94,8 +164,9 @@ def check_nltk_data(name: str) -> None:
         # the process umask, so a host running with ``umask 0002`` (common on shared clusters) produced a
         # group-writable ``~/nltk_data`` that every later ``nltk.data.find`` silently ignored, turning a
         # successful download into "still unavailable after download".
-        _make_owner_private(nltk_base)
-        _make_owner_private(extract_dir)
+        # Only the chain leading to this resource is tightened; an unrelated resource already sitting next to it
+        # keeps the permissions its owner chose.
+        _tighten_up_to(extract_dir, nltk_base)
         zip_path = os.path.join(extract_dir, meta['zip_name'])
         last_error = None
         for mirror in meta['mirrors']:
@@ -103,8 +174,10 @@ def check_nltk_data(name: str) -> None:
             try:
                 download_url(url, zip_path, sha256=mirror['sha256'])
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    installed = _archive_roots(extract_dir, zip_ref.namelist())
                     zip_ref.extractall(extract_dir)
-                _make_owner_private(extract_dir)
+                for root in installed:
+                    _make_owner_private(root)
                 return
             except Exception as e:
                 last_error = e
