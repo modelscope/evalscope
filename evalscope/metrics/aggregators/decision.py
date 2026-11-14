@@ -131,13 +131,17 @@ class DecisionAggregator(Aggregator):
                 if sum(y):
                     p = [r.probabilities[r.labels.index('yes')] for r in rows]
                     positives = sum(y)
+                    # Count each threshold once; rescanning all rows per distinct probability is quadratic.
+                    counts = defaultdict(lambda: [0, 0])
+                    for probability, label in zip(p, y):
+                        counts[probability][0] += label
+                        counts[probability][1] += 1
                     tp = seen = 0
                     ap = 0.0
-                    for probability in sorted(set(p), reverse=True):
-                        indices = [i for i, value in enumerate(p) if value == probability]
-                        added = sum(y[i] for i in indices)
+                    for probability in sorted(counts, reverse=True):
+                        added, count = counts[probability]
                         tp += added
-                        seen += len(indices)
+                        seen += count
                         ap += added / positives * tp / seen
                     add('auprc', ap)
                 else:
