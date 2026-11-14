@@ -23,7 +23,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 
 ## 评估说明
 
-- 评估前需安装 `pip install bfcl-eval==2025.10.27.1`
+- 评估前需安装 `pip install 'evalscope[bfcl]'`
 - 对于原生支持函数调用的模型，请设置 `is_fc_model=True`
 - `underscore_to_dot` 参数控制函数名称的格式化方式
 - 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)

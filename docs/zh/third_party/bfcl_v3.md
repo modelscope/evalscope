@@ -39,8 +39,7 @@ Berkeley Function Calling Leaderboard (BFCL) 专门用于评估大型语言模�
 在运行评测之前需要安装以下依赖：
 
 ```bash
-pip install evalscope # 安装 evalscope
-pip install bfcl-eval==2025.10.27.1 # 安装 bfcl-eval
+pip install 'evalscope[bfcl]' # 安装 evalscope 及 bfcl-eval 和与之兼容的依赖
 ```
 
 ## 使用方法
