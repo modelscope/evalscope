@@ -1,5 +1,9 @@
 import asyncio
+import netrc
+import os
 import time
+import urllib.parse
+import urllib.request
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
@@ -21,6 +25,26 @@ logger = get_logger()
 _PREFLIGHT_DEADLINE = 60  # total wall-clock seconds for the whole probe
 _PREFLIGHT_MAX_ATTEMPTS = 3  # hard cap on attempts regardless of time left
 _PREFLIGHT_RETRY_INTERVAL = 2  # seconds between attempts (clamped to remaining time)
+
+
+def _env_changes_request(url: str) -> bool:
+    """Return whether a proxy or a netrc entry from the environment applies to ``url``.
+
+    With ``trust_env=True``, aiohttp looks up the netrc entry and the proxy for every request,
+    each in a worker thread. Under load, these lookups delay each request before its headers
+    go out, and the delay counts in TTFT. So the client trusts the environment only when the
+    environment changes the request.
+    """
+    parts = urllib.parse.urlsplit(url)
+    host = parts.hostname or ''
+    if parts.scheme in urllib.request.getproxies() and not urllib.request.proxy_bypass(host):
+        return True
+    # The netrc file that aiohttp reads.
+    path = os.environ.get('NETRC') or os.path.join(os.path.expanduser('~'), '_netrc' if os.name == 'nt' else '.netrc')
+    try:
+        return netrc.netrc(path).authenticators(host) is not None
+    except (OSError, netrc.NetrcParseError):
+        return False
 
 
 class AioHttpClient:
@@ -55,7 +79,7 @@ class AioHttpClient:
 
         self.client = aiohttp.ClientSession(
             connector=connector,
-            trust_env=True,
+            trust_env=_env_changes_request(self.url),
             timeout=client_timeout,
             trace_configs=[self._create_trace_config()] if args.debug else [],
         )
