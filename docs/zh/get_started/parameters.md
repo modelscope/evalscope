@@ -92,6 +92,8 @@
 | `--repeats` | `int` | 重复推理一个样例多次 | `1` |
 | `--dataset-args` | `str` | 数据集配置参数（JSON字符串），详见下表 | `{}` |
 
+原生评测中，`--limit 0`（或 `0.0`）表示不选择样本、跳过推理。全量评测请省略 `--limit`，或在 Python 中设置 `limit=None`。旧版本将零视为不限制样本数；如需保留该行为，请将零改为 `None`。
+
 ### dataset-args 配置项
 
 `--dataset-args` 为JSON字符串，每个数据集可配置以下参数：

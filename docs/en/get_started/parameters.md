@@ -92,6 +92,8 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `--repeats` | `int` | Number of times to repeat inference on the same sample | `1` |
 | `--dataset-args` | `str` | Dataset configuration parameters (JSON string), see table below | `{}` |
 
+For native evaluation, `--limit 0` (or `0.0`) selects no samples and skips inference. To evaluate all samples, omit `--limit` or set `limit=None` in Python. Earlier versions treated zero as unlimited; replace zero with `None` when retaining that behavior.
+
 ### dataset-args Configuration Options
 
 `--dataset-args` is a JSON string; each dataset can be configured with the following parameters:

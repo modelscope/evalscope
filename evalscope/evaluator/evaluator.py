@@ -169,6 +169,10 @@ class DefaultEvaluator(Evaluator):
             Report: The complete evaluation report.
         """
         try:
+            if self.task_config.limit == 0:
+                logger.warning(f'Zero sample limit for {self.benchmark_name}. Skipping.')
+                return {}
+
             logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
             loaded_datasets = self.benchmark.load_dataset()
             dataset_dict = {k: v for k, v in loaded_datasets.items() if len(v) > 0}
