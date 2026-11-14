@@ -69,7 +69,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 
 ## Evaluation Notes
 
-- **Installation Required**: `pip install bfcl-eval==2025.10.27.1`
+- **Installation Required**: `pip install 'evalscope[bfcl]'`
 - Primary metric: **Accuracy** per category
 - Configure `is_fc_model` based on model capabilities
 - Optional: Set `SERPAPI_API_KEY` for web search tasks

@@ -22,7 +22,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 
 ## 评估说明
 
-- **安装要求**：`pip install bfcl-eval==2025.10.27.1`
+- **安装要求**：`pip install 'evalscope[bfcl]'`
 - 主要指标：各类别下的 **准确率（Accuracy）**
 - 根据模型能力设置 `is_fc_model` 参数
 - 可选：配置 `SERPAPI_API_KEY` 以启用网络搜索任务

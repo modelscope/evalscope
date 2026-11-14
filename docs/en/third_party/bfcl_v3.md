@@ -39,8 +39,7 @@ This benchmark consists of 17 tasks, covering a wide range of function-calling s
 Before running the evaluation, you need to install the following dependencies:
 
 ```bash
-pip install evalscope # Install evalscope
-pip install bfcl-eval==2025.10.27.1 # Install bfcl-eval
+pip install 'evalscope[bfcl]' # Install evalscope with bfcl-eval and its compatible dependencies
 ```
 
 ## Usage
