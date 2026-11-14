@@ -46,14 +46,18 @@ class HarborLLM(BaseModel, BaseLLM):
         choice = oa_choices[0]
         msg = choice.message
 
-        usage = completion.usage.model_dump(exclude_none=True)
+        usage = completion.usage.model_dump(exclude_none=True) if completion.usage is not None else None
         return LLMResponse(
             content=msg.content,
-            usage=UsageInfo(
-                prompt_tokens=usage.get('input_tokens', 0),
-                completion_tokens=usage.get('output_tokens', 0),
-                cache_tokens=usage.get('input_tokens_cache_read', 0),
-                cost_usd=usage.get('cost_usd', 0.0),
+            usage=(
+                UsageInfo(
+                    prompt_tokens=usage.get('input_tokens', 0),
+                    completion_tokens=usage.get('output_tokens', 0),
+                    cache_tokens=usage.get('input_tokens_cache_read', 0),
+                    cost_usd=usage.get('cost_usd', 0.0),
+                )
+                if usage is not None
+                else None
             ),
         )
 
