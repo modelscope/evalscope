@@ -4,10 +4,9 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -56,6 +55,7 @@ InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evalu
         metric_list=['anls'],
         eval_split='validation',
         prompt_template=PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class InfoVQAAdapter(VisionLanguageAdapter):
@@ -68,8 +68,8 @@ class InfoVQAAdapter(VisionLanguageAdapter):
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
-            image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-            content_list.append(ContentImage(image=image_base64))
+            image_payload = self._normalize_media_value(image, media_type='image')
+            content_list.append(self._content_image_from_value(image_payload))
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=json.dumps(record.get('answers')),  # answers is a list
