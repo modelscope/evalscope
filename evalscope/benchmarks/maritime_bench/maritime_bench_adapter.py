@@ -73,7 +73,7 @@ class MaritimeBenchAdapter(MultiChoiceAdapter):
 
     def format_prompt_template(self, sample):
         choices = '\n'.join([f'{chr(65 + i)}. {choice}' for i, choice in enumerate(sample.choices)])
-        return MARITIME_PROMPT_TEMPLATE.format(question=sample.input, choices=choices)
+        return self.prompt_template.format(question=sample.input, choices=choices)
 
     def extract_answer(self, prediction, task_state):
         # use regex to extract the answer from the prediction
