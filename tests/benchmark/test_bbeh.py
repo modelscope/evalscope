@@ -44,6 +44,15 @@ def test_record_to_sample_uses_task_as_subset() -> None:
         ('Ok The answer is: (A)', 'b', False),
         ("Ok The answer is: **25**\nHere's why.", '25.0', True),
         ("Ok The answer is: **25**\nHere's why.", '26.0', False),
+        # Preserve normalization order and early returns from the official scorer.
+        ('The answer is: $\\boxed{\\text{4}}$.', '4', True),
+        ('The answer is: 4.0', '4', True),
+        ('The answer is: [yes]', 'yes', True),
+        ('The answer is: yes?', 'yes', True),
+        ("The answer is: 'yes'", 'yes', True),
+        ('The answer is: (a)', '[(a)]', False),
+        ('The answer is: [(a)]', '(a)', False),
+        ('The answer is: He really cried.', 'He really cried.', False),
     ],
 )
 def test_scores_like_official_evaluate(completion: str, reference: str, correct: bool) -> None:

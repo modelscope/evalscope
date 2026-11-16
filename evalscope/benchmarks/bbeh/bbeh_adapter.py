@@ -1,16 +1,18 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from statistics import harmonic_mean
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.report import Report
+from evalscope.metrics.semantics import get_semantics_resolver
+from evalscope.report import Category, Metric, Report, Subset
 
-from .utils import fuzzy_match, preprocess_reference, preprocess_sample
+from .utils import extract_answer, match_answer
 
 # The 23 BBEH tasks; the dataset's `task` column uses the same names with spaces instead of underscores.
 SUBSET_LIST = [
@@ -120,40 +122,36 @@ class BBEHAdapter(DefaultDataAdapter):
         return not self.mini or sample.metadata['mini']
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        return preprocess_sample(prediction)
+        return extract_answer(prediction)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        # `filtered_prediction` is already `preprocess_sample` of the response (see `extract_answer`).
-        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
-        score.value = {'acc': float(fuzzy_match(filtered_prediction, preprocess_reference(reference)))}
-        return score
+        return Score(
+            value={'acc': float(match_answer(filtered_prediction, reference))},
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+        )
 
     def _on_generate_report_end(self, report: Report, output_dir: str, **kwargs: Any) -> None:
         """Append the BBEH headline metric: the adjusted harmonic mean of per-task accuracies."""
-        from evalscope.api.metric.semantics import MetricIdentity
-        from evalscope.metrics.semantics import get_semantics_resolver
-        from evalscope.report import Category, Metric, Subset
-
         accuracy = next((metric for metric in report.metrics if metric.identity.name == 'accuracy'), None)
         if accuracy is None:
             return
-        subsets: List[Subset] = [
-            subset for category in accuracy.categories for subset in category.subsets if not subset.is_aggregate
-        ]
+        subsets = [subset for category in accuracy.categories for subset in category.subsets if not subset.is_aggregate]
         if not subsets:
             return
-        # Binary counts preserve precision that has already been rounded out of report scores.
-        accuracies = [
+        # Recover exact accuracies from counts; report scores are already rounded.
+        accuracies = (
             subset.num_correct / subset.num if subset.num_correct is not None and subset.num else subset.score
             for subset in subsets
-        ]
-        # The paper adds 1 to every accuracy (in percent) so that a single zero does not zero the mean.
-        score = harmonic_mean([100 * accuracy + 1 for accuracy in accuracies]) / 100
+        )
+        score = harmonic_mean(value + 0.01 for value in accuracies)
         identity = MetricIdentity(name='bbeh_score', aggregation='harmonic_mean')
-        semantics = get_semantics_resolver().resolve(self.name, identity).semantics
-        overall = Subset(name='OVERALL', score=score, num=sum(subset.num for subset in subsets))
         report.metrics.append(
-            Metric(identity=identity, categories=[Category(name='-', subsets=[overall])], semantics=semantics)
+            Metric(
+                identity=identity,
+                categories=[Category(name='-', subsets=[Subset(name='OVERALL', score=score, num=accuracy.num)])],
+                semantics=get_semantics_resolver().resolve(self.name, identity).semantics,
+            )
         )
