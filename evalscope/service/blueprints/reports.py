@@ -55,11 +55,8 @@ from evalscope.service.api_models import (
     PredictionsResponse,
 )
 from evalscope.service.prediction_cache import (
-    discard_prediction_cache,
-    get_cached_response,
     prediction_etag,
     prediction_fingerprint,
-    store_response,
 )
 from evalscope.service.report_meta_cache import (
     Fingerprint,
@@ -569,7 +566,6 @@ def delete_report(run_id: str, model_id: str) -> ResponseReturnValue:
             shutil.rmtree(run_dir)
         else:
             _refresh_html_report(reports_dir)
-        discard_prediction_cache(root_real, ref.run_id, ref.model_id)
         logger.info(f'Deleted eval report {ref.key} under {run_dir}')
         return json_response(
             DeleteReportResponse,
@@ -694,16 +690,8 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
             resp.headers['Cache-Control'] = 'no-cache'
             return resp.make_conditional(request)
 
-        body = get_cached_response(cache_key, fingerprint)
-        if body is None:
-            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-            resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
-            if prediction_fingerprint(review_path, prediction_path) == fingerprint:
-                store_response(cache_key, fingerprint, resp.get_data())
-        else:
-            # These bytes were validated and serialized by json_response on a cache miss.
-            resp = Response(body, mimetype='application/json')
-
+        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+        resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
         resp.set_etag(etag)
         resp.headers['Cache-Control'] = 'no-cache'
         return resp.make_conditional(request)

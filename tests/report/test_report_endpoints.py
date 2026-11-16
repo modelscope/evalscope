@@ -13,7 +13,6 @@ import pytest
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
 from evalscope.report import ReportRef  # noqa: E402
-from evalscope.service.prediction_cache import clear_prediction_cache  # noqa: E402
 from evalscope.service.report_meta_cache import clear_report_meta_cache  # noqa: E402
 
 
@@ -25,7 +24,6 @@ class TestReportEndpoints(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.client = create_app().test_client()
         clear_report_meta_cache()
-        clear_prediction_cache()
 
     def tearDown(self):
         import shutil
@@ -160,56 +158,20 @@ class TestReportEndpoints(unittest.TestCase):
         etag = first.headers['ETag']
         second, mocked = self._get_predictions(headers={'If-None-Match': etag})
         self.assertEqual(second.status_code, 304)
-        # The records cache served the revalidation without recomputing.
+        # The revalidation short-circuits before any loading or serialization.
         mocked.assert_not_called()
-
-    def test_predictions_reuses_validated_json_without_serializing_again(self):
-        self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')
-        first, _ = self._get_predictions()
-        with mock.patch('evalscope.service.blueprints.reports.json_response', side_effect=AssertionError):
-            second, loaded = self._get_predictions()
-        self.assertEqual(second.status_code, 200)
-        self.assertEqual(second.data, first.data)
-        self.assertEqual(second.mimetype, 'application/json')
-        loaded.assert_not_called()
 
     def test_predictions_cold_conditional_get_skips_loading_and_serialization(self):
         self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')
         first, _ = self._get_predictions()
-        for cold in (False, True):
-            for prefix in ('', 'W/'):
-                if cold:
-                    clear_prediction_cache()
-                with mock.patch('evalscope.service.blueprints.reports.json_response', side_effect=AssertionError):
-                    second, loaded = self._get_predictions(headers={'If-None-Match': prefix + first.headers['ETag']})
-                self.assertEqual(second.status_code, 304)
-                self.assertEqual(second.data, b'')
-                self.assertEqual(second.headers['ETag'], first.headers['ETag'])
-                self.assertEqual(second.headers['Cache-Control'], 'no-cache')
-                loaded.assert_not_called()
-
-    def test_delete_report_releases_prediction_response(self):
-        import os
-
-        from evalscope.report.data_frames import get_prediction_source_paths
-        from evalscope.service.prediction_cache import get_cached_response, prediction_fingerprint
-
-        run_id, model_id = '20260101_120000', 'model-a'
-        self._write_prediction_sources(run_id, model_id, 'gsm8k', 'main')
-        source_paths = get_prediction_source_paths(str(Path(self.tmp) / run_id), model_id, 'gsm8k', 'main')
-        fingerprint = prediction_fingerprint(*source_paths)
-        key = f'{os.path.realpath(self.tmp)}\x00{run_id}\x00{model_id}\x00gsm8k\x00main'
-        first, _ = self._get_predictions()
-        self.assertEqual(get_cached_response(key, fingerprint), first.data)
-        (Path(self.tmp) / run_id / 'reports' / model_id).mkdir(parents=True)
-
-        deleted = self.client.delete(
-            f'/api/v1/reports/runs/{run_id}/models/{model_id}', query_string={'root_path': self.tmp},
-        )
-
-        self.assertEqual(deleted.status_code, 200)
-        self.assertFalse((Path(self.tmp) / run_id).exists())
-        self.assertIsNone(get_cached_response(key, fingerprint))
+        for prefix in ('', 'W/'):
+            with mock.patch('evalscope.service.blueprints.reports.json_response', side_effect=AssertionError):
+                second, loaded = self._get_predictions(headers={'If-None-Match': prefix + first.headers['ETag']})
+            self.assertEqual(second.status_code, 304)
+            self.assertEqual(second.data, b'')
+            self.assertEqual(second.headers['ETag'], first.headers['ETag'])
+            self.assertEqual(second.headers['Cache-Control'], 'no-cache')
+            loaded.assert_not_called()
 
     def test_predictions_changed_sources_invalidate_etag(self):
         review_path = self._write_prediction_sources('20260101_120000', 'model-a', 'gsm8k', 'main')

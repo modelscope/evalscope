@@ -1,78 +1,41 @@
-"""The predictions memo retains at most its payload budget and releases stale entries."""
+"""Prediction fingerprints change with their source files and drive distinct ETags."""
 
 import os
 from pathlib import Path
-from typing import Iterator
 
-import pytest
-
-from evalscope.service import prediction_cache as cache
-
-FINGERPRINT = (('@review', 1, 1, 10), ('@prediction', 1, 1, 10))
+from evalscope.service.prediction_cache import prediction_etag, prediction_fingerprint
 
 
-@pytest.fixture(autouse=True)
-def isolated_cache() -> Iterator[None]:
-    cache.clear_prediction_cache()
-    yield
-    cache.clear_prediction_cache()
+def test_missing_sources_fingerprint_as_zeros() -> None:
+    fingerprint = prediction_fingerprint('/nonexistent/review.jsonl', '/nonexistent/prediction.jsonl')
+    assert fingerprint == (('@review', 0, 0, 0), ('@prediction', 0, 0, 0))
 
 
-def test_byte_budget_evicts_the_least_recently_used_response(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cache, '_MAX_CACHE_BYTES', 8)
-    for key in ('a', 'b'):
-        cache.store_response(key, FINGERPRINT, b'1234')
-    assert cache.get_cached_response('a', FINGERPRINT) == b'1234'
+def test_rewriting_a_source_changes_the_fingerprint(tmp_path: Path) -> None:
+    review = tmp_path / 'review.jsonl'
+    prediction = tmp_path / 'prediction.jsonl'
+    review.write_text('{}\n', encoding='utf-8')
+    prediction.write_text('{}\n', encoding='utf-8')
 
-    cache.store_response('c', FINGERPRINT, b'5678')
+    before = prediction_fingerprint(str(review), str(prediction))
 
-    assert cache.get_cached_response('b', FINGERPRINT) is None
-    assert cache.get_cached_response('a', FINGERPRINT) == b'1234'
-    assert cache.get_cached_response('c', FINGERPRINT) == b'5678'
+    review.write_text('{}\n{}\n', encoding='utf-8')
+    os.utime(review, None)
 
-
-def test_entry_limit_bounds_small_responses(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cache, '_MAX_CACHE_ENTRIES', 2)
-    for key in ('a', 'b', 'c'):
-        cache.store_response(key, FINGERPRINT, b'')
-    assert cache.get_cached_response('a', FINGERPRINT) is None
-    assert cache.get_cached_response('b', FINGERPRINT) == b''
-    assert cache.get_cached_response('c', FINGERPRINT) == b''
+    after = prediction_fingerprint(str(review), str(prediction))
+    assert after != before
+    assert after[1] == before[1]  # the untouched prediction file is unchanged
 
 
-def test_oversized_replacement_releases_old_body_without_evicting_others(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cache, '_MAX_CACHE_BYTES', 8)
-    cache.store_response('a', FINGERPRINT, b'1234')
-    cache.store_response('b', FINGERPRINT, b'5678')
+def test_etag_is_stable_per_identity_and_fingerprint(tmp_path: Path) -> None:
+    review = tmp_path / 'review.jsonl'
+    review.write_text('{}\n', encoding='utf-8')
+    fingerprint = prediction_fingerprint(str(review), '/nonexistent/prediction.jsonl')
 
-    cache.store_response('a', FINGERPRINT, b'oversized')
+    first = prediction_etag('key-a', fingerprint)
+    assert first == prediction_etag('key-a', fingerprint)
+    assert first != prediction_etag('key-b', fingerprint)
 
-    assert cache.get_cached_response('a', FINGERPRINT) is None
-    assert cache.get_cached_response('b', FINGERPRINT) == b'5678'
-    cache.store_response('c', FINGERPRINT, b'new!')
-    assert cache.get_cached_response('b', FINGERPRINT) == b'5678'
-    assert cache.get_cached_response('c', FINGERPRINT) == b'new!'
-
-
-def test_new_fingerprint_releases_old_response() -> None:
-    cache.store_response('a', FINGERPRINT, b'old')
-    updated = (('@review', 2, 2, 11), ('@prediction', 1, 1, 10))
-    assert cache.get_cached_response('a', updated) is None
-    assert cache.get_cached_response('a', FINGERPRINT) is None
-    cache.store_response('a', updated, b'new')
-    assert cache.get_cached_response('a', updated) == b'new'
-
-
-def test_report_cleanup_preserves_other_models_and_roots(tmp_path: Path) -> None:
-    root = os.path.realpath(tmp_path)
-    keys = [f'{root}\x00run\x00model\x00ds\x00{subset}' for subset in ('a', 'b')]
-    others = [f'{root}\x00run\x00other\x00ds\x00a', f'{root}-other\x00run\x00model\x00ds\x00a']
-    for key in keys + others:
-        cache.store_response(key, FINGERPRINT, b'body')
-
-    cache.discard_prediction_cache(root, 'run', 'model')
-
-    for key in keys:
-        assert cache.get_cached_response(key, FINGERPRINT) is None
-    for key in others:
-        assert cache.get_cached_response(key, FINGERPRINT) == b'body'
+    review.write_text('{}\n{}\n', encoding='utf-8')
+    os.utime(review, None)
+    assert prediction_etag('key-a', prediction_fingerprint(str(review), '/nonexistent/prediction.jsonl')) != first
