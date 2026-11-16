@@ -48,7 +48,7 @@ pre-commit install
 
 ### Backend (Python)
 
-EvalScope requires **Python >= 3.10**.
+EvalScope requires **Python >= 3.11**.
 
 ```bash
 # Base install (editable)
