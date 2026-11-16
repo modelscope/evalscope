@@ -2,29 +2,27 @@
 
 ## Overview
 
-BIG-Bench Extra Hard (BBEH) replaces each of the 23 tasks in BIG-Bench Hard with a new task that probes a similar reasoning skill but is much harder. Frontier models that saturate BBH score far lower on BBEH, so it separates general reasoning ability across models again.
+BIG-Bench Extra Hard (BBEH) evaluates challenging general reasoning across 23 tasks. It builds on BIG-Bench Hard with harder problems covering a similar range of reasoning skills.
 
 ## Task Description
 
 - **Task Type**: General reasoning (free-form and multiple-choice answers)
-- **Input**: A task-specific question followed by the official answer-format instruction
-- **Output**: Step-by-step reasoning ending in `The answer is: <answer>`
-- **Domain**: Logical, temporal, spatial, causal, arithmetic, linguistic and commonsense reasoning, humour and sarcasm understanding
+- **Input**: A reasoning question with answer-format instructions
+- **Output**: Reasoning followed by `The answer is: <answer>`
+- **Domain**: Logic, arithmetic, language, commonsense, temporal and spatial reasoning, humour and sarcasm
 
 ## Key Features
 
-- 4,520 examples over 23 tasks (200 per task, 120 for Disambiguation QA)
-- BBEH Mini: the official 460-example subset (20 per task), selected with `extra_params={'mini': True}`
-- Answers are extracted and matched with the official `evaluate.py` from google-deepmind/bbeh
-- Long inputs: prompts average about 4,300 characters and reach 32,000 (Shuffled Objects and Zebra Puzzles average over 11,000)
+- Full benchmark: 4,520 examples across 23 tasks (200 per task, except 120 for Disambiguation QA)
+- Optional BBEH Mini: 460 examples, with 20 per task, for quicker evaluation
+- Varied question formats and long inputs, with prompts reaching about 32,500 characters
 
 ## Evaluation Notes
 
-- 0-shot, with the prompt suffix used in the BBEH paper.
-- `acc` per task uses the official fuzzy match (case-insensitive, `(a)` vs `a`, numeric equality, LaTeX `\boxed{}` and markup removal).
-- The overall `acc` is the micro average over all examples, which the BBEH leaderboard reports as "Micro Avg".
-- The report adds the paper's headline metric, `accuracy` with `harmonic_mean` aggregation: the harmonic mean of per-task accuracies, with 1 percentage point added to each to handle zero scores, as in the paper.
-- Give models a generous `max_tokens`; the paper attributes below-random scores to answers cut off before the final line.
+- Uses the official zero-shot prompt and answer matching rules, including their punctuation-related limitations.
+- Reports per-task accuracy, overall micro-averaged accuracy, and the paper's BBEH Score.
+- BBEH Score is the harmonic mean of task accuracies after adding one percentage point to each. Its range is 1% to 101%, rather than the usual 0% to 100% accuracy range.
+- Evaluate all 23 tasks for overall comparisons. Allow enough output tokens: responses without a final answer may be marked incorrect.
 
 ## Properties
 
@@ -83,7 +81,7 @@ BIG-Bench Extra Hard (BBEH) replaces each of the 23 tasks in BIG-Bench Hard with
 {
   "input": [
     {
-      "id": "e18d4e3b",
+      "id": "056bcccb",
       "content": "A few players are playing a boardgame. The current state of the game is as follows. The bee has a football with a radius of 15 inches. The chihuahua has a banana-strawberry smoothie. The chihuahua lost her keys. The cobra suspects the truthfu ... [TRUNCATED 9092 chars] ... rkup. For instance: \"The answer is: 42\" or \"The answer is: yes\". If the question is multiple choice with a single correct answer, the final answer must only be the letter corresponding to the correct answer. For example, \"The answer is: (a)\"."
     }
   ],

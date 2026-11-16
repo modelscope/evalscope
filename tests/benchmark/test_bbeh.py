@@ -113,3 +113,34 @@ def test_offline_run_mini_keeps_only_mini_examples(tmp_path: Path, monkeypatch: 
     assert accuracy['num'] == 3
     subsets = {s['name']: (s['score'], s['num']) for c in accuracy['categories'] for s in c['subsets']}
     assert subsets == {'boardgame_qa': (0.5, 2), 'web_of_lies': (0.0, 1)}
+
+
+@pytest.mark.parametrize(('accuracy', 'expected'), [(0.0, 0.01), (0.99, 1.0), (1.0, 1.01)])
+def test_adjusted_harmonic_mean_declares_its_official_range(accuracy: float, expected: float) -> None:
+    from evalscope.api.metric.semantics import KNOWN_AGGREGATIONS, MetricIdentity
+    from evalscope.metrics.semantics import get_semantics_resolver
+    from evalscope.metrics.semantics.ranking import bounded_quality_ratio
+    from evalscope.report import Category, Metric, Report, Subset
+
+    identity = MetricIdentity(name='accuracy', aggregation='mean')
+    resolver = get_semantics_resolver()
+    report = Report(
+        model_name='gold',
+        dataset_name='bbeh',
+        metrics=[
+            Metric(
+                identity=identity,
+                categories=[Category(name='-', subsets=[Subset(name='boardgame_qa', score=accuracy, num=1)])],
+                semantics=resolver.resolve('bbeh', identity).semantics,
+            )
+        ],
+    )
+    _adapter()._on_generate_report_end(report, '')
+    metric = report.metrics[-1]
+    assert metric.identity.name == 'bbeh_score'
+    assert metric.identity.aggregation in KNOWN_AGGREGATIONS
+    assert metric.score == pytest.approx(expected)
+    assert metric.semantics.value_range.min == 0.01
+    assert metric.semantics.value_range.max == 1.01
+    assert bounded_quality_ratio(metric.score, metric.semantics) == pytest.approx(accuracy)
+    assert report.metrics[0].semantics.value_range.max == 1.0
