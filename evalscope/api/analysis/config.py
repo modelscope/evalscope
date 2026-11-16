@@ -1,6 +1,6 @@
 """Configuration of the trace analyzer, with reviewable default rules."""
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -117,31 +117,6 @@ class TraceAnalysisConfig(BaseModel):
     max_evidence_chars_per_case: int = Field(default=4000, ge=200)
     evidence_excerpt_chars: int = Field(default=500, ge=80)
     use_providers: bool = True
-
-    @classmethod
-    def from_overrides(cls, overrides: Optional[Dict[str, Any]]) -> 'TraceAnalysisConfig':
-        """Merge user overrides onto the defaults.
-
-        Dict fields are merged key by key and list fields are extended, unless the field
-        name is listed under ``replace``, in which case the override replaces the default.
-        """
-        if not overrides:
-            return cls()
-        overrides = dict(overrides)
-        replace = set(overrides.pop('replace', []) or [])
-        base = cls().model_dump()
-        for key, value in overrides.items():
-            if key not in base:
-                raise ValueError(f'Unknown trace analysis option {key!r}.')
-            if key in replace or value is None:
-                base[key] = value
-            elif isinstance(base[key], dict) and isinstance(value, dict):
-                base[key] = {**base[key], **value}
-            elif isinstance(base[key], list) and isinstance(value, list):
-                base[key] = base[key] + [item for item in value if item not in base[key]]
-            else:
-                base[key] = value
-        return cls.model_validate(base)
 
 
 __all__ = ['TraceAnalysisConfig']

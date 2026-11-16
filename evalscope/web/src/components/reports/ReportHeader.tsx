@@ -56,7 +56,7 @@ export default function ReportHeader({
         {/* Left side - info */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-[var(--text)]">{modelName}</h1>
+            <h1 className="text-xl font-bold text-[var(--text)]">{modelName}</h1>
             {/* text-dim allowed: decorative separator glyph (DESIGN.md §Text) */}
             <span className="text-[var(--text-dim)]">×</span>
             {datasets && datasets.length > 0 ? (

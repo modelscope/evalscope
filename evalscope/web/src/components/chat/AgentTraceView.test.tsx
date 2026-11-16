@@ -1,5 +1,5 @@
-import { render as rtlRender, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { NudgeRow, TraceEventPill } from './AgentTraceView'
 import { LocaleProvider } from '@/contexts/LocaleContext'
@@ -84,8 +84,8 @@ it('places a finding badge only on the step containing its recorded call ID', as
   ]} as import('@/api/types').AgentTrace
   const {container} = render(<TracedTimeline messages={messages} trace={trace}
     groups={buildStepGroups(messages,trace)} highlightStep={null} onStepClick={() => {}}
-    findings={[{detector:'risk',ref:{run_dir:'/run',model:'m',benchmark:'demo',subset:'default',index:0},category:'risky_command',subtype:'risk',attribution:'model',confidence:'low',call_ids:['b']},
-      {detector:'repeat',ref:{run_dir:'/run',model:'m',benchmark:'demo',subset:'default',index:0},category:'repetition',subtype:'repeat',attribution:'model',confidence:'low',call_ids:['absent']}]} />)
+    findings={[{detector:'risk',category:'risky_command',subtype:'risk',attribution:'model',confidence:'low',call_ids:['b']},
+      {detector:'repeat',category:'repetition',subtype:'repeat',attribution:'model',confidence:'low',call_ids:['absent']}]} />)
   const badge = screen.getByText('Potentially risky command')
   expect(badge.closest('button')).toHaveTextContent('Step 1')
   expect(container.textContent).not.toContain('Repetition')
@@ -106,9 +106,35 @@ it('shows a provider-confirmed tool error only on its matching result, including
   ] } as import('@/api/types').AgentTrace
   render(<TracedTimeline messages={messages} trace={trace}
     groups={buildStepGroups(messages, trace)} highlightStep={null} onStepClick={() => {}}
-    findings={[{ detector: 'tool_failure', ref: { run_dir: '/run', model: 'm', benchmark: 'demo', subset: 'default', index: 0 },
-      category: 'tool_failure', subtype: 'provider:runtime_error', attribution: 'model', confidence: 'medium', call_ids: ['bad'] }]} />)
+    findings={[{ detector: 'tool_failure', category: 'tool_failure', subtype: 'provider:runtime_error', attribution: 'model', confidence: 'medium', call_ids: ['bad'] }]} />)
   expect(screen.getByText('Error: ValueError: invalid date')).toBeInTheDocument()
   expect(screen.getByText('Event created')).toBeInTheDocument()
   expect(screen.queryByText('Error: Event created')).not.toBeInTheDocument()
+})
+
+
+it('highlights tool evidence in text order even when citation order is reversed', async () => {
+  const { EvidenceByMessage } = await import('@/contexts/EvidenceContext')
+  const { ToolObservation } = await import('./ToolCallComponents')
+  const { container } = render(<EvidenceByMessage.Provider value={{ result: ['later', 'earlier'] }}>
+    <ToolObservation msg={{ role: 'tool', id: 'result', content: 'earlier then later' } as ChatMessage} />
+  </EvidenceByMessage.Provider>)
+  expect(Array.from(container.querySelectorAll('mark'), node => node.textContent)).toEqual(['earlier', 'later'])
+})
+
+it('can reveal an agent step again after clearing selection and scrolling away', async () => {
+  const { default: VirtualList } = await import('@/components/ui/VirtualList')
+  const previousObserver = globalThis.ResizeObserver
+  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+  const props = { items: Array.from({ length: 60 }, (_, i) => i), getKey: (i: number) => i,
+    renderItem: (i: number) => <p>Step content {i}</p> }
+  const view = render(<VirtualList {...props} revealIndex={40} />)
+  expect(screen.getByText('Step content 40')).toBeInTheDocument()
+  view.rerender(<LocaleProvider><VirtualList {...props} revealIndex={-1} /></LocaleProvider>)
+  const scroller = view.container.querySelector('[style*="overflow"]')!
+  fireEvent.scroll(scroller, { target: { scrollTop: 0 } })
+  expect(screen.queryByText('Step content 40')).not.toBeInTheDocument()
+  view.rerender(<LocaleProvider><VirtualList {...props} revealIndex={40} /></LocaleProvider>)
+  expect(screen.getByText('Step content 40')).toBeInTheDocument()
+  vi.stubGlobal('ResizeObserver', previousObserver)
 })

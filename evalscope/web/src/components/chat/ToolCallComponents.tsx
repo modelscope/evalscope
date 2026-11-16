@@ -1,6 +1,5 @@
 import { useContext } from 'react'
 import { EvidenceByMessage } from '@/contexts/EvidenceContext'
-import EvidenceText from './EvidenceText'
 import { Wrench } from 'lucide-react'
 import type { ChatMessage } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -14,6 +13,15 @@ import type { ToolCallEntry } from '@/domain/trace/stepGroups'
 function shortToolId(id: string): string {
   const trimmed = id.replace(/^(toolu_|call_|tool_)/, '')
   return trimmed.slice(0, 8)
+}
+
+/** Render exact quotations as text nodes; evidence never introduces HTML. */
+function EvidenceText({ text, quotes }: { text: string; quotes: string[] }) {
+  const quote = quotes.filter(q => q && text.includes(q)).sort((a, b) => text.indexOf(a) - text.indexOf(b))[0]
+  if (!quote) return <>{text}</>
+  const at = text.indexOf(quote)
+  return <>{text.slice(0, at)}<mark className="bg-[var(--warning-bg)] text-[var(--text)]">{quote}</mark>
+    <EvidenceText text={text.slice(at + quote.length)} quotes={quotes} /></>
 }
 
 /* ─── ToolObservation ──────────────────────────────────────── */

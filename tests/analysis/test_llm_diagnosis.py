@@ -17,12 +17,8 @@ from evalscope.api.analysis import (
     SampleKey,
 )
 from evalscope.api.model import ModelOutput, ModelUsage
-from tests.analysis.test_diagnosis import make_run as run_factory
+from tests.analysis.helpers import review
 
-
-@pytest.fixture(name='make_run')
-def run_fixture(tmp_path: Path) -> Callable:
-    return run_factory.__wrapped__(tmp_path)
 
 def options(**kw: object) -> AnalysisReportConfig:
     return AnalysisReportConfig(level='full', model={'model_id':'independent-reviewer'}, trace={'use_providers':False}, **kw)
@@ -165,7 +161,6 @@ def test_validation_does_not_turn_locatable_citations_into_semantic_accuracy() -
 
 def test_excerpting_preserves_the_answer_tail_and_records_real_generation_end(make_run: Callable) -> None:
     from evalscope.analysis.inputs import load_inputs
-    from tests.analysis.test_diagnosis import review
     root=make_run(rows=[review(0,0,output='head '+('long thought '*500)+' FINAL ANSWER: B')])
     data=load_inputs(str(root),'m','demo',options().trace)
     sources=build_sources(data.samples[0],data,options())
@@ -218,7 +213,6 @@ def test_trace_can_be_omitted_without_inventing_step_references(make_run: Callab
 
 
 def test_all_passing_without_findings_does_not_make_a_summary_request(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
-    from tests.analysis.test_diagnosis import review
     calls=[]
     fake_model(monkeypatch,lambda *args:pytest.fail('No useful cited summary is possible'),calls)
     root=make_run(rows=[review(0,1,output='ANSWER: A',prediction='A')])
@@ -230,3 +224,36 @@ def test_new_reports_record_the_current_taxonomy_version(make_run: Callable) -> 
     from evalscope.api.analysis.taxonomy import TAXONOMY_VERSION
     r=diagnose_benchmark(str(make_run()),'m','demo',AnalysisReportConfig(trace={'use_providers':False}))
     assert r.taxonomy_version==TAXONOMY_VERSION
+
+
+def test_a_single_remaining_source_character_cannot_include_the_whole_message(make_run: Callable) -> None:
+    from evalscope.analysis.inputs import load_inputs
+
+    data=load_inputs(str(make_run()),'m','demo',options().trace)
+    item=data.samples[0]
+    item.record.sample_score.score.metadata={'padding': ''}
+    config=options(max_input_chars=2000)
+    score=next(s for s in build_sources(item,data,config) if s.id=='score')
+    item.record.sample_score.score.metadata['padding']='x' * (1994-len(score.text))
+    sources=build_sources(item,data,config)
+    assert sum(len(s.text) for s in sources) <= config.max_input_chars
+
+
+def test_validation_retains_missing_roots_and_high_confidence_false_positives() -> None:
+    from evalscope.analysis.validation import DiagnosticLabel, evaluate_labels
+    from evalscope.api.analysis import Finding
+
+    s=sample(0)
+    s.llm=verdict().model_copy(update={'root_cause_step': 2})
+    s.llm_status='ok'
+    s.findings=[Finding(category='tool_failure',subtype='runtime_error',confidence='high',
+                        detector='tool_failure',rule_id='model.bad_arguments')]
+    label=DiagnosticLabel(key=s.key,failure_type='reasoning_error',attribution='model',
+                          root_cause_step=2,rule_decisions={'model.bad_arguments':False},
+                          annotator='human',user_reviewed=True)
+    result=evaluate_labels([s],[label])
+    assert result['type_accuracy']==1 and result['experimental']
+    assert result['rules']['model.bad_arguments']['high_precision']==0
+    missing=label.model_copy(update={'key':SampleKey(subset='large',index=1)})
+    result=evaluate_labels([s],[label,missing])
+    assert result['root_step_labeled']==2 and result['root_step_accuracy']==0.5

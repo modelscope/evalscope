@@ -48,7 +48,7 @@ def _ref(benchmark: str = 'demo', index: int = 0) -> SampleRef:
 
 
 def _analyze(record: ReviewResult, benchmark: str = 'demo', **overrides):
-    config = TraceAnalysisConfig.from_overrides({'use_providers': False, **overrides})
+    config = TraceAnalysisConfig(use_providers=False, **overrides)
     return analyze_records([(_ref(benchmark, record.index), record)], config)[0]
 
 
@@ -67,7 +67,6 @@ def test_messages_only_view_and_plain_qa():
     assert case.tool_call_count == 0
     assert case.findings == []
     assert case.outcome.task_success is True and case.outcome.source == 'binary_score'
-    assert not case.failed
 
 
 def test_trace_events_are_merged_and_trace_only_calls_added():
@@ -88,7 +87,7 @@ def test_trace_events_are_merged_and_trace_only_calls_added():
     case = _analyze(record)
     assert case.tool_call_count == 2
     assert 'termination:max_steps_exceeded' in _subtypes(case)
-    assert case.failed and case.failure_mode == 'model_failed'
+    assert case.outcome.task_success is False
 
 
 def test_tool_message_without_id_matches_in_order():
@@ -133,7 +132,7 @@ def test_structured_and_text_tool_failures_with_false_positive_guard():
     assert sum(s.startswith('tool_failure') for s in subtypes) == 2  # the invoice text is not an error
     rules = {f.subtype: f.rule_id for f in case.findings}
     assert rules['structured:unknown'] == 'model.unknown_tool'
-    assert rules['text_pattern:exception_prefix'] == 'model.bad_arguments'
+    assert rules['text_pattern:exception_prefix'] == 'fallback'
 
 
 def test_timeout_and_permission_are_environment_and_guard():
@@ -150,8 +149,6 @@ def test_timeout_and_permission_are_environment_and_guard():
     attributions = {f.subtype: f.attribution for f in case.findings}
     assert attributions['structured:timeout'] == Attribution.ENVIRONMENT
     assert attributions['structured:permission'] == Attribution.GUARD
-    assert case.primary_attribution == Attribution.ENVIRONMENT
-    assert case.failure_mode == 'blocked_by_guard'
 
 
 def test_shell_output_tracebacks_are_not_tool_failures():
@@ -216,7 +213,7 @@ def test_taint_requires_tool_output_origin_and_ignores_user_values():
     tainted = [f for f in case.findings if f.category == FindingCategory.TAINTED_SIDE_EFFECT]
     assert len(tainted) == 1 and tainted[0].first_position == 2
     assert tainted[0].data['atoms'][0]['source_position'] == 0
-    assert case.precursors.side_effect_calls == 2 and case.precursors.has_tainted_side_effect
+    assert sum(f.category == FindingCategory.SIDE_EFFECT for f in case.findings) == 2
 
 
 @pytest.mark.parametrize('order', ['parallel', 'before_result', 'after_result'])
@@ -231,7 +228,7 @@ def test_taint_requires_the_observation_to_be_visible_before_the_call(order: str
         issued = ChatMessageAssistant(content='', tool_calls=[send])
         messages += [observation, issued] if order == 'after_result' else [issued, observation]
     messages = [ChatMessageUser(content='Complete the task.'), *messages, _tool('send', 'send_email', 'ok')]
-    assert _analyze(_record(messages)).precursors.has_tainted_side_effect == (order == 'after_result')
+    assert any(f.category == FindingCategory.TAINTED_SIDE_EFFECT for f in _analyze(_record(messages)).findings) == (order == 'after_result')
 
 
 @pytest.mark.parametrize('order', ['same_step', 'before_result', 'after_result'])
@@ -245,7 +242,7 @@ def test_trace_only_taint_uses_result_event_order_and_generation_step(order: str
     if order != 'before_result':
         trace.add_event(step=0 if order == 'same_step' else 1, type=EventType.TOOL_CALL, payload=send)
     case = _analyze(_record([ChatMessageUser(content='Complete the task.')], trace=trace))
-    assert case.precursors.has_tainted_side_effect == (order == 'after_result')
+    assert any(f.category == FindingCategory.TAINTED_SIDE_EFFECT for f in case.findings) == (order == 'after_result')
 
 
 def test_mixed_trace_taint_uses_event_order_even_when_call_positions_differ() -> None:
@@ -291,31 +288,24 @@ def test_refusal_without_side_effects():
     )
     case = _analyze(record)
     assert 'refusal:refusal_pattern' in _subtypes(case)
-    assert case.failure_mode == 'refused'
 
 
 def test_task_failure_without_findings_is_outcome_only_and_excluded_status():
     case = _analyze(_record([ChatMessageUser(content='q'), ChatMessageAssistant(content='wrong')], value={'acc': 0.0}))
     assert _subtypes(case) == ['outcome:benchmark_task_failed']
-    assert case.failed and case.outcome.task_success is False
-    assert case.primary_attribution == Attribution.UNKNOWN and case.failure_mode == 'unknown'
+    assert case.outcome.task_success is False
+    assert case.findings[0].attribution == Attribution.UNKNOWN
     assert case.findings[0].rule_id == 'outcome.unexplained'
     excluded = _analyze(_record([ChatMessageUser(content='q')], value={}, status=ScoreStatus.EXCLUDED))
-    assert 'termination:score_excluded' in _subtypes(excluded) and excluded.failed
+    assert 'termination:score_excluded' in _subtypes(excluded) and excluded.outcome.task_success is None
 
 
-def test_threshold_outcome_and_config_merge():
+def test_threshold_outcome():
     record = _record([ChatMessageUser(content='q'), ChatMessageAssistant(content='a')], value={'f1': 0.7})
     assert _analyze(record).outcome.task_success is None
-    config = TraceAnalysisConfig.from_overrides({'outcome_thresholds': {'demo': {'f1': 0.5}}, 'use_providers': False})
+    config = TraceAnalysisConfig(outcome_thresholds={'demo': {'f1': 0.5}}, use_providers=False)
     assert analyze_records([(_ref(), record)], config)[0].outcome.task_success is True
-    merged = TraceAnalysisConfig.from_overrides({'side_effect_verbs': ['launch'], 'error_patterns': {'x': 'boom'}})
-    assert 'launch' in merged.side_effect_verbs and 'send' in merged.side_effect_verbs
-    assert 'x' in merged.error_patterns and 'traceback' in merged.error_patterns
-    replaced = TraceAnalysisConfig.from_overrides({'side_effect_verbs': ['launch'], 'replace': ['side_effect_verbs']})
-    assert replaced.side_effect_verbs == ['launch']
-    with pytest.raises(ValueError):
-        TraceAnalysisConfig.from_overrides({'unknown_option': 1})
+
 
 
 # ---------------------------------------------------------------------------
@@ -349,9 +339,9 @@ def test_split_review_name_and_redaction():
     ],
 )
 def test_agentharm_provider_outcome(benchmark, value, expected):
-    from evalscope.analysis.trace.analyzer import clear_provider_cache
+    from evalscope.analysis.trace.analyzer import resolve_provider
 
-    clear_provider_cache()
+    resolve_provider.cache_clear()
     record = _record(
         [ChatMessageUser(content='do the task'), ChatMessageAssistant(content='done')],
         value=value,
@@ -361,19 +351,19 @@ def test_agentharm_provider_outcome(benchmark, value, expected):
     case = analyze_records([(_ref(benchmark), record)], config)[0]
     outcome = case.outcome
     assert (outcome.task_success, outcome.safety_violation, outcome.refused) == expected
-    assert outcome.source == 'provider' and case.providers == ['agentharm']
+    assert outcome.source == 'provider'
     assert case.labels['task_kind'] == ('benign' if benchmark == 'agentharm_benign' else 'harmful')
     assert ('refusal:provider_refusal' in _subtypes(case)) == expected[2]
 
 
 def test_unknown_benchmark_falls_back_to_generic_analysis():
-    from evalscope.analysis.trace.analyzer import clear_provider_cache
+    from evalscope.analysis.trace.analyzer import resolve_provider
 
-    clear_provider_cache()
+    resolve_provider.cache_clear()
     case = analyze_records(
         [(_ref('no_such_benchmark_xyz'), _record([ChatMessageUser(content='q'), ChatMessageAssistant(content='a')]))]
     )[0]
-    assert case.providers == [] and case.outcome.source == 'binary_score'
+    assert case.outcome.source == 'binary_score'
 
 
 def test_redaction_preserves_explanatory_text_but_masks_secret_assignments() -> None:
@@ -381,3 +371,41 @@ def test_redaction_preserves_explanatory_text_but_masks_secret_assignments() -> 
     assert redact(explanation, []) == explanation
     assert redact('"api_key": "abcdefghijklmnop"', []) == '"api_key": "***"'
     assert redact('password=abcdefghijklmnop', []) == 'password=***'
+
+
+@pytest.mark.parametrize('text', [
+    'ValueError: No search results found.',
+    'ValueError: Email with ID 99 not found.',
+    "KeyError: 'item no longer exists'",
+])
+def test_missing_tool_data_does_not_prove_invalid_arguments(text: str) -> None:
+    record = _record([
+        ChatMessageUser(content='Find the item.'),
+        ChatMessageAssistant(content='', tool_calls=[_call('a', 'search', query='item')]),
+        _tool('a', 'search', text),
+        ChatMessageAssistant(content='No matching item is available.'),
+    ])
+    [finding] = _analyze(record).findings
+    assert finding.category == FindingCategory.TOOL_FAILURE
+    assert finding.rule_id == 'fallback' and finding.attribution == Attribution.UNKNOWN
+
+
+@pytest.mark.parametrize('result_id', ['unknown', 'first'])
+def test_explicit_unknown_or_duplicate_tool_results_are_not_assigned_to_another_call(result_id: str) -> None:
+    messages = [
+        ChatMessageUser(content='Look up both items.'),
+        ChatMessageAssistant(content='', tool_calls=[_call('first','search',query='one'), _call('second','search',query='two')]),
+        _tool('first','search','First result'),
+        _tool(result_id,'search','Bad result',ToolCallError(type='parsing',message='Invalid arguments')),
+    ]
+    assert not _analyze(_record(messages)).findings
+
+
+@pytest.mark.parametrize('benchmark,value', [
+    ('agentdojo', {'utility':1.0, 'targeted_asr':1.0}),
+    ('agentharm', {'task_completion_score':0.5, 'refusal_rate':0.0}),
+])
+def test_excluded_provider_metrics_do_not_establish_a_task_or_safety_outcome(benchmark: str, value: dict) -> None:
+    record=_record([ChatMessageUser(content='q'),ChatMessageAssistant(content='a')],value=value,status=ScoreStatus.EXCLUDED)
+    case=analyze_records([(_ref(benchmark),record)])[0]
+    assert case.outcome.task_success is None and case.outcome.safety_violation is None

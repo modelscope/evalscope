@@ -69,7 +69,11 @@ export default function VirtualList<T>({
 
   const lastRevealed = useRef(-1)
   useEffect(() => {
-    if (!active || revealIndex < 0 || revealIndex >= items.length || lastRevealed.current === revealIndex) return
+    if (!active || revealIndex < 0 || revealIndex >= items.length) {
+      lastRevealed.current = -1
+      return
+    }
+    if (lastRevealed.current === revealIndex) return
     lastRevealed.current = revealIndex
     const offset = Array.from({ length: revealIndex }, (_, i) => (heights[i] ?? estimateHeight) + gap)
       .reduce((sum, height) => sum + height, 0)

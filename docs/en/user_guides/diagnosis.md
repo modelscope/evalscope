@@ -48,7 +48,7 @@ Truncation uses prediction `stop_reason` first, then token-budget proximity only
 
 Rates with events at or above 10% receive a warning by default (`warning_rate`). Weaker subsets must trail the overall result by at least 10 percentage points with at least 20 samples (`weak_subset_gap`, `weak_subset_min_samples`). Other facts are informational; P1 does not infer critical severity. Choice statistics require at least 90% single-uppercase-letter targets. Multiple-choice sets or full option-text answers are currently skipped; without an option mapping, letter membership is not guessed.
 
-The taxonomy is extensible and cannot enumerate every failure cause. Failed samples without a matching rule remain visible. Correct answers may still involve tool errors or risk findings. Tool-derived arguments and state-changing calls alone do not establish policy violations. An empty extracted answer does not prove a correct original answer or a judge bug. **An observed issue is not a proved failure cause.** Optional model diagnoses are proposals for review, as described below.
+The taxonomy is extensible and cannot enumerate every failure cause. Failed samples without a matching rule remain visible. Correct answers may still involve tool errors or risk findings. Tool-derived arguments and state-changing calls alone do not establish policy violations. An empty extracted answer does not prove a correct original answer or a judge bug. A search with no results remains a tool observation; it does not establish invalid arguments. **An observed issue is not a proved failure cause.** Optional model diagnoses are proposals for review, as described below.
 
 ## Artifacts and cache
 

@@ -1,11 +1,10 @@
 """Write analysis results to disk with secret redaction."""
 
-import json
 import os
 import re
-from typing import Dict, List
+from typing import List
 
-from evalscope.api.analysis import FailureCase, Finding
+from evalscope.api.analysis import Finding
 from evalscope.api.analysis.config import TraceAnalysisConfig
 
 _SECRET_PATTERNS = [
@@ -39,31 +38,16 @@ def redact(text: str, env_secrets: List[str]) -> str:
     return text
 
 
-def _redact_finding(finding: Finding, secrets: List[str]) -> Dict:
-    data = finding.model_dump(mode='json', exclude={'text'})
-    for evidence in data['evidence']:
-        evidence['excerpt'] = redact(evidence['excerpt'], secrets)
-    data['data'] = json.loads(redact(json.dumps(data['data'], ensure_ascii=False), secrets))
-    return data
-
-
-def _cap_evidence(case_dict: Dict, limit: int) -> None:
-    used = len(case_dict.get('task_excerpt') or '')
-    for finding in case_dict['findings']:
-        kept = []
-        for evidence in finding['evidence']:
-            size = len(evidence['excerpt'])
-            if used + size > limit:
+def export_findings(findings: List[Finding], config: TraceAnalysisConfig) -> List[Finding]:
+    """Drop internal error text and cap evidence; the final artifact writer handles redaction."""
+    exported = []
+    remaining = config.max_evidence_chars_per_case
+    for finding in findings:
+        evidence = []
+        for item in finding.evidence:
+            if len(item.excerpt) > remaining:
                 break
-            used += size
-            kept.append(evidence)
-        finding['evidence'] = kept
-
-
-def case_to_dict(case: FailureCase, config: TraceAnalysisConfig, secrets: List[str]) -> Dict:
-    """Serialize one failure case with redaction and the per-case evidence budget."""
-    data = case.model_dump(mode='json', exclude={'findings'})
-    data['task_excerpt'] = redact(data['task_excerpt'], secrets)
-    data['findings'] = [_redact_finding(finding, secrets) for finding in case.findings]
-    _cap_evidence(data, config.max_evidence_chars_per_case)
-    return data
+            evidence.append(item)
+            remaining -= len(item.excerpt)
+        exported.append(finding.model_copy(update={'text': '', 'evidence': evidence}))
+    return exported

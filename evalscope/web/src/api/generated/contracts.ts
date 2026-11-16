@@ -939,7 +939,6 @@ export interface Finding {
   evidence?: Evidence[];
   first_position?: number | null;
   positions?: number[];
-  ref: SampleRef;
   rule_id?: string;
   subtype: string;
   text?: string;
@@ -952,17 +951,6 @@ export interface Evidence {
   excerpt: string;
   message_index?: number | null;
   position?: number | null;
-  [k: string]: any;
-}
-/**
- * Stable reference to one persisted sample.
- */
-export interface SampleRef {
-  benchmark: string;
-  index: number;
-  model: string;
-  run_dir: string;
-  subset: string;
   [k: string]: any;
 }
 /**

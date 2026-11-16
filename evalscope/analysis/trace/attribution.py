@@ -1,4 +1,4 @@
-"""Judgements on top of the findings: per-finding attribution, sample outcome, primary attribution, failure mode."""
+"""Judgements on top of the findings: per-finding attribution, sample outcome and primary attribution."""
 
 import re
 from typing import Dict, List, Optional, Pattern, Tuple
@@ -7,7 +7,6 @@ from evalscope.api.analysis import (
     INFORMATIONAL_CATEGORIES,
     Attribution,
     Confidence,
-    FailureMode,
     Finding,
     FindingCategory,
     Outcome,
@@ -19,8 +18,8 @@ from evalscope.api.analysis.config import TraceAnalysisConfig
 from .detectors import CompiledRules
 
 _BAD_ARGUMENT = re.compile(
-    r'\b(?:TypeError|ValueError|KeyError|IndexError|ValidationError|validation errors? for|missing \d* ?required'
-    r'|unexpected keyword argument|not found|does not exist|invalid (?:value|argument|id))\b',
+    r'\b(?:ValidationError|validation errors? for|missing (?:\d+ )?required (?:argument|field)'
+    r'|unexpected keyword argument|invalid (?:value|argument|id))\b',
     re.IGNORECASE,
 )
 _TRACEBACK = re.compile(r'Traceback \(most recent call last\)')
@@ -139,29 +138,12 @@ def primary_attribution(findings: List[Finding]) -> Tuple[Optional[Attribution],
     return chosen.attribution, chosen
 
 
-def failure_mode(findings: List[Finding], primary: Optional[Attribution]) -> FailureMode:
-    """Approximate why a failed sample failed (refused / blocked by guard / model / environment / unknown)."""
-    categories = {f.category for f in findings}
-    if FindingCategory.REFUSAL in categories and not categories & {
-        FindingCategory.SIDE_EFFECT,
-        FindingCategory.RISKY_COMMAND,
-    }:
-        return 'refused'
-    if any(f.attribution == Attribution.GUARD for f in findings):
-        return 'blocked_by_guard'
-    if primary == Attribution.ENVIRONMENT:
-        return 'environment_failed'
-    if primary == Attribution.MODEL:
-        return 'model_failed'
-    return 'unknown'
-
-
 def resolve_outcome(
     view: TraceView, signals: ProviderSignals, config: TraceAnalysisConfig, findings: List[Finding]
 ) -> Outcome:
-    """Provider outcome first, then a binary score (all values in {0, 1}), then a configured threshold."""
+    """Usable provider outcome first, then a binary score, then a configured threshold."""
     refused = any(f.category == FindingCategory.REFUSAL for f in findings)
-    if signals.outcome is not None:
+    if signals.outcome is not None and view.score_status in _USABLE_STATUSES:
         outcome = signals.outcome.model_copy(update={'source': 'provider'})
         if outcome.refused is None:
             outcome.refused = refused or None
@@ -191,4 +173,4 @@ def resolve_outcome(
     return outcome
 
 
-__all__ = ['apply_attribution', 'attribute', 'failure_mode', 'primary_attribution', 'resolve_outcome']
+__all__ = ['apply_attribution', 'attribute', 'primary_attribution', 'resolve_outcome']

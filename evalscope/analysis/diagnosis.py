@@ -27,10 +27,10 @@ from evalscope.report.diagnosis import data_fingerprint, diagnosis_dir, iter_rev
 from .facts import collect_facts
 from .inputs import is_choice_letter, load_inputs
 from .trace.attribution import primary_attribution
-from .trace.export import _env_secrets, case_to_dict, redact
+from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '2.2.0'
+ANALYZER_VERSION = '2.3.0'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -134,241 +134,227 @@ def diagnose_benchmark(
     config = config or AnalysisReportConfig()
     if config.level != 'facts' and config.model is None:
         raise ValueError('diagnose/full requires an explicit analysis model; facts makes no model calls.')
-    started = datetime.now(timezone.utc).isoformat()
-    try:
-        return _diagnose_benchmark(run_dir, model, benchmark, config, force)
-    except Exception as exc:
-        target = diagnosis_dir(str(Path(run_dir).resolve()), model, benchmark)
-        try:
-            target.mkdir(parents=True, exist_ok=True)
-            with FileLock(str(target / '.lock')):
-                path = target / 'diagnosis.json'
-                current = None
-                if path.is_file():
-                    try:
-                        current = DiagnosisReport.model_validate_json(path.read_text())
-                    except (ValueError, OSError):
-                        pass
-                if current is None or current.generated_at < started:
-                    failure = DiagnosisReport(
-                        analyzer_version=ANALYZER_VERSION,
-                        run_dir=str(Path(run_dir).resolve()),
-                        model=model,
-                        benchmark=benchmark,
-                        generated_at=datetime.now(timezone.utc).isoformat(),
-                        config_fingerprint=config_fingerprint(config),
-                        data_fingerprint='',
-                        coverage=DiagnosisCoverage(
-                            analysis_errors={type(exc).__name__: 1},
-                            skipped_facts={'analysis': redact(str(exc), _env_secrets())},
-                        ),
-                    )
-                    _atomic_write(
-                        path,
-                        json.dumps(
-                            _redact(failure.model_dump(mode='json'), _env_secrets()), ensure_ascii=False, indent=2
-                        )
-                        + '\n',
-                    )
-        except Exception as persist_error:
-            from evalscope.utils.logger import get_logger
-
-            get_logger().warning(f'Cannot persist analysis failure: {type(persist_error).__name__}')
-        raise
-
-
-def _diagnose_benchmark(
-    run_dir: str, model: str, benchmark: str, config: AnalysisReportConfig, force: bool
-) -> DiagnosisReport:
     run_dir = str(Path(run_dir).resolve())
     target = diagnosis_dir(run_dir, model, benchmark)
     target.mkdir(parents=True, exist_ok=True)
     with FileLock(str(target / '.lock')):
-        fingerprint = data_fingerprint(run_dir, model, benchmark)
-        config_hash = config_fingerprint(config)
-        path = target / 'diagnosis.json'
-        samples_path = target / 'samples.jsonl'
-        if not force and path.is_file() and samples_path.is_file():
+        try:
+            return _diagnose_benchmark(run_dir, model, benchmark, config, force, target)
+        except Exception as exc:
+            failure = DiagnosisReport(
+                analyzer_version=ANALYZER_VERSION,
+                run_dir=run_dir,
+                model=model,
+                benchmark=benchmark,
+                level=config.level,
+                generated_at=datetime.now(timezone.utc).isoformat(),
+                config_fingerprint=config_fingerprint(config),
+                data_fingerprint='',
+                coverage=DiagnosisCoverage(
+                    analysis_errors={type(exc).__name__: 1},
+                    skipped_facts={'analysis': redact(str(exc), _env_secrets())},
+                ),
+            )
             try:
-                cached = DiagnosisReport.model_validate_json(path.read_text())
-            except (ValueError, OSError):
-                cached = None
-            if (
-                cached is not None
-                and not cached.coverage.analysis_errors
-                and not any(cached.coverage.diagnosis_statuses.get(k) for k in ('parse_error', 'transport_error'))
-                and cached.narrative_status not in ('parse_error', 'transport_error')
-                and cached.taxonomy_version == TAXONOMY_VERSION
-                and cached.config_fingerprint == config_hash
-                and cached.data_fingerprint == fingerprint
-                and (cached.samples_sha256 == hashlib.sha256(samples_path.read_bytes()).hexdigest())
-            ):
-                _write_report_analysis(run_dir, model, benchmark, cached, config.language)
-                return cached
-        inputs = load_inputs(run_dir, model, benchmark, config.trace)
-        coverage = DiagnosisCoverage(samples=len(inputs.samples), unreadable=inputs.unreadable)
-        if inputs.unreadable_predictions:
-            coverage.skipped_facts['predictions'] = (
-                f'{inputs.unreadable_predictions} unreadable or ambiguous prediction rows.'
-            )
-        if inputs.report and inputs.report.execution_summary:
-            coverage.errored_without_record = inputs.report.execution_summary.errored
-        secrets = _env_secrets()
-        samples = []
-        decisive = {}
-        choice_task = inputs.is_multiple_choice
-        for item in inputs.samples:
-            case = item.case
-            relevant = [
-                f
-                for f in case.findings
-                if f.category not in _INFORMATIONAL
-                and f.category != FindingCategory.OUTCOME
-                and not (f.category == FindingCategory.REFUSAL and case.labels.get('task_kind') == 'harmful')
-            ]
-            attribution, finding = primary_attribution(relevant)
-            if finding is not None:
-                decisive[(item.key.subset, item.key.index)] = finding
-            issue = finding_type(finding) if finding else 'unexplained' if case.outcome.task_success is False else None
-            if case.outcome.safety_violation is True and issue is None:
-                issue = 'safety_violation'
-            if not relevant and not case.tool_call_count and not item.record.agent_trace:
-                if item.stop_reason in ('length', 'max_tokens', 'model_length'):
-                    issue = 'truncated'
-                elif any(m.role == 'assistant' for m in item.record.messages):
-                    visible = any(m.role == 'assistant' and (m.text or '').strip() for m in item.record.messages)
-                    if not visible:
-                        issue = 'empty_output'
-                    else:
-                        prediction = item.record.sample_score.score.extracted_prediction
-                        if prediction is not None and (
-                            not prediction.strip() or (choice_task and not is_choice_letter(prediction))
-                        ):
-                            issue = 'extraction_failure'
-            coverage.task_success_known += case.outcome.task_success is not None
-            coverage.task_failed += case.outcome.task_success is False
-            coverage.outcome_unknown += case.outcome.task_success is None
-            coverage.excluded += case.score_status not in ('success', 'fallback', 'degraded')
-            coverage.unexplained_failures += case.outcome.task_success is False and issue == 'unexplained'
-            attention = bool(relevant) or case.failed or issue is not None
-            coverage.needs_attention += attention
-            exported = case_to_dict(case, config.trace, secrets)
-            samples.append(
-                SampleDiagnosis(
-                    key=item.key,
-                    task_success=case.outcome.task_success,
-                    safety_violation=case.outcome.safety_violation,
-                    score_status=case.score_status,
-                    stop_reason=item.stop_reason,
-                    score_value=case.score_value,
-                    needs_attention=attention,
-                    failure_type=issue,
-                    rule_failure_type=issue,
-                    source='none' if issue in (None, 'unexplained') else 'rule',
-                    attribution=attribution or Attribution.UNKNOWN,
-                    findings=exported['findings'],
+                _atomic_write(
+                    target / 'diagnosis.json',
+                    json.dumps(_redact(failure.model_dump(mode='json'), _env_secrets()), ensure_ascii=False, indent=2)
+                    + '\n',
                 )
-            )
-        provider_notes = Counter(note for item in inputs.samples for note in item.case.notes)
-        if provider_notes:
-            coverage.skipped_facts['trace-provider'] = '; '.join(
-                f'{note}: {count}' for note, count in provider_notes.items()
-            )
-        facts = collect_facts(inputs, config, coverage)
-        report = DiagnosisReport(
-            analyzer_version=ANALYZER_VERSION,
-            run_dir=run_dir,
-            model=model,
-            benchmark=benchmark,
-            generated_at=datetime.now(timezone.utc).isoformat(),
-            config_fingerprint=config_hash,
-            data_fingerprint=fingerprint,
-            coverage=coverage,
-            level=config.level,
-            facts=facts,
-            limitations=[
-                'Rule findings are observations, not proved causes. Outcome unknown is not a pass.',
-                'Pattern shares use samples needing review, not the official score denominator.',
-                'Provenance and state changes alone do not establish policy violations.',
-            ],
+            except OSError as persist_error:
+                from evalscope.utils.logger import get_logger
+
+                get_logger().warning(f'Cannot persist analysis failure: {type(persist_error).__name__}')
+            raise
+
+
+def _diagnose_benchmark(
+    run_dir: str, model: str, benchmark: str, config: AnalysisReportConfig, force: bool, target: Path
+) -> DiagnosisReport:
+    fingerprint = data_fingerprint(run_dir, model, benchmark)
+    config_hash = config_fingerprint(config)
+    path = target / 'diagnosis.json'
+    samples_path = target / 'samples.jsonl'
+    if not force and path.is_file() and samples_path.is_file():
+        try:
+            cached = DiagnosisReport.model_validate_json(path.read_text())
+        except (ValueError, OSError):
+            cached = None
+        if (
+            cached is not None
+            and not cached.coverage.analysis_errors
+            and not any(cached.coverage.diagnosis_statuses.get(k) for k in ('parse_error', 'transport_error'))
+            and cached.narrative_status not in ('parse_error', 'transport_error')
+            and cached.taxonomy_version == TAXONOMY_VERSION
+            and cached.config_fingerprint == config_hash
+            and cached.data_fingerprint == fingerprint
+            and (cached.samples_sha256 == hashlib.sha256(samples_path.read_bytes()).hexdigest())
+        ):
+            _write_report_analysis(run_dir, model, benchmark, cached, config.language)
+            return cached
+    inputs = load_inputs(run_dir, model, benchmark, config.trace)
+    coverage = DiagnosisCoverage(samples=len(inputs.samples), unreadable=inputs.unreadable)
+    if inputs.unreadable_predictions:
+        coverage.skipped_facts['predictions'] = (
+            f'{inputs.unreadable_predictions} unreadable or ambiguous prediction rows.'
         )
-        selected = []
-        if config.level != 'facts':
-            from .llm import enrich, estimate, summarize
+    if inputs.report and inputs.report.execution_summary:
+        coverage.errored_without_record = inputs.report.execution_summary.errored
+    secrets = _env_secrets()
+    samples = []
+    decisive = {}
+    choice_task = inputs.is_multiple_choice
+    for item in inputs.samples:
+        case = item.case
+        relevant = [
+            f
+            for f in case.findings
+            if f.category not in _INFORMATIONAL
+            and f.category != FindingCategory.OUTCOME
+            and not (f.category == FindingCategory.REFUSAL and case.labels.get('task_kind') == 'harmful')
+        ]
+        attribution, finding = primary_attribution(relevant)
+        if finding is not None:
+            decisive[(item.key.subset, item.key.index)] = finding
+        issue = finding_type(finding) if finding else 'unexplained' if case.outcome.task_success is False else None
+        if case.outcome.safety_violation is True and issue is None:
+            issue = 'safety_violation'
+        if not relevant and not case.tool_call_count and not item.record.agent_trace:
+            if item.stop_reason in ('length', 'max_tokens', 'model_length'):
+                issue = 'truncated'
+            elif any(m.role == 'assistant' for m in item.record.messages):
+                visible = any(m.role == 'assistant' and (m.text or '').strip() for m in item.record.messages)
+                if not visible:
+                    issue = 'empty_output'
+                else:
+                    prediction = item.record.sample_score.score.extracted_prediction
+                    if prediction is not None and (
+                        not prediction.strip() or (choice_task and not is_choice_letter(prediction))
+                    ):
+                        issue = 'extraction_failure'
+        coverage.task_success_known += case.outcome.task_success is not None
+        coverage.task_failed += case.outcome.task_success is False
+        coverage.outcome_unknown += case.outcome.task_success is None
+        coverage.excluded += case.score_status not in ('success', 'fallback', 'degraded')
+        coverage.unexplained_failures += case.outcome.task_success is False and issue == 'unexplained'
+        attention = bool(relevant) or issue is not None
+        coverage.needs_attention += attention
+        samples.append(
+            SampleDiagnosis(
+                key=item.key,
+                task_success=case.outcome.task_success,
+                safety_violation=case.outcome.safety_violation,
+                score_status=case.score_status,
+                stop_reason=item.stop_reason,
+                score_value=case.score_value,
+                needs_attention=attention,
+                failure_type=issue,
+                rule_failure_type=issue,
+                source='none' if issue in (None, 'unexplained') else 'rule',
+                attribution=attribution or Attribution.UNKNOWN,
+                findings=export_findings(case.findings, config.trace),
+            )
+        )
+    provider_notes = Counter(note for item in inputs.samples for note in item.case.notes)
+    if provider_notes:
+        coverage.skipped_facts['trace-provider'] = '; '.join(
+            f'{note}: {count}' for note, count in provider_notes.items()
+        )
+    facts = collect_facts(inputs, config, coverage)
+    report = DiagnosisReport(
+        analyzer_version=ANALYZER_VERSION,
+        run_dir=run_dir,
+        model=model,
+        benchmark=benchmark,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        config_fingerprint=config_hash,
+        data_fingerprint=fingerprint,
+        coverage=coverage,
+        level=config.level,
+        facts=facts,
+        limitations=[
+            'Rule findings are observations, not proved causes. Outcome unknown is not a pass.',
+            'Pattern shares use samples needing review, not the official score denominator.',
+            'Provenance and state changes alone do not establish policy violations.',
+        ],
+    )
+    selected = []
+    if config.level != 'facts':
+        from .llm import enrich, estimate, summarize
 
-            selected = enrich(report, samples, inputs, config, target, force, _atomic_write)
-        grouped = defaultdict(list)
-        for sample in samples:
-            if sample.needs_attention and sample.failure_type:
-                finding = decisive.get((sample.key.subset, sample.key.index))
-                detail = finding.subtype if finding and sample.llm_status != 'ok' else ''
-                if finding and sample.llm_status != 'ok' and finding.data.get('tool'):
-                    detail += f' @ {finding.data["tool"]}'
-                grouped[(sample.failure_type, sample.attribution, detail)].append(sample)
-
-        def example_order(sample: SampleDiagnosis) -> tuple:
+        selected = enrich(report, samples, inputs, config, target, force, _atomic_write)
+    grouped = defaultdict(list)
+    for sample in samples:
+        if sample.needs_attention and sample.failure_type:
             finding = decisive.get((sample.key.subset, sample.key.index))
-            rank = {'high': 0, 'medium': 1, 'low': 2}.get(finding.confidence, 3) if finding else 3
-            return rank, sample.key.subset, sample.key.index
+            detail = finding.subtype if finding and sample.llm_status != 'ok' else ''
+            if finding and sample.llm_status != 'ok' and finding.data.get('tool'):
+                detail += f' @ {finding.data["tool"]}'
+            grouped[(sample.failure_type, sample.attribution, detail)].append(sample)
 
-        patterns = []
-        for (issue, attribution, detail), members in sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])):
-            identity = 'P-' + hashlib.sha256(f'{issue}/{attribution}/{detail}'.encode()).hexdigest()[:8]
-            for sample in members:
-                sample.pattern_id = identity
-            sources = {s.source for s in members}
-            source = (
-                'rule+llm'
-                if 'rule+llm' in sources or {'rule', 'llm'} <= sources
-                else 'llm'
-                if 'llm' in sources
-                else 'none'
-                if issue == 'unexplained'
-                else 'rule'
+    def example_order(sample: SampleDiagnosis) -> tuple:
+        finding = decisive.get((sample.key.subset, sample.key.index))
+        rank = {'high': 0, 'medium': 1, 'low': 2}.get(finding.confidence, 3) if finding else 3
+        return rank, sample.key.subset, sample.key.index
+
+    patterns = []
+    for (issue, attribution, detail), members in sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])):
+        identity = 'P-' + hashlib.sha256(f'{issue}/{attribution}/{detail}'.encode()).hexdigest()[:8]
+        for sample in members:
+            sample.pattern_id = identity
+        sources = {s.source for s in members}
+        source = (
+            'rule+llm'
+            if 'rule+llm' in sources or {'rule', 'llm'} <= sources
+            else 'llm'
+            if 'llm' in sources
+            else 'none'
+            if issue == 'unexplained'
+            else 'rule'
+        )
+        patterns.append(
+            FailurePattern(
+                id=identity,
+                failure_type=issue,
+                attribution=attribution,
+                detail=detail,
+                count=len(members),
+                denominator=coverage.needs_attention,
+                share=len(members) / coverage.needs_attention,
+                by_subset=dict(Counter(s.key.subset for s in members)),
+                examples=[s.key for s in sorted(members, key=example_order)[: min(config.max_examples, 5)]],
+                source=source,
             )
-            patterns.append(
-                FailurePattern(
-                    id=identity,
-                    failure_type=issue,
-                    attribution=attribution,
-                    detail=detail,
-                    count=len(members),
-                    denominator=coverage.needs_attention,
-                    share=len(members) / coverage.needs_attention,
-                    by_subset=dict(Counter(s.key.subset for s in members)),
-                    examples=[s.key for s in sorted(members, key=example_order)[: min(config.max_examples, 5)]],
-                    source=source,
+        )
+    report.patterns = patterns
+    if config.level != 'facts':
+        for pattern in report.patterns:
+            if pattern.source in ('llm', 'rule+llm'):
+                pattern.estimated_share = estimate(
+                    coverage.strata, selected, lambda s: s.llm_status == 'ok' and s.pattern_id == pattern.id
                 )
-            )
-        report.patterns = patterns
-        if config.level != 'facts':
-            for pattern in report.patterns:
-                if pattern.source in ('llm', 'rule+llm'):
-                    pattern.estimated_share = estimate(
-                        coverage.strata, selected, lambda s: s.llm_status == 'ok' and s.pattern_id == pattern.id
-                    )
-            if config.level == 'full':
-                summarize(report, config, target, force, _atomic_write)
-            report.limitations += [
-                'Valid citations establish provenance, not semantic support or root-cause accuracy.',
-                'Weighted proportions concern model proposals in the frozen review population; failures retain their own denominator.',
-                'Unselected, failed and low-confidence diagnoses remain unresolved for LLM coverage.',
-            ]
-        report = DiagnosisReport.model_validate(_redact(report.model_dump(mode='json'), secrets))
-        if data_fingerprint(run_dir, model, benchmark) != fingerprint:
-            raise RuntimeError('Analysis inputs changed during computation; retry on a stable run.')
-        sample_text = ''.join(
-            json.dumps(_redact(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
-            for s in samples
-            if s.task_success is False or s.findings or s.needs_attention
-        )
-        report.samples_sha256 = hashlib.sha256(sample_text.encode()).hexdigest()
-        _atomic_write(samples_path, sample_text)
-        _atomic_write(
-            path, json.dumps(_redact(report.model_dump(mode='json'), secrets), ensure_ascii=False, indent=2) + '\n'
-        )
-        _write_report_analysis(run_dir, model, benchmark, report, config.language)
-        return report
+        if config.level == 'full':
+            summarize(report, config, target, force, _atomic_write)
+        report.limitations += [
+            'Valid citations establish provenance, not semantic support or root-cause accuracy.',
+            'Weighted proportions concern model proposals in the frozen review population; failures retain their own denominator.',
+            'Unselected, failed and low-confidence diagnoses remain unresolved for LLM coverage.',
+        ]
+    report = DiagnosisReport.model_validate(_redact(report.model_dump(mode='json'), secrets))
+    if data_fingerprint(run_dir, model, benchmark) != fingerprint:
+        raise RuntimeError('Analysis inputs changed during computation; retry on a stable run.')
+    sample_text = ''.join(
+        json.dumps(_redact(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
+        for s in samples
+        if s.task_success is False or s.findings or s.needs_attention
+    )
+    report.samples_sha256 = hashlib.sha256(sample_text.encode()).hexdigest()
+    _atomic_write(samples_path, sample_text)
+    _atomic_write(
+        path, json.dumps(_redact(report.model_dump(mode='json'), secrets), ensure_ascii=False, indent=2) + '\n'
+    )
+    _write_report_analysis(run_dir, model, benchmark, report, config.language)
+    return report
 
 
 def _write_report_analysis(run_dir: str, model: str, benchmark: str, report: DiagnosisReport, language: str) -> None:

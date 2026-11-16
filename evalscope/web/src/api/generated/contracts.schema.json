@@ -1587,9 +1587,6 @@
           },
           "type": "array"
         },
-        "ref": {
-          "$ref": "#/$defs/SampleRef"
-        },
         "rule_id": {
           "default": "fallback",
           "type": "string"
@@ -1603,7 +1600,6 @@
         }
       },
       "required": [
-        "ref",
         "category",
         "subtype",
         "confidence",
@@ -3795,34 +3791,6 @@
         "latency",
         "input_tokens",
         "output_tokens"
-      ],
-      "type": "object"
-    },
-    "SampleRef": {
-      "description": "Stable reference to one persisted sample.",
-      "properties": {
-        "benchmark": {
-          "type": "string"
-        },
-        "index": {
-          "type": "integer"
-        },
-        "model": {
-          "type": "string"
-        },
-        "run_dir": {
-          "type": "string"
-        },
-        "subset": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "run_dir",
-        "model",
-        "benchmark",
-        "subset",
-        "index"
       ],
       "type": "object"
     },

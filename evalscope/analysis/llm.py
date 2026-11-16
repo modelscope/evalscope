@@ -23,7 +23,7 @@ from evalscope.api.analysis import (
     SampleDiagnosis,
     SamplingStratum,
 )
-from evalscope.api.analysis.taxonomy import ISSUE_DEFINITIONS, ISSUE_NAMES
+from evalscope.api.analysis.taxonomy import ISSUE_DEFINITIONS
 from evalscope.api.judge import OutputContract
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import get_model
@@ -138,7 +138,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         budget = min(limit, remaining)
         if len(clean) <= budget:
             result.append(DiagnosticSource(id=identity, text=clean, message_index=message, step=step))
-        elif identity.startswith('m:'):
+        elif identity.startswith('m:') and budget >= 2:
             half = budget // 2
             result.extend(
                 [
@@ -351,9 +351,6 @@ def enrich(
         parsed, status, usage = _request(prompt, LLMDiagnosis, config, target, force, write)
         sample.llm_status = status
         if parsed is None:
-            return sample, usage
-        if parsed.failure_type not in ISSUE_NAMES or any(t not in ISSUE_NAMES for t in parsed.secondary_types):
-            sample.llm_status = 'parse_error'
             return sample, usage
         sample.llm, errors = validate_evidence(parsed, sample.sources)
         sample.invalid_evidence = len(parsed.evidence) - len(sample.llm.evidence)

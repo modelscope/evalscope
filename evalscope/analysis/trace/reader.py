@@ -129,10 +129,10 @@ def _calls_from_messages(record: ReviewResult) -> List[TraceToolCall]:
                     by_id[tool_call.id] = call
         elif message.role == 'tool':
             call = by_id.get(message.tool_call_id) if message.tool_call_id else None
-            if call is None or call.result_message_index is not None:
-                # No (or an already answered) id: pair with the oldest unanswered call.
+            if not message.tool_call_id:
+                # Only legacy results without an ID use order-based matching.
                 call = next((item for item in calls if item.result_message_index is None), None)
-            if call is None:
+            if call is None or call.result_message_index is not None:
                 continue
             call.result_message_index = index
             call.result_text = _message_text(message)
@@ -188,13 +188,6 @@ def _merge_trace(trace: AgentTrace, view: TraceView) -> None:
                     message=None if message is None else str(message),
                 )
             )
-    if trace.total_usage is not None:
-        usage = trace.total_usage
-        view.usage = {
-            'input': usage.input_tokens or 0,
-            'output': usage.output_tokens or 0,
-            'total': usage.total_tokens or 0,
-        }
 
 
 def build_view(record: ReviewResult, ref: SampleRef) -> TraceView:
@@ -220,8 +213,6 @@ def build_view(record: ReviewResult, ref: SampleRef) -> TraceView:
     view.user_text = '\n'.join(user_parts)
     view.tool_calls = _calls_from_messages(record)
     if record.agent_trace is not None:
-        view.has_agent_trace = True
-        view.framework = record.agent_trace.framework
         _merge_trace(record.agent_trace, view)
     if isinstance(score.prediction, str):
         view.final_answer = score.prediction

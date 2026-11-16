@@ -253,7 +253,10 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
       count: report.patterns.filter((p) => p.attribution === key).reduce((sum, p) => sum + p.count, 0),
     }))
     .filter((item) => item.count > 0)
-  const maxCell = Math.max(1, ...report.patterns.flatMap((p) => Object.values(p.by_subset)))
+  const cellCount = (subset: string, type: string) => report.patterns
+    .filter(p => p.failure_type === type)
+    .reduce((sum, p) => sum + (p.by_subset[subset] ?? 0), 0)
+  const maxCell = Math.max(1, ...subsets.flatMap(subset => types.map(type => cellCount(subset, type))))
   const leading = report.patterns.find((p) => p.failure_type !== 'unexplained')
   const basis = (fact: Fact) => {
     const key = `diagnosis.description.${fact.id}`
@@ -464,9 +467,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
                         {subset === 'default' ? t('diagnosis.defaultSubset') : subset}
                       </th>
                       {types.map((type) => {
-                        const count = report.patterns
-                          .filter((p) => p.failure_type === type)
-                          .reduce((sum, p) => sum + (p.by_subset[subset] ?? 0), 0)
+                        const count = cellCount(subset, type)
                         return (
                           <td key={type}>
                             <button

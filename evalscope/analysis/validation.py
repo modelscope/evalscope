@@ -43,7 +43,8 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         raise ValueError('Duplicate sample identities; validate one run/model/benchmark at a time')
     confusion = Counter()
     rules = {}
-    correct = explained = matched = root_correct = roots = supported = semantic = 0
+    correct = explained = matched = root_correct = supported = semantic = 0
+    roots = sum(label.root_cause_step is not None for label in labels)
     for key, label in expected.items():
         sample = predictions.get(key)
         if sample is None:
@@ -55,17 +56,21 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         explained += ok
         confusion[f'{label.attribution.value}->{sample.llm.attribution.value if ok else "unknown"}'] += 1
         if label.root_cause_step is not None:
-            roots += 1
             root_correct += ok and sample.llm.root_cause_step == label.root_cause_step
         if label.evidence_supported is not None:
             semantic += 1
             supported += label.evidence_supported
         fired = {f.rule_id for f in sample.findings}
+        high_fired = {f.rule_id for f in sample.findings if f.confidence == 'high'}
         for rule, truth in label.rule_decisions.items():
-            counts = rules.setdefault(rule, {'tp': 0, 'fp': 0, 'fn': 0, 'tn': 0})
+            counts = rules.setdefault(rule, {'tp': 0, 'fp': 0, 'fn': 0, 'tn': 0, 'high_tp': 0, 'high_fp': 0})
             counts['tp' if truth and rule in fired else 'fn' if truth else 'fp' if rule in fired else 'tn'] += 1
+            if rule in high_fired:
+                counts['high_tp' if truth else 'high_fp'] += 1
     for counts in rules.values():
         counts['precision'] = counts['tp'] / (counts['tp'] + counts['fp']) if counts['tp'] + counts['fp'] else None
+        high_total = counts['high_tp'] + counts['high_fp']
+        counts['high_precision'] = counts['high_tp'] / high_total if high_total else None
         counts['recall'] = counts['tp'] / (counts['tp'] + counts['fn']) if counts['tp'] + counts['fn'] else None
     citations = sum(len(s.llm.evidence) + s.invalid_evidence for s in samples if s.llm)
     valid = sum(len(s.llm.evidence) for s in samples if s.llm)
@@ -88,7 +93,8 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         or matched != len(labels)
         or correct / len(labels) < 0.7
         or 1 - explained / len(labels) > 0.2
-        or any(not label.user_reviewed for label in labels),
+        or any(not label.user_reviewed for label in labels)
+        or any(c['high_precision'] is not None and c['high_precision'] < 0.9 for c in rules.values()),
     }
 
 

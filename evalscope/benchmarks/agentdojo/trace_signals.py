@@ -85,7 +85,10 @@ def _goal_calls(meta_json: str) -> Tuple[Tuple[str, str], ...]:
     from evalscope.benchmarks.agentdojo.scoring import AgentDojoSampleMeta, create_environment
     from evalscope.benchmarks.agentdojo.upstream import load_upstream
 
-    meta = AgentDojoSampleMeta.model_validate(json.loads(meta_json))
+    values = json.loads(meta_json)
+    meta = AgentDojoSampleMeta.model_validate(
+        {key: values[key] for key in AgentDojoSampleMeta.model_fields if key in values}
+    )
     upstream = load_upstream()
     pre_environment = create_environment(upstream, meta)
     task = upstream.suites[meta.suite].get_injection_task_by_id(meta.injection_task_id)
@@ -96,8 +99,6 @@ def _goal_calls(meta_json: str) -> Tuple[Tuple[str, str], ...]:
 @register_trace_signal_provider('agentdojo')
 class AgentDojoTraceSignals(TraceSignalProvider):
     """Tool-call status, side-effect tools, injection goals and outcome for AgentDojo samples."""
-
-    name = 'agentdojo'
 
     def collect(self, record: Any, view: TraceView) -> ProviderSignals:
         import json

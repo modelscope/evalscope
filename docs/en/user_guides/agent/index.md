@@ -28,7 +28,6 @@ In chronological order the view shows:
 
 ![Agent Trace overview](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/trace_view.png)
 
-
 ```{seealso}
 For the Web dashboard in general (report comparison, predictions view, …), see [Visualization](../../get_started/visualization.md).
 ```

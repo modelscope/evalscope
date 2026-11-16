@@ -32,7 +32,6 @@ it('shows the observation and evidence without internal rule names or disclaimer
               detector: 'tool',
               attribution: 'model',
               confidence: 'medium',
-              ref: { run_dir: '/run', model: 'm', benchmark: 'demo', subset: 'default', index: 7 },
               evidence: [{ excerpt: 'ValueError: invalid date' }],
             },
           ],

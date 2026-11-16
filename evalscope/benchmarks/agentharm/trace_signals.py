@@ -19,8 +19,6 @@ _SCORE = 'task_completion_score'
 class AgentHarmTraceSignals(TraceSignalProvider):
     """Labels, refusal and outcome for AgentHarm samples."""
 
-    name = 'agentharm'
-
     def collect(self, record: Any, view: TraceView) -> ProviderSignals:
         meta = (record.sample_score.sample_metadata or {}).get(_META_KEY) or {}
         task_kind = meta.get('task_kind') or ('benign' if view.ref.benchmark == 'agentharm_benign' else 'harmful')

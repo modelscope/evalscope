@@ -231,3 +231,16 @@ it('distinguishes cached model analysis from no model usage', async () => {
   expect(screen.getByText('0 new calls')).toBeInTheDocument()
   expect(screen.queryByText('No model usage')).not.toBeInTheDocument()
 })
+
+
+it('scales the heatmap by combined cell counts across different attributions', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [
+    { ...report.patterns[0], count: 2, by_subset: { default: 2 } },
+    { ...report.patterns[0], id: 'P-b', count: 3, attribution: 'model', by_subset: { default: 3 } },
+  ] } })
+  render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
+  await act(async () => { await Promise.resolve(); await Promise.resolve() })
+  const cell = screen.getByRole('button', { name: 'default · Tool error: 5' })
+  expect(cell.getAttribute('style')).toContain('100%')
+  expect(cell).toHaveTextContent('5')
+})

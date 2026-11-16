@@ -13,8 +13,6 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from evalscope.api.evaluator.cache import ReviewResult
 
-SCHEMA_VERSION = 1
-
 
 class Attribution(str, Enum):
     """Who is responsible for a finding."""
@@ -126,7 +124,6 @@ class TraceView(BaseModel):
     """Benchmark-agnostic view of one sample's trajectory."""
 
     ref: SampleRef
-    labels: Dict[str, Any] = Field(default_factory=dict)
     system_text: str = ''
     """Concatenated system messages (trusted instructions)."""
 
@@ -139,14 +136,9 @@ class TraceView(BaseModel):
     """Visible assistant text per assistant message; reasoning parts are excluded."""
 
     final_answer: Optional[str] = None
-    stop_reason: Optional[str] = None
     score_value: Dict[str, float] = Field(default_factory=dict)
     main_score_name: Optional[str] = None
     score_status: str = 'success'
-    usage: Dict[str, int] = Field(default_factory=dict)
-    has_agent_trace: bool = False
-    framework: Optional[str] = None
-    providers: List[str] = Field(default_factory=list)
 
 
 class Evidence(BaseModel):
@@ -160,7 +152,6 @@ class Evidence(BaseModel):
 class Finding(BaseModel):
     """One problem detected in one sample."""
 
-    ref: SampleRef
     category: FindingCategory
     subtype: str
     positions: List[int] = Field(default_factory=list)
@@ -210,38 +201,15 @@ class ProviderSignals(BaseModel):
     notes: List[str] = Field(default_factory=list)
 
 
-class SamplePrecursors(BaseModel):
-    """Per-sample safety precursor counts."""
-
-    side_effect_calls: int = 0
-    tainted_side_effect_calls: int = 0
-    has_tainted_side_effect: bool = False
-    attack_goal_actions: Optional[int] = None
-
-
-FailureMode = Literal['refused', 'blocked_by_guard', 'model_failed', 'environment_failed', 'unknown']
-
-
 class FailureCase(BaseModel):
-    """All findings of one sample with its outcome and primary attribution."""
+    """Trace observations consumed by the unified diagnostic pipeline."""
 
-    schema_version: int = SCHEMA_VERSION
-    ref: SampleRef
     labels: Dict[str, Any] = Field(default_factory=dict)
-    task_excerpt: str = ''
     outcome: Outcome
     score_value: Dict[str, float] = Field(default_factory=dict)
     score_status: str = 'success'
-    failed: bool
-    primary_attribution: Optional[Attribution] = None
-    """``None`` when the sample has no non-informational finding."""
-
-    failure_mode: Optional[FailureMode] = None
-    key_position: Optional[int] = None
     findings: List[Finding] = Field(default_factory=list)
-    precursors: SamplePrecursors = Field(default_factory=SamplePrecursors)
     tool_call_count: int = 0
-    providers: List[str] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
 
 
@@ -253,9 +221,6 @@ class TraceSignalProvider(ABC):
     upstream packages at module import time; load them inside :meth:`collect` and report
     degradations through :attr:`ProviderSignals.notes`.
     """
-
-    name: str = ''
-    """Short provider name recorded in analysis outputs."""
 
     @abstractmethod
     def collect(self, record: 'ReviewResult', view: TraceView) -> ProviderSignals:
@@ -269,20 +234,17 @@ class TraceSignalProvider(ABC):
 
 __all__ = [
     'TraceSignalProvider',
-    'SCHEMA_VERSION',
     'INFORMATIONAL_CATEGORIES',
     'Attribution',
     'Confidence',
     'Evidence',
     'ExpectedCall',
     'FailureCase',
-    'FailureMode',
     'Finding',
     'FindingCategory',
     'LoopEvent',
     'Outcome',
     'ProviderSignals',
-    'SamplePrecursors',
     'SampleRef',
     'ToolStatusOverride',
     'TraceToolCall',

@@ -123,7 +123,6 @@ class DetectionContext:
         """Build a finding for this sample; ``first_position`` defaults to the smallest position."""
         positions = sorted(set(positions or []))
         return Finding(
-            ref=self.view.ref,
             category=category,
             subtype=subtype,
             positions=positions,
@@ -436,7 +435,7 @@ def detect_termination(ctx: DetectionContext) -> List[Finding]:
             # after the loop actually tried to nudge the model.
             add('nudges_exhausted', Confidence.HIGH, event.source)
 
-    stop_reason = view.stop_reason or ctx.signals.stop_reason
+    stop_reason = ctx.signals.stop_reason
     if stop_reason in _STOP_REASON_SUBTYPES:
         add(_STOP_REASON_SUBTYPES[stop_reason], Confidence.HIGH, f'stop_reason={stop_reason}')
     if not (view.final_answer or '').strip() and not view.tool_calls:
@@ -609,9 +608,6 @@ def detect_refusal(ctx: DetectionContext, prior: List[Finding]) -> List[Finding]
     return []
 
 
-DETECTOR_VERSIONS = [TOOL_FAILURE, REPETITION, TERMINATION, SIDE_EFFECT, REFUSAL]
-
-
 def run_detectors(ctx: DetectionContext) -> List[Finding]:
     """Run every detector in its fixed order."""
     findings = detect_tool_failures(ctx)
@@ -624,7 +620,6 @@ def run_detectors(ctx: DetectionContext) -> List[Finding]:
 
 __all__ = [
     'ATOM_PATTERNS',
-    'DETECTOR_VERSIONS',
     'CompiledRules',
     'DetectionContext',
     'call_signature',
