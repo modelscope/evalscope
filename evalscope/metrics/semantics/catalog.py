@@ -465,6 +465,10 @@ METRIC_DEFINITIONS['non_refusal_completion_score'] = MetricEntry(
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
 # LawBench combines official task metrics; imprisonment log distance can yield negative scores.
 METRIC_DEFINITIONS['lawbench_score'] = MetricEntry(baseline='quality.score.unbounded', metric_name='LawBench Score')
+# BBEH adds one percentage point before taking the harmonic mean, without subtracting it afterwards.
+METRIC_DEFINITIONS['bbeh_score'] = MetricEntry(
+    baseline='quality.score.ratio', metric_name='BBEH Score', value_range=ValueRange(min=0.01, max=1.01)
+)
 METRIC_DEFINITIONS['abstention_rate'] = MetricEntry(
     baseline='diagnostic.parse_status.ratio', display_name='Abstention Rate'
 )

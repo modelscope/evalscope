@@ -26,6 +26,7 @@
  "automation_bench": "evalscope.benchmarks.automation_bench.automation_bench_adapter",
  "baby_vision": "evalscope.benchmarks.baby_vision.baby_vision_adapter",
  "banking77": "evalscope.benchmarks.banking77.banking77_adapter",
+ "bbeh": "evalscope.benchmarks.bbeh.bbeh_adapter",
  "bbh": "evalscope.benchmarks.bbh.bbh_adapter",
  "bc2gm": "evalscope.benchmarks.ner.bc2gm_adapter",
  "bc4chemd": "evalscope.benchmarks.ner.bc4chemd_adapter",
