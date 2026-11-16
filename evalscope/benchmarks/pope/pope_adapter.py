@@ -3,11 +3,10 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.yes_no import extract_verdict
 
@@ -56,7 +55,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
         subset_list=['popular', 'adversarial', 'random'],
         default_subset='Full',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class PopeAdapter(VisionLanguageAdapter):
@@ -71,8 +70,8 @@ class PopeAdapter(VisionLanguageAdapter):
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
-            image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-            content_list.append(ContentImage(image=image_base64))
+            image_payload = self._normalize_media_value(image, media_type='image')
+            content_list.append(self._content_image_from_value(image_payload))
         answer = record['answer'].upper()  # 'YES' or 'NO'
         return Sample(
             input=[ChatMessageUser(content=content_list)],
