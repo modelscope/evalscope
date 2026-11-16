@@ -7,7 +7,7 @@
 // instead of the network; the tab bodies have their own dedicated tests.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
@@ -18,6 +18,7 @@ import type { LoadReportResponse } from '@/api/types'
 vi.mock('@/api/reports', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/reports')>()),
   loadReport: vi.fn(),
+  getDiagnosis: vi.fn(),
 }))
 
 import * as reportsApi from '@/api/reports'
@@ -75,4 +76,18 @@ describe('ReportDetailPage', () => {
 
     expect(screen.getByText(/boom/i)).toBeInTheDocument()
   })
+})
+
+
+it('preserves the shared header, tabs and dataset navigation on the diagnostic tab', async () => {
+  vi.mocked(reportsApi.loadReport).mockResolvedValue(REPORT)
+  vi.mocked(reportsApi.getDiagnosis).mockResolvedValue({ status: 'missing', report: null })
+  await renderDetail()
+  const header = screen.getByRole('heading', { level: 1 }).closest('div')
+  fireEvent.click(screen.getByRole('tab', { name: 'Diagnostics' }))
+  await settle()
+  expect(screen.getByText('Datasets')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1 }).closest('div')).toBe(header)
+  expect(screen.getByRole('tab', { name: 'Diagnostics', selected: true })).toBeInTheDocument()
 })

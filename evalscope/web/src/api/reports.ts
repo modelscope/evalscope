@@ -7,6 +7,8 @@ import type {
   ListReportsResponse,
   LoadReportResponse,
   PredictionsResponse,
+  DiagnosisResponse,
+  SampleDiagnosesResponse,
 } from './types'
 import { parseReportRef } from '@/domain/report/reportRef'
 
@@ -140,6 +142,29 @@ export async function getAnalysis(
     signal,
   })
   return res.analysis
+}
+
+export async function getDiagnosis(rootPath: string, ref: string, dataset: string, signal?: AbortSignal): Promise<DiagnosisResponse> {
+  return apiValidated<DiagnosisResponse>(`${reportPath(ref)}/diagnosis`, {
+    params: { root_path: rootPath, dataset_name: dataset }, signal,
+  })
+}
+
+export interface DiagnosisFilters {
+  subset_name?: string
+  pattern_id?: string
+  failure_type?: string
+  attribution?: string
+  finding_category?: string
+  index?: number
+  only_diagnosed?: boolean
+}
+
+export async function getSampleDiagnoses(rootPath: string, ref: string, dataset: string,
+  filters: DiagnosisFilters = {}, page = 1, signal?: AbortSignal): Promise<SampleDiagnosesResponse> {
+  return apiValidated<SampleDiagnosesResponse>(`${reportPath(ref)}/diagnosis/samples`, {
+    params: { root_path: rootPath, dataset_name: dataset, ...filters, page, page_size: 200 }, signal,
+  })
 }
 
 export function getHtmlReportUrl(rootPath: string, ref: string): string {

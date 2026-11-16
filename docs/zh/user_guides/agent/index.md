@@ -28,6 +28,7 @@ EvalScope 提供 **Agent 评测**，允许模型或成品 Agent CLI 在受控的
 
 ![Agent Trace 概览](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/trace_view.png)
 
+
 ```{seealso}
 Web 仪表盘的整体使用说明(报告对比、预测视图等)请参考 [可视化](../../get_started/visualization.md)。
 ```
@@ -48,3 +49,5 @@ Web 仪表盘的整体使用说明(报告对比、预测视图等)请参考 [可
 native.md
 bridge.md
 ```
+
+评测后可用[评测诊断](../diagnosis.md)批量查看评分事实、过程发现和代表样本。

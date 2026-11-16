@@ -1,0 +1,121 @@
+"""Load persisted analysis inputs once, with explicit coverage and cache dependencies."""
+
+import json
+from pathlib import Path
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+from evalscope.api.analysis import FailureCase, SampleKey, SampleRef
+from evalscope.api.analysis.config import TraceAnalysisConfig
+from evalscope.api.evaluator.cache import ReviewResult
+from evalscope.report import Report
+from evalscope.report.diagnosis import iter_review_files
+from evalscope.utils.io_utils import yaml_to_dict
+
+from .trace.analyzer import analyze_records
+from .trace.reader import load_review_rows
+
+
+class SampleInput(BaseModel):
+    """The same sample identity joins reviews, predictions and all rendered views."""
+
+    key: SampleKey
+    record: ReviewResult
+    case: FailureCase
+    stop_reason: Optional[str] = None
+    output_tokens: Optional[int] = None
+
+
+class BenchmarkInput(BaseModel):
+    """Only consumed settings are retained; credentials never enter diagnostic outputs."""
+
+    samples: List[SampleInput] = Field(default_factory=list)
+    report: Optional[Report] = None
+    max_tokens: Optional[int] = None
+    repeats: int = 1
+    unreadable: int = 0
+    unreadable_predictions: int = 0
+
+    @property
+    def is_multiple_choice(self) -> bool:
+        """Recognize the persisted single-letter target format without guessing choice content."""
+        gold = [s.record.target for s in self.samples]
+        return bool(gold) and sum(bool(g and len(g) == 1 and is_choice_letter(g[0])) for g in gold) / len(gold) >= 0.9
+
+
+def is_choice_letter(text: str) -> bool:
+    """Check only the answer format; the available choice set may not be persisted."""
+    value = text.strip()
+    return len(value) == 1 and value.isascii() and value.isupper()
+
+
+def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisConfig) -> BenchmarkInput:
+    """Read JSONL by physical lines; Unicode line separators inside strings are valid data."""
+    root = Path(run_dir)
+    result = BenchmarkInput()
+    settings = root / 'configs' / 'task_config.yaml'
+    if settings.is_file():
+        task = yaml_to_dict(str(settings)) or {}
+        result.max_tokens = (task.get('generation_config') or {}).get('max_tokens')
+        result.repeats = task.get('repeats') or 1
+    report = root / 'reports' / model / f'{benchmark}.json'
+    if report.is_file():
+        result.report = Report.model_validate_json(report.read_text())
+        metric = next((m for m in result.report.metrics if m.identity == result.report.primary_metric_identity), None)
+        if metric and metric.semantics:
+            config = config.model_copy(
+                update={
+                    'outcome_directions': {
+                        **config.outcome_directions,
+                        benchmark: metric.semantics.direction.value,
+                    }
+                }
+            )
+    seen = set()
+    for file in iter_review_files(run_dir):
+        if file.model != model or file.benchmark != benchmark:
+            continue
+        records, bad = load_review_rows(file)
+        result.unreadable += bad
+        refs = [
+            SampleRef(run_dir=run_dir, model=model, benchmark=benchmark, subset=file.subset, index=r.index)
+            for r in records
+        ]
+        predictions = {}
+        prediction_path = root / 'predictions' / model / Path(file.path).name
+        if prediction_path.is_file():
+            with prediction_path.open(encoding='utf-8-sig') as stream:
+                for line in stream:
+                    if not line.strip():
+                        continue
+                    try:
+                        row = json.loads(line)
+                        index = row['index']
+                        if index in predictions:
+                            predictions[index] = (None, None)
+                            raise ValueError('Ambiguous prediction identity')
+                        output = row.get('model_output') or {}
+                        choices = output.get('choices') or []
+                        predictions[index] = (
+                            choices[0].get('stop_reason') if choices else None,
+                            (output.get('usage') or {}).get('output_tokens'),
+                        )
+                    except (ValueError, KeyError, TypeError, AttributeError):
+                        result.unreadable_predictions += 1
+        for ref, record, case in zip(refs, records, analyze_records(zip(refs, records), config)):
+            identity = (ref.subset, ref.index)
+            if identity in seen:
+                raise ValueError(f'Duplicate review identity: {identity}')
+            seen.add(identity)
+            stop, tokens = predictions.get(record.index, (None, None))
+            result.samples.append(
+                SampleInput(
+                    key=SampleKey(subset=ref.subset, index=ref.index),
+                    record=record,
+                    case=case,
+                    stop_reason=stop,
+                    output_tokens=tokens,
+                )
+            )
+    return result

@@ -682,6 +682,77 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'Failed to get predictions'}), 500
 
 
+@bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis', methods=['GET'])
+def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
+    """Read diagnostic facts without starting analysis or a paid request."""
+    from evalscope.report.diagnosis import load_diagnosis
+    from evalscope.service.api_models import DiagnosisResponse
+
+    dataset = request.args.get('dataset_name', '')
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+        if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
+            raise ValueError('Invalid dataset_name')
+        status, report = load_diagnosis(os.path.join(_root_path(), ref.run_id), ref.model_id, dataset)
+        return json_response(
+            DiagnosisResponse, {'status': status, 'report': report.model_dump(mode='json') if report else None}
+        )
+    except (ValueError, ValidationError):
+        return jsonify({'error': 'Invalid report reference or dataset_name'}), 400
+
+
+@bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis/samples', methods=['GET'])
+def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
+    """Filter before paging; stale sample identities are never joined to current predictions."""
+    from evalscope.api.analysis import SampleDiagnosis
+    from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
+    from evalscope.service.api_models import SampleDiagnosesResponse
+
+    dataset = request.args.get('dataset_name', '')
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+        if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
+            raise ValueError('Invalid dataset_name')
+        page, size = int(request.args.get('page', 1)), int(request.args.get('page_size', 50))
+        if page < 1 or not 1 <= size <= 200:
+            raise ValueError('Invalid page')
+        root = os.path.join(_root_path(), ref.run_id)
+        status, _ = load_diagnosis(root, ref.model_id, dataset)
+        items, total = [], 0
+        if status == 'ready':
+            with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
+                for line in stream:
+                    if not line.strip():
+                        continue
+                    sample = SampleDiagnosis.model_validate_json(line)
+                    if any(
+                        request.args.get(name) and request.args[name] != value
+                        for name, value in (
+                            ('subset_name', sample.key.subset),
+                            ('pattern_id', sample.pattern_id),
+                            ('failure_type', sample.failure_type),
+                            ('attribution', sample.attribution.value),
+                        )
+                    ):
+                        continue
+                    category = request.args.get('finding_category')
+                    if category and not any(f.category.value == category for f in sample.findings):
+                        continue
+                    index = request.args.get('index')
+                    if index is not None and sample.key.index != int(index):
+                        continue
+                    if (page - 1) * size <= total < page * size:
+                        items.append(sample.model_dump(mode='json'))
+                    total += 1
+        return json_response(
+            SampleDiagnosesResponse, {'status': status, 'items': items, 'total': total, 'page': page, 'page_size': size}
+        )
+    except (ValueError, ValidationError):
+        return jsonify({'error': 'Invalid diagnosis query or stored sample data'}), 400
+    except OSError:
+        return jsonify({'error': 'Diagnostic samples unavailable; rerun evalscope analyze.'}), 409
+
+
 @bp_reports.route('/runs/<run_id>/models/<model_id>/analysis', methods=['GET'])
 def get_analysis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Get the AI analysis text for a dataset.

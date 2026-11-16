@@ -19,12 +19,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _strip_property_titles(value: object) -> None:
+def _strip_property_titles(value: object, property_map: bool = False) -> None:
     """Remove Pydantic's display titles, which codegen mistakes for named types."""
     if isinstance(value, dict):
-        value.pop('title', None)
-        for child in value.values():
-            _strip_property_titles(child)
+        if not property_map:
+            value.pop('title', None)
+        for key, child in value.items():
+            _strip_property_titles(child, property_map=key in ('properties', '$defs', 'patternProperties'))
     elif isinstance(value, list):
         for child in value:
             _strip_property_titles(child)

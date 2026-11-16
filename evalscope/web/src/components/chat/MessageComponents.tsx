@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useContext, useEffect, useRef } from 'react'
 import {
   Copy,
   Check,
@@ -12,6 +12,7 @@ import {
 import type { ContentBlock } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useCopy } from '@/hooks/useCopy'
+import { EvidenceByMessage, EvidenceQuotes } from '@/contexts/EvidenceContext'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import Collapsible from '@/components/ui/Collapsible'
 import ChatBubble from '@/components/ui/ChatBubble'
@@ -151,6 +152,8 @@ export function MessageRow({
   const { t } = useLocale()
   const palette = rolePalette(role, t)
   const RoleIcon = palette.icon
+  const evidence = useContext(EvidenceByMessage)
+  const quotes = msgId ? evidence[msgId] ?? [] : []
   const copyText = contentToText(content)
   const isHighlighted = !!(msgId && highlightId && msgId.startsWith(highlightId))
   const ref = useRef<HTMLDivElement>(null)
@@ -194,12 +197,14 @@ export function MessageRow({
         )}
 
         {/* Content */}
+        <EvidenceQuotes.Provider value={quotes}>
         <div className="text-[0.85rem] leading-[1.55]">
           {Array.isArray(content)
             ? renderContentBlocks(content, { includeReasoning: role === 'assistant' })
             : <MarkdownRenderer content={content} />}
         </div>
 
+        </EvidenceQuotes.Provider>
         {children}
       </div>
     </ChatBubble>

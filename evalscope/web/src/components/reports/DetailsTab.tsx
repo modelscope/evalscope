@@ -25,6 +25,7 @@ interface Props {
   perfMetrics?: PerfMetrics | null
   report?: ReportData
   onSubsetClick?: (subset: string) => void
+  onOpenDiagnosis?: () => void
   overallScore?: number
   metricName?: string
   /** Backend semantics of the primary metric, and of each metric by its final report name. */
@@ -44,6 +45,7 @@ export default function DetailsTab({
   perfMetrics,
   report,
   onSubsetClick,
+  onOpenDiagnosis,
   overallScore,
   metricName,
   semantics,
@@ -207,7 +209,7 @@ export default function DetailsTab({
       <DecisionDiagnostics report={report} />
 
       {/* AI Analysis */}
-      <Card title={t('reportDetail.analysis')}>
+      <Card title={t('diagnosis.summary')}>
         {analysisLoading ? (
           <Skeleton lines={5} />
         ) : analysis && analysis !== 'N/A' ? (
@@ -215,6 +217,7 @@ export default function DetailsTab({
         ) : (
           <p className="text-sm text-[var(--text-muted)]">{t('common.noData')}</p>
         )}
+        {onOpenDiagnosis && <button type="button" className="mt-2 min-h-11 text-sm text-[var(--accent)] hover:underline" onClick={onOpenDiagnosis}>{t('diagnosis.open')} →</button>}
       </Card>
 
       {/* Score Distribution Chart removed - info already visible in Subset Scores table */}

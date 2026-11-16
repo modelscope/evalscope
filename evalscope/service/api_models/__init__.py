@@ -4,6 +4,7 @@ from evalscope.api.metric import JudgeSummary
 from evalscope.api.metric.semantics import MetricDisplayKind
 from evalscope.report.report import ExecutionSummary
 
+from .analysis import DiagnosisResponse, SampleDiagnosesResponse
 from .common import (
     ActiveTaskInfo,
     ApiResponseModel,
@@ -54,6 +55,8 @@ class WebApiContracts(BaseModel):
     """Schema-only root that keeps every public Web API type reachable for code generation."""
 
     config_response: ConfigResponse
+    diagnosis_response: DiagnosisResponse
+    sample_diagnoses_response: SampleDiagnosesResponse
     data_frame_response: DataFrameResponse
     log_response: LogResponse
     task_status_response: TaskStatusResponse

@@ -1,7 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
-import type { PredictionRow } from '@/api/types'
-import { hasSystemPrompt, parseSystemUser } from '@/domain/chat/messageText'
+import type { PredictionRow, SampleDiagnosis } from '@/api/types'
+import { EvidenceByMessage } from '@/contexts/EvidenceContext'
+import SampleDiagnosisCard from '@/components/reports/SampleDiagnosisCard'
+import { hasSystemPrompt, parseSystemUser, contentToText } from '@/domain/chat/messageText'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
 import { StructuredMessages, TracedTimeline } from './AgentTraceView'
 import { buildStepGroups } from '@/domain/trace/stepGroups'
@@ -26,6 +28,7 @@ interface Props {
   threshold?: number
   highlightMsgId?: string
   metrics?: ReportMetric[]
+  diagnosis?: SampleDiagnosis
 }
 
 /** Plain input/output rendering when no structured Messages or AgentTrace are available. */
@@ -56,7 +59,7 @@ function LegacyMessages({ prediction }: { prediction: PredictionRow }) {
   )
 }
 
-export default function ChatView({ prediction, threshold = 0.99, highlightMsgId, metrics }: Props) {
+export default function ChatView({ prediction, threshold = 0.99, highlightMsgId, metrics, diagnosis }: Props) {
   const { t } = useLocale()
   const showPred =
     prediction.Pred &&
@@ -67,7 +70,22 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId,
   const messages = prediction.Messages
   const agentTrace = prediction.AgentTrace
   const presentation = selectChatPresentation(prediction)
-  const [highlightedStep, setHighlightedStep] = useState<number | null>(null)
+  const rootStep = diagnosis?.llm_status === 'ok' ? diagnosis.llm?.root_cause_step ?? null : null
+  const [pickedStep, setHighlightedStep] = useState<number | null | undefined>(undefined)
+  const highlightedStep = pickedStep === undefined ? rootStep : pickedStep
+  const evidenceByMessage = useMemo(() => {
+    const result: Record<string, string[]> = {}
+    if (diagnosis?.llm_status !== 'ok') return result
+    for (const ref of diagnosis.llm?.evidence ?? []) {
+      const source = diagnosis.sources?.find(s => s.id === ref.source_id)
+      const id = source?.message_index != null ? messages?.[source.message_index]?.id : null
+      if (id && ref.source_id.startsWith('m:') && source?.message_index != null) {
+        const original = contentToText(messages?.[source.message_index]?.content ?? '')
+        if (original.split(ref.quote).length === 2) (result[id] ??= []).push(ref.quote)
+      }
+    }
+    return result
+  }, [diagnosis, messages])
 
   const judgeReview = useMemo(() => selectJudgeReview(prediction.Score), [prediction.Score])
   // The raw judge replies are rendered by the review panel below; drop them from the Score Detail
@@ -80,10 +98,11 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId,
   }, [presentation, messages, agentTrace])
 
   const handleStepClick = useCallback((step: number) => {
-    setHighlightedStep(prev => (prev === step ? null : step))
-  }, [])
+    setHighlightedStep(highlightedStep === step ? null : step)
+  }, [highlightedStep])
 
   return (
+    <EvidenceByMessage.Provider value={evidenceByMessage}>
     <div className="flex flex-col gap-4 py-2">
       {presentation === 'traced' && stepGroups && messages && agentTrace ? (
         <TracedTimeline
@@ -93,6 +112,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId,
           highlightStep={highlightedStep}
           highlightId={highlightMsgId}
           onStepClick={handleStepClick}
+          findings={diagnosis?.findings}
         />
       ) : presentation === 'structured' && messages ? (
         <div className="flex flex-col gap-2">
@@ -120,7 +140,10 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId,
         metrics={metrics}
       />
 
+      {diagnosis && <SampleDiagnosisCard diagnosis={diagnosis} />}
+
       {judgeReview && <JudgeReviewPanel review={judgeReview} />}
     </div>
+    </EvidenceByMessage.Provider>
   )
 }

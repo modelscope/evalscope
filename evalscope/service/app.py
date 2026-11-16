@@ -81,9 +81,13 @@ def create_app(outputs: str = None):
         def serve_spa(path):
             """Serve the React SPA for all non-API routes."""
             file_path = os.path.join(_WEB_DIST, path)
+            if path.startswith('assets/'):
+                return send_from_directory(_WEB_DIST, path)
             if path and os.path.isfile(file_path):
                 return send_from_directory(_WEB_DIST, path)
-            return send_from_directory(_WEB_DIST, 'index.html')
+            response = send_from_directory(_WEB_DIST, 'index.html')
+            response.headers['Cache-Control'] = 'no-cache'
+            return response
 
     @app.errorhandler(404)
     def not_found(error):

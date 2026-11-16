@@ -70,3 +70,45 @@ describe('TraceEventPill submit source', () => {
     expect(container.textContent).not.toContain('·')
   })
 })
+
+it('places a finding badge only on the step containing its recorded call ID', async () => {
+  const { buildStepGroups } = await import('@/domain/trace/stepGroups')
+  const { TracedTimeline } = await import('./AgentTraceView')
+  const messages = [
+    {role:'assistant', content:'first', tool_calls:[{id:'a',function:'read',arguments:{}}]},
+    {role:'assistant', content:'second', tool_calls:[{id:'b',function:'write',arguments:{}}]},
+  ] as ChatMessage[]
+  const trace = {events:[
+    event({step:0,type:'tool_call',payload:{id:'a',name:'read',arguments:{}}}),
+    event({step:1,type:'tool_call',payload:{id:'b',name:'write',arguments:{}}}),
+  ]} as import('@/api/types').AgentTrace
+  const {container} = render(<TracedTimeline messages={messages} trace={trace}
+    groups={buildStepGroups(messages,trace)} highlightStep={null} onStepClick={() => {}}
+    findings={[{detector:'risk',ref:{run_dir:'/run',model:'m',benchmark:'demo',subset:'default',index:0},category:'risky_command',subtype:'risk',attribution:'model',confidence:'low',call_ids:['b']},
+      {detector:'repeat',ref:{run_dir:'/run',model:'m',benchmark:'demo',subset:'default',index:0},category:'repetition',subtype:'repeat',attribution:'model',confidence:'low',call_ids:['absent']}]} />)
+  const badge = screen.getByText('Potentially risky command')
+  expect(badge.closest('button')).toHaveTextContent('Step 1')
+  expect(container.textContent).not.toContain('Repetition')
+})
+
+it('shows a provider-confirmed tool error only on its matching result, including old message formats', async () => {
+  const { buildStepGroups } = await import('@/domain/trace/stepGroups')
+  const { TracedTimeline } = await import('./AgentTraceView')
+  const messages = [
+    { role: 'assistant', id: 'm0', content: '', tool_calls: [{ id: 'bad', function: 'create_event', arguments: {} }] },
+    { role: 'tool', id: 'r1', tool_call_id: 'bad', content: 'ValueError: invalid date' },
+    { role: 'assistant', id: 'm1', content: '', tool_calls: [{ id: 'ok', function: 'create_event', arguments: {} }] },
+    { role: 'tool', id: 'r2', tool_call_id: 'ok', content: 'Event created' },
+  ] as ChatMessage[]
+  const trace = { events: [
+    event({ step: 0, message_id: 'm0', type: 'tool_call', payload: { id: 'bad', name: 'create_event', arguments: {} } }),
+    event({ step: 1, message_id: 'm1', type: 'tool_call', payload: { id: 'ok', name: 'create_event', arguments: {} } }),
+  ] } as import('@/api/types').AgentTrace
+  render(<TracedTimeline messages={messages} trace={trace}
+    groups={buildStepGroups(messages, trace)} highlightStep={null} onStepClick={() => {}}
+    findings={[{ detector: 'tool_failure', ref: { run_dir: '/run', model: 'm', benchmark: 'demo', subset: 'default', index: 0 },
+      category: 'tool_failure', subtype: 'provider:runtime_error', attribution: 'model', confidence: 'medium', call_ids: ['bad'] }]} />)
+  expect(screen.getByText('Error: ValueError: invalid date')).toBeInTheDocument()
+  expect(screen.getByText('Event created')).toBeInTheDocument()
+  expect(screen.queryByText('Error: Event created')).not.toBeInTheDocument()
+})

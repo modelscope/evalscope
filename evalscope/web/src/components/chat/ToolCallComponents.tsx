@@ -1,3 +1,6 @@
+import { useContext } from 'react'
+import { EvidenceByMessage } from '@/contexts/EvidenceContext'
+import EvidenceText from './EvidenceText'
 import { Wrench } from 'lucide-react'
 import type { ChatMessage } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -15,16 +18,19 @@ function shortToolId(id: string): string {
 
 /* ─── ToolObservation ──────────────────────────────────────── */
 
-export function ToolObservation({ msg }: { msg: ChatMessage }) {
+export function ToolObservation({ msg, failed = false }: { msg: ChatMessage; failed?: boolean }) {
   const { t } = useLocale()
   const text = contentToText(msg.content)
   const preview = text.replace(/\s+/g, ' ').trim()
   const previewShort = preview.length > 140 ? preview.slice(0, 140) + '…' : preview
-  const hasError = !!msg.error
+  const evidence = useContext(EvidenceByMessage)
+  const hasError = failed || !!msg.error
   const headerColor = hasError ? 'var(--danger)' : 'var(--text-muted)'
 
   return (
     <Collapsible
+      key={msg.id && evidence[msg.id]?.length ? 'evidence' : 'observation'}
+      defaultOpen={Boolean(msg.id && evidence[msg.id]?.length)}
       style={{ borderLeft: `2px solid ${bubbleBorder('tool')}`, paddingLeft: '0.6rem', marginTop: '0.25rem' }}
       headerStyle={{ color: headerColor, fontSize: '0.72rem' }}
       chevronSize={11}
@@ -37,7 +43,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
           />
           <span className="font-mono text-[0.7rem] overflow-hidden text-ellipsis whitespace-nowrap flex-1">
             {hasError
-              ? `${t('trace.error')}: ${msg.error?.message ?? ''}`
+              ? `${t('trace.error')}: ${msg.error?.message || previewShort}`
               : previewShort || t('trace.stdout')}
           </span>
           {msg.id && (
@@ -49,7 +55,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
       }
     >
       <pre className="mt-1 mb-[0.4rem] mx-0 px-[0.6rem] py-[0.4rem] bg-[var(--bg-deep)] rounded-[0.35rem] text-[0.7rem] font-mono text-[var(--text-muted)] whitespace-pre-wrap break-all max-h-[260px] overflow-auto">
-        {text}
+        <EvidenceText text={text} quotes={msg.id ? evidence[msg.id] ?? [] : []} />
       </pre>
     </Collapsible>
   )
@@ -60,7 +66,7 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
 /** Re-exported so call sites keep importing the entry type next to its renderer. */
 export type { ToolCallEntry } from '@/domain/trace/stepGroups'
 
-export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
+export function ToolCallsGroup({ calls, failedCallIds = [] }: { calls: ToolCallEntry[]; failedCallIds?: string[] }) {
   const { t } = useLocale()
 
   if (calls.length === 0) return null
@@ -87,13 +93,13 @@ export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
       header={<span className="font-semibold">{summaryLabel}</span>}
     >
       {calls.map((call, i) => (
-        <ToolCallEntryRow key={call.id || i} entry={call} />
+        <ToolCallEntryRow key={call.id || i} entry={call} failed={failedCallIds.includes(call.id)} />
       ))}
     </Collapsible>
   )
 }
 
-export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
+export function ToolCallEntryRow({ entry, failed = false }: { entry: ToolCallEntry; failed?: boolean }) {
   const { t } = useLocale()
   const preview = argsPreview(entry.arguments)
   const toolAccent = bubbleAccent('tool')
@@ -143,7 +149,7 @@ export function ToolCallEntryRow({ entry }: { entry: ToolCallEntry }) {
         )}
       </Collapsible>
 
-      {entry.result && <ToolObservation msg={entry.result} />}
+      {entry.result && <ToolObservation msg={entry.result} failed={failed} />}
     </div>
   )
 }

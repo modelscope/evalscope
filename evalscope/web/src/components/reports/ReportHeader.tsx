@@ -13,6 +13,7 @@ interface Props {
   datasetName: string
   datasets?: string[]
   datasetLabels?: Record<string, string>
+  selectedDataset?: string
   score: number | null
   metricName?: string
   /** Backend semantics of the primary metric shown in the header. */
@@ -27,6 +28,7 @@ export default function ReportHeader({
   datasetName,
   datasets,
   datasetLabels = {},
+  selectedDataset,
   score,
   metricName,
   semantics,
@@ -54,7 +56,7 @@ export default function ReportHeader({
         {/* Left side - info */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-[var(--text)]">{modelName}</h1>
+            <h1 className="text-xl font-semibold text-[var(--text)]">{modelName}</h1>
             {/* text-dim allowed: decorative separator glyph (DESIGN.md §Text) */}
             <span className="text-[var(--text-dim)]">×</span>
             {datasets && datasets.length > 0 ? (
@@ -66,7 +68,8 @@ export default function ReportHeader({
                     {onDatasetClick ? (
                       <button
                         onClick={() => onDatasetClick(ds)}
-                        className="text-lg text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit"
+                        aria-pressed={selectedDataset ? selectedDataset === ds : undefined}
+                        className={`text-lg text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit ${selectedDataset === ds ? 'underline underline-offset-4 font-semibold' : ''}`}
                       >
                         <span title={ds}>{datasetLabels[ds] || ds}</span>
                       </button>

@@ -1,8 +1,7 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
-import { useScopedState } from '@/hooks/useScopedState'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import type { ReportData } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
@@ -17,12 +16,15 @@ import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
 import DetailsTab from '@/components/reports/DetailsTab'
 import PredictionsTab from '@/components/reports/PredictionsTab'
+import DiagnosisTab from '@/components/reports/DiagnosisTab'
+import type { DiagnosisFilters } from '@/api/reports'
+import type { SampleKey } from '@/api/types'
 
-type TabKey = 'overview' | 'details' | 'predictions'
+type TabKey = 'overview' | 'details' | 'diagnosis' | 'predictions'
 
 export default function ReportDetailPage() {
   const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { t } = useLocale()
 
   const rootPath = searchParams.get('root_path') || './outputs'
@@ -31,8 +33,19 @@ export default function ReportDetailPage() {
     [runId, modelId],
   )
 
-  const [activeTab, setActiveTab] = useState<TabKey>('overview')
-  const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
+  const tab = searchParams.get('tab')
+  const activeTab: TabKey = tab === 'details' || tab === 'diagnosis' || tab === 'predictions' ? tab : 'overview'
+  const initialSubset = searchParams.get('subset') || undefined
+  const setActiveTab = (value: TabKey) => setSearchParams(previous => {
+    const next = new URLSearchParams(previous); next.set('tab', value); return next
+  })
+  const diagnosisFilters: DiagnosisFilters = {
+    pattern_id: searchParams.get('pattern') || undefined,
+    failure_type: searchParams.get('failure_type') || undefined,
+    attribution: searchParams.get('attribution') || undefined,
+    finding_category: searchParams.get('finding_category') || undefined,
+    only_diagnosed: searchParams.get('diagnosed') === '1',
+  }
 
   // A change of inputs aborts the previous request and drops its late response,
   // so only the newest one updates the view.
@@ -48,8 +61,7 @@ export default function ReportDetailPage() {
   // Open on the report's first dataset, while still letting the user switch; the
   // pick is scoped to the report it was made on, and only holds while it still
   // names one of the datasets the report carries.
-  const datasetScope = `${rootPath}\0${reportName}`
-  const [pickedDataset, setActiveDataset] = useScopedState<string | null>(datasetScope, null)
+  const pickedDataset = searchParams.get('dataset')
   const activeDataset = pickedDataset !== null && Boolean(data?.datasets.includes(pickedDataset))
     ? pickedDataset
     : (data?.datasets[0] ?? '')
@@ -103,22 +115,36 @@ export default function ReportDetailPage() {
 
   // Handler: switch dataset and auto-navigate to details tab
   const handleDatasetChange = (ds: string) => {
-    setActiveDataset(ds)
-    setInitialSubset(undefined)
-    if (activeTab === 'overview') {
-      setActiveTab('details')
-    }
+    const next = new URLSearchParams(searchParams)
+    next.set('dataset', ds)
+    for (const key of ['subset','pattern','sample','failure_type','attribution','finding_category','diagnosed']) next.delete(key)
+    if (activeTab === 'overview') next.set('tab','details')
+    setSearchParams(next)
   }
 
   // Handler: click a subset name in DetailsTab → jump to Predictions with that subset pre-selected
   const handleSubsetClick = (subset: string) => {
-    setInitialSubset(subset)
-    setActiveTab('predictions')
+    const next = new URLSearchParams(searchParams)
+    next.set('subset',subset); next.set('tab','predictions'); next.delete('sample')
+    setSearchParams(next)
+  }
+
+  const handleDiagnosisSamples = (filters: DiagnosisFilters, sample?: SampleKey) => {
+    const next = new URLSearchParams(searchParams)
+    for (const key of ['pattern','subset','sample','failure_type','attribution','finding_category','diagnosed']) next.delete(key)
+    next.set('tab','predictions'); next.set('dataset',activeDataset)
+    for (const [key,value] of Object.entries(filters)) {
+      if (value) next.set(key==='pattern_id' ? 'pattern' : key==='subset_name' ? 'subset' : key==='only_diagnosed' ? 'diagnosed' : key,
+        value===true ? '1' : String(value))
+    }
+    if (sample) { next.set('subset',sample.subset); next.set('sample',String(sample.index)) }
+    setSearchParams(next)
   }
 
   const tabs = [
     { key: 'overview', label: t('reportDetail.overview'), panelId: 'report-overview-panel' },
     { key: 'details', label: t('reportDetail.details'), panelId: 'report-details-panel' },
+    { key: 'diagnosis', label: t('diagnosis.title'), panelId: 'report-diagnosis-panel' },
     { key: 'predictions', label: t('reportDetail.predictions'), panelId: 'report-predictions-panel' },
   ]
 
@@ -197,6 +223,7 @@ export default function ReportDetailPage() {
         datasetName={primaryDataset}
         datasets={datasets}
         datasetLabels={datasetLabels}
+        selectedDataset={activeTab === 'overview' ? undefined : activeDataset}
         score={overallMetric.score}
         metricName={overallMetric.metricName}
         semantics={overallMetric.semantics}
@@ -209,7 +236,7 @@ export default function ReportDetailPage() {
         tabs={tabs}
         activeKey={activeTab}
         onChange={(k) => setActiveTab(k as TabKey)}
-        className="w-full justify-start rounded-b-none border-b-0 bg-[var(--bg-card)] px-5 pt-4 pb-2"
+        className="w-full justify-start overflow-x-auto rounded-b-none border-b-0 bg-[var(--bg-card)] px-2 pt-4 pb-2 sm:px-5 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:px-3 sm:[&>button]:px-4"
         panels={{
           'report-overview-panel': (
             <div className="rounded-b-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
@@ -242,7 +269,11 @@ export default function ReportDetailPage() {
               semanticsByMetric={activeReport?.semanticsByMetric}
               labelsByMetric={activeReport?.labelsByMetric}
               onSubsetClick={handleSubsetClick}
+              onOpenDiagnosis={() => setActiveTab('diagnosis')}
             />,
+          ),
+          'report-diagnosis-panel': renderDatasetPanel(
+            <DiagnosisTab key={`${rootPath}/${reportName}/${activeDataset}`} rootPath={rootPath} reportName={reportName} datasetName={activeDataset} onSamples={handleDiagnosisSamples} />
           ),
           'report-predictions-panel': renderDatasetPanel(
             <PredictionsTab
@@ -251,6 +282,9 @@ export default function ReportDetailPage() {
               datasetName={activeDataset}
               rootPath={rootPath}
               initialSubset={initialSubset}
+              initialIndex={searchParams.has('sample') ? Number(searchParams.get('sample')) : undefined}
+              diagnosisFilters={diagnosisFilters}
+              onDiagnosisFiltersChange={handleDiagnosisSamples}
               report={reportList.find((r) => r.dataset_name === activeDataset)}
             />,
           ),

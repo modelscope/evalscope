@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import {
   AlertTriangle,
   Cpu,
@@ -8,7 +8,7 @@ import {
   Play,
   Square,
 } from 'lucide-react'
-import type { ChatMessage, AgentTrace, AgentTraceEvent } from '@/api/types'
+import type { ChatMessage, AgentTrace, AgentTraceEvent, Finding } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText } from '@/domain/chat/messageText'
@@ -255,6 +255,7 @@ export function StepBlock({
   highlighted,
   onStepClick,
   ctx,
+  findings = [],
 }: {
   group: StepGroup
   highlightId?: string
@@ -262,8 +263,13 @@ export function StepBlock({
   onStepClick: (step: number) => void
   /** Cross-step linkage; required so results are resolved the same way on every step. */
   ctx: TraceContext
+  findings?: Finding[]
 }) {
   const { t } = useLocale()
+  const stepRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (highlighted) stepRef.current?.scrollIntoView?.({ block: 'center' })
+  }, [highlighted])
 
   // Pre-agent messages (system/user) — render as-is, no wrapper
   if (group.step === -1) {
@@ -327,6 +333,7 @@ export function StepBlock({
 
   return (
     <div
+      ref={stepRef}
       className={[
         'rounded-[0.6rem] border-l-2 transition-[background-color,border-color] duration-300',
         highlighted
@@ -354,6 +361,9 @@ export function StepBlock({
         )}
         {/* Event pills */}
         <div className="flex flex-wrap flex-1 gap-1">
+          {findings.map((f,i) => <span key={`finding-${i}`} className="rounded border border-[var(--border)] px-1 text-xs text-[var(--text)]">
+            {t(`diagnosis.finding.${f.category}`)}
+          </span>)}
           {group.traceEvents.map((ev, i) => (
             <TraceEventPill key={i} event={ev} />
           ))}
@@ -382,7 +392,12 @@ export function StepBlock({
             highlightId={highlightId}
             headerExtra={headerPerf}
           >
-            {entries.length > 0 && <ToolCallsGroup calls={entries} />}
+            {entries.length > 0 && (
+              <ToolCallsGroup
+                calls={entries}
+                failedCallIds={findings.filter(f => f.category === 'tool_failure').flatMap(f => f.call_ids ?? [])}
+              />
+            )}
           </MessageRow>
         )}
 
@@ -444,12 +459,14 @@ export function TracedTimeline({
   highlightStep,
   highlightId,
   onStepClick,
+  findings = [],
 }: {
   groups: StepGroup[]
   messages: ChatMessage[]
   trace: AgentTrace
   highlightStep: number | null
   highlightId?: string
+  findings?: Finding[]
   onStepClick: (step: number) => void
 }) {
   const preGroup = groups.find(g => g.step === -1)
@@ -474,6 +491,7 @@ export function TracedTimeline({
           long traces mount only the visible step blocks. */}
       <VirtualList
         items={agentGroups}
+        revealIndex={agentGroups.findIndex(g => g.step === highlightStep)}
         getKey={(g) => g.step}
         renderItem={(g) => (
           <StepBlock
@@ -482,6 +500,9 @@ export function TracedTimeline({
             highlighted={highlightStep === g.step}
             onStepClick={onStepClick}
             ctx={ctx}
+            findings={findings.filter(f => f.call_ids?.some(id =>
+              g.assistant?.tool_calls?.some(call => call.id===id)
+              || g.traceEvents.some(event => event.type==='tool_call' && event.payload.id===id)))}
           />
         )}
         gap={9.6}
