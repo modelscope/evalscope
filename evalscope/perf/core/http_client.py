@@ -1,8 +1,5 @@
 import asyncio
-import netrc
-import os
 import time
-import urllib.parse
 import urllib.request
 from typing import TYPE_CHECKING, Any
 
@@ -27,24 +24,20 @@ _PREFLIGHT_MAX_ATTEMPTS = 3  # hard cap on attempts regardless of time left
 _PREFLIGHT_RETRY_INTERVAL = 2  # seconds between attempts (clamped to remaining time)
 
 
-def _env_changes_request(url: str) -> bool:
-    """Return whether a proxy or a netrc entry from the environment applies to ``url``.
+def _has_request_environment() -> bool:
+    """Keep environment handling whenever an initial or redirected request could need it.
 
     With ``trust_env=True``, aiohttp looks up the netrc entry and the proxy for every request,
     each in a worker thread. Under load, these lookups delay each request before its headers
-    go out, and the delay counts in TTFT. So the client trusts the environment only when the
-    environment changes the request.
+    go out, and the delay counts in TTFT. Disable these lookups only when no configuration
+    could apply. A redirect may change both host and scheme, so checking only
+    the initial URL would lose proxy settings or netrc authentication for its destination.
     """
-    parts = urllib.parse.urlsplit(url)
-    host = parts.hostname or ''
-    if parts.scheme in urllib.request.getproxies() and not urllib.request.proxy_bypass(host):
+    proxies = urllib.request.getproxies()
+    if any(scheme in proxies for scheme in ('http', 'https', 'ws', 'wss')):
         return True
-    # The netrc file that aiohttp reads.
-    path = os.environ.get('NETRC') or os.path.join(os.path.expanduser('~'), '_netrc' if os.name == 'nt' else '.netrc')
-    try:
-        return netrc.netrc(path).authenticators(host) is not None
-    except (OSError, netrc.NetrcParseError):
-        return False
+    credentials = aiohttp.helpers.netrc_from_env()
+    return credentials is not None and bool(credentials.hosts)
 
 
 class AioHttpClient:
@@ -79,7 +72,7 @@ class AioHttpClient:
 
         self.client = aiohttp.ClientSession(
             connector=connector,
-            trust_env=_env_changes_request(self.url),
+            trust_env=_has_request_environment(),
             timeout=client_timeout,
             trace_configs=[self._create_trace_config()] if args.debug else [],
         )
