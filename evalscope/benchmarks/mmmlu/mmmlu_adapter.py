@@ -80,6 +80,11 @@ MMMLU (Multilingual Massive Multitask Language Understanding) is a multilingual 
 class MMMLUAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Each subset gets the prompt in its language unless dataset_args sets a
+        # prompt_template; a configured template is used as given, even when it is
+        # the declared default.
+        dataset_args = self._task_config.dataset_args.get(self.name, {}) if self._task_config else {}
+        self.use_language_prompt = not dataset_args.get('prompt_template')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = [
@@ -99,8 +104,10 @@ class MMMLUAdapter(MultiChoiceAdapter):
         )
 
     def format_prompt_template(self, sample: Sample) -> str:
-        language = sample.metadata.get('language') if sample.metadata else None
-        template = LANGUAGE_PROMPT_MAP.get(language, self.prompt_template)
+        template = self.prompt_template
+        if self.use_language_prompt:
+            language = sample.metadata.get('language') if sample.metadata else None
+            template = LANGUAGE_PROMPT_MAP.get(language, MultipleChoiceTemplate.SINGLE_ANSWER_COT)
         return prompt(
             question=sample.input,
             choices=Choices(sample.choices),
