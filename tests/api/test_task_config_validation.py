@@ -264,7 +264,8 @@ def test_invalid_repeats_are_rejected(repeats: object) -> None:
     'limit, expected',
     [
         (None, None),
-        (0, None),
+        (0, 0),
+        (0.0, 0),
         (0.5, 0.5),
         (1.0, 1),
         (2, 2),
@@ -274,3 +275,11 @@ def test_valid_limit_semantics_are_preserved(limit: float | int | None, expected
     config = TaskConfig.from_dict({'model': 'x', 'limit': limit})
 
     assert config.limit == expected
+
+
+@pytest.mark.parametrize('limit', ['0', '0.0'])
+def test_cli_zero_limit_survives_config_round_trip(limit: str) -> None:
+    config = _cli_config('--model', 'offline', '--eval-type', 'mock_llm', '--limit', limit)
+
+    assert config.limit == 0
+    assert TaskConfig.from_dict(config.to_dict()).limit == 0

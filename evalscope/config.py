@@ -276,7 +276,7 @@ class TaskConfig(BaseArgument):
     """Additional evaluation configuration parameters."""
 
     limit: Optional[Union[int, float]] = None
-    """Maximum number of samples to evaluate. Can be int (count) or float (fraction)."""
+    """Maximum samples to evaluate: int (count) or float (fraction). Zero selects none; None selects all."""
 
     eval_batch_size: int = 1
     """Batch size / concurrency for evaluation, applied across all stages:
@@ -403,8 +403,6 @@ class TaskConfig(BaseArgument):
         if v is not None:
             v = parse_int_or_float(v)
             v = validate_dataset_limit(v)
-            if v == 0:
-                return None
         return v
 
     @field_validator('eval_config', mode='before')

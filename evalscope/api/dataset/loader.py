@@ -331,7 +331,7 @@ class RemoteDataLoader(DataLoader):
             dataset = dataset.shuffle(seed=self.seed)
 
         # limit if requested
-        if self.limit:
+        if self.limit is not None:
             resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
             if resolved_limit is not None and len(dataset) > resolved_limit:
                 dataset = dataset.select(range(resolved_limit))
@@ -430,7 +430,7 @@ class LocalDataLoader(DataLoader):
             _shuffle_in_place(dataset, self.seed)
 
         # limit if requested
-        if self.limit:
+        if self.limit is not None:
             resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
             dataset = dataset[:resolved_limit]
 
@@ -470,7 +470,7 @@ class DictDataLoader(DataLoader):
             _shuffle_in_place(dataset, self.seed)
 
         # limit if requested
-        if self.limit:
+        if self.limit is not None:
             resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
             dataset = dataset[:resolved_limit]
 
