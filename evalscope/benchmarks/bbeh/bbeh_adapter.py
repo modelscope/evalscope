@@ -144,8 +144,13 @@ class BBEHAdapter(DefaultDataAdapter):
         ]
         if not subsets:
             return
+        # Binary counts preserve precision that has already been rounded out of report scores.
+        accuracies = [
+            subset.num_correct / subset.num if subset.num_correct is not None and subset.num else subset.score
+            for subset in subsets
+        ]
         # The paper adds 1 to every accuracy (in percent) so that a single zero does not zero the mean.
-        score = harmonic_mean([100 * subset.score + 1 for subset in subsets]) / 100
+        score = harmonic_mean([100 * accuracy + 1 for accuracy in accuracies]) / 100
         identity = MetricIdentity(name='bbeh_score', aggregation='harmonic_mean')
         semantics = get_semantics_resolver().resolve(self.name, identity).semantics
         overall = Subset(name='OVERALL', score=score, num=sum(subset.num for subset in subsets))

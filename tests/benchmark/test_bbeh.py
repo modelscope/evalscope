@@ -115,6 +115,37 @@ def test_offline_run_mini_keeps_only_mini_examples(tmp_path: Path, monkeypatch: 
     assert subsets == {'boardgame_qa': (0.5, 2), 'web_of_lies': (0.0, 1)}
 
 
+@pytest.mark.parametrize('disambiguation_correct', [1, 119])
+def test_harmonic_mean_uses_exact_counts_before_report_rounding(
+    tmp_path: Path, disambiguation_correct: int
+) -> None:
+    from evalscope.api.metric import SampleScore, Score
+
+    adapter = _adapter()
+    aggregated = {}
+    for subset in adapter.subset_list:
+        total, correct = (120, disambiguation_correct) if subset == 'disambiguation_qa' else (200, 100)
+        scores = [
+            SampleScore(sample_id=index, score=Score(value={'acc': float(index < correct)}))
+            for index in range(total)
+        ]
+        aggregated[subset] = adapter.aggregate_subset(subset, scores)
+
+    report = adapter.generate_report(aggregated, model_name='offline-bbeh', output_dir=str(tmp_path))
+    metrics = {metric['identity']['aggregation']: metric for metric in json.loads(report.model_dump_json())['metrics']}
+    subsets = {s['name']: s for category in metrics['mean']['categories'] for s in category['subsets']}
+    disambiguation = subsets['disambiguation_qa']
+    assert disambiguation['score'] == round(disambiguation_correct / 120, 4)
+    assert disambiguation['num_correct'] == disambiguation_correct
+    assert disambiguation['num'] == 120
+
+    # The official formula uses exact task accuracies and rounds only the final score.
+    expected = 23 / (22 / (0.5 + 0.01) + 1 / (disambiguation_correct / 120 + 0.01))
+    assert metrics['harmonic_mean']['score'] == round(expected, 4)
+    assert metrics['harmonic_mean']['num'] == 4520
+    assert metrics['mean']['num_correct'] == 2200 + disambiguation_correct
+
+
 @pytest.mark.parametrize(('accuracy', 'expected'), [(0.0, 0.01), (0.99, 1.0), (1.0, 1.01)])
 def test_adjusted_harmonic_mean_declares_its_official_range(accuracy: float, expected: float) -> None:
     from evalscope.api.metric.semantics import KNOWN_AGGREGATIONS, MetricIdentity
