@@ -26,9 +26,9 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 - Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`
 - Predictions are read from the answer line that the prompt requires (`Answer: [x, y]`), so reasoning traces cannot be mistaken for the answer. Replies ignoring the format fall back to scanning for unambiguous point notation only (`[x, y]` pairs or `<bbox>` tags); loose notation such as `x=.., y=..` and bare numbers is accepted only on the answer line, because in free prose it harvests layout bounds and ordinals instead of a click point
 - A reply truncated before its answer line yields no prediction and scores 0 rather than a coordinate invented from its reasoning, so allow enough `max_tokens` for the model to finish answering
-- Ground truth is normalized to [0, 1], and predictions are mapped into the same space by magnitude: values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received (every screenshot is at least 1920 px wide, so genuine pixel answers are classified correctly)
+- Ground truth is normalized to [0, 1], and predictions are mapped into the same space. By default (`coordinate_format: auto` in `extra_params`) the convention is inferred by magnitude: values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received. A pixel answer with both coordinates at most 1000 (the top-left 1000x1000 px of a screenshot) is therefore read as thousandths; for a model with a fixed convention, set `coordinate_format` to `normalized`, `thousandths` or `pixel`
 - The dataset ships a single `train` split, which is used as the evaluation split
-- Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent
+- Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent. If that image is 1000 px or less on both sides, `auto` reads every pixel answer as thousandths, so set `coordinate_format: pixel` for pixel-answering models
 - [Paper](https://arxiv.org/abs/2504.07981) | [GitHub](https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding)
 
 
@@ -82,7 +82,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 {
   "input": [
     {
-      "id": "2d87e94f",
+      "id": "3c262e7c",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~933.3KB]"
@@ -120,6 +120,12 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 
 *No prompt template defined.*
 
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `coordinate_format` | `str` | `auto` | Convention of predicted click points: "auto" infers it from magnitude; "normalized" (0-1), "thousandths" (0-1000) or "pixel" (of the image sent) fixes it. Choices: ['auto', 'normalized', 'thousandths', 'pixel'] |
+
 ## Usage
 
 ### Using CLI
@@ -144,6 +150,12 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['screenspot_pro'],
+    dataset_args={
+        'screenspot_pro': {
+            # subset_list: ['CAD', 'Creative', 'Dev']  # optional, evaluate specific subsets
+            # extra_params: {}  # uses default extra parameters
+        }
+    },
     limit=10,  # Remove this line for formal evaluation
 )
 

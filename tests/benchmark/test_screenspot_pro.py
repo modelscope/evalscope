@@ -5,6 +5,12 @@ plausible click point, so a regression would corrupt scores without raising anyt
 """
 import re
 
+import pytest
+
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.model import ModelOutput
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.screenspot_pro.screenspot_pro_adapter import PROMPT_TEMPLATE
 from evalscope.benchmarks.screenspot_pro.utils import (
     _NUM_TOKEN,
@@ -13,6 +19,7 @@ from evalscope.benchmarks.screenspot_pro.utils import (
     point_in_bbox,
     to_normalized_point,
 )
+from evalscope.config import TaskConfig
 
 _POINT_RE = rf'[\[\(]\s*({_NUM_TOKEN})\s*(?:,|\s)\s*({_NUM_TOKEN})\s*[\]\)]'
 
@@ -91,6 +98,39 @@ def test_to_normalized_point_infers_convention_by_magnitude() -> None:
     assert to_normalized_point((805, 391), size) == (0.805, 0.391)
     # larger values are pixels of the image sent
     assert to_normalized_point((2320, 704), size) == (2320 / 2880, 704 / 1800)
+
+
+def test_to_normalized_point_explicit_format_skips_inference() -> None:
+    """Magnitude cannot tell pixels from thousandths below 1000, so a fixed convention must win.
+
+    A pixel answer in the top-left 1000x1000 px (menus, toolbars) is read as thousandths by
+    ``auto``; so is every pixel answer on an image downscaled to 1000 px or less.
+    """
+    size = (2560, 1440)
+    assert to_normalized_point((500, 300), size) == (0.5, 0.3)
+    assert to_normalized_point((500, 300), size, 'pixel') == (500 / 2560, 300 / 1440)
+    assert to_normalized_point((480, 270), (960, 540), 'pixel') == (0.5, 0.5)
+
+    assert to_normalized_point((805, 391), size, 'thousandths') == (0.805, 0.391)
+    assert to_normalized_point((1.0, 0.5), size, 'thousandths') == (0.001, 0.0005)
+    assert to_normalized_point((0.8, 0.4), size, 'normalized') == (0.8, 0.4)
+
+
+def test_extract_answer_reads_coordinate_format_from_extra_params() -> None:
+    def extract(dataset_args: dict) -> str:
+        config = TaskConfig(model='mock', datasets=['screenspot_pro'], dataset_args={'screenspot_pro': dataset_args})
+        adapter = get_benchmark('screenspot_pro', config)
+        state = TaskState(
+            model='mock',
+            sample=Sample(input='q', target='[0, 0, 1, 1]', metadata={'sent_size': [2560, 1440]}),
+            output=ModelOutput.from_content('mock', 'Answer: [500, 300]'),
+        )
+        return adapter.extract_answer('Answer: [500, 300]', state)
+
+    assert extract({}) == '[0.500000, 0.300000]'
+    assert extract({'extra_params': {'coordinate_format': 'pixel'}}) == '[0.195312, 0.208333]'
+    with pytest.raises(ValueError):
+        extract({'extra_params': {'coordinate_format': 'pixels'}})
 
 
 def test_point_in_bbox_is_strict() -> None:
