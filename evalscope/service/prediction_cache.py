@@ -1,34 +1,23 @@
-"""Process-local cache for the predictions endpoint.
+"""Bounded process-local memo of validated JSON predictions responses.
 
-Loading predictions for one model/dataset/subset reads the whole review JSONL
-(and the prediction JSONL for the perf fallback), deserialises every sample and
-builds a DataFrame. The response can be hundreds of MB, and every browse of the
-same report repeats all of it. Those cache files are immutable audit records
-once written (a rerun rewrites them, changing their mtime; a delete removes the
-directory), so a fingerprint over the source files' ``(mtime, ctime, size)`` is
-a lightweight version key.
-
-This mirrors ``report_meta_cache`` and is used two ways in the predictions
-endpoint:
-
-* as an ETag so an unchanged response revalidates as ``304`` (no re-transfer of
-  a large body), and
-* as the key for a small process-local memo of the computed records (no
-  re-read / re-deserialise while the files are unchanged).
+File fingerprints invalidate responses as evaluation appends or replaces source
+caches. Only serialized bytes are retained, so the byte budget measures the cached
+payload and hits avoid rebuilding both the DataFrame and the JSON representation.
 """
 
 import hashlib
 import os
 import threading
-from typing import Any, List, Optional, Tuple
+from collections import OrderedDict
+from typing import Optional, Tuple
 
 # (mtime_ns, ctime_ns, size) per source file, in a fixed order.
 Fingerprint = Tuple[Tuple[str, int, int, int], ...]
 
-# cache key -> (fingerprint, records). One entry per
-# (root, run_id, model_id, dataset, subset); replaced when the fingerprint
-# changes. Bounded in practice by the report subsets a process serves.
-_CACHE: dict[str, Tuple[Fingerprint, List[Any]]] = {}
+_MAX_CACHE_BYTES = 64 * 1024 * 1024
+_MAX_CACHE_ENTRIES = 16
+_CACHE: OrderedDict[str, Tuple[Fingerprint, bytes]] = OrderedDict()
+_CACHE_BYTES = 0
 _LOCK = threading.Lock()
 
 
@@ -55,22 +44,47 @@ def prediction_etag(cache_key: str, fingerprint: Fingerprint) -> str:
     return digest.hexdigest()
 
 
-def get_cached_records(cache_key: str, fingerprint: Fingerprint) -> Optional[List[Any]]:
-    """Return memoised records when the fingerprint matches, else ``None``."""
+def get_cached_response(cache_key: str, fingerprint: Fingerprint) -> Optional[bytes]:
+    """Return validated response bytes on a hit and release outdated entries."""
+    global _CACHE_BYTES
     with _LOCK:
         observed = _CACHE.get(cache_key)
         if observed is not None and observed[0] == fingerprint:
+            _CACHE.move_to_end(cache_key)
             return observed[1]
+        if observed is not None:
+            _CACHE_BYTES -= len(_CACHE.pop(cache_key)[1])
     return None
 
 
-def store_records(cache_key: str, fingerprint: Fingerprint, records: List[Any]) -> None:
-    """Memoise the computed records under the current fingerprint."""
+def store_response(cache_key: str, fingerprint: Fingerprint, body: bytes) -> None:
+    """Memoise a validated response, evicting least recently used payloads."""
+    global _CACHE_BYTES
     with _LOCK:
-        _CACHE[cache_key] = (fingerprint, records)
+        previous = _CACHE.pop(cache_key, None)
+        if previous is not None:
+            _CACHE_BYTES -= len(previous[1])
+        if len(body) > _MAX_CACHE_BYTES or _MAX_CACHE_ENTRIES <= 0:
+            return
+        while _CACHE and (_CACHE_BYTES + len(body) > _MAX_CACHE_BYTES or len(_CACHE) >= _MAX_CACHE_ENTRIES):
+            _, (_, evicted) = _CACHE.popitem(last=False)
+            _CACHE_BYTES -= len(evicted)
+        _CACHE[cache_key] = (fingerprint, body)
+        _CACHE_BYTES += len(body)
+
+
+def discard_prediction_cache(root: str, run_id: str, model_id: str) -> None:
+    """Release responses belonging to one deleted report, leaving other roots intact."""
+    global _CACHE_BYTES
+    prefix = f'{os.path.realpath(root)}\x00{run_id}\x00{model_id}\x00'
+    with _LOCK:
+        for key in [key for key in _CACHE if key.startswith(prefix)]:
+            _CACHE_BYTES -= len(_CACHE.pop(key)[1])
 
 
 def clear_prediction_cache() -> None:
     """Drop all cached entries. Intended for tests."""
+    global _CACHE_BYTES
     with _LOCK:
         _CACHE.clear()
+        _CACHE_BYTES = 0

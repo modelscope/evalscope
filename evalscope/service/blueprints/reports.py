@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple
 
 import plotly.express as px
 import plotly.graph_objects as go
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
 
@@ -55,10 +55,11 @@ from evalscope.service.api_models import (
     PredictionsResponse,
 )
 from evalscope.service.prediction_cache import (
-    get_cached_records,
+    discard_prediction_cache,
+    get_cached_response,
     prediction_etag,
     prediction_fingerprint,
-    store_records,
+    store_response,
 )
 from evalscope.service.report_meta_cache import (
     Fingerprint,
@@ -568,6 +569,7 @@ def delete_report(run_id: str, model_id: str) -> ResponseReturnValue:
             shutil.rmtree(run_dir)
         else:
             _refresh_html_report(reports_dir)
+        discard_prediction_cache(root_real, ref.run_id, ref.model_id)
         logger.info(f'Deleted eval report {ref.key} under {run_dir}')
         return json_response(
             DeleteReportResponse,
@@ -680,20 +682,28 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         work_dir = os.path.join(root, ref.run_id)
 
         # Fingerprint the source cache files so an unchanged subset revalidates
-        # as 304 (no re-transfer of a large body) and the computed records are
-        # reused instead of re-read and re-deserialised on every browse.
+        # as 304 before any expensive loading or response serialization.
         review_path, prediction_path = get_prediction_source_paths(work_dir, ref.model_id, dataset_name, subset_name)
         fingerprint = prediction_fingerprint(review_path, prediction_path)
         cache_key = f'{os.path.realpath(root)}\x00{ref.run_id}\x00{ref.model_id}\x00{dataset_name}\x00{subset_name}'
         etag = prediction_etag(cache_key, fingerprint)
 
-        records = get_cached_records(cache_key, fingerprint)
-        if records is None:
-            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-            records = _df_to_records(df)
-            store_records(cache_key, fingerprint, records)
+        if request.if_none_match.contains_weak(etag) and os.path.isfile(review_path):
+            resp = Response()
+            resp.set_etag(etag)
+            resp.headers['Cache-Control'] = 'no-cache'
+            return resp.make_conditional(request)
 
-        resp = json_response(PredictionsResponse, {'predictions': records})
+        body = get_cached_response(cache_key, fingerprint)
+        if body is None:
+            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+            resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
+            if prediction_fingerprint(review_path, prediction_path) == fingerprint:
+                store_response(cache_key, fingerprint, resp.get_data())
+        else:
+            # These bytes were validated and serialized by json_response on a cache miss.
+            resp = Response(body, mimetype='application/json')
+
         resp.set_etag(etag)
         resp.headers['Cache-Control'] = 'no-cache'
         return resp.make_conditional(request)
