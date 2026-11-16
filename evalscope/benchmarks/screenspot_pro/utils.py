@@ -116,23 +116,37 @@ def normalize_bbox(bbox: Sequence[float], width: int, height: int) -> List[float
     return [x1 / width, y1 / height, x2 / width, y2 / height]
 
 
-def to_normalized_point(point: Sequence[float], image_size: Sequence[int]) -> Tuple[float, float]:
-    """Map a parsed point onto the normalized [0, 1] space, inferring the convention.
+def to_normalized_point(
+    point: Sequence[float],
+    image_size: Sequence[int],
+    coordinate_format: str = 'auto',
+) -> Tuple[float, float]:
+    """Map a parsed point onto the normalized [0, 1] space.
 
-    The convention is inferred from the coordinate magnitude: values inside [0, 1] are
-    already normalized, values up to 1000 use the thousandths grid that many VLMs emit,
-    and anything larger is read as pixels of the image the model received.  Every
-    ScreenSpot-Pro screenshot is at least 1920 px wide, so genuine pixel answers land
-    well above the thousandths range and are classified correctly.
+    With ``coordinate_format='auto'`` the convention is inferred from the coordinate
+    magnitude: values inside [0, 1] are already normalized, values up to 1000 use the
+    thousandths grid that many VLMs emit, and anything larger is read as pixels of the
+    image the model received.  Magnitude cannot tell pixels from thousandths when both
+    are at most 1000: a pixel point in the top-left 1000x1000 px of a screenshot, or any
+    pixel point on an image ``max_image_bytes`` downscaled to 1000 px or less, is read
+    as thousandths.  Models with a fixed convention should name it explicitly.
 
     Args:
         point (Sequence[float]): The parsed ``(x, y)`` point.
         image_size (Sequence[int]): ``(width, height)`` of the image sent to the model.
+        coordinate_format (str): ``auto``, ``normalized``, ``thousandths`` or ``pixel``.
 
     Returns:
         Tuple[float, float]: The point expressed in normalized [0, 1] coordinates.
     """
     x, y = point[0], point[1]
+    if coordinate_format == 'normalized':
+        return x, y
+    if coordinate_format == 'thousandths':
+        return x / _THOUSANDTHS_SCALE, y / _THOUSANDTHS_SCALE
+    if coordinate_format == 'pixel':
+        width, height = image_size
+        return x / width, y / height
     if x <= 1 and y <= 1:
         return x, y
     if x <= _THOUSANDTHS_SCALE and y <= _THOUSANDTHS_SCALE:
