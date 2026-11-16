@@ -81,6 +81,20 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='perf.throughput.tokens_per_second',
         metric_name=Metrics.INPUT_TOKEN_THROUGHPUT,
     ),
+    # --- multi-device serving: throughput per declared device (higher is better) ----------
+    Metrics.OUTPUT_THROUGHPUT_PER_DEVICE: MetricEntry(
+        baseline='perf.throughput.tokens_per_second',
+        metric_name=Metrics.OUTPUT_THROUGHPUT_PER_DEVICE,
+    ),
+    Metrics.TOTAL_THROUGHPUT_PER_DEVICE: MetricEntry(
+        baseline='perf.throughput.tokens_per_second',
+        metric_name=Metrics.TOTAL_THROUGHPUT_PER_DEVICE,
+    ),
+    # --- device count: describes the serving topology, no direction ------------------------
+    Metrics.DEVICE_COUNT: MetricEntry(
+        baseline='diagnostic.count.items',
+        metric_name=Metrics.DEVICE_COUNT,
+    ),
     # --- latency: lower is better ---------------------------------------------------------
     Metrics.AVERAGE_LATENCY: MetricEntry(
         baseline='perf.latency.seconds',

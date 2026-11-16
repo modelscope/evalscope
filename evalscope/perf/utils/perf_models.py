@@ -64,6 +64,11 @@ class BenchmarkSummary(BaseModel):
     avg_pd_handoff_overhead: Optional[float] = Field(None, alias=Metrics.AVERAGE_PD_HANDOFF_OVERHEAD)
     avg_output_tokens: float = Field(0.0, alias=Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST)
 
+    # --- Multi-device serving (declared via --device-count) ---
+    device_count: Optional[int] = Field(None, alias=Metrics.DEVICE_COUNT)
+    output_throughput_per_device: Optional[float] = Field(None, alias=Metrics.OUTPUT_THROUGHPUT_PER_DEVICE)
+    total_throughput_per_device: Optional[float] = Field(None, alias=Metrics.TOTAL_THROUGHPUT_PER_DEVICE)
+
     # --- Embedding / Rerank-specific ---
     input_token_throughput: float = Field(0.0, alias=Metrics.INPUT_TOKEN_THROUGHPUT)
 
@@ -87,6 +92,7 @@ class BenchmarkSummary(BaseModel):
         'failed_requests',
         'stream_requests',
         'non_stream_requests',
+        'device_count',
         mode='before',
     )
     @classmethod
@@ -141,6 +147,10 @@ class BenchmarkSummary(BaseModel):
         if self.stream_requests > 0 and self.non_stream_requests > 0:
             rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
         rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(Metrics.REQUEST_THROUGHPUT, self.request_throughput)))
+        # Declared serving device count (--device-count): always shown together with
+        # the per-device rows so "per-device" never reads without its denominator.
+        if self.device_count is not None:
+            rows.append((Metrics.DEVICE_COUNT, _fmt(Metrics.DEVICE_COUNT, self.device_count)))
 
         # ── Latency ──
         rows.append(('── Latency ──', ''))
@@ -197,6 +207,20 @@ class BenchmarkSummary(BaseModel):
         if self.total_token_throughput:
             rows.append(
                 (Metrics.TOTAL_TOKEN_THROUGHPUT, _fmt(Metrics.TOTAL_TOKEN_THROUGHPUT, self.total_token_throughput))
+            )
+        if self.output_throughput_per_device is not None:
+            rows.append(
+                (
+                    Metrics.OUTPUT_THROUGHPUT_PER_DEVICE,
+                    _fmt(Metrics.OUTPUT_THROUGHPUT_PER_DEVICE, self.output_throughput_per_device),
+                )
+            )
+        if self.total_throughput_per_device is not None:
+            rows.append(
+                (
+                    Metrics.TOTAL_THROUGHPUT_PER_DEVICE,
+                    _fmt(Metrics.TOTAL_THROUGHPUT_PER_DEVICE, self.total_throughput_per_device),
+                )
             )
         if self.input_token_throughput:
             rows.append(

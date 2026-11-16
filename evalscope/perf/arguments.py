@@ -139,6 +139,15 @@ class Arguments(BaseArgument):
     exclude_warmup_overlap: bool = False
     """Exclude requests sent while warmup is still in flight (single-turn closed-loop only)."""
 
+    device_count: Optional[int] = None
+    """Total number of inference devices serving the endpoint, i.e.
+    ``tensor_parallel_size × pipeline_parallel_size × replica_count`` — not the
+    tensor-parallel size alone (a replicated deployment with 2-way TP and 4 replicas
+    reports 8). When declared, the summary reports throughput per device derived from
+    the aggregate throughputs; undeclared (default ``None``) records nothing and
+    renders no per-device rows. A client-side load tool cannot detect the serving
+    side's topology, so the count is declared, never guessed."""
+
     @property
     def warmup_count(self) -> int:
         """Resolved number of warmup requests/conversations.
@@ -529,6 +538,13 @@ class Arguments(BaseArgument):
             raise ValueError('--num-workers must be >= 0')
         return v
 
+    @field_validator('device_count', mode='after')
+    @classmethod
+    def _validate_device_count(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError('--device-count must be >= 1')
+        return v
+
     @field_validator('scenario', mode='before')
     @classmethod
     def _parse_scenario(cls, value: Any) -> Optional[AgentXScenario]:
@@ -866,6 +882,12 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
              'completion (multi-turn finishes every remaining turn of any already-claimed trace, '
              'matching trie). Warmup ignores this. When both --number and --duration are set, '
              'whichever limit is reached first ends the run.')  # noqa: E501
+    parser.add_argument(
+        '--device-count', type=int, default=None,
+        help='Total number of inference devices serving the endpoint '
+             '(tensor-parallel × pipeline-parallel × replicas; not the TP size alone). '
+             'When set, the summary adds throughput-per-device rows derived from the '
+             'aggregate throughputs. Default: not declared, nothing is recorded.')  # noqa: E501
 
 
 def _add_sla_arguments(parser: argparse.ArgumentParser) -> None:

@@ -47,6 +47,11 @@ class Metrics:
     AVERAGE_PD_HANDOFF_OVERHEAD = 'Avg PD Handoff Overhead (ms)'
     AVERAGE_OUTPUT_TOKENS_PER_REQUEST = 'Avg Output Tokens'
 
+    # Multi-device serving (declared via --device-count)
+    DEVICE_COUNT = 'Device Count'
+    OUTPUT_THROUGHPUT_PER_DEVICE = 'Output Throughput per Device (tok/s)'
+    TOTAL_THROUGHPUT_PER_DEVICE = 'Total Throughput per Device (tok/s)'
+
     # Embedding / Rerank-specific
     INPUT_TOKEN_THROUGHPUT = 'Input Throughput (tok/s)'
 

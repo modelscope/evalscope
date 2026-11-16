@@ -347,6 +347,10 @@ def build_summary_items(
         ('Request Throughput (req/s)', _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput)),
         ('Avg Latency (s)', _cell(Metrics.AVERAGE_LATENCY, s.avg_latency)),
     ]
+    # Declared serving device count (--device-count): shown with the per-device
+    # rows so "per-device" never reads without its denominator.
+    if s.device_count is not None:
+        base.append(('Device Count', _cell(Metrics.DEVICE_COUNT, s.device_count)))
 
     if is_embedding_flag:
         extra = [
@@ -357,6 +361,26 @@ def build_summary_items(
         extra = [
             ('Output Tok Throughput (tok/s)', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput)),
             ('Total Tok Throughput (tok/s)', _cell(Metrics.TOTAL_TOKEN_THROUGHPUT, s.total_token_throughput)),
+            *(
+                [
+                    (
+                        'Output Tok per Device (tok/s)',
+                        _cell(Metrics.OUTPUT_THROUGHPUT_PER_DEVICE, s.output_throughput_per_device),
+                    )
+                ]
+                if s.output_throughput_per_device is not None
+                else []
+            ),
+            *(
+                [
+                    (
+                        'Total Tok per Device (tok/s)',
+                        _cell(Metrics.TOTAL_THROUGHPUT_PER_DEVICE, s.total_throughput_per_device),
+                    )
+                ]
+                if s.total_throughput_per_device is not None
+                else []
+            ),
             ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
             ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
             ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),

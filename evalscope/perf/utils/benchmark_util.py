@@ -176,6 +176,8 @@ class MetricsAccumulator:
     concurrency: int = 0
     rate: float = 0.0
     enable_pd_metrics: bool = False
+    # Declared total devices serving the endpoint (--device-count); None = not declared.
+    device_count: Optional[int] = None
 
     # --- Request counts ---
     n_total: int = 0
@@ -355,6 +357,14 @@ class MetricsAccumulator:
         def _safe_div(numerator, denominator, default=-1):
             return numerator / denominator if denominator else default
 
+        # Per-device throughput (optional --device-count): a pure division of the
+        # aggregate throughputs by the declared device count. Undeclared (None) or
+        # missing aggregates stay None — never 0 or a fake rescale — so nothing
+        # untrue is recorded and nothing is rendered downstream.
+        device_count = self.device_count
+        output_per_device: Optional[float] = None
+        total_per_device: Optional[float] = None
+
         try:
             avg_latency = _safe_div(self.total_latency, n)
             # Streaming-specific metrics use stream-only denominators to avoid
@@ -397,6 +407,11 @@ class MetricsAccumulator:
             avg_input_token_throughput = _safe_div(self.total_prompt_tokens, t)
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
+            if device_count is not None:
+                if avg_output_token_throughput >= 0:
+                    output_per_device = avg_output_token_throughput / device_count
+                if avg_total_token_throughput >= 0:
+                    total_per_device = avg_total_token_throughput / device_count
             avg_turns_per_request = _safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1
             # Global KV-cache hit rate over requests with server-reported cache
             # information. Missing values remain unknown and stay out of the ratio.
@@ -441,10 +456,12 @@ class MetricsAccumulator:
             avg_turns_per_request = avg_cached_percent = avg_decoded_tokens_per_iter = -1
             cache_request_coverage_percent = cache_token_coverage_percent = -1
             avg_first_turn_ttft = avg_subsequent_turn_ttft = -1
+            output_per_device = total_per_device = None
 
         return BenchmarkMetrics(
             concurrency=self.concurrency,
             rate=self.rate,
+            device_count=device_count,
             total_requests=self.n_total,
             succeed_requests=self.n_success,
             failed_requests=self.n_failed,
@@ -464,6 +481,8 @@ class MetricsAccumulator:
             avg_input_token_throughput=avg_input_token_throughput,
             avg_output_token_throughput=avg_output_token_throughput,
             avg_total_token_throughput=avg_total_token_throughput,
+            output_throughput_per_device=output_per_device,
+            total_throughput_per_device=total_per_device,
             avg_turns_per_request=avg_turns_per_request,
             avg_cached_percent=avg_cached_percent,
             cache_request_coverage_percent=cache_request_coverage_percent,
@@ -535,6 +554,14 @@ class BenchmarkMetrics:
     avg_input_token_throughput: float = -1
     avg_output_token_throughput: float = -1
     avg_total_token_throughput: float = -1
+
+    # --- Per-device throughput (declared via --device-count) ---
+    device_count: Optional[int] = None
+    """Declared total devices serving the endpoint (TP × PP × replicas). None = not declared."""
+    output_throughput_per_device: Optional[float] = None
+    """Aggregate output throughput divided by the declared device count. None = undeclared or aggregate missing."""
+    total_throughput_per_device: Optional[float] = None
+    """Aggregate total throughput divided by the declared device count. None = undeclared or aggregate missing."""
 
     # --- Multi-turn ---
     avg_turns_per_request: float = -1
@@ -609,6 +636,14 @@ class BenchmarkMetrics:
             Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency * 1000, 2),
             Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, r),
         }
+        # Per-device rows exist only when the device count was declared (--device-count);
+        # undeclared runs serialize no new keys, so their payload shape is unchanged.
+        if self.device_count is not None:
+            fields[Metrics.DEVICE_COUNT] = self.device_count
+            if self.output_throughput_per_device is not None:
+                fields[Metrics.OUTPUT_THROUGHPUT_PER_DEVICE] = round(self.output_throughput_per_device, r)
+            if self.total_throughput_per_device is not None:
+                fields[Metrics.TOTAL_THROUGHPUT_PER_DEVICE] = round(self.total_throughput_per_device, r)
         if enable_pd_metrics:
             fields.update(self._build_pd_handoff_fields())
         return fields

@@ -48,6 +48,7 @@ async def statistic_benchmark_metric(
         concurrency=args.parallel,
         rate=args.rate,
         enable_pd_metrics=args.enable_pd_metrics,
+        device_count=args.device_count,
     )
     trace_acc = TraceAccumulator()
     workload_timeline = WorkloadTimeline()
