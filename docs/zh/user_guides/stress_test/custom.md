@@ -36,7 +36,7 @@ for row in rows:
 ```
 
 ## 自定义请求 API
-目前内置支持 `openai` 和 `dashscope`。要扩展 API，请继承 `ApiPluginBase` 或 `DefaultApiPlugin`，并使用 `@register_api("api名称")` 注册插件。必须实现以下方法：
+目前内置支持 `openai`。使用 DashScope 时，请选择 `--api openai` 并配置其 OpenAI 兼容端点，例如 `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`；不再提供独立的原生 `dashscope` 压测 API。要扩展 API，请继承 `ApiPluginBase` 或 `DefaultApiPlugin`，并使用 `@register_api("api名称")` 注册插件。必须实现以下方法：
 
 - build_request(messages, param) -> Dict  
   根据输入构造请求体，使用 `param.model`、`param.max_tokens`、`param.temperature` 等参数。
@@ -48,7 +48,7 @@ for row in rows:
   发送请求并收集响应与时延数据。若自定义 API 与 OpenAI 兼容（JSON + SSE），推荐继承 `DefaultApiPlugin` 直接复用其 HTTP 与流式处理逻辑，仅需实现 `build_request`、`parse_responses`。
 
 - set_request_max_tokens(request, max_tokens) -> None （可选）  
-  将每请求的输出上限写到你的协议所期望的位置。默认写顶层 `max_tokens`；若你的 API 将其嵌套或改名（如 DashScope 用 `parameters.max_tokens`、OpenAI Responses 用 `max_output_tokens`），则需覆写。多轮的逐轮上限经此钩子写入，覆写不正确会导致其被静默忽略。
+  将每请求的输出上限写到你的协议所期望的位置。默认写顶层 `max_tokens`；若你的 API 将其嵌套或改名（如 OpenAI Responses 用 `max_output_tokens`），则需覆写。多轮的逐轮上限经此钩子写入，覆写不正确会导致其被静默忽略。
 
 示例：继承 `DefaultApiPlugin` 最小实现（推荐）
 
