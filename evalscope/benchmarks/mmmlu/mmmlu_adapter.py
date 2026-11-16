@@ -99,8 +99,12 @@ class MMMLUAdapter(MultiChoiceAdapter):
         )
 
     def format_prompt_template(self, sample: Sample) -> str:
-        language = sample.metadata.get('language') if sample.metadata else None
-        template = LANGUAGE_PROMPT_MAP.get(language, self.prompt_template)
+        template = self.prompt_template
+        # the default template is replaced by the subset's language; a prompt_template
+        # passed in dataset_args is used as given
+        if template == MultipleChoiceTemplate.SINGLE_ANSWER_COT:
+            language = sample.metadata.get('language') if sample.metadata else None
+            template = LANGUAGE_PROMPT_MAP.get(language, template)
         return prompt(
             question=sample.input,
             choices=Choices(sample.choices),
