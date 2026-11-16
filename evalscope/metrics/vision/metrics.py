@@ -415,3 +415,156 @@ class MPS(T2IMetric):
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
+
+
+# ############################
+# Text Rendering Metrics #####
+# ############################
+_OCR_INSTANCES: dict = {}
+"""Module-level OCR cache so the two CVTG scorers share one PaddleOCR engine per lang."""
+
+
+def _get_cvtg_ocr(lang: str):
+    if lang not in _OCR_INSTANCES:
+        check_import('paddleocr', raise_error=True, feature_name='CVTG-2K Metric')
+        from paddleocr import PaddleOCR
+
+        _OCR_INSTANCES[lang] = PaddleOCR(use_angle_cls=True, lang=lang, show_log=False)
+    return _OCR_INSTANCES[lang]
+
+
+def _recognize_cvtg_words(image_path: str, gt_words: List[str], backend: str, lang: str) -> List[str]:
+    """Recognize the rendered words of an image; ``backend='stub'`` echoes the ground truth."""
+    if backend == 'stub':
+        return list(gt_words)
+    result = _get_cvtg_ocr(lang).ocr(image_path, cls=True) or []
+    words: List[str] = []
+    for line in result[0] or []:
+        words.extend(str(line[1][0]).lower().split())
+    return words
+
+
+@register_metric(name='CVTGWordAccuracy')
+class CVTGWordAccuracy(T2IMetric):
+    """CVTG-2K Word Accuracy: exact word match against the prompt's quoted text.
+
+    Ground-truth words are the single-quoted fragments of the prompt, matching the official
+    TextCrafter evaluator. The OCR backend loads lazily; ``backend='stub'`` echoes the
+    ground-truth words and exists for pipeline tests.
+    """
+
+    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
+        self.backend = backend
+        self.lang = lang
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        from evalscope.metrics.vision.text_render import extract_quoted_words, word_accuracy
+
+        return [
+            word_accuracy(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
+            for image_path, prompt in zip(images, texts)
+            for gt_words in [extract_quoted_words(prompt)]
+        ]
+
+
+@register_metric(name='CVTGNED')
+class CVTGNED(T2IMetric):
+    """CVTG-2K NED: word-level best-match normalized Levenshtein distance (higher is better).
+
+    Shares the OCR engine with :class:`CVTGWordAccuracy` and follows the same ground-truth
+    extraction from the prompt's quoted fragments.
+    """
+
+    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
+        self.backend = backend
+        self.lang = lang
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        from evalscope.metrics.vision.text_render import extract_quoted_words, word_level_ned
+
+        return [
+            word_level_ned(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
+            for image_path, prompt in zip(images, texts)
+            for gt_words in [extract_quoted_words(prompt)]
+        ]
+
+
+@register_metric(name='LongTextScore')
+class LongTextScore(T2IMetric):
+    """LongText-Bench Text Score: Counter-intersection match of rendered text.
+
+    Declares ``image_pair_metric`` so the adapter passes the ground-truth text (the
+    sample target) instead of the prompt. The VLM transcription backend loads lazily;
+    ``backend='stub'`` echoes the ground-truth text and exists for pipeline tests.
+    """
+
+    image_pair_metric = True
+
+    RECOGNIZE_PROMPT = (
+        'Recognize the text in the image, only reply with the text content, but avoid '
+        'repeating previously mentioned content. If no text is recognized, please reply '
+        "with 'No text recognized'."
+    )
+
+    def _init_once(
+        self, backend: str = 'qwen_vl', model: str = 'Qwen/Qwen2.5-VL-7B-Instruct', lang: str = 'en', **kwargs
+    ):
+        self.backend = backend
+        self.model_name = model
+        self.lang = lang
+        self._vlm = None
+
+    def _transcribe(self, image_path: str, gt_text: str) -> str:
+        if self.backend == 'stub':
+            # Echo the ground truth so pipeline tests exercise the full scoring path.
+            return gt_text
+        if self._vlm is None:
+            check_import(['transformers', 'qwen_vl_utils'], raise_error=True, feature_name='LongText-Bench Metric')
+            from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+
+            self._vlm = (
+                Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                    self.model_name, torch_dtype='auto', device_map='auto'
+                ),
+                AutoProcessor.from_pretrained(self.model_name),
+            )
+        vlm_model, processor = self._vlm
+        import base64
+
+        from PIL import Image
+
+        from evalscope.utils.utils import image2base64  # noqa: F401  (kept local to avoid hard dep at import time)
+
+        with Image.open(image_path) as pil_image:
+            buffered = __import__('io').BytesIO()
+            pil_image.save(buffered, format='PNG')
+            image_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        messages = [
+            {
+                'role': 'user',
+                'content': [
+                    {
+                        'type': 'image',
+                        'image': f'data:image/png;base64,{image_b64}',
+                    },
+                    {
+                        'type': 'text',
+                        'text': self.RECOGNIZE_PROMPT,
+                    },
+                ],
+            }
+        ]
+        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        inputs = processor(text=[text], images=[Image.open(image_path)], return_tensors='pt').to(vlm_model.device)
+        output = vlm_model.generate(**inputs, max_new_tokens=1024)
+        generated = output[:, inputs.input_ids.shape[1] :]
+        return processor.batch_decode(generated, skip_special_tokens=True)[0]
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Any]:
+        from evalscope.metrics.vision.text_render import text_score
+
+        return [
+            text_score(gt_text, self._transcribe(image_path, gt_text), self.lang)
+            for image_path, gt_text in zip(images, texts)
+        ]

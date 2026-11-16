@@ -28,10 +28,13 @@ _DIMENSION_VALUE = re.compile(r'[^a-z0-9]+')
 T2I_REPORT_METRIC_NAMES = {
     'BLIPv2Score': 'blipv2_score',
     'CLIPScore': 'clipscore',
+    'CVTGNED': 'cvtg_ned',
+    'CVTGWordAccuracy': 'cvtg_word_accuracy',
     'FGA_BLIP2Score': 'fga_blip2_score',
     'HPSv2.1Score': 'hps_v2_1_score',
     'HPSv2Score': 'hpsv2_score',
     'ImageRewardScore': 'image_reward_score',
+    'LongTextScore': 'text_score',
     'MPS': 'mps',
     'PickScore': 'pick_score',
     'VQAScore': 'vqa_model_score',
@@ -212,7 +215,9 @@ class Text2ImageAdapter(DefaultDataAdapter):
                     reference_image = self._resolve_reference_image(reference, meta, metric_name)
                     metric_score = metric_func(image_path, reference_image)
                 else:
-                    metric_score = metric_func(image_path, prompt)[0]
+                    # T2IMetric.__call__ already reduces apply()'s list to the single-sample
+                    # value (float or per-metric component dict); do not index it again.
+                    metric_score = metric_func(image_path, prompt)
 
                 self._record_metric_result(score, metric_name, metric_score)
             except Exception as e:
