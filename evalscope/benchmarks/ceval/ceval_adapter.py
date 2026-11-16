@@ -174,7 +174,7 @@ class CEVALAdapter(MultiChoiceAdapter):
         choices = sample.choices if sample.choices is not None else []
         choices_str = '\n'.join([f'{chr(65 + i)}. {choice}' for i, choice in enumerate(choices)])
 
-        return USER_PROMPT_TEMPLATE.format(subject=subject_name, question=sample.input, choices=choices_str)
+        return self.prompt_template.format(subject=subject_name, question=sample.input, choices=choices_str)
 
     def extract_answer(self, prediction, task_state) -> str:
         """Parse the '答案：X' line with the shared Chinese multiple-choice parser, as CMMLU does."""
