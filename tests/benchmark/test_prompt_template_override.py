@@ -82,8 +82,18 @@ def test_mmmlu_dataset_args_prompt_template_is_used(language):
 
 
 @pytest.mark.parametrize('language', ['ZH_CN', 'FR_FR'])
-def test_mmmlu_default_prompt_uses_subset_language(language):
-    adapter = _adapter('mmmlu')
+def test_mmmlu_dataset_args_default_template_is_used(language):
+    """A configured template equal to the declared default is still used as given."""
+    adapter = _adapter('mmmlu', prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT)
+    sample = Sample(input='1+1=?', choices=['1', '2', '3', '4'], target='B', metadata={'language': language})
+    prompt = adapter.format_prompt_template(sample)
+    assert prompt.startswith(MultipleChoiceTemplate.SINGLE_ANSWER_COT.split('{')[0])
+
+
+@pytest.mark.parametrize('dataset_args', [{}, {'prompt_template': None}])
+@pytest.mark.parametrize('language', ['ZH_CN', 'FR_FR'])
+def test_mmmlu_default_prompt_uses_subset_language(language, dataset_args):
+    adapter = _adapter('mmmlu', **dataset_args)
     sample = Sample(input='1+1=?', choices=['1', '2', '3', '4'], target='B', metadata={'language': language})
     prompt = adapter.format_prompt_template(sample)
     assert prompt.startswith(LANGUAGE_PROMPT_MAP[language].split('{')[0])
