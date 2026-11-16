@@ -82,7 +82,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 {
   "input": [
     {
-      "id": "2d87e94f",
+      "id": "3c262e7c",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~933.3KB]"
