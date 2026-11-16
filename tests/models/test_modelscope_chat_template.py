@@ -1,5 +1,8 @@
 from typing import Any, List
 
+import pytest
+from jinja2 import Environment
+
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.models.modelscope import ModelScopeAPI
@@ -49,3 +52,17 @@ def test_ms_chat_passes_plain_dict_messages_to_chat_template() -> None:
     assert 'metadata' not in tokenizer.conversation[1]
     # The caller's messages are not modified.
     assert isinstance(messages[0], ChatMessageSystem)
+
+
+@pytest.mark.parametrize(
+    ('message', 'field'),
+    [(ChatMessageUser(content='hello'), 'metadata'), (ChatMessageAssistant(content='hello'), 'tool_calls')],
+)
+def test_ms_chat_preserves_none_for_legacy_templates(message: Any, field: str) -> None:
+    class LegacyTokenizer:
+        chat_template = '{{ messages[0].' + field + ' is none }}'
+
+        def apply_chat_template(self, conversation: List[Any], **kwargs: Any) -> str:
+            return Environment().from_string(self.chat_template).render(messages=conversation)
+
+    assert _make_api(LegacyTokenizer()).ms_chat([message], tools=[]) == 'True'

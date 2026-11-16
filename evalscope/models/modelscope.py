@@ -286,7 +286,7 @@ class ModelScopeAPI(ModelAPI):
 
             # Chat templates take messages as plain dicts; transformers>=5.23 calls `.items()` on each one.
             chat = self.tokenizer.apply_chat_template(
-                [message.model_dump(exclude_none=True) for message in ms_messages],
+                [message.model_dump() for message in ms_messages],
                 **template_kwargs,
             )
         else:
