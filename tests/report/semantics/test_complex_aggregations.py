@@ -2,18 +2,17 @@ from itertools import count
 
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity
-from evalscope.benchmarks.hallusion_bench.hallusion_bench_adapter import HallusionBenchAdapter
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.locomo.locomo_adapter import LoCoMoAdapter
 from evalscope.benchmarks.longmemeval.longmemeval_adapter import LongMemEvalAdapter
 from evalscope.benchmarks.openai_mrcr.openai_mrcr_adapter import OPENAI_MRCR_BINS, OpenAIMRCRAdapter
+from evalscope.config import TaskConfig
 
 _sample_ids = count(1)
 
 
 def _sample(metric_name: str, value: float, **metadata) -> SampleScore:
-    """Build one scored sample. Adapters are instantiated with ``__new__``: the aggregation methods
-    under test read only ``sample_metadata``, while ``__init__`` needs a full task config.
-    """
+    """Build a scored sample with the metadata consumed by aggregation."""
     return SampleScore(
         score=Score(value={metric_name: value}, main_score_name=metric_name, metadata=metadata),
         sample_id=next(_sample_ids),
@@ -22,7 +21,7 @@ def _sample(metric_name: str, value: float, **metadata) -> SampleScore:
 
 
 def test_hallusion_aggregation_emits_structured_overall_answer_identity() -> None:
-    adapter = HallusionBenchAdapter.__new__(HallusionBenchAdapter)
+    adapter = get_benchmark('hallusion_bench', TaskConfig(datasets=['hallusion_bench']))
     scores = [_sample(
         'accuracy',
         1.0,
