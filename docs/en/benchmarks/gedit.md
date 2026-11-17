@@ -119,6 +119,9 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `language` | `str` | `en` | Language of the instruction. Choices: ['en', 'cn']. Choices: ['en', 'cn'] |
+| `local_file` | `str` | `None` | JSONL manifest of locally generated images. Relative image paths use its directory. |
+| `id_key` | `str` | `id` | Manifest field containing the benchmark sample ID. |
+| `image_key` | `str` | `image_path` | Manifest field containing the generated image path. |
 
 ## Usage
 

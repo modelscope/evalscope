@@ -388,7 +388,7 @@ def test_strict_judge_scoring_versions_are_advanced() -> None:
     assert SHARED_SCORING_VERSION == 'v1.3'
     expected_versions = {
         'deepsearchqa': 'v1.1',
-        'gedit': 'v1.1',
+        'gedit': 'v1.2',
         'job_bench': 'v1.1',
         'plawbench': 'v1.1',
     }
