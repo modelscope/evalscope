@@ -14,6 +14,11 @@ logger = get_logger()
 # Valid MCQ choice letters
 _CHOICES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
+# Option labels in a prompt: at the start of a line ('A. 10', 'A: 10', 'A) 10', '(A) 10', 'A 10')
+# or inline in parentheses ('... (A) Yes (B) No').
+_OPTION_LINE_RE = re.compile(r'^\s*\(?([A-J])(?:[.:)]|\s)', re.MULTILINE)
+_OPTION_INLINE_RE = re.compile(r'\(([A-J])\)')
+
 # ---------------------------------------------------------------------------
 # Answer-type classification
 # ---------------------------------------------------------------------------
@@ -49,16 +54,33 @@ def classify_string(s: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def extract_mcq_answer(prediction: str) -> str:
+def _offered_choices(prompt_text: str) -> List[str]:
+    """Option letters listed in the prompt, or all of A-J when none are recognised."""
+    letters = set(_OPTION_LINE_RE.findall(prompt_text)) | set(_OPTION_INLINE_RE.findall(prompt_text))
+    return sorted(letters) or list(_CHOICES)
+
+
+def extract_mcq_answer(prediction: str, prompt_text: str = '') -> str:
     """Extract a MCQ choice letter (A-J) from a model prediction.
 
     Priority order:
     1. \\boxed{X} – LaTeX boxed answer (highest priority)
-    2. Explicit keyword patterns: 'ANSWER: A', 'Answer: A', 'The answer is A', etc.
+    2. Explicit keyword patterns: 'ANSWER: A', 'Answer: A', 'The answer is A', etc. –
+       take the **last** occurrence, since models often restate or revise their answer
     3. '(X)' parenthesised letter – take the **last** occurrence to avoid matching
        option listings in the reasoning text
-    4. Last standalone uppercase letter A-J at a word boundary
+    4. Last standalone uppercase letter A-J at a word boundary, preferring the options
+       offered in ``prompt_text`` so that a word such as the pronoun 'I' is not read
+       as the answer
     5. Return the stripped prediction as-is if nothing matches
+
+    Args:
+        prediction: Raw model output string.
+        prompt_text: Question text including the options. When it lists no
+            recognisable option labels, every letter A-J counts as an option.
+
+    Returns:
+        Extracted choice letter, or the stripped prediction.
     """
     if not prediction:
         return prediction
@@ -68,16 +90,17 @@ def extract_mcq_answer(prediction: str) -> str:
     if m:
         return m.group(1).upper()
 
-    # Pattern 2: explicit keyword markers
+    # Pattern 2: explicit keyword markers — take the LAST match of a pattern so that
+    # a restated or corrected answer wins over an earlier one
     explicit_patterns = [
         r'(?:ANSWER|Answer|answer)\s*[:\-]\s*([A-J])\b',
         r'(?:The answer is|the answer is|答案[是为])\s*([A-J])\b',
         r'\b([A-J])\s*(?:is correct|is the answer)',
     ]
     for pat in explicit_patterns:
-        m = re.search(pat, prediction)
-        if m:
-            return m.group(1).upper()
+        marker_matches = re.findall(pat, prediction)
+        if marker_matches:
+            return marker_matches[-1].upper()
 
     # Pattern 3: parenthesised letter (A) — take the LAST match so that option
     # listings like "(A) cat  (B) dog  …" do not shadow the model's final answer
@@ -85,15 +108,22 @@ def extract_mcq_answer(prediction: str) -> str:
     if paren_matches:
         return paren_matches[-1].upper()
 
-    # Pattern 4: last isolated letter A-J (word boundary)
+    # Pattern 4: last isolated letter (word boundary) that is one of the offered options;
+    # a capital that is not an option, such as the pronoun 'I', is not the model's choice
     matches = re.findall(r'\b([A-J])\b', prediction)
+    options = _offered_choices(prompt_text)
+    offered = [x for x in matches if x in options]
+    if offered:
+        return offered[-1].upper()
     if matches:
+        # No offered letter: keep the last letter rather than passing the raw text to the
+        # nearest-letter fallback in judge_choice
         return matches[-1].upper()
 
     return prediction.strip()
 
 
-def extract_answer_with_classify(prediction: str, reference: str) -> str:
+def extract_answer_with_classify(prediction: str, reference: str, prompt_text: str = '') -> str:
     """Dispatch answer extraction based on the type of the reference answer.
 
     Uses :func:`classify_string` on the reference to select the right strategy:
@@ -109,12 +139,14 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
     Args:
         prediction: Raw model output string.
         reference: Ground-truth answer string.
+        prompt_text: Question text including the options, passed to
+            :func:`extract_mcq_answer`.
 
     Returns:
         Extracted or raw prediction string.
     """
     if classify_string(reference) == 1:
-        return extract_mcq_answer(prediction)
+        return extract_mcq_answer(prediction, prompt_text)
     return prediction
 
 

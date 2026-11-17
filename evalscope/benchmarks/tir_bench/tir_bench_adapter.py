@@ -52,7 +52,7 @@ diverse task categories requiring spatial, compositional, and multi-step visual 
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='tir_bench',
         pretty_name='TIR-Bench',
         dataset_id='evalscope/TIR-Bench',
@@ -177,9 +177,10 @@ class TIRBenchAdapter(VisionLanguageAdapter):
         - **ocr**: full prediction is returned unchanged; scoring uses substring
           match on the raw response.
         - **type 1** (alphabetic / MCQ letter): :func:`extract_mcq_answer` is
-          called.  It handles ``\\boxed{X}``, ``Answer: X`` markers, and
-          ``(X)`` parenthesised letters (always taking the *last* occurrence to
-          avoid being confused by option listings in the reasoning text).
+          called with the prompt text.  It handles ``\\boxed{X}``, ``Answer: X``
+          markers, and ``(X)`` parenthesised letters (always taking the *last*
+          occurrence to avoid being confused by option listings in the reasoning
+          text), and prefers a bare letter that is one of the prompt's options.
         - **type 2 / 3 / 4** (integer / float / composite such as ``[2, 3]``):
           the raw prediction is returned so that the task-specific scoring
           helpers in :meth:`match_score` (``judge_int``, ``judge_float``,
@@ -192,7 +193,7 @@ class TIRBenchAdapter(VisionLanguageAdapter):
 
         from .utils import extract_answer_with_classify
 
-        return extract_answer_with_classify(prediction, task_state.target)
+        return extract_answer_with_classify(prediction, task_state.target, task_state.input_text or '')
 
     # ------------------------------------------------------------------
     # Scoring
