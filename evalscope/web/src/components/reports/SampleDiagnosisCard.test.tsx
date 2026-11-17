@@ -68,4 +68,8 @@ it('shows only grounded proposals and preserves Unicode citation boundaries', ()
   expect(container.textContent).toContain('References are locatable')
   rerender(<LocaleProvider><SampleDiagnosisCard diagnosis={{ ...diagnosis, llm_status: 'invalid_evidence' }} /></LocaleProvider>)
   expect(screen.queryByText('Calculation omits the final factor.')).not.toBeInTheDocument()
+  rerender(<LocaleProvider><SampleDiagnosisCard diagnosis={{ ...diagnosis, llm_status: 'invalid_evidence', context_omitted: true,
+    sources: [{ ...diagnosis.sources[0], id: 'omitted-content', text: 'Not analyzed: image.' }],
+  }} /></LocaleProvider>)
+  expect(screen.getByText(/Media, internal data or protected content was not included/)).toBeInTheDocument()
 })

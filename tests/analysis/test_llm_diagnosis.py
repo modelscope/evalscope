@@ -204,6 +204,11 @@ def test_unknown_taxonomy_is_a_contract_error() -> None:
     d=verdict().model_dump()
     d['failure_type']='Output truncated'
     assert not OutputContract(schema_model=LLMDiagnosis).parse(json.dumps(d)).ok
+    d = verdict().model_dump()
+    d['gold_suspect'] = True
+    assert OutputContract(schema_model=LLMDiagnosis).parse(json.dumps(d)).ok
+    d['secondary_types'] = ['gold_suspect']
+    assert not OutputContract(schema_model=LLMDiagnosis).parse(json.dumps(d)).ok
 
 
 def test_narrative_references_are_rendered_once_and_labels_require_taxonomy_ids() -> None:
@@ -488,3 +493,117 @@ def test_summary_failure_preserves_sample_diagnosis_and_resumes_without_reanalyz
     assert resumed.cost.calls == resumed.cost.cached_calls == 1
     assert sum('Summarize evaluation' not in prompt for prompt in calls) == 1
     assert (root / 'reviews/m/demo_default.jsonl').read_bytes() == original
+
+
+@pytest.mark.parametrize('include_trace,redacted,expected', [(True, False, True), (False, False, False), (True, True, False)])
+@pytest.mark.parametrize('agent', [False, True])
+def test_saved_reasoning_is_citable_and_omissions_are_explicit(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, include_trace: bool, redacted: bool, expected: bool, agent: bool,
+) -> None:
+    from evalscope.api.agent.trace import AgentTrace, AgentTraceEvent
+    from evalscope.api.messages import ChatMessageAssistant
+
+    row = review(0)
+    row.messages[-1] = ChatMessageAssistant(content=[
+        {'type': 'reasoning', 'reasoning': 'I calculate 2 + 2 = 5.', 'redacted': redacted},
+        {'type': 'text', 'text': 'ANSWER: B'},
+    ])
+    if agent:
+        row.agent_trace = AgentTrace(events=[AgentTraceEvent(type='model_generate', step=4, message_id=row.messages[-1].id)])
+    calls = []
+    d = verdict().model_copy(update={'evidence': [EvidenceReference(source_id='reasoning:1:0', quote='2 + 2 = 5')]})
+    fake_model(monkeypatch, lambda prompt, n: json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+               if 'Summarize evaluation' in prompt else d.model_dump_json(), calls)
+    root = make_run(rows=[row])
+    report = diagnose_benchmark(str(root), 'm', 'demo', options(include_trace=include_trace))
+    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    assert ('I calculate 2 + 2 = 5.' in calls[0]) is expected
+    assert persisted.context_omitted is (not expected)
+    if expected:
+        assert report.coverage.diagnosed_ok == 1
+        assert persisted.llm.evidence[0].quote == '2 + 2 = 5'
+        source = next(s for s in persisted.sources if s.id == 'reasoning:1:0')
+        assert source.message_index == 1 and source.step == (4 if agent else None)
+    else:
+        assert persisted.llm_status == 'invalid_evidence'
+
+
+@pytest.mark.parametrize('media', [
+    {'type': 'image', 'image': '/not-read/image.png'},
+    {'type': 'audio', 'audio': '/not-read/audio.wav', 'format': 'wav'},
+    {'type': 'video', 'video': '/not-read/video.mp4', 'format': 'mp4'},
+    {'type': 'data', 'data': {'secret_payload': 'MUST_NOT_SEND'}},
+])
+def test_media_is_not_silently_treated_as_complete_text_context(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, media: dict,
+) -> None:
+    from evalscope.api.messages import ChatMessageUser
+
+    row = review(0)
+    row.messages[0] = ChatMessageUser(content=[{'type': 'text', 'text': 'Inspect this input.'}, media])
+    calls = []
+    fake_model(monkeypatch, lambda prompt, n: json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+               if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls)
+    root = make_run(rows=[row])
+    diagnose_benchmark(str(root), 'm', 'demo', options())
+    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    assert persisted.context_omitted
+    note = next(s for s in persisted.sources if s.id == 'omitted-content')
+    assert media['type'] in note.text
+    assert '/not-read/' not in calls[0] and 'MUST_NOT_SEND' not in calls[0]
+
+
+def test_summary_considers_all_valid_hypotheses_instead_of_the_display_example_limit(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evalscope.analysis.llm import summarize
+
+    root = make_run()
+    report = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace={'use_providers': False}))
+    rows = []
+    for i in range(60):
+        row = sample(i)
+        row.llm = verdict().model_copy(update={'failure_type': 'environment_failure' if i == 59 else 'reasoning_error'})
+        row.llm_status = 'ok'
+        row.sources = [DiagnosticSource(id='m:1', text='ANSWER: B')]
+        rows.append(row)
+    calls = []
+    fake_model(monkeypatch, lambda prompt, n: json.dumps({'findings': [], 'recommendations': [], 'limitations': []}), calls)
+    summarize(report, rows, options(max_examples=1, max_input_chars=2000), root, False, lambda *a: None)
+    payload, _ = json.JSONDecoder().raw_decode(calls[0][calls[0].index('{"facts":'):])
+    assert len(json.dumps(payload, ensure_ascii=False)) <= 2000
+    counts = payload['inspected_hypotheses']
+    assert counts == {'reasoning_error': 59, 'environment_failure': 1}
+    assert {h['hypothesis']['failure_type'] for h in payload['sample_hypotheses']} == set(counts)
+    assert any(h['sample']['index'] == 59 for h in payload['sample_hypotheses'])
+
+
+def test_unknown_continuous_outcomes_are_not_silently_counted_as_failure_candidates(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = review(0, value=0.6)
+    calls = []
+    fake_model(monkeypatch, lambda *a: pytest.fail('No failure candidates'), calls)
+    root = make_run(rows=[row])
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert report.coverage.selected == 0 and report.coverage.outcome_unknown == 1
+    assert 'selection-outcome-unknown' in report.coverage.skipped_facts
+
+
+def test_low_rate_failures_remain_summary_sources_without_valid_model_hypotheses(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evalscope.analysis.llm import summarize
+
+    root = make_run(rows=[review(0)] + [review(i, 1, output='ANSWER: A', prediction='A') for i in range(1, 50)])
+    report = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace={'use_providers': False}))
+    calls = []
+    fake_model(monkeypatch, lambda *args: json.dumps({
+        'findings': [{'text': 'One of fifty tasks did not pass; its cause remains unverified.', 'refs': ['F-task-failure']}],
+        'recommendations': [], 'limitations': [],
+    }), calls)
+    summarize(report, [], options(), root, False, lambda *a: None)
+    payload, _ = json.JSONDecoder().raw_decode(calls[0][calls[0].index('{"facts":'):])
+    fact = next(f for f in payload['facts'] if f['id'] == 'F-task-failure')
+    assert fact['numerator'] == 1 and fact['denominator'] == 50
+    assert payload['sample_hypotheses'] == [] and report.narrative_status == 'ok'

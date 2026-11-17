@@ -50,6 +50,29 @@ def is_choice_letter(text: str) -> bool:
     return len(value) == 1 and value.isascii() and value.isupper()
 
 
+def has_nontext_output(record: ReviewResult) -> bool:
+    """Media and structured outputs are not eligible for text-only generation checks."""
+    return any(
+        part.type not in ('text', 'reasoning')
+        for message in record.messages
+        if message.role == 'assistant' and isinstance(message.content, list)
+        for part in message.content
+    )
+
+
+def unsupported_content(record: ReviewResult) -> List[str]:
+    """List content omitted from text analysis without exposing media or protected reasoning."""
+    return sorted(
+        {
+            'redacted_reasoning' if part.type == 'reasoning' else part.type
+            for message in record.messages
+            if isinstance(message.content, list)
+            for part in message.content
+            if part.type not in ('text', 'reasoning') or (part.type == 'reasoning' and part.redacted)
+        }
+    )
+
+
 def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisConfig) -> BenchmarkInput:
     """Read JSONL by physical lines; Unicode line separators inside strings are valid data."""
     root = Path(run_dir)

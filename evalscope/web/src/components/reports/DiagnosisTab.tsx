@@ -253,6 +253,7 @@ function AnalysisInformation({ report }: { report: DiagnosisReport }) {
           </div>)}
         </dl>
         {modelAnalysis && <p className="text-xs leading-relaxed text-[var(--text-muted)]">{t('diagnosis.reviewScopeNotice')}</p>}
+        {modelAnalysis && coverage.selection_scope === 'failed' && coverage.outcome_unknown > 0 && <p className="text-xs leading-relaxed text-[var(--text-muted)]">{t('diagnosis.unknownOutcomeScopeNotice')}</p>}
         {statuses.length > 0 && modelAnalysis && <p className="text-xs text-[var(--text-muted)]">{statuses.map(([status, count]) => `${t(`diagnosis.llmStatus.${status}`)} ${count}`).join(' · ')}</p>}
         {report.self_evaluation && modelAnalysis && <p className="text-xs text-[var(--warning-text)]">{t('diagnosis.selfEvaluation')}</p>}
       </div>

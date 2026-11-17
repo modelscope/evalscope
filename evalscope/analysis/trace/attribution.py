@@ -115,7 +115,7 @@ def apply_attribution(findings: List[Finding], rules: CompiledRules) -> None:
 def resolve_outcome(
     view: TraceView, signals: ProviderSignals, config: TraceAnalysisConfig, findings: List[Finding]
 ) -> Outcome:
-    """Usable provider outcome first, then a binary score, then a configured threshold."""
+    """Use provider outcomes, explicit thresholds, then the main score's binary fallback."""
     refused = any(f.category == FindingCategory.REFUSAL for f in findings)
     if signals.outcome is not None and view.score_status in _USABLE_STATUSES:
         outcome = signals.outcome.model_copy(update={'source': 'provider'})
@@ -132,9 +132,6 @@ def resolve_outcome(
     direction = config.outcome_directions.get(view.ref.benchmark, 'higher_is_better')
     if direction == 'none':
         return outcome
-    if all(value in (0.0, 1.0) for value in view.score_value.values()):
-        outcome.task_success, outcome.source = main == (0.0 if direction == 'lower_is_better' else 1.0), 'binary_score'
-        return outcome
     for metric, threshold in (config.outcome_thresholds.get(view.ref.benchmark) or {}).items():
         if metric in view.score_value:
             outcome.task_success = (
@@ -143,7 +140,9 @@ def resolve_outcome(
                 else view.score_value[metric] >= threshold
             )
             outcome.source = 'threshold'
-            break
+            return outcome
+    if main in (0.0, 1.0):
+        outcome.task_success, outcome.source = main == (0.0 if direction == 'lower_is_better' else 1.0), 'binary_score'
     return outcome
 
 

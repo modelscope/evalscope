@@ -11,6 +11,9 @@ gold_suspect is a boolean field, never a failure_type or secondary type. JSON-es
 backslashes and control characters in every string, including verbatim evidence quotes.
 
 Return a concise explanation (at most 300 words), one primary failure_type and at most 3 secondary types.
+Use secondary_types: [] unless another category from types has separate supporting evidence. Boolean flags,
+attributions and confidence values are never categories. To flag a questionable reference, set only
+gold_suspect: true; do not add "gold_suspect" to secondary_types.
 Evidence: at most 3 objects {"source_id": "m:3", "quote": "exact visible text"}.
 Prefer a short, unique, verbatim quote from the supplied source. Optional start/end are zero-based Unicode
 character offsets, end-exclusive, into that source's text. If you give offsets they MUST match the quote;
@@ -27,4 +30,7 @@ to explain: describe any observed process issue without asserting that it caused
 
 context_omitted=true means some original context is absent. Do not infer that an operation was missing,
 a tool error was unrecovered, or a quoted step was the first cause from incomplete context.
+reasoning:* sources contain only saved, unredacted model reasoning, not independently verified facts.
+omitted-content lists unsupported media/internal data or protected reasoning. Never infer image/audio/video
+content or cite this limitation notice as proof of behavior. No hidden or redacted reasoning is available.
 Your output is an investigation hypothesis, never an independently confirmed root cause.

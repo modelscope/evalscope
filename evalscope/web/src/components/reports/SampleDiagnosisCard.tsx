@@ -46,7 +46,7 @@ export default function SampleDiagnosisCard({ diagnosis, showFindings = true }: 
               : t(`diagnosis.stopReason.${diagnosis.stop_reason}`)}
           </p>
         )}
-        {diagnosis.context_omitted && <p className="my-2 text-xs text-[var(--text-muted)]">{t('diagnosis.contextOmitted')}</p>}
+        {diagnosis.context_omitted && <p className="my-2 text-xs text-[var(--text-muted)]">{t(diagnosis.sources?.some(source => source.id === 'omitted-content') ? 'diagnosis.unsupportedContent' : 'diagnosis.contextOmitted')}</p>}
         {showFindings && <ul className="space-y-1 text-sm">
           {diagnosis.findings.map((finding, i) => (
             <li key={i}>

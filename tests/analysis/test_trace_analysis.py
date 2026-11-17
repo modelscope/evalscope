@@ -307,6 +307,28 @@ def test_threshold_outcome():
     assert analyze_records([(_ref(), record)], config)[0].outcome.task_success is True
 
 
+@pytest.mark.parametrize('values,main,direction,thresholds,status,expected', [
+    ({'acc': 1, 'aux': 0.6}, 'acc', 'higher_is_better', {}, 'success', True),
+    ({'aux': 0.6, 'acc': 0}, 'acc', 'higher_is_better', {}, 'success', False),
+    ({'error': 0, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', True),
+    ({'error': 1, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', False),
+    ({'quality': 0.7, 'aux': 1}, 'quality', 'higher_is_better', {}, 'success', None),
+    ({'quality': 0.7}, 'quality', 'higher_is_better', {'quality': 0.7}, 'success', True),
+    ({'error': 0.7}, 'error', 'lower_is_better', {'error': 0.5}, 'success', False),
+    ({'error': 0.5}, 'error', 'lower_is_better', {'error': 0.5}, 'success', True),
+    ({'quality': 0}, 'quality', 'higher_is_better', {'quality': 0}, 'success', True),
+    ({'quality': 0.7}, 'quality', 'none', {'quality': 0.5}, 'success', None),
+    ({'acc': 0}, 'acc', 'higher_is_better', {'acc': 0}, 'excluded', None),
+])
+def test_outcomes_use_the_main_score_and_explicit_threshold_before_binary_fallback(
+    values: dict, main: str, direction: str, thresholds: dict, status: str, expected: Optional[bool],
+) -> None:
+    record = _record([ChatMessageUser(content='q'), ChatMessageAssistant(content='a')], value=values, status=status)
+    record.sample_score.score.main_score_name = main
+    case = _analyze(record, outcome_directions={'demo': direction}, outcome_thresholds={'demo': thresholds})
+    assert case.outcome.task_success is expected
+
+
 
 # ---------------------------------------------------------------------------
 # Loader, export, CLI

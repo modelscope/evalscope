@@ -27,12 +27,12 @@ from evalscope.api.model import get_model
 from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.utils.logger import get_logger
 
-from .inputs import BenchmarkInput, SampleInput
+from .inputs import BenchmarkInput, SampleInput, unsupported_content
 from .trace.export import _env_secrets, redact
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
-PROTOCOL_VERSION = '3.2'
+PROTOCOL_VERSION = '3.3'
 
 
 def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
@@ -94,6 +94,12 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
             raw.append(DiagnosticSource(id=identity, text=redact(text, secrets), message_index=message, step=step))
 
     add('benchmark', inputs.report.dataset_description if inputs.report else '')
+    omitted = unsupported_content(item.record)
+    if omitted:
+        add(
+            'omitted-content',
+            'Not analyzed: ' + ', '.join(omitted) + '. This is an input limitation, not behavioral evidence.',
+        )
     add('gold', json.dumps(item.record.target, ensure_ascii=False))
     score = item.record.sample_score.score
     add(
@@ -129,6 +135,10 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
     for i in indices:
         message = messages[i]
         add(f'm:{i}', message.text or '', i, steps.get(message.id))
+        if config.include_trace and isinstance(message.content, list):
+            for part_index, part in enumerate(message.content):
+                if part.type == 'reasoning' and not part.redacted:
+                    add(f'reasoning:{i}:{part_index}', part.reasoning, i, steps.get(message.id))
         if config.include_trace and getattr(message, 'tool_calls', None):
             add(
                 f'calls:{i}',
@@ -147,7 +157,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         return raw
 
     def priority(source: DiagnosticSource) -> int:
-        if source.id in ('gold', 'score') or source.message_index in core:
+        if source.id in ('gold', 'score', 'omitted-content') or source.message_index in core:
             return 0
         if source.message_index in context or source.id.startswith('event:'):
             return 1
@@ -163,7 +173,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         if len(source.text) <= budget:
             result.append(source)
             remaining -= len(source.text)
-        elif source.id.startswith('m:') and budget >= 2:
+        elif source.id.startswith(('m:', 'reasoning:')) and budget >= 2:
             head = budget // 2
             result.append(source.model_copy(update={'text': source.text[:head], 'excerpted': True}))
             result.append(
@@ -303,6 +313,12 @@ def enrich(
     c.selection_scope = 'specified' if config.samples is not None else config.scope
     c.diagnosis_population = population
     c.selected = len(selected)
+    if c.selection_scope == 'failed' and c.outcome_unknown:
+        c.skipped_facts['selection-outcome-unknown'] = (
+            f'{c.outcome_unknown} 条样本成败未知，不自动算作未通过；可配置评分阈值，或使用 all/指定样本分析。'
+            if config.language == 'zh' or (config.language == 'auto' and DEFAULT_LANGUAGE == 'zh')
+            else f'{c.outcome_unknown} unknown outcomes excluded from failed scope; configure thresholds or use all/explicit samples.'
+        )
     report.diagnosis_model = config.model.model_id
     report.self_evaluation = config.model.model_id.rsplit('/', 1)[-1] == report.model.rsplit('/', 1)[-1]
     if report.self_evaluation:
@@ -313,10 +329,20 @@ def enrich(
         item = items[(s.key.subset, s.key.index)]
         s.sources = build_sources(item, inputs, config)
         sent = {source.id for source in s.sources}
-        s.context_omitted = any(source.excerpted for source in s.sources) or any(
-            (message.text and f'm:{i}' not in sent)
-            or (getattr(message, 'tool_calls', None) and f'calls:{i}' not in sent)
+        s.context_omitted = (
+            bool(unsupported_content(item.record))
+            or any(source.excerpted for source in s.sources)
+            or any(
+                (message.text and f'm:{i}' not in sent)
+                or (getattr(message, 'tool_calls', None) and f'calls:{i}' not in sent)
+                for i, message in enumerate(item.record.messages)
+            )
+        )
+        s.context_omitted |= any(
+            part.type == 'reasoning' and bool(part.reasoning) and f'reasoning:{i}:{j}' not in sent
             for i, message in enumerate(item.record.messages)
+            if isinstance(message.content, list)
+            for j, part in enumerate(message.content)
         )
         if item.record.agent_trace:
             message_ids = {message.id for message in item.record.messages}
@@ -355,7 +381,9 @@ def enrich(
         sample.llm, errors = validate_evidence(parsed, sample.sources)
         sample.invalid_evidence = len(parsed.evidence) - len(sample.llm.evidence)
         sample.evidence_errors = errors
-        if not sample.llm.evidence or all(e.source_id in ('gold', 'benchmark') for e in sample.llm.evidence):
+        if not sample.llm.evidence or all(
+            e.source_id in ('gold', 'benchmark', 'omitted-content') for e in sample.llm.evidence
+        ):
             sample.llm_status = 'invalid_evidence'
         elif parsed.failure_type == 'truncated' and items[(sample.key.subset, sample.key.index)].stop_reason not in (
             None,
@@ -391,14 +419,46 @@ def summarize(
     write: Callable[[Path, str], None],
 ) -> None:
     """Generate only reference-bearing narrative items, never an uncited summary paragraph."""
-    sources = [
-        f.model_dump(mode='json') for f in report.facts if f.severity != 'info' or (f.id == 'F-safety' and f.numerator)
-    ][:15]
-    ids = {source['id'] for source in sources}
-    hypotheses = []
+    sources, hypotheses = [], []
+    groups = defaultdict(list)
     for sample in samples:
-        if sample.llm_status != 'ok' or sample.llm is None:
+        if sample.llm_status == 'ok' and sample.llm is not None:
+            groups[sample.llm.failure_type].append(sample)
+    payload = {
+        'facts': sources,
+        'sample_hypotheses': hypotheses,
+        'inspected_hypotheses': {kind: len(members) for kind, members in sorted(groups.items())},
+        'coverage': report.coverage.model_dump(
+            mode='json',
+            include={
+                'samples',
+                'task_success_known',
+                'task_failed',
+                'outcome_unknown',
+                'excluded',
+                'selected',
+                'diagnosis_population',
+                'selection_scope',
+            },
+        ),
+    }
+    for fact in report.facts:
+        if fact.severity == 'info' and not (fact.id in ('F-task-failure', 'F-excluded', 'F-safety') and fact.numerator):
             continue
+        sources.append(fact.model_dump(mode='json'))
+        if len(json.dumps(payload, ensure_ascii=False)) > config.max_input_chars // 2:
+            sources.pop()
+    ids = {source['id'] for source in sources}
+    queue = deque(
+        iter(sorted(members, key=lambda s: (s.key.subset, s.key.index)))
+        for kind, members in sorted(groups.items(), key=lambda pair: (-len(pair[1]), pair[0]))
+    )
+    while queue:
+        group = queue.popleft()
+        sample = next(group, None)
+        if sample is None:
+            continue
+        queue.append(group)
         evidence_steps = {
             source.step
             for source in sample.sources
@@ -409,17 +469,25 @@ def summarize(
             step = min(evidence_steps) if evidence_steps else None
         identity = json.dumps([sample.key.subset, sample.key.index, step], ensure_ascii=False)
         reference = 'S-' + hashlib.sha256(identity.encode()).hexdigest()[:16]
-        report.narrative_samples[reference] = NarrativeSampleReference(sample=sample.key, step=step)
-        ids.add(reference)
         hypotheses.append(
             {
                 'sample': sample.key.model_dump(mode='json'),
+                'outcome': {'task_success': sample.task_success, 'score_status': sample.score_status},
                 'refs': [reference],
                 'hypothesis': sample.llm.model_dump(mode='json'),
             }
         )
-        if len(hypotheses) >= config.max_examples:
-            break
+        if len(json.dumps(payload, ensure_ascii=False)) > config.max_input_chars:
+            hypotheses.pop()
+            continue
+        report.narrative_samples[reference] = NarrativeSampleReference(sample=sample.key, step=step)
+        ids.add(reference)
+    considered = sum(map(len, groups.values()))
+    if considered > len(hypotheses):
+        report.limitations.append(
+            f'Summary considered {considered} valid sample hypotheses by type; '
+            f'{len(hypotheses)} representative explanations fit the input budget.'
+        )
     if not ids:
         report.narrative_status = 'no_findings'
         return
@@ -430,6 +498,10 @@ def summarize(
         'Write plain language for an evaluation user; omit internal field names, diagnostic bookkeeping and '
         'inapplicable statistics. '
         'When supplied, describe sample_hypotheses as model proposals awaiting review and cite their refs. '
+        'inspected_hypotheses counts ALL usable proposals by primary type within the inspected scope, '
+        'including types outside the representative examples. Use these counts only to prioritize review; '
+        'they are not verified causes or population frequencies, and a sample reference cannot support a group count. '
+        'Sample outcomes are explicit; passing, unknown and unscored samples must not be described as failed tasks. '
         'These are selected examples, not exhaustive counts or verified causes; never generalize them. '
         'No rule clues does not mean no model proposal exists. '
         'Cite F- IDs for population statistics and S- IDs for explanations about specific inspected samples. '
@@ -441,26 +513,7 @@ def summarize(
         'Do not present sampled counts as population counts, '
         'rule clues as proven causes, or model proposals as independently verified explanations. '
         'Do not invent values or assert causation. Use limitations for uncertainties.\n'
-        + json.dumps(
-            {
-                'facts': sources,
-                'sample_hypotheses': hypotheses,
-                'coverage': report.coverage.model_dump(
-                    mode='json',
-                    include={
-                        'samples',
-                        'task_success_known',
-                        'task_failed',
-                        'outcome_unknown',
-                        'excluded',
-                        'selected',
-                        'diagnosis_population',
-                        'selection_scope',
-                    },
-                ),
-            },
-            ensure_ascii=False,
-        )
+        + json.dumps(payload, ensure_ascii=False)
     )
     parsed, status, usage = _request(prompt, Narrative, config, target, force, write)
     for key, value in usage.items():

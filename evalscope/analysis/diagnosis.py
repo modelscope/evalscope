@@ -25,11 +25,11 @@ from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.diagnosis import data_fingerprint, diagnosis_dir, iter_review_files
 
 from .facts import collect_facts
-from .inputs import is_choice_letter, load_inputs
+from .inputs import has_nontext_output, is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.2.0'
+ANALYZER_VERSION = '3.3.0'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -219,7 +219,12 @@ def _diagnose_benchmark(
         issue = sorted(observed)[0] if observed else 'unexplained' if case.outcome.task_success is False else None
         if case.outcome.safety_violation is True and issue is None:
             issue = 'safety_violation'
-        if not relevant and not case.tool_call_count and not item.record.agent_trace:
+        if (
+            not relevant
+            and not case.tool_call_count
+            and not item.record.agent_trace
+            and not has_nontext_output(item.record)
+        ):
             if item.stop_reason in ('length', 'max_tokens', 'model_length'):
                 issue = 'truncated'
             elif any(m.role == 'assistant' for m in item.record.messages):

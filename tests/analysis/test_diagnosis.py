@@ -310,6 +310,32 @@ def test_lower_is_better_and_unknown_direction_are_respected(make_run: Callable)
     assert report.coverage.task_success_known == 0 and report.coverage.outcome_unknown == 2
 
 
+@pytest.mark.parametrize('media', [
+    {'type': 'image', 'image': '/not-read/image.png'},
+    {'type': 'audio', 'audio': '/not-read/audio.wav', 'format': 'wav'},
+    {'type': 'video', 'video': '/not-read/video.mp4', 'format': 'mp4'},
+    {'type': 'data', 'data': {'output': 42}},
+])
+def test_nontext_answers_are_not_reported_as_empty_text_generations(make_run: Callable, media: dict) -> None:
+    row = review(0)
+    row.messages[-1] = ChatMessageAssistant(content=[media])
+    row.sample_score.score.extracted_prediction = ''
+    root = make_run(rows=[row])
+    report = diagnose_benchmark(str(root), 'm', 'demo', config())
+    assert not any(f.id in ('F-empty', 'F-extraction', 'F-length') for f in report.facts)
+    assert 'nontext-output' in report.coverage.skipped_facts
+    persisted = (root / 'analysis/m/demo/samples.jsonl').read_text()
+    assert 'empty_output' not in persisted and 'extraction_failure' not in persisted
+
+
+def test_binary_primary_and_continuous_secondary_keep_the_failure_population(make_run: Callable) -> None:
+    row = review(0)
+    row.sample_score.score.value = {'aux': 0.6, 'accuracy': 0}
+    row.sample_score.score.main_score_name = 'accuracy'
+    report = diagnose_benchmark(str(make_run(rows=[row])), 'm', 'demo', config())
+    assert report.coverage.task_failed == report.coverage.task_success_known == 1
+
+
 def test_no_reviews_retains_execution_errors_without_fabricating_zero_scores(make_run: Callable) -> None:
     root = make_run(rows=[])
     path = root / 'reports/m/demo.json'

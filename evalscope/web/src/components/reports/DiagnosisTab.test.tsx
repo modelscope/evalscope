@@ -218,6 +218,7 @@ it('shows model-analysis scope, citation counts, usage and summary status', asyn
   expect(within(info).getByText('Input 1.5M · output 2.3K')).toHaveAttribute('title', 'Input tokens: 1,500,000 · Output tokens: 2,300')
   expect(screen.queryByRole('region', { name: 'Model summary and suggestions' })).not.toBeInTheDocument()
   expect(within(info).getByText('Summary status')).toBeInTheDocument()
+  expect(within(info).getByText(/Samples with unknown outcomes are excluded/)).toBeInTheDocument()
 })
 
 it.each([

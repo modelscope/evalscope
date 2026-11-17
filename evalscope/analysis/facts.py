@@ -10,7 +10,7 @@ from evalscope.api.analysis.trace import FindingCategory
 from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 
-from .inputs import BenchmarkInput, SampleInput, is_choice_letter
+from .inputs import BenchmarkInput, SampleInput, has_nontext_output, is_choice_letter, unsupported_content
 
 USABLE = {'success', 'fallback', 'degraded'}
 
@@ -20,6 +20,20 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
     zh = config.language == 'zh' or (config.language == 'auto' and DEFAULT_LANGUAGE == 'zh')
     facts = []
     samples = inputs.samples
+    nontext = sum(has_nontext_output(s.record) for s in samples)
+    if nontext:
+        coverage.skipped_facts['nontext-output'] = (
+            f'{nontext} 条样本包含非文本输出，未参与空文本、答案抽取和文本长度统计。'
+            if zh
+            else f'{nontext} nontext outputs excluded from text generation statistics.'
+        )
+    unsupported = Counter(kind for s in samples for kind in unsupported_content(s.record))
+    if unsupported:
+        coverage.skipped_facts['unsupported-content'] = (
+            '媒体、内部数据和受保护推理不参与文本分析：'
+            if zh
+            else 'Media, internal data and protected reasoning are not analyzed: '
+        ) + ', '.join(f'{kind}: {count}' for kind, count in sorted(unsupported.items()))
 
     def add(
         identity: str,
@@ -242,6 +256,7 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
         for s in samples
         if not s.case.tool_call_count
         and not s.record.agent_trace
+        and not has_nontext_output(s.record)
         and any(m.role == 'assistant' for m in s.record.messages)
     ]
     rate(
