@@ -101,21 +101,22 @@ Evidence has two separate checks:
   reference on that exact supplied step.
 - **Semantic support:** a locatable quotation does not establish that it supports a diagnosis. Independent
   annotation and review are still required. Responses with no usable evidence, failed requests, invalid
-  formats or low confidence do not count as explained. Official scores and reference answers remain unchanged;
+  formats or low confidence do not count as usable model hypotheses. Official scores and reference answers remain unchanged;
   suspected reference errors are only marked for review.
 
-Denominators remain separate: official failure rates use known task outcomes; unavailable scores and safety
-signals are recorded independently. Selection uses disjoint cohorts in this priority order: task failure,
-unavailable scoring, safety signal, then process findings. Each cohort is stratified by subset, with at least
-one sample per stratum. A budget too small to cover every stratum raises an error. High-confidence rule findings
-do not establish causes and do not exclude official failures from selection.
+Facts always cover all readable samples, independently of the model-analysis budget. Rule observations and model hypotheses remain separate; hypotheses never replace observed issue groups. Samples can have multiple observations, so group counts must not be added. Citation validation establishes locatability, not confirmed causes. No population cause proportions or unresolved-rate estimates are produced.
 
-Pattern counts describe current sample assignments, including unchanged rule assignments on unselected samples.
-Population estimates are reported separately and weighted by each stratum's inclusion probability. The estimated
-unresolved proportion among failed tasks uses only task-failure strata. Request failures and unusable diagnoses
-remain unresolved. Sampling bounds combine stratum Wilson intervals with a Bonferroni correction, rather than
-applying a pooled Wilson interval to quota samples. Census strata use exact proportions. These bounds describe
-sampling uncertainty, not the probability that model explanations are correct.
+Model analysis defaults to failed tasks only. Set `scope` to `failed` (default), `unscored`, `risk` `process` (passing tasks with process issues), or `all` (every sample). Alternatively, `samples=[{'subset': 'main', 'index': 12}]` selects explicit identities and overrides scope. Missing requested samples fail before model requests.
+
+`max_diagnosed_samples` is a cost-protection limit per benchmark: a positive integer caps the count; Python `None` / JSON `null` analyzes every eligible sample in the chosen scope. The default 50 is neither a quality guarantee nor a run-wide budget. Selection rotates across subsets and still runs when there are more subsets than slots. Reports show selected and eligible counts without extrapolating causes to unreviewed samples.
+
+```bash
+# Requires the explicit model configuration in analysis.json
+evalscope analyze --run-dir outputs/<run> --analysis-config analysis.json --max-samples 100
+evalscope analyze --run-dir outputs/<run> --analysis-config analysis.json --max-samples all
+```
+
+Inputs are retained completely when they fit `max_input_chars`. Otherwise the task, final answer and finding context take priority. Omitted context is recorded: absence in an excerpt cannot establish a missing operation or an unrecovered error.
 
 Requests are cached by model, generation settings, protocol, prompt and exact supplied content. Interrupted runs
 reuse completed requests. Invalid responses and transport failures are not cached as successful results.

@@ -21,3 +21,7 @@ Messages may have separate head and :tail snippets. Inspect the TAIL and score.g
 claiming truncated output. A mid-sentence head snippet is not evidence of truncation. Recorded stop means a
 normal generation ending; max_tokens/model_length means a budget ending. A successful task has no task failure
 to explain: describe any observed process issue without asserting that it caused a wrong answer.
+
+context_omitted=true means some original context is absent. Do not infer that an operation was missing,
+a tool error was unrecovered, or a quoted step was the first cause from incomplete context.
+Your output is an investigation hypothesis, never an independently confirmed root cause.

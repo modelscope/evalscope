@@ -883,30 +883,11 @@
           "default": 0,
           "type": "integer"
         },
-        "failed_unexplained_estimate": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ProportionEstimate"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "needs_attention": {
           "default": 0,
           "type": "integer"
         },
         "outcome_unknown": {
-          "default": 0,
-          "type": "integer"
-        },
-        "rule_agreements": {
-          "default": 0,
-          "type": "integer"
-        },
-        "rule_reviews": {
           "default": 0,
           "type": "integer"
         },
@@ -923,12 +904,6 @@
             "type": "string"
           },
           "type": "object"
-        },
-        "strata": {
-          "items": {
-            "$ref": "#/$defs/SamplingStratum"
-          },
-          "type": "array"
         },
         "task_failed": {
           "default": 0,
@@ -963,10 +938,6 @@
         "selected",
         "diagnosed_ok",
         "diagnosis_statuses",
-        "strata",
-        "failed_unexplained_estimate",
-        "rule_reviews",
-        "rule_agreements",
         "citations_total",
         "citations_valid"
       ],
@@ -974,7 +945,7 @@
     },
     "DiagnosisIssue": {
       "additionalProperties": false,
-      "description": "Primary classifications of failed or unscored samples, counted once per identity.",
+      "description": "Observed issue groups; identities are unique within each group and groups may overlap.",
       "properties": {
         "failed": {
           "default": 0,
@@ -1088,7 +1059,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": 1,
+          "default": 2,
           "type": "integer"
         },
         "self_evaluation": {
@@ -1527,17 +1498,6 @@
           "default": "",
           "type": "string"
         },
-        "estimated_share": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ProportionEstimate"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "examples": {
           "items": {
             "$ref": "#/$defs/SampleKey"
@@ -1574,8 +1534,7 @@
         "share",
         "by_subset",
         "examples",
-        "source",
-        "estimated_share"
+        "source"
       ],
       "type": "object"
     },
@@ -3149,40 +3108,6 @@
       ],
       "type": "object"
     },
-    "ProportionEstimate": {
-      "additionalProperties": false,
-      "description": "Stratified inverse-probability estimate; bounds use simultaneous stratum Wilson intervals.",
-      "properties": {
-        "lower": {
-          "type": "number"
-        },
-        "method": {
-          "default": "stratified_bonferroni_wilson_95",
-          "type": "string"
-        },
-        "population": {
-          "type": "integer"
-        },
-        "proportion": {
-          "type": "number"
-        },
-        "selected": {
-          "type": "integer"
-        },
-        "upper": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "population",
-        "selected",
-        "proportion",
-        "lower",
-        "upper",
-        "method"
-      ],
-      "type": "object"
-    },
     "ReportCategory": {
       "additionalProperties": false,
       "properties": {
@@ -3616,6 +3541,10 @@
           "$ref": "#/$defs/Attribution",
           "default": "unknown"
         },
+        "context_omitted": {
+          "default": false,
+          "type": "boolean"
+        },
         "evidence_errors": {
           "items": {
             "type": "string"
@@ -3673,18 +3602,13 @@
           "default": false,
           "type": "boolean"
         },
-        "pattern_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+        "observed_types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
-        "rule_failure_type": {
+        "pattern_id": {
           "anyOf": [
             {
               "type": "string"
@@ -3766,10 +3690,11 @@
         "attribution",
         "findings",
         "pattern_id",
-        "rule_failure_type",
+        "observed_types",
         "llm",
         "llm_status",
         "sources",
+        "context_omitted",
         "invalid_evidence",
         "evidence_errors",
         "source"
@@ -3832,41 +3757,6 @@
         "latency",
         "input_tokens",
         "output_tokens"
-      ],
-      "type": "object"
-    },
-    "SamplingStratum": {
-      "additionalProperties": false,
-      "description": "Disjoint subset/cohort stratum sampled without replacement.",
-      "properties": {
-        "cohort": {
-          "enum": [
-            "task_failure",
-            "scoring_unavailable",
-            "safety_signal",
-            "process_finding"
-          ],
-          "type": "string"
-        },
-        "inclusion_probability": {
-          "type": "number"
-        },
-        "population": {
-          "type": "integer"
-        },
-        "selected": {
-          "type": "integer"
-        },
-        "subset": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "subset",
-        "cohort",
-        "population",
-        "selected",
-        "inclusion_probability"
       ],
       "type": "object"
     },

@@ -29,7 +29,7 @@ const report: DiagnosisReport = {
   data_fingerprint: 'd',
   samples_sha256: 's',
   coverage: {
-    diagnosis_population: 0, selected: 0, diagnosed_ok: 0, diagnosis_statuses: {}, strata: [], failed_unexplained_estimate: null, rule_reviews: 0, rule_agreements: 0, citations_total: 0, citations_valid: 0,
+    diagnosis_population: 0, selected: 0, diagnosed_ok: 0, diagnosis_statuses: {},     citations_total: 0, citations_valid: 0,
     samples: 3,
     task_failed: 1,
     task_success_known: 2,
@@ -56,7 +56,7 @@ const report: DiagnosisReport = {
       share: 0.5,
       by_subset: { default: 1 },
       examples: [{ subset: 'default', index: 7 }],
-      source: 'rule', estimated_share: null,
+      source: 'rule',
     },
   ],
 }
@@ -147,8 +147,8 @@ it('provides an immediate unexplained-case entry instead of inventing an ordinar
   } }, issues: [{ failure_type: 'unexplained', failed: 1 }] })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
-  expect(screen.getByRole('button', { name: /No explanation yet/ })).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByText('0 have diagnostic clues; 1 still have no explanation.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /No rule clues yet/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('0 have rule clues; 1 have no rule clues yet.')).toBeInTheDocument()
   expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'unexplained', outcome: 'failed' }, 1, expect.any(AbortSignal))
   expect(screen.queryByText('Reasoning or calculation error')).not.toBeInTheDocument()
 })

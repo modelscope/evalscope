@@ -12,6 +12,19 @@ from .taxonomy import ISSUE_NAMES, TAXONOMY_VERSION
 from .trace import Attribution, Finding
 
 
+class DiagnosticData(BaseModel):
+    """Persisted outputs always include defaults; Web contracts describe that complete shape."""
+
+    model_config = ConfigDict(extra='forbid', json_schema_serialization_defaults_required=True)
+
+
+class SampleKey(DiagnosticData):
+    """A persisted sample identity within one model and benchmark."""
+
+    subset: str
+    index: int
+
+
 class AnalysisModelConfig(BaseModel):
     """Explicit diagnostic model; never silently reuse scoring credentials or enable paid analysis."""
 
@@ -30,10 +43,11 @@ class AnalysisReportConfig(BaseModel):
     level: Literal['facts', 'diagnose', 'full'] = 'facts'
     language: Literal['auto', 'zh', 'en'] = 'auto'
     model: Optional[AnalysisModelConfig] = None
-    max_diagnosed_samples: int = Field(default=50, ge=1, le=10000)
+    max_diagnosed_samples: Optional[int] = Field(default=50, ge=1, strict=True)
+    scope: Literal['failed', 'unscored', 'risk', 'process', 'all'] = 'failed'
+    samples: Optional[List[SampleKey]] = Field(default=None, min_length=1)
     concurrency: int = Field(default=4, ge=1, le=32)
     seed: int = 42
-    review_rule_findings: bool = True
     include_trace: bool = True
     max_input_chars: int = Field(default=24000, ge=2000, le=100000)
     trace: TraceAnalysisConfig = Field(default_factory=TraceAnalysisConfig)
@@ -49,19 +63,6 @@ class AnalysisReportConfig(BaseModel):
 
         text = source if source.lstrip().startswith('{') else Path(source).read_text()
         return cls.model_validate_json(text)
-
-
-class DiagnosticData(BaseModel):
-    """Persisted outputs always include defaults; Web contracts describe that complete shape."""
-
-    model_config = ConfigDict(extra='forbid', json_schema_serialization_defaults_required=True)
-
-
-class SampleKey(DiagnosticData):
-    """A persisted sample identity within one model and benchmark."""
-
-    subset: str
-    index: int
 
 
 class Fact(DiagnosticData):
@@ -144,27 +145,6 @@ class Narrative(DiagnosticData):
     limitations: List[str] = Field(default_factory=list, max_length=5)
 
 
-class SamplingStratum(DiagnosticData):
-    """Disjoint subset/cohort stratum sampled without replacement."""
-
-    subset: str
-    cohort: Literal['task_failure', 'scoring_unavailable', 'safety_signal', 'process_finding']
-    population: int
-    selected: int
-    inclusion_probability: float
-
-
-class ProportionEstimate(DiagnosticData):
-    """Stratified inverse-probability estimate; bounds use simultaneous stratum Wilson intervals."""
-
-    population: int
-    selected: int
-    proportion: float
-    lower: float
-    upper: float
-    method: str = 'stratified_bonferroni_wilson_95'
-
-
 class SampleDiagnosis(DiagnosticData):
     """Official outcome and observed findings; a finding is not a proved root cause."""
 
@@ -179,12 +159,13 @@ class SampleDiagnosis(DiagnosticData):
     attribution: Attribution = Attribution.UNKNOWN
     findings: List[Finding] = Field(default_factory=list)
     pattern_id: Optional[str] = None
-    rule_failure_type: Optional[str] = None
+    observed_types: List[str] = Field(default_factory=list)
     llm: Optional[LLMDiagnosis] = None
     llm_status: Literal['not_selected', 'ok', 'parse_error', 'transport_error', 'invalid_evidence', 'unexplained'] = (
         'not_selected'
     )
     sources: List[DiagnosticSource] = Field(default_factory=list)
+    context_omitted: bool = False
     invalid_evidence: int = 0
     evidence_errors: List[str] = Field(default_factory=list)
     source: Literal['rule', 'llm', 'rule+llm', 'none'] = 'none'
@@ -203,7 +184,6 @@ class FailurePattern(DiagnosticData):
     by_subset: Dict[str, int] = Field(default_factory=dict)
     examples: List[SampleKey] = Field(default_factory=list)
     source: Literal['rule', 'llm', 'rule+llm', 'none'] = 'rule'
-    estimated_share: Optional[ProportionEstimate] = None
 
 
 class DiagnosisCoverage(DiagnosticData):
@@ -224,10 +204,6 @@ class DiagnosisCoverage(DiagnosticData):
     selected: int = 0
     diagnosed_ok: int = 0
     diagnosis_statuses: Dict[str, int] = Field(default_factory=dict)
-    strata: List[SamplingStratum] = Field(default_factory=list)
-    failed_unexplained_estimate: Optional[ProportionEstimate] = None
-    rule_reviews: int = 0
-    rule_agreements: int = 0
     citations_total: int = 0
     citations_valid: int = 0
 
@@ -247,7 +223,7 @@ class DiagnosisCost(DiagnosticData):
 class DiagnosisReport(DiagnosticData):
     """One analysis of a persisted (run, model, benchmark), with cache provenance."""
 
-    schema_version: int = 1
+    schema_version: int = 2
     analyzer_version: str
     taxonomy_version: str = TAXONOMY_VERSION
     run_dir: str

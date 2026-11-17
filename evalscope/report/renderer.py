@@ -61,12 +61,6 @@ def _render_diagnostic_facts(report: DiagnosisReport) -> str:
         parts.append(
             f'<p>{label("References are locatable; conclusions await review.", "引用可定位，分析结论仍待复核。")}</p>'
         )
-        estimate = c.failed_unexplained_estimate
-        if estimate:
-            parts.append(
-                f'<p>{label("Unresolved failed samples (weighted)", "未获得模型解释的失败样本（加权估计）")}: '
-                f'{estimate.proportion:.1%} · 95% [{estimate.lower:.1%}, {estimate.upper:.1%}]</p>'
-            )
     prefix = f'diagnosis-{report.benchmark}-'
     reference_names = {fact.id: fact.title for fact in report.facts}
     reference_names.update({pattern.id: f'P{i}' for i, pattern in enumerate(report.patterns, 1)})
@@ -85,7 +79,6 @@ def _render_diagnostic_facts(report: DiagnosisReport) -> str:
         columns = [
             ('ID', '编号'),
             ('Issue type', '问题类型'),
-            ('Related component', '相关环节'),
             ('Count', '样本数'),
             (f'Share of {c.needs_attention} reviewed samples', f'占 {c.needs_attention} 条待排查样本'),
             ('Examples', '代表样本'),
@@ -95,21 +88,13 @@ def _render_diagnostic_facts(report: DiagnosisReport) -> str:
             + ''.join(f'<th>{label(en, zh)}</th>' for en, zh in columns)
             + '</tr></thead><tbody>'
         )
-        components = {
-            'model': ('Model', '模型'),
-            'guard': ('Guard', '防护'),
-            'environment': ('Environment', '环境'),
-            'benchmark': ('Benchmark', '评测基准'),
-            'unknown': ('Not determined', '暂不确定'),
-        }
         for index, pattern in enumerate(report.patterns[:10], 1):
             name = label(*ISSUE_NAMES.get(pattern.failure_type, ISSUE_NAMES['other']))
-            component = label(*components[pattern.attribution.value])
             examples = escape(', '.join(f'{sample.subset}:{sample.index}' for sample in pattern.examples))
             tool = pattern.detail.split(' @ ', 1)[1] if ' @ ' in pattern.detail else ''
             detail = f'<br><small>{escape(tool)}</small>' if tool else ''
             parts.append(
-                f'<tr id="{escape(prefix + pattern.id, quote=True)}"><td>P{index}</td><td>{name}{detail}</td><td>{component}</td>'
+                f'<tr id="{escape(prefix + pattern.id, quote=True)}"><td>P{index}</td><td>{name}{detail}</td>'
                 f'<td>{pattern.count}</td><td>{pattern.share:.1%}</td><td>{examples}</td></tr>'
             )
         parts.append('</tbody></table></div>')

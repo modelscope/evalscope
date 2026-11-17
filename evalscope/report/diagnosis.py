@@ -121,7 +121,12 @@ def load_diagnosis(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optio
     if not path.is_file():
         return 'missing', None
     try:
-        report = DiagnosisReport.model_validate_json(path.read_text())
+        payload = json.loads(path.read_text())
+        if not isinstance(payload, dict):
+            return 'error', None
+        if payload.get('schema_version', 1) != DiagnosisReport.model_fields['schema_version'].default:
+            return 'stale', None
+        report = DiagnosisReport.model_validate(payload)
     except (ValueError, OSError):
         return 'error', None
     if report.coverage.analysis_errors:

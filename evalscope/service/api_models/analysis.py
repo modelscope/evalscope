@@ -10,7 +10,7 @@ from .common import ApiResponseModel
 
 
 class DiagnosisIssue(ApiResponseModel):
-    """Primary classifications of failed or unscored samples, counted once per identity."""
+    """Observed issue groups; identities are unique within each group and groups may overlap."""
 
     failure_type: str
     failed: int = 0

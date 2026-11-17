@@ -689,6 +689,7 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
 def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Read diagnostic facts without starting analysis or a paid request."""
     from evalscope.api.analysis import SampleDiagnosis
+    from evalscope.api.analysis.taxonomy import finding_type
     from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
     from evalscope.service.api_models import DiagnosisResponse
     from evalscope.service.api_models.analysis import DiagnosisIssue
@@ -716,23 +717,22 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
                     risk_samples += sample.safety_violation is True or any(
                         f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings
                     )
-                    passed_observations += sample.task_success is True and bool(sample.findings)
+                    passed_observations += sample.task_success is True and bool(sample.observed_types)
                     failed = sample.task_success is False
                     unscored = sample.score_status not in ('success', 'fallback', 'degraded')
                     if not failed and not unscored:
                         continue
-                    kind = sample.failure_type or 'unexplained'
-                    issue = issues.setdefault(kind, DiagnosisIssue(failure_type=kind))
-                    issue.failed += failed
-                    issue.unscored += unscored
-                    category = 'tool_failure' if kind == 'tool_error' else kind
-                    tools = {
-                        str(f.data['tool'])
-                        for f in sample.findings
-                        if failed and f.category.value == category and f.data.get('tool')
-                    }
-                    for tool in tools:
-                        issue.tools = {**issue.tools, tool: issue.tools.get(tool, 0) + 1}
+                    for kind in sample.observed_types or [sample.failure_type or 'unexplained']:
+                        issue = issues.setdefault(kind, DiagnosisIssue(failure_type=kind))
+                        issue.failed += failed
+                        issue.unscored += unscored
+                        tools = {
+                            str(f.data['tool'])
+                            for f in sample.findings
+                            if failed and finding_type(f) == kind and f.data.get('tool')
+                        }
+                        for tool in tools:
+                            issue.tools = {**issue.tools, tool: issue.tools.get(tool, 0) + 1}
         return json_response(
             DiagnosisResponse,
             {
@@ -770,7 +770,7 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
         if page < 1 or not 1 <= size <= 200:
             raise ValueError('Invalid page')
         root = os.path.join(_root_path(), ref.run_id)
-        status, _ = load_diagnosis(root, ref.model_id, dataset)
+        status, report = load_diagnosis(root, ref.model_id, dataset)
         items, total = [], 0
         seen = set()
         if status == 'ready':
@@ -785,29 +785,40 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
                     seen.add(identity)
                     if any(
                         request.args.get(name) and request.args[name] != value
-                        for name, value in (
-                            ('subset_name', sample.key.subset),
-                            ('pattern_id', sample.pattern_id),
-                            (
-                                'failure_type',
-                                sample.failure_type
-                                or (
-                                    'unexplained'
-                                    if sample.task_success is False
-                                    or sample.score_status not in ('success', 'fallback', 'degraded')
-                                    else None
-                                ),
-                            ),
-                            ('attribution', sample.attribution.value),
-                        )
+                        for name, value in (('subset_name', sample.key.subset),)
                     ):
                         continue
+                    component = request.args.get('attribution')
+                    observed_components = {
+                        finding.attribution.value
+                        for finding in sample.findings
+                        if finding.category.value not in ('side_effect', 'tainted_side_effect', 'outcome')
+                    } or {'unknown'}
+                    if component and component not in observed_components:
+                        continue
+                    kinds = sample.observed_types or [
+                        sample.failure_type
+                        or (
+                            'unexplained'
+                            if sample.task_success is False
+                            or sample.score_status not in ('success', 'fallback', 'degraded')
+                            else None
+                        )
+                    ]
+                    kind = request.args.get('failure_type')
+                    if kind and kind not in kinds:
+                        continue
+                    pattern_id = request.args.get('pattern_id')
+                    if pattern_id:
+                        pattern = next((p for p in report.patterns if p.id == pattern_id), None)
+                        if pattern is None or pattern.failure_type not in kinds:
+                            continue
                     matches_outcome = {
                         'failed': sample.task_success is False,
                         'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
                         'risk': sample.safety_violation is True
                         or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
-                        'passed': sample.task_success is True and bool(sample.findings),
+                        'passed': sample.task_success is True and bool(sample.observed_types),
                     }
                     if outcome and not matches_outcome[outcome]:
                         continue

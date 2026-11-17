@@ -3,13 +3,14 @@ import { useLocale } from '@/contexts/LocaleContext'
 
 export default function SampleDiagnosisCard({ diagnosis }: { diagnosis: SampleDiagnosis }) {
   const { t } = useLocale()
+  const observations = diagnosis.observed_types.length ? diagnosis.observed_types : diagnosis.failure_type ? [diagnosis.failure_type] : []
   return (
     <details
       className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]"
     >
       <summary className="cursor-pointer p-4 text-sm font-medium">
         {t('diagnosis.sample')}
-        {diagnosis.failure_type && ` · ${t(`diagnosis.issue.${diagnosis.failure_type}`)}`}
+        {observations.length > 0 && ` · ${observations.map(kind => t(`diagnosis.issue.${kind}`)).join(' · ')}`}
       </summary>
       <section className="border-t border-[var(--border)] p-4" aria-label={t('diagnosis.sample')}>
         {diagnosis.llm_status && diagnosis.llm_status !== 'not_selected' && (
@@ -45,10 +46,7 @@ export default function SampleDiagnosisCard({ diagnosis }: { diagnosis: SampleDi
               : t(`diagnosis.stopReason.${diagnosis.stop_reason}`)}
           </p>
         )}
-        <p className="my-2 text-xs text-[var(--text-muted)]">
-          {t('diagnosis.attribution')}:{' '}
-          {t(`diagnosis.${diagnosis.attribution === 'unknown' ? 'unknownComponent' : diagnosis.attribution}`)}
-        </p>
+        {diagnosis.context_omitted && <p className="my-2 text-xs text-[var(--text-muted)]">{t('diagnosis.contextOmitted')}</p>}
         <ul className="space-y-1 text-sm">
           {diagnosis.findings.map((finding, i) => (
             <li key={i}>

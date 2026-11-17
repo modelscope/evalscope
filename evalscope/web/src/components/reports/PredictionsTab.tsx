@@ -331,8 +331,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   }
                 />
                 <Select
-                  label={t('diagnosis.attribution')}
-                  value={diagnosisFilters.attribution ?? selectedPattern?.attribution ?? ''}
+                  label={t('diagnosis.observedComponent')}
+                  value={diagnosisFilters.attribution ?? ''}
                   options={[
                     { value: '', label: t('diagnosis.all') },
                     ...['model', 'guard', 'environment', 'benchmark', 'unknown'].map((value) => ({

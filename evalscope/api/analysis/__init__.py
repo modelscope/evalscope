@@ -11,10 +11,8 @@ from .schema import (
     LLMDiagnosis,
     Narrative,
     NarrativeItem,
-    ProportionEstimate,
     SampleDiagnosis,
     SampleKey,
-    SamplingStratum,
 )
 from .trace import (
     INFORMATIONAL_CATEGORIES,

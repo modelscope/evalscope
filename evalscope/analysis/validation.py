@@ -43,7 +43,7 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         raise ValueError('Duplicate sample identities; validate one run/model/benchmark at a time')
     confusion = Counter()
     rules = {}
-    correct = explained = matched = root_correct = supported = semantic = 0
+    correct = proposal_correct = explained = matched = root_correct = supported = semantic = 0
     roots = sum(label.root_cause_step is not None for label in labels)
     for key, label in expected.items():
         sample = predictions.get(key)
@@ -53,6 +53,7 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         ok = sample.llm_status == 'ok' and sample.llm is not None
         predicted = sample.llm.failure_type if ok else 'unexplained'
         correct += predicted == label.failure_type
+        proposal_correct += ok and predicted == label.failure_type
         explained += ok
         confusion[f'{label.attribution.value}->{sample.llm.attribution.value if ok else "unknown"}'] += 1
         if label.root_cause_step is not None:
@@ -81,7 +82,8 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         'missing': len(labels) - matched,
         'user_reviewed': sum(label.user_reviewed for label in labels),
         'type_accuracy': correct / len(labels) if labels else None,
-        'unresolved_proportion': 1 - explained / len(labels) if labels else None,
+        'proposal_coverage': explained / len(labels) if labels else None,
+        'proposal_type_accuracy': proposal_correct / explained if explained else None,
         'attribution_confusion': dict(confusion),
         'root_step_accuracy': root_correct / roots if roots else None,
         'root_step_labeled': roots,
@@ -89,11 +91,11 @@ def evaluate_labels(samples: List[SampleDiagnosis], labels: List[DiagnosticLabel
         'semantic_reviewed': semantic,
         'evidence_support_rate': supported / semantic if semantic else None,
         'rules': rules,
-        'experimental': not labels
+        'experimental': not explained
+        or not labels
         or matched != len(labels)
         or correct / len(labels) < 0.7
-        or 1 - explained / len(labels) > 0.2
-        or any(not label.user_reviewed for label in labels)
+        or any(not label.user_reviewed or label.evidence_supported is not True for label in labels)
         or any(c['high_precision'] is not None and c['high_precision'] < 0.9 for c in rules.values()),
     }
 

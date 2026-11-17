@@ -1,14 +1,12 @@
-"""Bounded model diagnostics with exact provenance, resumable requests and stratified estimates."""
+"""Scoped model hypotheses with exact provenance and resumable requests."""
 
 import hashlib
 import json
-import math
 import os
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from statistics import NormalDist
 from typing import Callable, Dict, List, Optional, Tuple, Type
 
 from pydantic import BaseModel
@@ -19,9 +17,7 @@ from evalscope.api.analysis import (
     DiagnosticSource,
     LLMDiagnosis,
     Narrative,
-    ProportionEstimate,
     SampleDiagnosis,
-    SamplingStratum,
 )
 from evalscope.api.analysis.taxonomy import ISSUE_DEFINITIONS
 from evalscope.api.judge import OutputContract
@@ -35,132 +31,69 @@ from .trace.export import _env_secrets, redact
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
-PROTOCOL_VERSION = '2.2'
+PROTOCOL_VERSION = '3.0'
 
 
-def cohort(sample: SampleDiagnosis, review_rules: bool = True) -> Optional[str]:
-    """Keep official failures disjoint from unavailable scores, safety signals and process observations."""
-    if sample.task_success is False:
-        return 'task_failure'
-    if sample.score_status not in ('success', 'fallback', 'degraded'):
-        return 'scoring_unavailable'
-    if sample.safety_violation is True:
-        return 'safety_signal'
-    return 'process_finding' if review_rules and sample.needs_attention else None
-
-
-def select_samples(
-    samples: List[SampleDiagnosis], config: AnalysisReportConfig
-) -> Tuple[List[SampleDiagnosis], List[SamplingStratum]]:
-    """Deterministic SRS within each subset/cohort, with positive inclusion probability in every stratum."""
+def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
+    """Select within an explicit review scope; limits are budgets, not population estimates."""
+    requested = {(key.subset, key.index) for key in config.samples} if config.samples is not None else None
+    if requested is not None:
+        available = {(sample.key.subset, sample.key.index) for sample in samples}
+        if requested - available:
+            raise ValueError(f'Requested analysis samples unavailable: {sorted(requested - available)}')
     groups = defaultdict(list)
     for sample in samples:
-        group = cohort(sample, config.review_rule_findings)
-        if group:
-            groups[(sample.key.subset, group)].append(sample)
-    if len(groups) > config.max_diagnosed_samples:
-        raise ValueError(
-            f'{len(groups)} strata require at least that many diagnostic samples; increase max_diagnosed_samples.'
+        eligible = {
+            'all': True,
+            'failed': sample.task_success is False,
+            'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
+            'risk': sample.safety_violation is True
+            or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
+            'process': sample.task_success is True and sample.needs_attention,
+        }
+        matches = (
+            (sample.key.subset, sample.key.index) in requested if requested is not None else eligible[config.scope]
         )
-    counts = {key: 1 for key in groups}
-    budget = min(config.max_diagnosed_samples, sum(map(len, groups.values())))
-    for _ in range(budget - len(groups)):
-        key = max(
-            (k for k in groups if counts[k] < len(groups[k])), key=lambda k: (len(groups[k]) / (counts[k] + 1), k)
-        )
-        counts[key] += 1
-    selected, strata = [], []
-    for (subset, group), items in sorted(groups.items()):
-        n = counts[(subset, group)]
-        items = sorted(items, key=lambda s: hashlib.sha256(f'{config.seed}/{subset}/{s.key.index}'.encode()).digest())
-        selected.extend(items[:n])
-        strata.append(
-            SamplingStratum(
-                subset=subset, cohort=group, population=len(items), selected=n, inclusion_probability=n / len(items)
+        if matches:
+            groups[sample.key.subset].append(sample)
+    population = sum(map(len, groups.values()))
+    budget = population if config.max_diagnosed_samples is None else min(config.max_diagnosed_samples, population)
+    queue = deque(
+        iter(
+            sorted(
+                groups[subset],
+                key=lambda sample: hashlib.sha256(f'{config.seed}/{subset}/{sample.key.index}'.encode()).digest(),
             )
         )
-    return selected, strata
-
-
-def estimate(
-    strata: List[SamplingStratum],
-    selected: List[SampleDiagnosis],
-    predicate: Callable[[SampleDiagnosis], bool],
-    only_cohort: Optional[str] = None,
-) -> Optional[ProportionEstimate]:
-    """Combine inverse-probability estimates, never a pooled Wilson interval for quota samples."""
-    active = [s for s in strata if only_cohort is None or s.cohort == only_cohort]
-    if not active:
-        return None
-    population = sum(s.population for s in active)
-    z = NormalDist().inv_cdf(1 - 0.05 / (2 * len(active)))
-    point = low = high = 0.0
-    for s in active:
-        rows = [r for r in selected if r.key.subset == s.subset and cohort(r) == s.cohort]
-        if len(rows) != s.selected:
-            raise ValueError('Sampling identity changed after selection')
-        count = sum(predicate(r) for r in rows)
-        p = count / s.selected
-        if s.selected == s.population:
-            lo = hi = p
-        else:
-            n = s.selected
-            center = (p + z * z / (2 * n)) / (1 + z * z / n)
-            half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
-            lo, hi = max(0, center - half), min(1, center + half)
-        weight = s.population / population
-        point += weight * p
-        low += weight * lo
-        high += weight * hi
-    return ProportionEstimate(
-        population=population, selected=sum(s.selected for s in active), proportion=point, lower=low, upper=high
+        for subset in sorted(groups, key=lambda subset: hashlib.sha256(f'{config.seed}/{subset}'.encode()).digest())
     )
+    selected = []
+    while queue and len(selected) < budget:
+        group = queue.popleft()
+        sample = next(group, None)
+        if sample is not None:
+            selected.append(sample)
+            queue.append(group)
+    return selected, population
 
 
 def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisReportConfig) -> List[DiagnosticSource]:
-    """Publish exact redacted snippets; identifiers and bounds refer only to text actually sent."""
-    remaining = config.max_input_chars
-    result = []
+    """Keep complete inputs when they fit; otherwise prioritize task, answer and finding context."""
+    raw = []
     secrets = _env_secrets()
+    messages = item.record.messages
     steps = (
-        {e.message_id: e.step for e in item.record.agent_trace.events if e.message_id}
+        {event.message_id: event.step for event in item.record.agent_trace.events if event.message_id}
         if item.record.agent_trace and config.include_trace
         else {}
     )
 
-    def add(
-        identity: str, text: str, limit: int = 2000, message: Optional[int] = None, step: Optional[int] = None
-    ) -> None:
-        nonlocal remaining
-        if remaining <= 0 or not text:
-            return
-        clean = redact(text, secrets)
-        budget = min(limit, remaining)
-        if len(clean) <= budget:
-            result.append(DiagnosticSource(id=identity, text=clean, message_index=message, step=step))
-        elif identity.startswith('m:') and budget >= 2:
-            half = budget // 2
-            result.extend(
-                [
-                    DiagnosticSource(id=identity, text=clean[:half], message_index=message, step=step, excerpted=True),
-                    DiagnosticSource(
-                        id=identity + ':tail',
-                        text=clean[-half:],
-                        message_index=message,
-                        step=step,
-                        excerpted=True,
-                        original_start=len(clean) - half,
-                    ),
-                ]
-            )
-        else:
-            result.append(
-                DiagnosticSource(id=identity, text=clean[:budget], message_index=message, step=step, excerpted=True)
-            )
-        remaining -= min(len(clean), budget)
+    def add(identity: str, text: str, message: Optional[int] = None, step: Optional[int] = None) -> None:
+        if text:
+            raw.append(DiagnosticSource(id=identity, text=redact(text, secrets), message_index=message, step=step))
 
-    add('benchmark', inputs.report.dataset_description if inputs.report else '', 1200)
-    add('gold', json.dumps(item.record.target, ensure_ascii=False), 2000)
+    add('benchmark', inputs.report.dataset_description if inputs.report else '')
+    add('gold', json.dumps(item.record.target, ensure_ascii=False))
     score = item.record.sample_score.score
     add(
         'score',
@@ -176,31 +109,76 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
             ensure_ascii=False,
             default=str,
         ),
-        3000,
     )
-    # Allocate across the whole conversation rather than silently dropping the final answer of a long trace.
-    messages = item.record.messages
-    indices = sorted(set(list(range(min(4, len(messages)))) + list(range(max(0, len(messages) - 26), len(messages)))))
-    if not config.include_trace:
-        users = [i for i, m in enumerate(messages) if m.role == 'user']
-        answers = [i for i, m in enumerate(messages) if m.role == 'assistant' and not m.tool_calls]
-        indices = sorted(set(users[:1] + answers[-1:]))
-    per_message = min(2000, max(200, remaining // max(1, 2 * len(indices))))
+    users = [i for i, message in enumerate(messages) if message.role == 'user']
+    answers = [i for i, message in enumerate(messages) if message.role == 'assistant' and not message.tool_calls]
+    core = set(users[:1] + answers[-1:])
+    indices = range(len(messages)) if config.include_trace else sorted(core)
+    important = set()
+    calls = [(i, call) for i, message in enumerate(messages) for call in getattr(message, 'tool_calls', None) or []]
+    for finding in item.case.findings:
+        important.update(e.message_index for e in finding.evidence if e.message_index is not None)
+        for position, (i, call) in enumerate(calls):
+            if position in finding.positions or call.id in finding.call_ids:
+                important.add(i)
+                important.update(
+                    j for j, message in enumerate(messages) if getattr(message, 'tool_call_id', None) == call.id
+                )
+    context = {j for i in important for j in range(max(0, i - 2), min(len(messages), i + 3))}
     for i in indices:
-        m = messages[i]
-        add(f'm:{i}', m.text or '', per_message, i, steps.get(m.id))
-        if config.include_trace and getattr(m, 'tool_calls', None):
+        message = messages[i]
+        add(f'm:{i}', message.text or '', i, steps.get(message.id))
+        if config.include_trace and getattr(message, 'tool_calls', None):
             add(
                 f'calls:{i}',
-                json.dumps([c.model_dump(mode='json') for c in m.tool_calls], ensure_ascii=False),
-                per_message,
+                json.dumps([call.model_dump(mode='json') for call in message.tool_calls], ensure_ascii=False),
                 i,
-                steps.get(m.id),
+                steps.get(message.id),
             )
     if item.record.agent_trace and config.include_trace:
-        for i, e in enumerate(item.record.agent_trace.events):
-            if e.type.value in ('error', 'nudge', 'submit', 'env_exec'):
-                add(f'event:{i}', json.dumps(e.payload, ensure_ascii=False, default=str), 200, step=e.step)
+        message_ids = {message.id for message in messages}
+        for i, event in enumerate(item.record.agent_trace.events):
+            if event.type.value in ('error', 'nudge', 'submit', 'env_exec', 'env_reset', 'run_end') or (
+                event.type.value in ('tool_call', 'tool_result') and event.message_id not in message_ids
+            ):
+                add(f'event:{i}', json.dumps(event.payload, ensure_ascii=False, default=str), step=event.step)
+    if sum(len(source.text) for source in raw) <= config.max_input_chars:
+        return raw
+
+    def priority(source: DiagnosticSource) -> int:
+        if source.id in ('gold', 'score') or source.message_index in core:
+            return 0
+        if source.message_index in context or source.id.startswith('event:'):
+            return 1
+        return 2
+
+    remaining = config.max_input_chars
+    result = []
+    ordered = sorted(raw, key=priority)
+    for i, source in enumerate(ordered):
+        if remaining <= 0:
+            break
+        budget = min(remaining, max(200, remaining // min(8, len(ordered) - i)))
+        if len(source.text) <= budget:
+            result.append(source)
+            remaining -= len(source.text)
+        elif source.id.startswith('m:') and budget >= 2:
+            head = budget // 2
+            result.append(source.model_copy(update={'text': source.text[:head], 'excerpted': True}))
+            result.append(
+                source.model_copy(
+                    update={
+                        'id': source.id + ':tail',
+                        'text': source.text[-(budget - head) :],
+                        'excerpted': True,
+                        'original_start': len(source.text) - (budget - head),
+                    }
+                )
+            )
+            remaining -= budget
+        else:
+            result.append(source.model_copy(update={'text': source.text[:budget], 'excerpted': True}))
+            remaining -= budget
     return result
 
 
@@ -314,10 +292,9 @@ def enrich(
     write: Callable[[Path, str], None],
 ) -> List[SampleDiagnosis]:
     """Diagnose a fixed sampled population without touching official outcomes or scores."""
-    selected, strata = select_samples(samples, config)
+    selected, population = select_samples(samples, config)
     c = report.coverage
-    c.strata = strata
-    c.diagnosis_population = sum(s.population for s in strata)
+    c.diagnosis_population = population
     c.selected = len(selected)
     report.diagnosis_model = config.model.model_id
     report.self_evaluation = config.model.model_id.rsplit('/', 1)[-1] == report.model.rsplit('/', 1)[-1]
@@ -326,7 +303,22 @@ def enrich(
     items = {(s.key.subset, s.key.index): s for s in inputs.samples}
     prompts = []
     for s in selected:
-        s.sources = build_sources(items[(s.key.subset, s.key.index)], inputs, config)
+        item = items[(s.key.subset, s.key.index)]
+        s.sources = build_sources(item, inputs, config)
+        sent = {source.id for source in s.sources}
+        s.context_omitted = any(source.excerpted for source in s.sources) or any(
+            (message.text and f'm:{i}' not in sent)
+            or (getattr(message, 'tool_calls', None) and f'calls:{i}' not in sent)
+            for i, message in enumerate(item.record.messages)
+        )
+        if item.record.agent_trace:
+            message_ids = {message.id for message in item.record.messages}
+            s.context_omitted |= any(
+                f'event:{i}' not in sent
+                for i, event in enumerate(item.record.agent_trace.events)
+                if event.type.value in ('error', 'nudge', 'submit', 'env_exec', 'env_reset', 'run_end')
+                or (event.type.value in ('tool_call', 'tool_result') and event.message_id not in message_ids)
+            )
         payload = {
             'sources': [x.model_dump(mode='json') for x in s.sources],
             'outcome': {
@@ -335,6 +327,7 @@ def enrich(
                 'safety_violation': s.safety_violation,
             },
             'findings': [f.model_dump(mode='json') for f in s.findings],
+            'context_omitted': s.context_omitted,
             'types': ISSUE_DEFINITIONS,
             'language': config.language if config.language != 'auto' else DEFAULT_LANGUAGE,
         }
@@ -369,9 +362,6 @@ def enrich(
             sample.llm_status = 'unexplained'
         else:
             sample.llm_status = 'ok'
-            sample.failure_type = parsed.failure_type
-            sample.attribution = parsed.attribution
-            sample.source = 'rule+llm' if sample.rule_failure_type not in (None, 'unexplained') else 'llm'
         return sample, usage
 
     with ThreadPoolExecutor(max_workers=config.concurrency) as pool:
@@ -382,10 +372,6 @@ def enrich(
             c.diagnosed_ok += sample.llm_status == 'ok'
             c.citations_valid += len(sample.llm.evidence) if sample.llm else 0
             c.citations_total += (len(sample.llm.evidence) + sample.invalid_evidence) if sample.llm else 0
-            if sample.llm_status == 'ok' and sample.rule_failure_type not in (None, 'unexplained'):
-                c.rule_reviews += 1
-                c.rule_agreements += sample.rule_failure_type == sample.llm.failure_type
-    c.failed_unexplained_estimate = estimate(strata, selected, lambda s: s.llm_status != 'ok', 'task_failure')
     return selected
 
 

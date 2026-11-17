@@ -112,32 +112,6 @@ def apply_attribution(findings: List[Finding], rules: CompiledRules) -> None:
             finding.confidence = confidence
 
 
-def _order_key(finding: Finding) -> Tuple[int, int]:
-    # Findings without a position (loop-level endings) sort after positioned ones.
-    position = finding.first_position
-    return (0, position) if position is not None else (1, 0)
-
-
-def primary_attribution(findings: List[Finding]) -> Tuple[Optional[Attribution], Optional[Finding]]:
-    """Pick the sample-level attribution.
-
-    1. An environment finding that occurs before the first model finding wins.
-    2. Otherwise the earliest high-confidence finding decides.
-    3. Otherwise the earliest finding decides.
-    Informational findings never count. Returns ``(None, None)`` when nothing remains.
-    """
-    relevant = sorted((f for f in findings if f.category not in INFORMATIONAL_CATEGORIES), key=_order_key)
-    if not relevant:
-        return None, None
-    first_model = next((f for f in relevant if f.attribution == Attribution.MODEL), None)
-    first_env = next((f for f in relevant if f.attribution == Attribution.ENVIRONMENT), None)
-    if first_env is not None and (first_model is None or _order_key(first_env) < _order_key(first_model)):
-        return Attribution.ENVIRONMENT, first_env
-    high = next((f for f in relevant if f.confidence == Confidence.HIGH), None)
-    chosen = high or relevant[0]
-    return chosen.attribution, chosen
-
-
 def resolve_outcome(
     view: TraceView, signals: ProviderSignals, config: TraceAnalysisConfig, findings: List[Finding]
 ) -> Outcome:
@@ -173,4 +147,4 @@ def resolve_outcome(
     return outcome
 
 
-__all__ = ['apply_attribution', 'attribute', 'primary_attribution', 'resolve_outcome']
+__all__ = ['apply_attribution', 'attribute', 'resolve_outcome']

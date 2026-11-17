@@ -311,6 +311,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           ['unknown', c.outcome_unknown], ['executionErrors', c.errored_without_record], ['unreadable', c.unreadable],
         ].filter(([, count]) => Number(count) > 0).map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`).join(' · ')}</p>}
       </div>
+      {issues.length > 1 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.overlappingIssues')}</p>}
       <div className="grid grid-cols-[250px_minmax(0,1fr)] items-start gap-5">
         <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
           <h3 className="border-b border-[var(--border)] pb-3 text-base font-semibold">{t('diagnosis.majorIssues')}</h3>
@@ -334,7 +335,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
             <header className="space-y-1">
               <h3 className="text-lg font-semibold">{selected.title}</h3>
               <p className="text-xs text-[var(--text-muted)]">{selected.count > 0 && `${t(selected.filters.outcome === 'failed' ? 'diagnosis.failedCount' : 'diagnosis.sampleCount', { count: selected.count })} · `}
-                {t(report.level === 'facts' ? 'diagnosis.ruleObservation' : 'diagnosis.modelAnalysis')}</p>
+                {t('diagnosis.ruleObservation')}</p>
               <p className="text-sm leading-relaxed">{selected.description}</p>
               <p className="border-l-2 border-[var(--accent)] pl-3 text-sm leading-relaxed">{selected.suggestion}</p>
             </header>
@@ -369,9 +370,6 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           <p className="text-xs text-[var(--text-muted)]">{t(report.level === 'facts' ? 'diagnosis.ruleAnalysis' : 'diagnosis.modelAnalysis')} · {t('diagnosis.generated')} {new Date(report.generated_at).toLocaleString()}</p>
           {report.level !== 'facts' && <div className="space-y-2">
             <p>{t('diagnosis.proposalCoverage', { ok: c.diagnosed_ok, selected: c.selected, total: c.diagnosis_population })}</p>
-            {c.failed_unexplained_estimate && <p>{t('diagnosis.weightedUnresolved')}: {formatProportion(c.failed_unexplained_estimate.proportion).primary}
-              <span className="ml-2 text-xs">{t('diagnosis.stratifiedInterval')} {formatProportion(c.failed_unexplained_estimate.lower).primary}–{formatProportion(c.failed_unexplained_estimate.upper).primary}</span>
-            </p>}
             {report.self_evaluation && <p>{t('diagnosis.selfEvaluation')}</p>}
           </div>}
           <p>{t('diagnosis.callCount', { count: report.cost.calls })}{report.cost.cached_calls > 0 && ` · ${t('diagnosis.cachedCalls', { count: report.cost.cached_calls })}`}

@@ -254,7 +254,7 @@ export interface DiagnosisResponse {
   status: "ready" | "missing" | "stale" | "error";
 }
 /**
- * Primary classifications of failed or unscored samples, counted once per identity.
+ * Observed issue groups; identities are unique within each group and groups may overlap.
  */
 export interface DiagnosisIssue {
   failed?: number;
@@ -317,42 +317,17 @@ export interface DiagnosisCoverage {
   };
   errored_without_record: number;
   excluded: number;
-  failed_unexplained_estimate: ProportionEstimate | null;
   needs_attention: number;
   outcome_unknown: number;
-  rule_agreements: number;
-  rule_reviews: number;
   samples: number;
   selected: number;
   skipped_facts: {
     [k: string]: string;
   };
-  strata: SamplingStratum[];
   task_failed: number;
   task_success_known: number;
   unexplained_failures: number;
   unreadable: number;
-}
-/**
- * Stratified inverse-probability estimate; bounds use simultaneous stratum Wilson intervals.
- */
-export interface ProportionEstimate {
-  lower: number;
-  method: string;
-  population: number;
-  proportion: number;
-  selected: number;
-  upper: number;
-}
-/**
- * Disjoint subset/cohort stratum sampled without replacement.
- */
-export interface SamplingStratum {
-  cohort: "task_failure" | "scoring_unavailable" | "safety_signal" | "process_finding";
-  inclusion_probability: number;
-  population: number;
-  selected: number;
-  subset: string;
 }
 /**
  * An observation with an explicit denominator and computation definition.
@@ -456,7 +431,6 @@ export interface FailurePattern {
   count: number;
   denominator: number;
   detail: string;
-  estimated_share: ProportionEstimate | null;
   examples: SampleKey[];
   failure_type: string;
   id: string;
@@ -915,6 +889,7 @@ export interface SampleDiagnosis {
    * Who is responsible for a finding.
    */
   attribution: "model" | "guard" | "environment" | "benchmark" | "unknown";
+  context_omitted: boolean;
   evidence_errors: string[];
   failure_type: string | null;
   findings: Finding[];
@@ -923,8 +898,8 @@ export interface SampleDiagnosis {
   llm: LLMDiagnosis | null;
   llm_status: "not_selected" | "ok" | "parse_error" | "transport_error" | "invalid_evidence" | "unexplained";
   needs_attention: boolean;
+  observed_types: string[];
   pattern_id: string | null;
-  rule_failure_type: string | null;
   safety_violation: boolean | null;
   score_status: string;
   score_value: {

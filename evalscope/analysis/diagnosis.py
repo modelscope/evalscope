@@ -26,11 +26,10 @@ from evalscope.report.diagnosis import data_fingerprint, diagnosis_dir, iter_rev
 
 from .facts import collect_facts
 from .inputs import is_choice_letter, load_inputs
-from .trace.attribution import primary_attribution
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '2.3.0'
+ANALYZER_VERSION = '3.0.0'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -101,16 +100,10 @@ def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
         '',
     ]
     if report.level != 'facts':
-        estimate = c.failed_unexplained_estimate
         lines += [
-            f'- Model proposals with valid citations: {c.diagnosed_ok}/{c.selected}; '
-            f'review population: {c.diagnosis_population}. Citation existence is not semantic verification.'
+            f'- Model hypotheses with locatable citations: {c.diagnosed_ok}/{c.selected}; '
+            f'selected from {c.diagnosis_population} eligible samples. Causes remain unverified.'
         ]
-        if estimate:
-            lines += [
-                f'- Failed samples without a grounded model proposal (weighted): {estimate.proportion:.1%}; '
-                f'95% stratified interval [{estimate.lower:.1%}, {estimate.upper:.1%}].'
-            ]
     if report.narrative:
         for item in report.narrative.findings + report.narrative.recommendations:
             lines.append(f'- {item.text} ' + ' '.join(f'[{ref}]' for ref in item.refs))
@@ -202,7 +195,6 @@ def _diagnose_benchmark(
         coverage.errored_without_record = inputs.report.execution_summary.errored
     secrets = _env_secrets()
     samples = []
-    decisive = {}
     choice_task = inputs.is_multiple_choice
     for item in inputs.samples:
         case = item.case
@@ -213,10 +205,8 @@ def _diagnose_benchmark(
             and f.category != FindingCategory.OUTCOME
             and not (f.category == FindingCategory.REFUSAL and case.labels.get('task_kind') == 'harmful')
         ]
-        attribution, finding = primary_attribution(relevant)
-        if finding is not None:
-            decisive[(item.key.subset, item.key.index)] = finding
-        issue = finding_type(finding) if finding else 'unexplained' if case.outcome.task_success is False else None
+        observed = {finding_type(finding) for finding in relevant} - {'unexplained'}
+        issue = sorted(observed)[0] if observed else 'unexplained' if case.outcome.task_success is False else None
         if case.outcome.safety_violation is True and issue is None:
             issue = 'safety_violation'
         if not relevant and not case.tool_call_count and not item.record.agent_trace:
@@ -232,6 +222,8 @@ def _diagnose_benchmark(
                         not prediction.strip() or (choice_task and not is_choice_letter(prediction))
                     ):
                         issue = 'extraction_failure'
+        if issue not in (None, 'unexplained'):
+            observed.add(issue)
         coverage.task_success_known += case.outcome.task_success is not None
         coverage.task_failed += case.outcome.task_success is False
         coverage.outcome_unknown += case.outcome.task_success is None
@@ -249,9 +241,9 @@ def _diagnose_benchmark(
                 score_value=case.score_value,
                 needs_attention=attention,
                 failure_type=issue,
-                rule_failure_type=issue,
+                observed_types=sorted(observed),
                 source='none' if issue in (None, 'unexplained') else 'rule',
-                attribution=attribution or Attribution.UNKNOWN,
+                attribution=Attribution.UNKNOWN,
                 findings=export_findings(case.findings, config.trace),
             )
         )
@@ -274,71 +266,52 @@ def _diagnose_benchmark(
         facts=facts,
         limitations=[
             'Rule findings are observations, not proved causes. Outcome unknown is not a pass.',
-            'Pattern shares use samples needing review, not the official score denominator.',
+            'Observed issue groups may overlap; their counts and shares must not be added.',
             'Provenance and state changes alone do not establish policy violations.',
         ],
     )
-    selected = []
     if config.level != 'facts':
-        from .llm import enrich, estimate, summarize
+        from .llm import enrich, summarize
 
-        selected = enrich(report, samples, inputs, config, target, force, _atomic_write)
+        enrich(report, samples, inputs, config, target, force, _atomic_write)
     grouped = defaultdict(list)
     for sample in samples:
-        if sample.needs_attention and sample.failure_type:
-            finding = decisive.get((sample.key.subset, sample.key.index))
-            detail = finding.subtype if finding and sample.llm_status != 'ok' else ''
-            if finding and sample.llm_status != 'ok' and finding.data.get('tool'):
-                detail += f' @ {finding.data["tool"]}'
-            grouped[(sample.failure_type, sample.attribution, detail)].append(sample)
-
-    def example_order(sample: SampleDiagnosis) -> tuple:
-        finding = decisive.get((sample.key.subset, sample.key.index))
-        rank = {'high': 0, 'medium': 1, 'low': 2}.get(finding.confidence, 3) if finding else 3
-        return rank, sample.key.subset, sample.key.index
-
-    patterns = []
-    for (issue, attribution, detail), members in sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])):
-        identity = 'P-' + hashlib.sha256(f'{issue}/{attribution}/{detail}'.encode()).hexdigest()[:8]
-        for sample in members:
-            sample.pattern_id = identity
-        sources = {s.source for s in members}
-        source = (
-            'rule+llm'
-            if 'rule+llm' in sources or {'rule', 'llm'} <= sources
-            else 'llm'
-            if 'llm' in sources
-            else 'none'
-            if issue == 'unexplained'
-            else 'rule'
+        kinds = sample.observed_types or (
+            [sample.failure_type] if sample.needs_attention and sample.failure_type else []
         )
+        for kind in kinds:
+            grouped[kind].append(sample)
+    patterns = []
+    for issue, members in sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])):
+        identity = 'P-' + hashlib.sha256(issue.encode()).hexdigest()[:8]
+        for sample in members:
+            if sample.failure_type == issue:
+                sample.pattern_id = identity
         patterns.append(
             FailurePattern(
                 id=identity,
                 failure_type=issue,
-                attribution=attribution,
-                detail=detail,
+                attribution=Attribution.UNKNOWN,
                 count=len(members),
                 denominator=coverage.needs_attention,
                 share=len(members) / coverage.needs_attention,
-                by_subset=dict(Counter(s.key.subset for s in members)),
-                examples=[s.key for s in sorted(members, key=example_order)[: min(config.max_examples, 5)]],
-                source=source,
+                by_subset=dict(Counter(sample.key.subset for sample in members)),
+                examples=[
+                    sample.key
+                    for sample in sorted(members, key=lambda sample: (sample.key.subset, sample.key.index))[
+                        : config.max_examples
+                    ]
+                ],
+                source='none' if issue == 'unexplained' else 'rule',
             )
         )
     report.patterns = patterns
     if config.level != 'facts':
-        for pattern in report.patterns:
-            if pattern.source in ('llm', 'rule+llm'):
-                pattern.estimated_share = estimate(
-                    coverage.strata, selected, lambda s: s.llm_status == 'ok' and s.pattern_id == pattern.id
-                )
         if config.level == 'full':
             summarize(report, config, target, force, _atomic_write)
         report.limitations += [
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
-            'Weighted proportions concern model proposals in the frozen review population; failures retain their own denominator.',
-            'Unselected, failed and low-confidence diagnoses remain unresolved for LLM coverage.',
+            'Model hypotheses describe only the selected samples; no population cause estimates are made.',
         ]
     report = DiagnosisReport.model_validate(_redact(report.model_dump(mode='json'), secrets))
     if data_fingerprint(run_dir, model, benchmark) != fingerprint:
@@ -346,7 +319,7 @@ def _diagnose_benchmark(
     sample_text = ''.join(
         json.dumps(_redact(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
         for s in samples
-        if s.task_success is False or s.findings or s.needs_attention
+        if s.task_success is False or s.findings or s.needs_attention or s.llm_status != 'not_selected'
     )
     report.samples_sha256 = hashlib.sha256(sample_text.encode()).hexdigest()
     _atomic_write(samples_path, sample_text)

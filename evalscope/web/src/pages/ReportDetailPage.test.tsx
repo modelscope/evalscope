@@ -48,10 +48,10 @@ const DIAGNOSIS: DiagnosisReport = {
     selected: 0,
     diagnosed_ok: 0,
     diagnosis_statuses: {},
-    strata: [],
-    failed_unexplained_estimate: null,
-    rule_reviews: 0,
-    rule_agreements: 0,
+
+
+
+
     citations_total: 0,
     citations_valid: 0,
   },
@@ -78,7 +78,7 @@ const DIAGNOSIS: DiagnosisReport = {
       by_subset: { example: 1 },
       examples: [{ subset: 'example', index: 7 }],
       source: 'rule',
-      estimated_share: null,
+
     },
   ],
 }
@@ -139,7 +139,7 @@ beforeEach(() => {
       ? { status: 'missing', items: [], total: 0, page: 1, page_size: 200 }
       : ({
           status: 'ready',
-          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, rule_failure_type: null, llm: null, sources: [], invalid_evidence: 0, evidence_errors: [], source: 'rule' }],
+          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [], source: 'rule' }],
           total: 1,
           page: 1,
           page_size: 200,

@@ -413,7 +413,7 @@ def test_safe_refusals_of_harmful_tasks_are_not_failure_patterns(
     assert sample['failure_type'] is None
 
 
-def test_pattern_uses_decisive_finding_and_separates_tools(make_run: Callable) -> None:
+def test_patterns_preserve_multiple_observations_without_assigning_a_cause(make_run: Callable) -> None:
     from evalscope.api.messages import ChatMessageTool
     from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
 
@@ -440,10 +440,11 @@ def test_pattern_uses_decisive_finding_and_separates_tools(make_run: Callable) -
         rows.append(row)
     report = diagnose_benchmark(str(make_run(rows=rows)), 'm', 'demo', config())
     assert len(report.patterns) == 2
-    assert {p.detail for p in report.patterns} == {'structured:timeout @ search', 'structured:timeout @ calendar'}
-    assert all(
-        p.failure_type == 'environment_failure' and p.attribution.value == 'environment' for p in report.patterns
-    )
+    assert {p.failure_type for p in report.patterns} == {'bad_arguments', 'environment_failure'}
+    assert all(p.count == 2 and p.attribution.value == 'unknown' for p in report.patterns)
+    assert report.coverage.task_failed == 2
+    samples = [json.loads(line) for line in (Path(report.run_dir) / 'analysis/m/demo/samples.jsonl').read_text().splitlines()]
+    assert all(row['observed_types'] == ['bad_arguments', 'environment_failure'] for row in samples)
 
 
 def test_fatal_analysis_error_is_visible_and_recovers(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -515,7 +516,7 @@ def test_weak_subset_includes_exact_ten_point_boundary_and_respects_minimum_size
     assert [item['subset'] for item in fact.data['items']] == ['weak']
 
 
-def test_pattern_examples_prefer_confidence_and_are_capped_at_five(
+def test_pattern_examples_follow_configured_limit_without_treating_confidence_as_causation(
     make_run: Callable, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import evalscope.analysis.diagnosis as engine
@@ -559,7 +560,7 @@ def test_pattern_examples_prefer_confidence_and_are_capped_at_five(
     options = config()
     options.max_examples = 10
     result = diagnose_benchmark(str(make_run(rows=rows)), 'm', 'demo', options)
-    assert [key.index for key in result.patterns[0].examples] == [1, 3, 4, 2, 5]
+    assert [key.index for key in result.patterns[0].examples] == [0, 1, 2, 3, 4, 5]
 
 
 def test_html_distinguishes_unknown_outcomes_and_escapes_tool_details(make_run: Callable) -> None:
@@ -592,15 +593,15 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     }
     rows = [
         SampleDiagnosis(key={'subset': 'a', 'index': 1}, task_success=False, score_status='success',
-                        failure_type='tool_error', findings=[finding, finding]),
+                        failure_type='tool_error', observed_types=['tool_error', 'bad_arguments'], findings=[finding, finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 2}, task_success=False, score_status='success',
-                        failure_type='tool_error', findings=[finding]),
+                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 3}, task_success=True, score_status='success',
-                        failure_type='tool_error', findings=[finding]),
+                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 4}, score_status='parse_error',
                         failure_type='judge_failure'),
         SampleDiagnosis(key={'subset': 'b', 'index': 5}, score_status='success',
-                        failure_type='tool_error', findings=[finding]),
+                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 6}, task_success=True, score_status='success',
                         safety_violation=True),
     ]
@@ -618,6 +619,7 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert summary['issues'][0]['failed'] == 2
     assert summary['issues'][0]['tools'] == {'search': 2}
     assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'judge_failure')['unscored'] == 1
+    assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'bad_arguments')['failed'] == 1
     assert summary['risk_samples'] == 1
     assert summary['passed_observations'] == 1
     params = {'dataset_name': 'demo', 'failure_type': 'tool_error', 'outcome': 'failed', 'page_size': 1}
@@ -646,3 +648,26 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
         'dataset_name': 'demo', 'subset_name': 'default', 'index': full[0]['Index'],
     }).get_json()['predictions']
     assert single == full[:1]
+
+
+def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable) -> None:
+    from evalscope.report.diagnosis import load_diagnosis
+
+    root = make_run()
+    diagnose_benchmark(str(root), 'm', 'demo', config())
+    path = root / 'analysis/m/demo/diagnosis.json'
+    data = json.loads(path.read_text())
+    data['schema_version'] = 1
+    path.write_text(json.dumps(data))
+    assert load_diagnosis(str(root), 'm', 'demo') == ('stale', None)
+
+
+@pytest.mark.parametrize('payload', [None, [], False])
+def test_malformed_artifact_root_is_an_error_without_breaking_report_loading(make_run: Callable, payload: object) -> None:
+    from evalscope.report.diagnosis import load_diagnosis
+
+    root = make_run()
+    path = root / 'analysis/m/demo/diagnosis.json'
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(payload))
+    assert load_diagnosis(str(root), 'm', 'demo') == ('error', None)

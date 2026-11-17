@@ -7,7 +7,7 @@ from typing import Callable
 import pytest
 
 from evalscope.analysis.diagnosis import diagnose_benchmark
-from evalscope.analysis.llm import build_sources, estimate, select_samples, validate_evidence
+from evalscope.analysis.llm import build_sources, select_samples, validate_evidence
 from evalscope.api.analysis import (
     AnalysisReportConfig,
     DiagnosticSource,
@@ -58,20 +58,34 @@ def sample(index: int,subset: str='large',failed: bool=True) -> SampleDiagnosis:
                            score_status='success',needs_attention=True,failure_type='unexplained')
 
 
-def test_sampling_is_order_independent_covers_every_stratum_and_weights_small_subsets() -> None:
-    rows=[sample(i) for i in range(90)]+[sample(i,'small') for i in range(10)]
-    selected,strata=select_samples(rows,options(max_diagnosed_samples=10))
-    reverse,other=select_samples(list(reversed(rows)),options(max_diagnosed_samples=10))
-    assert [s.key for s in selected]==[s.key for s in reverse] and strata==other
-    assert len(selected)==10 and sum(s.population for s in strata)==100
-    result=estimate(strata,selected,lambda s:s.key.subset=='small')
-    assert result.proportion==pytest.approx(0.1)
-    assert result.lower <= result.proportion <= result.upper
-    census,full=select_samples(rows,options(max_diagnosed_samples=100))
-    result=estimate(full,census,lambda s:s.key.subset=='small')
-    assert result.lower==result.upper==result.proportion==0.1
-    with pytest.raises(ValueError,match='strata'):
-        select_samples(rows,options(max_diagnosed_samples=1))
+def test_scoped_selection_is_repeatable_and_never_spends_failure_budget_on_passing_rows() -> None:
+    rows = [sample(i) for i in range(100)] + [sample(i + 100, failed=False) for i in range(900)]
+    selected, population = select_samples(rows, options())
+    reverse, other = select_samples(list(reversed(rows)), options())
+    assert population == other == 100 and len(selected) == 50
+    assert [s.key for s in selected] == [s.key for s in reverse]
+    assert all(s.task_success is False for s in selected)
+    all_rows, population = select_samples(rows, options(scope='all', max_diagnosed_samples=None))
+    assert len(all_rows) == population == 1000
+    passing, population = select_samples(rows, options(scope='process', max_diagnosed_samples=3))
+    assert population == 900 and len(passing) == 3 and all(s.task_success is True for s in passing)
+
+
+def test_selection_supports_all_limits_explicit_samples_and_more_subsets_than_budget() -> None:
+    rows = [sample(i, f'subset-{i}') for i in range(51)]
+    selected, population = select_samples(rows, options())
+    assert len(selected) == 50 and population == 51
+    all_rows, _ = select_samples(rows, options(max_diagnosed_samples=None))
+    assert len(all_rows) == 51
+    one, _ = select_samples(rows, options(max_diagnosed_samples=1))
+    assert len(one) == 1
+    explicit, population = select_samples(rows, options(samples=[rows[27].key], max_diagnosed_samples=None))
+    assert [s.key for s in explicit] == [rows[27].key] and population == 1
+    with pytest.raises(ValueError, match='unavailable'):
+        select_samples(rows, options(samples=[SampleKey(subset='missing', index=1)]))
+    for limit in (0, -1, True):
+        with pytest.raises(ValueError):
+            options(max_diagnosed_samples=limit)
 
 
 def fake_model(monkeypatch: pytest.MonkeyPatch,reply: Callable, calls: list) -> None:
@@ -100,11 +114,13 @@ def test_full_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run:
     assert report.coverage.selected==report.coverage.diagnosed_ok==1
     assert report.cost.calls==2 and report.cost.input_tokens==40
     assert len(report.narrative.findings)==1 and len(calls)==2
-    assert report.coverage.failed_unexplained_estimate.proportion==0
+    assert report.coverage.diagnosis_population == 1
     assert (root/'reviews/m/demo_default.jsonl').read_bytes()==original
     rows=[json.loads(line) for line in (root/'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
     assert rows[0]['llm']['evidence'][0]['quote']=='ANSWER: B'
-    assert rows[0]['rule_failure_type']=='unexplained' and rows[0]['failure_type']=='reasoning_error'
+    assert rows[0]['failure_type'] == 'unexplained' and rows[0]['observed_types'] == []
+    assert rows[0]['llm']['failure_type'] == 'reasoning_error'
+    assert report.patterns[0].failure_type == 'unexplained' and report.patterns[0].source == 'none'
     (root/'analysis/m/demo/diagnosis.json').unlink()
     resumed=diagnose_benchmark(str(root),'m','demo',options())
     assert resumed.cost.calls==0 and resumed.cost.cached_calls==2 and len(calls)==2
@@ -130,7 +146,7 @@ def test_failed_diagnoses_never_count_as_explained(make_run: Callable,monkeypatc
     fake_model(monkeypatch,reply,calls)
     report=diagnose_benchmark(str(root),'m','demo',options().model_copy(update={'level':'diagnose'}))
     assert report.coverage.diagnosis_statuses=={status:1}
-    assert report.coverage.diagnosed_ok==0 and report.coverage.failed_unexplained_estimate.proportion==1
+    assert report.coverage.diagnosed_ok == 0 and report.coverage.unexplained_failures == 1
     assert report.patterns[0].failure_type=='unexplained'
     if mode in ('parse','transport'):
         diagnose_benchmark(str(root),'m','demo',options().model_copy(update={'level':'diagnose'}))
@@ -163,7 +179,7 @@ def test_excerpting_preserves_the_answer_tail_and_records_real_generation_end(ma
     from evalscope.analysis.inputs import load_inputs
     root=make_run(rows=[review(0,0,output='head '+('long thought '*500)+' FINAL ANSWER: B')])
     data=load_inputs(str(root),'m','demo',options().trace)
-    sources=build_sources(data.samples[0],data,options())
+    sources=build_sources(data.samples[0],data,options(max_input_chars=2000))
     by_id={s.id:s for s in sources}
     assert by_id['m:1'].excerpted and by_id['m:1:tail'].excerpted
     assert by_id['m:1:tail'].text.endswith('FINAL ANSWER: B')
@@ -257,3 +273,101 @@ def test_validation_retains_missing_roots_and_high_confidence_false_positives() 
     missing=label.model_copy(update={'key':SampleKey(subset='large',index=1)})
     result=evaluate_labels([s],[label,missing])
     assert result['root_step_labeled']==2 and result['root_step_accuracy']==0.5
+
+
+def test_complete_short_messages_include_the_middle_without_artificial_thirty_message_cutoff(make_run: Callable) -> None:
+    from evalscope.analysis.inputs import load_inputs
+    from evalscope.api.messages import ChatMessageAssistant
+
+    data = load_inputs(str(make_run()), 'm', 'demo', options().trace)
+    item = data.samples[0]
+    item.record.messages = [ChatMessageAssistant(content=f'message {i}') for i in range(60)]
+    sources = build_sources(item, data, options())
+    assert {s.message_index for s in sources if s.id.startswith('m:')} == set(range(60))
+    assert not any(s.excerpted for s in sources)
+
+
+def test_long_input_keeps_middle_finding_recovery_and_final_answer(make_run: Callable) -> None:
+    from evalscope.analysis.inputs import load_inputs
+    from evalscope.api.analysis import Evidence, Finding
+    from evalscope.api.messages import ChatMessageAssistant
+
+    data = load_inputs(str(make_run()), 'm', 'demo', options().trace)
+    item = data.samples[0]
+    item.record.messages = [ChatMessageAssistant(content=f'message {i} ' + 'irrelevant ' * 300) for i in range(60)]
+    item.record.messages[20].content = 'The tool failed.'
+    item.record.messages[21].content = 'The retry succeeded; recovered.'
+    item.record.messages[59].content = 'FINAL ANSWER: B'
+    item.case.findings = [Finding(category='tool_failure', subtype='runtime_error', confidence='high',
+                                  detector='test', evidence=[Evidence(message_index=20, excerpt='The tool failed.')])]
+    sources = build_sources(item, data, options(max_input_chars=4000))
+    by_id = {s.id: s for s in sources}
+    assert by_id['m:20'].text == 'The tool failed.'
+    assert by_id['m:21'].text == 'The retry succeeded; recovered.'
+    assert by_id['m:59'].text == 'FINAL ANSWER: B'
+    assert sum(len(source.text) for source in sources) <= 4000
+
+
+def test_full_model_analysis_never_claims_population_cause_estimates(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    fake_model(monkeypatch, lambda prompt, n: json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+               if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls)
+    report = diagnose_benchmark(str(make_run()), 'm', 'demo', options(max_diagnosed_samples=None))
+    assert report.coverage.selected == report.coverage.diagnosis_population == 1
+    assert 'failed_unexplained_estimate' not in report.coverage.model_dump()
+    assert all('estimated_share' not in pattern.model_dump() for pattern in report.patterns)
+
+
+@pytest.mark.parametrize('value,expected', [('all', None), ('1', 1), ('137', 137)])
+def test_cli_model_sample_budget_accepts_all_and_specific_counts(monkeypatch: pytest.MonkeyPatch, value: str, expected: object) -> None:
+    from argparse import Namespace
+
+    from evalscope.cli.analyze import AnalyzeCMD
+
+    captured = []
+    def diagnose(*args: object) -> list:
+        captured.append(args[1])
+        return []
+    monkeypatch.setattr('evalscope.analysis.diagnose_run', diagnose)
+    args = Namespace(analysis_config=None, level='facts', max_samples=value, run_dir='unused', model=None, benchmark=None, force=False)
+    with pytest.raises(ValueError, match='No matching'):
+        AnalyzeCMD(args).execute()
+    assert captured[0].max_diagnosed_samples == expected
+
+
+def test_explicit_passing_sample_is_retained_without_becoming_a_failure(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    fake_model(monkeypatch, lambda *args: verdict().model_dump_json(), calls)
+    root = make_run(rows=[review(0, 1)])
+    result = diagnose_benchmark(str(root), 'm', 'demo', options(samples=[SampleKey(subset='default', index=0)]))
+    rows = [json.loads(line) for line in (root / 'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
+    assert result.coverage.task_failed == 0 and len(rows) == 1
+    assert rows[0]['task_success'] is True and rows[0]['failure_type'] is None
+    assert rows[0]['llm']['failure_type'] == 'reasoning_error'
+
+
+def test_trace_only_tool_evidence_is_not_lost_when_messages_do_not_contain_it(make_run: Callable) -> None:
+    from evalscope.analysis.inputs import load_inputs
+    from evalscope.api.agent.trace import AgentTrace, AgentTraceEvent
+
+    data = load_inputs(str(make_run()), 'm', 'demo', options().trace)
+    item = data.samples[0]
+    item.record.agent_trace = AgentTrace(events=[
+        AgentTraceEvent(type='tool_call', step=7, payload={'tool': 'search', 'args': {'query': 'specific'}}),
+        AgentTraceEvent(type='tool_result', step=7, payload={'result': 'found evidence'}),
+    ])
+    sources = {source.id: source for source in build_sources(item, data, options())}
+    assert sources['event:0'].step == 7 and 'specific' in sources['event:0'].text
+    assert sources['event:1'].step == 7 and 'found evidence' in sources['event:1'].text
+
+
+def test_agreeing_on_unknown_never_certifies_model_explanation_accuracy() -> None:
+    from evalscope.analysis.validation import DiagnosticLabel, evaluate_labels
+
+    record = sample(0)
+    label = DiagnosticLabel(key=record.key, failure_type='unexplained', attribution='unknown',
+                            evidence_supported=True, annotator='human', user_reviewed=True)
+    metrics = evaluate_labels([record], [label])
+    assert metrics['type_accuracy'] == 1
+    assert metrics['proposal_type_accuracy'] is None and metrics['proposal_coverage'] == 0
+    assert metrics['experimental']

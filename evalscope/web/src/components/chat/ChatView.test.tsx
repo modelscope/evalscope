@@ -180,13 +180,13 @@ it('keeps the question and answer ahead of the result and collapsed diagnostic d
   render(<LocaleProvider><ChatView
     prediction={{ ...tracedPrediction, Input: 'Question first', Generated: 'Answer second', Messages: null, AgentTrace: null }}
     diagnosis={{
-      llm: null, llm_status: 'not_selected', sources: [], rule_failure_type: null, source: 'none', invalid_evidence: 0, evidence_errors: [],
+      llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], source: 'none', invalid_evidence: 0, evidence_errors: [],
       key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
       score_status: 'success', stop_reason: 'stop', score_value: {}, needs_attention: true,
       failure_type: 'unexplained', attribution: 'unknown', findings: [], pattern_id: null,
     }}
   /></LocaleProvider>)
-  const summary = screen.getByText(/Sample analysis · No explanation yet/)
+  const summary = screen.getByText(/Sample analysis · No rule clues yet/)
   expect(screen.getByText('Answer second').compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(summary.closest('details')).not.toHaveAttribute('open')
   fireEvent.click(summary)
@@ -198,8 +198,8 @@ it('highlights evidence only inside the referenced message', () => {
     key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
     score_status: 'success', stop_reason: null, score_value: {}, needs_attention: true,
     failure_type: 'reasoning_error', attribution: 'model', findings: [], pattern_id: null,
-    rule_failure_type: 'unexplained', source: 'llm', invalid_evidence: 0, evidence_errors: [], llm_status: 'ok',
-    sources: [{ id: 'm:1', text: 'Shared quotation', message_index: 1, step: null, excerpted: false, original_start: 0 }],
+    observed_types: [], source: 'llm', invalid_evidence: 0, evidence_errors: [], llm_status: 'ok',
+    context_omitted: false, sources: [{ id: 'm:1', text: 'Shared quotation', message_index: 1, step: null, excerpted: false, original_start: 0 }],
     llm: { failure_type: 'reasoning_error', secondary_types: [], attribution: 'model', root_cause_step: null,
       explanation: 'A candidate explanation.', confidence: 'medium', gold_suspect: false,
       evidence: [{ source_id: 'm:1', start: 0, end: 16, quote: 'Shared quotation' }] },
@@ -214,7 +214,7 @@ it('highlights evidence only inside the referenced message', () => {
 
 it.each(['fallback', 'degraded'])('preserves usable %s scoring in the shared reader', (status) => {
   render(<LocaleProvider><ChatView prediction={tracedPrediction} diagnosis={{
-    llm: null, llm_status: 'not_selected', sources: [], rule_failure_type: null, source: 'none', invalid_evidence: 0, evidence_errors: [],
+    llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], source: 'none', invalid_evidence: 0, evidence_errors: [],
     key: { subset: 'default', index: 0 }, task_success: true, safety_violation: null,
     score_status: status, stop_reason: 'stop', score_value: {}, needs_attention: false,
     failure_type: null, attribution: 'unknown', findings: [], pattern_id: null,
