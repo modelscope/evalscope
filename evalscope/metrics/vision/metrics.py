@@ -559,9 +559,10 @@ class LongTextScore(_TextRenderingMetric):
             base_url = self.api_url or os.getenv(
                 'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
             )
-            api_key = get_secret_value(self.api_key) if self.api_key else os.getenv('EVALSCOPE_API_KEY')
+            api_key = get_secret_value(self.api_key) if self.api_key else None
             if not api_key and self.api_url is None:
                 api_key = os.getenv('DASHSCOPE_API_KEY')
+            api_key = api_key or os.getenv('EVALSCOPE_API_KEY')
             defaults: Dict[str, Any] = {'max_tokens': 1024, 'temperature': 0}
             if self.model_name == 'qwen3.8-flash':
                 defaults['extra_body'] = {'enable_thinking': False}

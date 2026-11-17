@@ -419,6 +419,31 @@ def test_hf_language_files_and_list_targets(tmp_path, monkeypatch):
     assert data['zh'][0].target == '出口 换乘'
 
 
+def test_default_transcription_key_is_independent_of_image_service(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from PIL import Image
+
+    import evalscope.api.model as model_api
+    from evalscope.api.model import ModelOutput
+    from evalscope.metrics.vision.metrics import LongTextScore
+
+    monkeypatch.setenv('DASHSCOPE_API_KEY', 'transcription-key')
+    monkeypatch.setenv('EVALSCOPE_API_KEY', 'image-service-key')
+    image_path = tmp_path / 'image.png'
+    Image.new('RGB', (4, 4)).save(image_path)
+    calls = []
+
+    def get_model(*args, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(generate=lambda **unused: ModelOutput.from_content('vision', 'hello'))
+
+    monkeypatch.setattr(model_api, 'get_model', get_model)
+    result = LongTextScore()(str(image_path), 'hello')
+    assert result.main_value == 1.0
+    assert calls[0]['api_key'] == 'transcription-key'
+
+
 @pytest.mark.parametrize('status, finish_reason, transcript, expected', [
     (200, 'stop', 'hello world', 1.0),
     (200, 'stop', 'No text recognized.', 0.0),
