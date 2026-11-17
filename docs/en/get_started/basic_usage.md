@@ -137,14 +137,14 @@ evalscope eval \
 
 For tasks that require multiple generations (such as math problems), you can specify the number of repeated generations k using the `--repeats` parameter, and adjust the result aggregation method through `dataset-args`, such as `mean_and_vote_at_k`, `mean_and_pass_at_k`, `mean_and_pass_hat_k`.
 
-These aggregators emit multiple metrics. Set `primary_metric` to select exactly one report headline; the example below selects mean accuracy while retaining every vote@k result.
+These aggregators retain the ordinary mean and every k-specific result. The example uses mean accuracy as the report headline by default.
 
 ```shell
 evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --datasets gsm8k \
  --limit 10 \
- --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k", "primary_metric": {"name": "accuracy", "aggregation": "mean"}}}' \
+ --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k"}}' \
  --repeats 5
 ```
 

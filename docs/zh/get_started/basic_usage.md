@@ -197,18 +197,18 @@ evalscope eval \
 
 对于需要多次生成的任务（如数学题），可以通过 `--repeats` 参数指定重复生成次数k，并使用 `dataset-args` 调整结果聚合方式，例如 `mean_and_vote_at_k`、`mean_and_pass_at_k`、`mean_and_pass_hat_k`。
 
-这些聚合方式会输出多个指标，需要通过 `primary_metric` 明确选择一个报告主指标。下面的示例选择平均准确率，同时保留全部 vote@k 结果。
+这些聚合方式会同时保留普通 mean 和各项 k 聚合结果。示例默认将平均准确率作为报告主指标。
 
 ```shell
 evalscope eval \
  --model Qwen/Qwen2.5-0.5B-Instruct \
  --datasets gsm8k \
  --limit 10 \
- --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k", "primary_metric": {"name": "accuracy", "aggregation": "mean"}}}' \
+ --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k"}}' \
  --repeats 5
 ```
 
-如需选择 vote@5，可使用 `"primary_metric": {"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`。结构化选择器中的指标名称需使用规范名称，例如 `accuracy`。JSON、YAML 配置文件和保存的任务配置均支持这一写法。
+如需改为 vote@5，可使用 `"primary_metric": {"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`。结构化选择器中的指标名称需使用规范名称，例如 `accuracy`。JSON、YAML 配置文件和保存的任务配置均支持这一写法。
 
 ```{seealso}
 查看所有可配置项，请参考：[全部参数说明](parameters.md)
