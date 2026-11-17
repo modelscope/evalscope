@@ -3,41 +3,28 @@
 
 ## Overview
 
-CVTG-2K is a benchmark of 2,000 prompts for evaluating complex visual text generation
-(TextCrafter, arXiv:2503.23461). Prompts contain 2-5 quoted text regions that the generated
-image must render; prompts are organized by region count under the CVTG and CVTG-Style splits
-(the latter annotates style attributes such as size, color and font).
+CVTG-2K evaluates whether text-to-image models accurately render multiple text regions in one image.
 
 ## Task Description
 
-- **Task Type**: Text-to-Image Generation Evaluation (text rendering)
-- **Input**: Text prompt with quoted text regions
-- **Output**: Generated image scored with Word Accuracy and word-level NED against the quoted text
-- **Domain**: Complex visual text generation for text-to-image models
+- **Task Type**: Text-to-image generation
+- **Input**: Prompt specifying 2-5 quoted text regions
+- **Output**: Image containing the requested text
+- **Domain**: Multi-region text rendering
 
 ## Key Features
 
-- 2,000 prompts (CVTG and CVTG-Style splits, 2-5 text regions each) from the official
-  TextCrafter release
-- Scores Word Accuracy and word-level NED against the single-quoted fragments of each prompt,
-  mirroring the official TextCrafter evaluator including its corpus-level aggregation
-- Shares one PaddleOCR engine across both metrics per language
+- 2,000 prompts from TextCrafter: CVTG (1,002) and CVTG-Style (998).
+- CVTG-Style additionally specifies text size, color and font.
+- Loads the ModelScope mirror by default; the official Hugging Face source is also supported.
 
 ## Evaluation Notes
 
-- Ground-truth words are the single-quoted fragments of each prompt, matching the official
-  TextCrafter evaluator; repeated ground-truth words are not consumed
-- Metrics: cvtg_word_accuracy (membership word match) and cvtg_ned (word-level best-match
-  Levenshtein similarity, higher is better), both aggregated corpus-level (total numerator /
-  total denominator) as in the official evaluator
-- Loads the complete 2,000-prompt ModelScope mirror by default. The CVTG and CVTG-Style
-  configurations contain 1,002 and 998 test examples, respectively; the original source is
-  [dnkdnk/CVTG-2K](https://huggingface.co/datasets/dnkdnk/CVTG-2K).
-- Install PaddleOCR 2.x and PaddlePaddle for OCR scoring (for example, paddleocr==2.10.0
-  and paddlepaddle==2.6.2). Missing dependencies or OCR failures exclude the affected
-  metric instead of assigning a zero. A valid image with no recognized text counts as missing text.
-- Images can be generated with a local diffusion model or an OpenAI-compatible image
-  generation service; set model_task='image_generation' and eval_type='text2image'.
+- Requires PaddleOCR 2.x and PaddlePaddle to recognize generated text.
+- Word Accuracy and word-level normalized edit similarity (NED, higher is better) follow the official evaluator,
+  aggregating across all ground-truth words rather than averaging image scores.
+- These metrics assess text content, not font, color, layout or image aesthetics.
+- Scoring failures are excluded; valid images with no recognized text count as missing text.
 
 
 ## Properties
@@ -76,7 +63,7 @@ image must render; prompts are organized by region count under the CVTG and CVTG
 {
   "input": [
     {
-      "id": "dd076101",
+      "id": "7c67e1db",
       "content": "A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'."
     }
   ],
@@ -96,7 +83,10 @@ image must render; prompts are organized by region count under the CVTG and CVTG
     ],
     "benchmark_type": "CVTG",
     "region_count": 2,
-    "category": "CVTG"
+    "category": "CVTG",
+    "tags": [],
+    "id": "",
+    "image_path": ""
   }
 }
 ```

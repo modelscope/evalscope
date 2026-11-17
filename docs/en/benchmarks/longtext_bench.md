@@ -3,46 +3,31 @@
 
 ## Overview
 
-LongText-Bench (X-Omni, arXiv:2507.22058) evaluates long text rendering with 160 prompts each
-for English and Chinese, across 8 text-rich scenes (signboards, labeled objects, printed
-materials, webpages, slides, posters, subtitles, dialogues).
+LongText-Bench evaluates whether text-to-image models accurately render long English and Chinese text.
 
 ## Task Description
 
-- **Task Type**: Text-to-Image Generation Evaluation (text rendering)
-- **Input**: Text prompt describing a text-rich scene
-- **Output**: Generated image transcribed by a VLM and matched against the ground-truth text
-- **Domain**: Long text rendering for text-to-image models
+- **Task Type**: Text-to-image generation
+- **Input**: Prompt describing a scene with specified text
+- **Output**: Image containing the requested text
+- **Domain**: Long text rendering
 
 ## Key Features
 
-- 160 English + 160 Chinese prompts across 8 text-rich scene categories from the official
-  X-Omni release
-- Text Score compares the VLM transcription with the ground-truth fragments, word-level for
-  English and character-level for Chinese, corpus-aggregated as in the official evaluator
-- Language is detected per sample from the ground-truth text, so one run covers both languages
+- 160 English and 160 Chinese prompts from X-Omni, covering 8 scenes including posters,
+  webpages and slides.
+- Loads the ModelScope mirror by default; the official Hugging Face source is also supported.
 
 ## Evaluation Notes
 
-- The ground truth is the dataset ``text`` field (a list of rendered fragments, joined with
-  spaces like the official evaluator), passed to the scorer as the sample target
-- Text Score is a Counter-intersection match ratio: word-level for English, character-level
-  for Chinese (whitespace removed). Each language score is total matched / total ground
-  truth tokens; the overall score averages the English and Chinese scores, as in the
-  official leaderboard. Evaluating one language returns that language's score.
-- Loads the ModelScope mirror by default, with 160 test examples in each of the en and zh
-  configurations. Original data: [X-Omni/LongText-Bench](https://huggingface.co/datasets/X-Omni/LongText-Bench).
-- Transcription uses an OpenAI-compatible vision API, defaulting to qwen3.8-flash on
-  DashScope with thinking disabled. Set DASHSCOPE_API_KEY; no local VLM weights or accelerator
-  are required. Metric args model, api_url, api_key and generation_config configure a different
-  transcription service independently of the image generation model.
-- Matching and language aggregation follow the official evaluator. The official transcription
-  model is Qwen2.5-VL-7B; using qwen3.8-flash or another VLM can change the score, so those
-  results must be identified by transcription model and are not directly comparable to the official results.
-- Transcription failures and API token-limit truncation exclude the affected metric instead
-  of assigning zero; a valid empty transcription scores zero.
-- Set model_task='image_generation' and eval_type='text2image'. For the official repeated-image
-  protocol, use repeats=4; limit is intended only for smoke runs.
+- A vision API transcribes the image. Text Score is matched tokens divided by ground-truth
+  tokens (English words or Chinese characters). The overall score averages the two language scores.
+- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are needed.
+  The official evaluator uses Qwen2.5-VL-7B, so results from different transcription models
+  are not directly comparable.
+- Scoring follows the official matching rules; use repeats=4 for its repeated-image protocol.
+  Text Score does not assess layout or aesthetics. API failures and truncated replies are excluded;
+  valid empty transcriptions score zero.
 
 
 ## Properties
@@ -81,7 +66,7 @@ materials, webpages, slides, posters, subtitles, dialogues).
 {
   "input": [
     {
-      "id": "e0b33751",
+      "id": "e1c21379",
       "content": "A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \"CENTRAL PARK - 2 BLOCKS\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere."
     }
   ],
@@ -98,7 +83,10 @@ materials, webpages, slides, posters, subtitles, dialogues).
       "CENTRAL PARK - 2 BLOCKS"
     ],
     "text_length": 15,
-    "prompt_id": 0
+    "prompt_id": 0,
+    "tags": [],
+    "id": "",
+    "image_path": ""
   }
 }
 ```

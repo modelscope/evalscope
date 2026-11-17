@@ -1,9 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-"""Tests for the X2I text-rendering benchmarks (CVTG-2K, LongText-Bench) from issue #1929.
-
-The scoring cores mirror the official evaluators (TextCrafter and X-Omni); the metric
-backends are stubbed so the full pipeline runs without OCR/VLM dependencies.
-"""
+"""Official scoring, native loading, API and report regressions for text-rendering benchmarks."""
 import base64
 import json
 import threading
@@ -33,90 +29,54 @@ def isolated_metric_cache(monkeypatch):
 class TestTextRenderScoringCore:
     """The pure scoring functions must reproduce the official evaluator results."""
 
-    def test_extract_quoted_words(self):
-        prompt = "A sign saying 'HELLO WORLD' and 'OPEN 24H'"
-        assert text_render.extract_quoted_words(prompt) == ['hello', 'world', 'open', '24h']
+    @pytest.mark.parametrize('prompt, expected', [
+        ("A sign saying 'HELLO WORLD' and 'OPEN 24H'", ['hello', 'world', 'open', '24h']),
+        ('no quotes here', []),
+    ])
+    def test_extract_quoted_words(self, prompt, expected):
+        assert text_render.extract_quoted_words(prompt) == expected
 
-    def test_extract_quoted_words_empty(self):
-        assert text_render.extract_quoted_words('no quotes here') == []
+    @pytest.mark.parametrize('gt, predicted, expected', [
+        (['hello', 'world'], ['hello', 'world', 'extra'], (1.0, 2, 2)),
+        (['hello', 'hello'], ['hello'], (1.0, 2, 2)),  # Repeated GT words are not consumed.
+        (['hello'], ['world'], (0.0, 0, 1)),
+        ([], ['anything'], (0.0, 0, 0)),
+    ])
+    def test_word_accuracy(self, gt, predicted, expected):
+        assert text_render.word_accuracy_counts(gt, predicted) == expected
 
-    def test_word_accuracy_exact_match(self):
-        assert text_render.word_accuracy(['hello', 'world'], ['hello', 'world', 'extra']) == 1.0
+    @pytest.mark.parametrize('gt, predicted, expected', [
+        (['helo', 'cat'], ['hello', 'cat', 'dog'], (1.8 / 2, 1.8, 2)),
+        (['hello'], [], (1 - 5 / (5 + 1e-5), 1 - 5 / (5 + 1e-5), 1)),
+        ([], ['hello'], (0.0, 0.0, 0)),
+    ])
+    def test_word_ned(self, gt, predicted, expected):
+        assert text_render.word_ned_counts(gt, predicted) == pytest.approx(expected, abs=1e-6)
 
-    def test_word_accuracy_repeated_words_not_consumed(self):
-        # Official rule: each GT word only checks membership in the recognized words, so a
-        # repeated GT word does not consume a second occurrence in the prediction.
-        assert text_render.word_accuracy(['hello', 'hello'], ['hello', 'other']) == 1.0
-        score, matched, total = text_render.word_accuracy_counts(['hello', 'hello'], ['hello'])
-        assert (score, matched, total) == (1.0, 2, 2)
-
-    def test_word_accuracy_no_match(self):
-        assert text_render.word_accuracy(['hello'], ['world']) == 0.0
-
-    def test_word_accuracy_empty_gt(self):
-        assert text_render.word_accuracy([], ['anything']) == 0.0
-
-    def test_word_level_ned_best_match(self):
-        # Each GT word matches its closest prediction: 'helo'~'hello' (1 - 1/5), 'cat'~'cat' (1.0)
-        score = text_render.word_level_ned(['helo', 'cat'], ['hello', 'cat', 'dog'])
-        assert abs(score - (0.8 + 1.0) / 2) < 1e-6
-
-    def test_word_level_ned_counts(self):
-        score, sim_sum, word_count = text_render.word_ned_counts(['helo', 'cat'], ['hello', 'cat', 'dog'])
-        assert abs(sim_sum - 1.8) < 1e-6
-        assert word_count == 2
-        assert abs(score - 0.9) < 1e-6
-
-    def test_word_level_ned_no_prediction(self):
-        assert text_render.word_level_ned(['hello'], []) == pytest.approx(1 - 5 / (5 + 1e-5))
-
-    def test_text_score_en(self):
-        # English: word-level Counter intersection over the ground truth.
-        assert text_render.text_score('Hello World', 'hello world and more', lang='en') == 1.0
-
-    def test_text_score_en_partial(self):
-        score = text_render.text_score('Hello Big World', 'hello world', lang='en')
-        assert abs(score - 2 / 3) < 1e-6
-
-    def test_text_score_zh(self):
-        # Chinese: character-level; every GT char of '出口A' appears in the prediction.
-        assert text_render.text_score('出口A', '出口A出口', lang='zh') == 1.0
-
-    def test_text_score_zh_counts_each_char_once(self):
-        # Official Chinese example: GT '出口A换乘2号线' (8 chars) vs '出口A换乘2号' (7) → 0.875.
-        assert abs(text_render.text_score('出口A换乘2号线', '出口A换乘2号', lang='zh') - 0.875) < 1e-6
-
-    def test_text_score_zh_removes_whitespace(self):
-        # Official Chinese normalization removes all whitespace: '出口 A' equals '出口A'.
-        assert text_render.text_score('出口A', '出口 A', lang='zh') == 1.0
-
-    def test_text_score_detects_language_per_sample(self):
-        # lang=None detects the language from the ground truth, so one run covers en + zh.
-        assert text_render.text_score('Hello World', 'hello world') == 1.0
-        assert text_render.text_score('出口A换乘2号线', '出口A换乘2号') == 0.875
-
-    def test_text_score_ignores_illegal_chars(self):
-        # Punctuation and whitespace are stripped before matching.
-        assert text_render.text_score('Hello, World!', 'hello world', lang='en') == 1.0
+    @pytest.mark.parametrize('gt, predicted, lang, expected', [
+        ('Hello World', 'hello world and more', 'en', (1.0, 2, 2)),
+        ('Hello Big World', 'hello world', 'en', (2 / 3, 2, 3)),
+        ('出口A', '出口A出口', 'zh', (1.0, 3, 3)),
+        ('出口A换乘2号线', '出口A换乘2号', 'zh', (0.875, 7, 8)),
+        ('出口A', '出口 A', 'zh', (1.0, 3, 3)),
+        ('Hello World', 'hello world', None, (1.0, 2, 2)),
+        ('出口A换乘2号线', '出口A换乘2号', None, (0.875, 7, 8)),
+        ('Hello, World!', 'hello world', 'en', (1.0, 2, 2)),
+        ('', 'hello', None, (0.0, 0, 0)),
+    ])
+    def test_text_score(self, gt, predicted, lang, expected):
+        assert text_render.text_score_counts(gt, predicted, lang) == expected
 
 
 class TestX2IAdapters:
     def test_cvtg_record_to_sample(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.cvtg2k_adapter import CVTG2KAdapter
-
-        meta = BenchmarkMeta(name='cvtg_2k', dataset_id='x', subset_list=['CVTG'], metric_list=['CVTGWordAccuracy', 'CVTGNED'])
-        adapter = CVTG2KAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('cvtg_2k')
         sample = adapter.record_to_sample({'id': '0', 'prompt': "sign saying 'HI'", 'benchmark_type': 'CVTG'})
         assert sample.input[0].content == "sign saying 'HI'"
         assert sample.metadata['category'] == 'CVTG'
 
     def test_longtext_record_to_sample(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
-
-        meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
-        adapter = LongTextBenchAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('longtext_bench')
         sample = adapter.record_to_sample({'prompt_id': 0, 'prompt': 'poster', 'text': 'HELLO'})
         assert sample.target == 'HELLO'
         assert sample.input[0].content == 'poster'
@@ -143,13 +103,13 @@ class _ImageHandler(BaseHTTPRequestHandler):
 
 
 @contextmanager
-def _image_service() -> Iterator[str]:
-    server = ThreadingHTTPServer(('127.0.0.1', 0), _ImageHandler)
+def _api_service(handler=_ImageHandler) -> Iterator[str]:
+    server = ThreadingHTTPServer(('127.0.0.1', 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
         host, port = server.server_address
-        yield f'http://{host}:{port}/v1/images/generations'
+        yield f'http://{host}:{port}/v1'
     finally:
         server.shutdown()
         server.server_close()
@@ -163,13 +123,14 @@ def _read_report_scores(work_dir: Path, benchmark: str) -> dict:
 
 
 class TestX2IFullPipeline:
-    """Full flow: local jsonl dataset + local image service + stubbed scoring backends."""
+    """Full flow with local datasets, HTTP image service and scripted recognizers."""
 
     def test_run_text_rendering_benchmarks(self, tmp_path, monkeypatch):
-        from evalscope.metrics.vision.metrics import LongTextScore
+        import evalscope.metrics.vision.metrics as metrics
 
-        monkeypatch.setattr(LongTextScore, '_transcribe', lambda self, path: 'SOUND OF FREEDOM AUGUST 16 2026 出口A换乘2号线')
-        with _image_service() as api_url:
+        monkeypatch.setattr(metrics.LongTextScore, '_transcribe', lambda self, path: 'SOUND OF FREEDOM AUGUST 16 2026 出口A换乘2号线')
+        monkeypatch.setattr(metrics, '_recognize_cvtg_words', lambda *args: 'hello world open 24h deep learning ian goodfellow'.split())
+        with _api_service() as api_url:
             task_cfg = TaskConfig(
                 model='test-image-model',
                 model_task=ModelTask.IMAGE_GENERATION,
@@ -181,7 +142,6 @@ class TestX2IFullPipeline:
                 dataset_args={
                     'cvtg_2k': {
                         'dataset_id': str(FIXTURES / 'cvtg2k.jsonl'),
-                        'metric_list': [{'CVTGWordAccuracy': {'backend': 'stub'}}, {'CVTGNED': {'backend': 'stub'}}],
                     },
                     'longtext_bench': {
                         'dataset_id': str(FIXTURES / 'longtext.jsonl'),
@@ -191,7 +151,7 @@ class TestX2IFullPipeline:
             run_task(task_cfg=task_cfg)
 
         cvtg_scores = _read_report_scores(tmp_path, 'cvtg_2k')
-        # The stub backend echoes the ground truth, so every score must be perfect.
+        # Scripted recognition contains all fixture words.
         word_acc_key = 'cvtg_word_accuracy' + json.dumps({'scope': 'overall'}, sort_keys=True)
         ned_key = 'cvtg_ned' + json.dumps({'scope': 'overall'}, sort_keys=True)
         assert cvtg_scores[word_acc_key] == 1.0
@@ -222,11 +182,7 @@ class TestCorpusAggregation:
         )
 
     def test_cvtg_corpus_aggregation(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.cvtg2k_adapter import CVTG2KAdapter
-
-        meta = BenchmarkMeta(name='cvtg_2k', dataset_id='x', subset_list=['CVTG'], metric_list=['CVTGWordAccuracy'])
-        adapter = CVTG2KAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('cvtg_2k')
         sample_scores = [
             self._sample_score('cvtg_word_accuracy', 1.0, 1, 1),
             self._sample_score('cvtg_word_accuracy', 0.0, 0, 3),
@@ -236,11 +192,7 @@ class TestCorpusAggregation:
         assert abs(overall - 0.25) < 1e-9, f'corpus aggregate must be 0.25, got {overall}'
 
     def test_cvtg_corpus_aggregation_ned(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.cvtg2k_adapter import CVTG2KAdapter
-
-        meta = BenchmarkMeta(name='cvtg_2k', dataset_id='x', subset_list=['CVTG'], metric_list=['CVTGNED'])
-        adapter = CVTG2KAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('cvtg_2k')
         sample_scores = [
             self._sample_score('cvtg_ned', 1.0, 1.0, 1),
             self._sample_score('cvtg_ned', 0.0, 0.0, 3),
@@ -250,11 +202,7 @@ class TestCorpusAggregation:
         assert abs(overall - 0.25) < 1e-9
 
     def test_longtext_corpus_aggregation_by_category(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
-
-        meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
-        adapter = LongTextBenchAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('longtext_bench')
         sample_scores = [
             self._sample_score('text_score', 1.0, 2, 2, category='poster'),
             self._sample_score('text_score', 0.5, 1, 2, category='poster'),
@@ -269,13 +217,8 @@ class TestCorpusAggregation:
         assert signage == 0.0
 
     def test_cached_scores_without_counts_require_review(self):
-        from evalscope.api.benchmark import BenchmarkMeta
-        from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
-
-        meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
-        adapter = LongTextBenchAdapter(benchmark_meta=meta)
+        adapter = get_benchmark('longtext_bench')
         # Old cached reviews cannot silently fall back to a different aggregation protocol.
-        from evalscope.api.metric import SampleScore
 
         sample_scores = [
             SampleScore(score=Score(value={'text_score': 0.4}), sample_id=0, sample_metadata={'category': 'poster'}),
@@ -325,11 +268,9 @@ def test_cvtg_report_retains_word_weighting_across_subsets_and_reload(monkeypatc
     import evalscope.metrics.vision.metrics as metrics
     from evalscope.report import Report
 
-    config = TaskConfig(model='test', datasets=['cvtg_2k'], dataset_args={
-        'cvtg_2k': {'metric_list': [{'CVTGWordAccuracy': {'backend': 'stub'}}]},
-    })
+    config = TaskConfig(model='test', datasets=['cvtg_2k'])
     adapter = get_benchmark('cvtg_2k', config)
-    monkeypatch.setattr(metrics, '_recognize_cvtg_words', lambda path, *args: ['a'] if path == 'hit.png' else [])
+    monkeypatch.setattr(metrics, '_recognize_cvtg_words', lambda path, lang: ['a'] if path == 'hit.png' else [])
     hit = _score_image(adapter, "sign 'a'", 'hit.png', 0)
     miss = _score_image(adapter, "sign 'b c d'", 'miss.png', 1)
     report = adapter._on_generate_report({
@@ -343,15 +284,14 @@ def test_cvtg_report_retains_word_weighting_across_subsets_and_reload(monkeypatc
 
 
 def test_one_failed_metric_keeps_only_the_other_metric(monkeypatch):
-    from evalscope.metrics.vision.metrics import CVTGNED
+    import evalscope.metrics.vision.metrics as metrics
 
     def fail(self, image_path, prompt):
         raise RuntimeError('NED recognition failed')
 
-    monkeypatch.setattr(CVTGNED, '_score_counts', fail)
-    config = TaskConfig(model='test', datasets=['cvtg_2k'], dataset_args={
-        'cvtg_2k': {'metric_list': [{'CVTGWordAccuracy': {'backend': 'stub'}}, {'CVTGNED': {'backend': 'stub'}}]},
-    })
+    monkeypatch.setattr(metrics.CVTGNED, '_score_counts', fail)
+    monkeypatch.setattr(metrics, '_recognize_cvtg_words', lambda path, lang: ['hello'])
+    config = TaskConfig(model='test', datasets=['cvtg_2k'])
     adapter = get_benchmark('cvtg_2k', config)
     sample = _score_image(adapter, "sign 'hello'", 'one.png', 0)
     assert sample.score.status is ScoreStatus.DEGRADED
@@ -483,11 +423,8 @@ def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, fi
         def log_message(self, *args):
             pass
 
-    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        metric = LongTextScore(model='vision', api_url=f'http://127.0.0.1:{server.server_port}/v1',
+    with _api_service(Handler) as api_url:
+        metric = LongTextScore(model='vision', api_url=api_url,
                                api_key='test-key', generation_config={'retries': 1, 'max_tokens': 128})
         result = metric(str(image_path), 'hello world')
         assert result.status.is_usable is (expected is not None)
@@ -497,7 +434,3 @@ def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, fi
             assert result.metadata['corpus_counts'] == {'numerator': 2 * expected, 'denominator': 2}
         else:
             assert not result.value
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=5)

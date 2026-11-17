@@ -13,7 +13,7 @@ from evalscope.report.report import normalize_score
 class CorpusAggregationMixin:
     """Aggregate successful text-rendering scores without process-global side channels."""
 
-    corpus_metrics: Dict[str, str] = {}
+    corpus_metrics: Tuple[str, ...] = ()
     doc_eval_type = 'text2image'
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -25,7 +25,7 @@ class CorpusAggregationMixin:
             metadata = sample.score.metadata or {}
             metric_metadata = metadata.get('metric_metadata', {})
             category = self._dimension_value((sample.sample_metadata or {}).get('category', ''))
-            for metric_name in self.corpus_metrics.values():
+            for metric_name in self.corpus_metrics:
                 if metric_name not in sample.score.value:
                     continue
                 counts = metric_metadata.get(metric_name, {}).get('corpus_counts')
@@ -40,7 +40,7 @@ class CorpusAggregationMixin:
                     grouped[(metric_name, category)].append(counts)
 
         for aggregate in aggregates:
-            if aggregate.metric_name not in self.corpus_metrics.values():
+            if aggregate.metric_name not in self.corpus_metrics:
                 continue
             counts = grouped[(aggregate.metric_name, aggregate.dimensions.get('category', ''))]
             numerator = sum(item['numerator'] for item in counts)
@@ -56,7 +56,7 @@ class CorpusAggregationMixin:
     def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
         report = super()._on_generate_report(scores, model_name)
         for metric in report.metrics:
-            if metric.identity.name not in self.corpus_metrics.values():
+            if metric.identity.name not in self.corpus_metrics:
                 continue
             all_counts = []
             for category in metric.categories:

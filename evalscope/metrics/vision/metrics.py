@@ -1,12 +1,15 @@
 import base64
 import binascii
 import math
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Metric, Score, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_metric
 from evalscope.constants import ScoreStatus
 from evalscope.utils.import_utils import check_import
+
+from .text_render import extract_quoted_words, text_score_counts, word_accuracy_counts, word_ned_counts
 
 # #######################
 # Image Pair Metrics ####
@@ -421,28 +424,18 @@ class MPS(T2IMetric):
 # ############################
 # Text Rendering Metrics #####
 # ############################
-_OCR_INSTANCES: dict = {}
-"""Module-level OCR cache so the two CVTG scorers share one PaddleOCR engine per lang."""
+@lru_cache(maxsize=None)
+def _get_cvtg_ocr(lang: str) -> Any:
+    check_import('paddleocr', raise_error=True, feature_name='CVTG-2K Metric')
+    from paddleocr import PaddleOCR
+
+    return PaddleOCR(use_angle_cls=True, lang=lang, show_log=False)
 
 
-def _get_cvtg_ocr(lang: str):
-    if lang not in _OCR_INSTANCES:
-        check_import('paddleocr', raise_error=True, feature_name='CVTG-2K Metric')
-        from paddleocr import PaddleOCR
-
-        _OCR_INSTANCES[lang] = PaddleOCR(use_angle_cls=True, lang=lang, show_log=False)
-    return _OCR_INSTANCES[lang]
-
-
-def _recognize_cvtg_words(image_path: str, gt_words: List[str], backend: str, lang: str) -> List[str]:
-    """Recognize the rendered words of an image; ``backend='stub'`` echoes the ground truth."""
-    if backend == 'stub':
-        return list(gt_words)
+def _recognize_cvtg_words(image_path: str, lang: str) -> List[str]:
+    """Recognize words with one shared OCR engine per language."""
     result = _get_cvtg_ocr(lang).ocr(image_path, cls=True) or []
-    words: List[str] = []
-    for line in result[0] or []:
-        words.extend(str(line[1][0]).lower().split())
-    return words
+    return [word for line in (result[0] if result else []) or [] for word in str(line[1][0]).lower().split()]
 
 
 class _TextRenderingMetric(T2IMetric):
@@ -471,56 +464,29 @@ class _TextRenderingMetric(T2IMetric):
 
 @register_metric(name='CVTGWordAccuracy')
 class CVTGWordAccuracy(_TextRenderingMetric):
-    """CVTG-2K Word Accuracy: each ground-truth word counts when it appears in the
-    recognized words (repeated ground-truth words are not consumed), matching the
-    official TextCrafter evaluator.
+    """CVTG-2K word membership accuracy; OCR loads lazily."""
 
-    The OCR backend loads lazily; ``backend='stub'`` echoes the ground-truth words and
-    exists for pipeline tests.
-    """
+    _count_words = staticmethod(word_accuracy_counts)
 
-    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs) -> None:
-        self.backend = backend
+    def _init_once(self, lang: str = 'en') -> None:
         self.lang = lang
 
     def _score_counts(self, image_path: str, prompt: str) -> Tuple[float, float, int]:
-        from evalscope.metrics.vision.text_render import extract_quoted_words, word_accuracy_counts
-
-        gt_words = extract_quoted_words(prompt)
-        return word_accuracy_counts(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
+        return self._count_words(extract_quoted_words(prompt), _recognize_cvtg_words(image_path, self.lang))
 
 
 @register_metric(name='CVTGNED')
-class CVTGNED(_TextRenderingMetric):
-    """CVTG-2K NED: word-level best-match normalized Levenshtein distance (higher is better).
+class CVTGNED(CVTGWordAccuracy):
+    """CVTG-2K best-match normalized edit similarity, sharing the Word Accuracy OCR flow."""
 
-    Shares the OCR engine with :class:`CVTGWordAccuracy` and follows the same ground-truth
-    extraction from the prompt's quoted fragments. Returns the similarity sum and word
-    count together with the score for corpus aggregation.
-    """
-
-    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs) -> None:
-        self.backend = backend
-        self.lang = lang
-
-    def _score_counts(self, image_path: str, prompt: str) -> Tuple[float, float, int]:
-        from evalscope.metrics.vision.text_render import extract_quoted_words, word_ned_counts
-
-        gt_words = extract_quoted_words(prompt)
-        return word_ned_counts(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
+    _count_words = staticmethod(word_ned_counts)
 
 
 @register_metric(name='LongTextScore')
 class LongTextScore(_TextRenderingMetric):
-    """LongText-Bench Text Score: Counter-intersection match of rendered text.
+    """Transcribe through a vision API and match English words or Chinese characters.
 
-    Declares ``image_pair_metric`` so the adapter passes the ground-truth text (the
-    sample target) instead of the prompt. Text is transcribed through an OpenAI-compatible
-    vision API; no local VLM weights are required.
-
-    ``lang=None`` (default) detects the language per sample from the ground-truth text
-    (CJK -> ``zh``), so one run covers both languages; pass ``lang='en'``/``'zh'`` to
-    force the official single-language mode.
+    Uses the reference channel for ground-truth text; language is detected per sample by default.
     """
 
     image_pair_metric = True
@@ -552,8 +518,6 @@ class LongTextScore(_TextRenderingMetric):
         from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
         from evalscope.api.model import GenerateConfig, get_model
         from evalscope.utils.argument_utils import get_secret_value
-        from evalscope.utils.io_utils import bytes_to_base64
-        from evalscope.utils.uri_utils import file_as_data
 
         if self._api_model is None:
             base_url = self.api_url or os.getenv(
@@ -574,12 +538,11 @@ class LongTextScore(_TextRenderingMetric):
                 config=GenerateConfig(**{**defaults, **self.generation_config}),
                 model_args={'max_retries': 0},
             )
-        image_bytes, _ = file_as_data(image_path)
         output = self._api_model.generate(
             input=[
                 ChatMessageUser(
                     content=[
-                        ContentImage(image=bytes_to_base64(image_bytes, add_header=True, guess_mimetype=True)),
+                        ContentImage(image=image_path),
                         ContentText(text=self.RECOGNIZE_PROMPT),
                     ]
                 )
@@ -592,6 +555,4 @@ class LongTextScore(_TextRenderingMetric):
         return output.completion.replace('No text recognized.', '')
 
     def _score_counts(self, image_path: str, gt_text: str) -> Tuple[float, float, int]:
-        from evalscope.metrics.vision.text_render import text_score_counts
-
         return text_score_counts(gt_text, self._transcribe(image_path), self.lang)
