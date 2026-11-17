@@ -9,9 +9,11 @@ import ScoreBar from '@/components/ui/ScoreBar'
 import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import Skeleton from '@/components/ui/Skeleton'
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 
 interface Props {
+  legacyAnalysis?: string
   rootPath: string
   reportName: string
   datasetName: string
@@ -198,7 +200,7 @@ function FactData({ fact }: { fact: Fact }) {
   return null
 }
 
-export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples }: Props) {
+export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis }: Props) {
   const { t } = useLocale()
   const resource = useAsyncResource(
     (signal) => getDiagnosis(rootPath, reportName, datasetName, signal),
@@ -219,6 +221,9 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
             `diagnosis.${state?.status === 'stale' ? 'stale' : state?.status === 'error' ? 'error' : 'missing'}`,
           )}
         </p>
+        {state?.status === 'missing' && legacyAnalysis && legacyAnalysis !== 'N/A' && (
+          <Card title={t('diagnosis.summary')}><MarkdownRenderer content={legacyAnalysis} /></Card>
+        )}
         <code className="block select-all overflow-x-auto whitespace-pre-wrap rounded bg-[var(--bg-deep)] p-3 text-sm">
           {command}
         </code>

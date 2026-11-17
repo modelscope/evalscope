@@ -38,11 +38,13 @@ The Python entry points `evalscope.analysis.diagnose_run()` and `diagnose_benchm
 
 ## Reading the results
 
-Open the Web report's **Diagnostics** tab. Four cards show task failure rate, rule coverage, related components and analysis usage. The pattern table is followed by the subset heatmap and statistics. Hover for definitions and expand all statistics for distributions and details. Start with task failures and the known-outcome denominator. Excluded scores, unknown outcomes and execution errors without review records remain separate; missing data is neither zero score nor a pass.
+Reports use three tabs: **Results → Diagnosis → Samples**. The shared dataset navigator shows each dataset’s metric, score and sample count. Switching tabs preserves the dataset; switching datasets clears old subset, diagnostic filters and sample selection. Narrow screens use a dataset dropdown. Token counts use compact K/M notation with exact values in tooltips. Latency/token details and task configuration are expanded by default and can be collapsed.
 
-- **Issue patterns** group observed types, related components and details. Shares use samples needing review, not the official failure denominator. Examples and the subset-by-type table open filtered predictions.
+Open the Web report's **Diagnosis** tab. Four cards show task failure rate, rule coverage, related components and analysis usage. The pattern table is followed by the subset heatmap and statistics. Hover for definitions and expand all statistics for distributions and details. Start with task failures and the known-outcome denominator. Excluded scores, unknown outcomes and execution errors without review records remain separate; missing data is neither zero score nor a pass.
+
+- **Issue patterns** group observed types, related components and details. Shares use samples needing review, not the official failure denominator. Examples and the subset-by-type table open filtered samples.
 - **Facts** cover score distributions, weaker subsets, scoring statuses, judge coverage, recorded performance and token usage; empty generations, missing extracted answers, truncation, refusal text and output-length groups; single-letter choice distributions and confusion pairs; outcome stability of complete repeat groups; and Agent tool/trace findings.
-- **Sample observations** appear in predictions, with filters for issue type, related component and finding category. Step badges require recorded tool-call IDs; unknown locations are not guessed.
+- **Sample observations** appear in Samples, with filters for issue type, related component and finding category. Pattern links open the matching sample collection, and representative-sample links open the exact sample. Sample links survive refresh and can be opened directly; a return action leads back to Diagnosis. Step badges require recorded tool-call IDs; unknown locations are not guessed.
 
 Truncation uses prediction `stop_reason` first, then token-budget proximity only when the reason is missing and both token usage and the budget are available. Unavailable checks are listed as skipped. Continuous scores without an explicit threshold may have unknown outcomes. Weaker subsets require declared metric direction and bounded range.
 
@@ -61,7 +63,7 @@ The taxonomy is extensible and cannot enumerate every failure cause. Failed samp
 
 Outputs include definitions, coverage, representative samples, rule findings and analysis usage (zero for facts). Exported evidence is size-limited and redacted; raw evaluation outputs are not copied into diagnostics.
 
-Cache identity includes reviews, corresponding predictions, report metadata and consumed configuration, excluding the analysis writeback itself. Changed inputs or sample artifacts mark diagnostics stale; stale records cannot navigate into current predictions. Scores are unchanged, and an online analysis exception cannot fail a completed evaluation. Details and HTML retain legacy `Report.analysis` summaries when no diagnostic artifact exists.
+Cache identity includes reviews, corresponding predictions, report metadata and consumed configuration, excluding the analysis writeback itself. Changed inputs or sample artifacts mark diagnostics stale; stale records cannot navigate into current predictions. Scores are unchanged, and an online analysis exception cannot fail a completed evaluation. Diagnosis and HTML retain legacy `Report.analysis` summaries when no diagnostic artifact exists.
 
 ## Model analysis, evidence and statistical scope
 

@@ -64,9 +64,13 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   )
   const subsets = subsetsResource.data ?? EMPTY_SUBSETS
 
+  const diagnosis = useAsyncResource(signal => getDiagnosis(rootPath,reportName,datasetName,signal),
+    [rootPath,reportName,datasetName], {enabled:Boolean(datasetName && onDiagnosisFiltersChange)})
+  const selectedPattern = diagnosis.data?.report?.patterns.find(p => p.id === diagnosisFilters.pattern_id)
   // Follow the requested subset when it exists, otherwise open on the first one.
   const subsetScope = `${rootPath}\0${reportName}\0${datasetName}\0${initialSubset}`
-  const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (subsets[0] ?? '')
+  const patternSubset = subsets.find(subset => (selectedPattern?.by_subset[subset] ?? 0) > 0)
+  const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (patternSubset ?? subsets[0] ?? '')
   // A pick only holds while it is still one of the subsets on offer: the list can
   // come back without it after a rescan.
   const [pickedSubset, setSelectedSubset] = useScopedState<string | null>(subsetScope, null)
@@ -83,9 +87,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
     },
   )
   const predictions = predictionsResource.data?.predictions ?? EMPTY_PREDICTIONS
-  const diagnosis = useAsyncResource(signal => getDiagnosis(rootPath,reportName,datasetName,signal),
-    [rootPath,reportName,datasetName], {enabled:Boolean(datasetName && onDiagnosisFiltersChange)})
-  const selectedPattern = diagnosis.data?.report?.patterns.find(p => p.id === diagnosisFilters.pattern_id)
   const filterKey = JSON.stringify([rootPath,reportName,datasetName,selectedSubset,diagnosisFilters])
   const diagnosticFilterActive = Boolean(diagnosisFilters.pattern_id || diagnosisFilters.failure_type ||
     diagnosisFilters.attribution || diagnosisFilters.finding_category || diagnosisFilters.only_diagnosed)
@@ -349,10 +350,10 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
             {/* Sample X / Y with hash icon */}
             <span className="flex items-center gap-[0.3rem] text-sm tabular-nums text-[var(--text-muted)]">
               <Hash size={13} className="opacity-50" />
-              Sample {page} / {totalPages}
+              {t('reportDetail.samplePosition', { page, total: totalPages })}
               {row && (
                 <span className="ml-1 text-xs opacity-50">
-                  (index: {row.Index})
+                  {t('reportDetail.sampleIndex', { index: row.Index })}
                 </span>
               )}
             </span>
@@ -373,7 +374,13 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       )}
 
       {!loading && predictions.length > 0 && filtered.length === 0 && !loadError && (
-        <p role="status" className="py-4 text-[var(--text-muted)]">{t('diagnosis.noMatch')}</p>
+        <div role="status" className="space-y-2 py-4 text-[var(--text-muted)]">
+          <p>{t('diagnosis.noMatch')}</p>
+          <button type="button" className="min-h-11 text-sm text-[var(--accent)]" onClick={() => {
+            setMode('All'); setPage(1)
+            onDiagnosisFiltersChange?.({ subset_name: selectedSubset })
+          }}>{t('reportDetail.clearFilters')}</button>
+        </div>
       )}
 
       {!loading && predictions.length === 0 && selectedSubset && (

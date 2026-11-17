@@ -160,3 +160,33 @@ it('keeps the sample link aligned after manual navigation', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Next sample' }))
   expect(navigate).toHaveBeenLastCalledWith({ subset_name: 'example' }, { subset: 'example', index: 42 })
 })
+
+it('opens the subset containing the linked pattern when the first subset has no matches', async () => {
+  getDataFrameMock.mockResolvedValue({ columns: ['Subset'], data: [{ Subset: 'empty' }, { Subset: 'example' }] })
+  getPredictionsMock.mockResolvedValue(loadFixture<PredictionsResponse>('predictions-tool-trace'))
+  getDiagnosisMock.mockResolvedValue({
+    status: 'ready',
+    report: { patterns: [{ id: 'P-linked', by_subset: { example: 1 }, failure_type: 'tool_error' }] },
+  })
+  getSampleDiagnosesMock.mockResolvedValue({ status: 'ready', items: [], total: 0 })
+  render(
+    <MemoryRouter>
+      <LocaleProvider>
+        <PredictionsTab
+          reportName="run/m"
+          datasetName="demo"
+          rootPath="/outputs"
+          diagnosisFilters={{ pattern_id: 'P-linked' }}
+          onDiagnosisFiltersChange={vi.fn()}
+        />
+      </LocaleProvider>
+    </MemoryRouter>,
+  )
+  for (let i = 0; i < 8; i++)
+    await act(async () => {
+      await Promise.resolve()
+    })
+  expect(screen.getByRole('combobox', { name: 'Select Subset' })).toHaveValue('example')
+  expect(getPredictionsMock).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', 'example', expect.anything())
+  expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument()
+})
