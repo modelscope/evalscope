@@ -671,6 +671,9 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
     try:
         work_dir = os.path.join(_root_path(), ref.run_id)
         df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+        index = request.args.get('index')
+        if index is not None:
+            df = df[df['Index'].astype(str) == index]
         return json_response(
             PredictionsResponse,
             {
@@ -685,20 +688,67 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
 @bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis', methods=['GET'])
 def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Read diagnostic facts without starting analysis or a paid request."""
-    from evalscope.report.diagnosis import load_diagnosis
+    from evalscope.api.analysis import SampleDiagnosis
+    from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
     from evalscope.service.api_models import DiagnosisResponse
+    from evalscope.service.api_models.analysis import DiagnosisIssue
 
     dataset = request.args.get('dataset_name', '')
     try:
         ref = _parse_path_ref(run_id, model_id)
         if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
             raise ValueError('Invalid dataset_name')
-        status, report = load_diagnosis(os.path.join(_root_path(), ref.run_id), ref.model_id, dataset)
+        root = os.path.join(_root_path(), ref.run_id)
+        status, report = load_diagnosis(root, ref.model_id, dataset)
+        issues = {}
+        risk_samples = passed_observations = 0
+        seen = set()
+        if status == 'ready':
+            with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
+                for line in stream:
+                    if not line.strip():
+                        continue
+                    sample = SampleDiagnosis.model_validate_json(line)
+                    identity = (sample.key.subset, sample.key.index)
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
+                    risk_samples += sample.safety_violation is True or any(
+                        f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings
+                    )
+                    passed_observations += sample.task_success is True and bool(sample.findings)
+                    failed = sample.task_success is False
+                    unscored = sample.score_status not in ('success', 'fallback', 'degraded')
+                    if not failed and not unscored:
+                        continue
+                    kind = sample.failure_type or 'unexplained'
+                    issue = issues.setdefault(kind, DiagnosisIssue(failure_type=kind))
+                    issue.failed += failed
+                    issue.unscored += unscored
+                    category = 'tool_failure' if kind == 'tool_error' else kind
+                    tools = {
+                        str(f.data['tool'])
+                        for f in sample.findings
+                        if failed and f.category.value == category and f.data.get('tool')
+                    }
+                    for tool in tools:
+                        issue.tools = {**issue.tools, tool: issue.tools.get(tool, 0) + 1}
         return json_response(
-            DiagnosisResponse, {'status': status, 'report': report.model_dump(mode='json') if report else None}
+            DiagnosisResponse,
+            {
+                'status': status,
+                'report': report.model_dump(mode='json') if report else None,
+                'issues': sorted(
+                    issues.values(), key=lambda issue: (-issue.failed, -issue.unscored, issue.failure_type)
+                ),
+                'risk_samples': risk_samples,
+                'passed_observations': passed_observations,
+            },
         )
     except (ValueError, ValidationError):
         return jsonify({'error': 'Invalid report reference or dataset_name'}), 400
+    except OSError:
+        return jsonify({'error': 'Diagnostic samples unavailable; rerun evalscope analyze.'}), 409
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis/samples', methods=['GET'])
@@ -713,27 +763,53 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
         ref = _parse_path_ref(run_id, model_id)
         if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
             raise ValueError('Invalid dataset_name')
+        outcome = request.args.get('outcome')
+        if outcome and outcome not in ('failed', 'unscored', 'risk', 'passed'):
+            raise ValueError('Invalid outcome')
         page, size = int(request.args.get('page', 1)), int(request.args.get('page_size', 50))
         if page < 1 or not 1 <= size <= 200:
             raise ValueError('Invalid page')
         root = os.path.join(_root_path(), ref.run_id)
         status, _ = load_diagnosis(root, ref.model_id, dataset)
         items, total = [], 0
+        seen = set()
         if status == 'ready':
             with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
                 for line in stream:
                     if not line.strip():
                         continue
                     sample = SampleDiagnosis.model_validate_json(line)
+                    identity = (sample.key.subset, sample.key.index)
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
                     if any(
                         request.args.get(name) and request.args[name] != value
                         for name, value in (
                             ('subset_name', sample.key.subset),
                             ('pattern_id', sample.pattern_id),
-                            ('failure_type', sample.failure_type),
+                            (
+                                'failure_type',
+                                sample.failure_type
+                                or (
+                                    'unexplained'
+                                    if sample.task_success is False
+                                    or sample.score_status not in ('success', 'fallback', 'degraded')
+                                    else None
+                                ),
+                            ),
                             ('attribution', sample.attribution.value),
                         )
                     ):
+                        continue
+                    matches_outcome = {
+                        'failed': sample.task_success is False,
+                        'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
+                        'risk': sample.safety_violation is True
+                        or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
+                        'passed': sample.task_success is True and bool(sample.findings),
+                    }
+                    if outcome and not matches_outcome[outcome]:
                         continue
                     category = request.args.get('finding_category')
                     if category and not any(f.category.value == category for f in sample.findings):

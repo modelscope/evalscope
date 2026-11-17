@@ -186,7 +186,7 @@ it('keeps the question and answer ahead of the result and collapsed diagnostic d
       failure_type: 'unexplained', attribution: 'unknown', findings: [], pattern_id: null,
     }}
   /></LocaleProvider>)
-  const summary = screen.getByText(/Sample analysis · Needs further analysis/)
+  const summary = screen.getByText(/Sample analysis · No explanation yet/)
   expect(screen.getByText('Answer second').compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(summary.closest('details')).not.toHaveAttribute('open')
   fireEvent.click(summary)
@@ -209,4 +209,16 @@ it('highlights evidence only inside the referenced message', () => {
       { id: 'answer-quote', role: 'assistant', content: 'Shared quotation' }] }} diagnosis={diagnosis} /></LocaleProvider>)
   expect(container.querySelectorAll('.prose mark')).toHaveLength(1)
   expect(container.querySelector('mark')).toHaveTextContent('Shared quotation')
+})
+
+
+it.each(['fallback', 'degraded'])('preserves usable %s scoring in the shared reader', (status) => {
+  render(<LocaleProvider><ChatView prediction={tracedPrediction} diagnosis={{
+    llm: null, llm_status: 'not_selected', sources: [], rule_failure_type: null, source: 'none', invalid_evidence: 0, evidence_errors: [],
+    key: { subset: 'default', index: 0 }, task_success: true, safety_violation: null,
+    score_status: status, stop_reason: 'stop', score_value: {}, needs_attention: false,
+    failure_type: null, attribution: 'unknown', findings: [], pattern_id: null,
+  }} /></LocaleProvider>)
+  expect(screen.getByRole('navigation', { name: 'Sample contents' })).toHaveTextContent('Task passed')
+  expect(screen.queryByText('Score unavailable')).not.toBeInTheDocument()
 })

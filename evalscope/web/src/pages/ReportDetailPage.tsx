@@ -23,7 +23,7 @@ import type { SampleKey } from '@/api/types'
 
 type TabKey = 'results' | 'diagnosis' | 'predictions'
 
-const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed']
+const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed', 'outcome']
 
 export default function ReportDetailPage() {
   const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
@@ -42,7 +42,9 @@ export default function ReportDetailPage() {
   const setActiveTab = (value: TabKey) => setSearchParams(previous => {
     const next = new URLSearchParams(previous); next.set('tab', value); return next
   })
+  const outcome = searchParams.get('outcome')
   const diagnosisFilters: DiagnosisFilters = {
+    outcome: outcome === 'failed' || outcome === 'unscored' || outcome === 'risk' || outcome === 'passed' ? outcome : undefined,
     pattern_id: searchParams.get('pattern') || undefined,
     failure_type: searchParams.get('failure_type') || undefined,
     attribution: searchParams.get('attribution') || undefined,
@@ -163,7 +165,7 @@ export default function ReportDetailPage() {
   }
 
   return (
-    <div className="page-enter flex flex-col gap-4 p-6">
+    <div className="page-enter flex flex-col gap-3 px-4">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -199,13 +201,15 @@ export default function ReportDetailPage() {
             </div>
           )}
           <Tabs
+            keepMounted={['diagnosis']}
             tabs={tabs}
             activeKey={activeTab}
             onChange={(key) => setActiveTab(key as TabKey)}
-            className="w-full justify-start overflow-x-auto rounded-b-none border-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-2 py-3 sm:px-5 [&>button]:min-h-11 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:px-3"
-            beforePanels={
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
-                <h2 className="break-words text-xl font-semibold" title={activeDataset}>
+            className="min-w-0 flex-1 justify-start overflow-x-auto rounded-b-none border-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-2 py-2 sm:px-4 [&>button]:min-h-9 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:px-3"
+            actions={activeTab === 'predictions' ? <button type="button" onClick={() => setActiveTab('diagnosis')} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap px-4 text-sm text-[var(--accent)]"><ArrowLeft size={14} />{t('reportDetail.backToDiagnosis')}</button> : undefined}
+            beforePanels={activeTab === 'predictions' || (activeTab === 'diagnosis' && datasets.length > 1) ? undefined :
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
+                <h2 className="break-words text-lg font-semibold" title={activeDataset}>
                   {datasetLabels[activeDataset] || activeDataset}
                 </h2>
                 {activeTab !== 'diagnosis' && (
@@ -214,16 +218,15 @@ export default function ReportDetailPage() {
                     onClick={() => setActiveTab('diagnosis')}
                     className="inline-flex min-h-11 items-center gap-2 text-sm text-[var(--accent)] hover:underline"
                   >
-                    {activeTab === 'predictions' && <ArrowLeft size={14} />}
-                    {t(activeTab === 'predictions' ? 'reportDetail.backToDiagnosis' : 'diagnosis.open')}
-                    {activeTab === 'results' && <ArrowRight size={14} />}
+                    {t('diagnosis.open')}
+                    <ArrowRight size={14} />
                   </button>
                 )}
               </div>
             }
             panels={{
               'report-results-panel': (
-                <div className="p-5">
+                <div className="p-4">
                   <ResultsTab
                     key={`${rootPath}/${reportName}/${activeDataset}`}
                     reportName={reportName}
@@ -240,7 +243,7 @@ export default function ReportDetailPage() {
                 </div>
               ),
               'report-diagnosis-panel': (
-                <div className="p-5">
+                <div className="p-4">
                   <DiagnosisTab
                     key={`${rootPath}/${reportName}/${activeDataset}`}
                     rootPath={rootPath}
@@ -248,11 +251,12 @@ export default function ReportDetailPage() {
                     datasetName={activeDataset}
                     onSamples={handleDiagnosisSamples}
                     legacyAnalysis={activeReport?.report.analysis}
+                    metrics={activeReport?.report.metrics}
                   />
                 </div>
               ),
               'report-predictions-panel': (
-                <div className="p-5">
+                <div className="p-4">
                   <PredictionsTab
                     key={`${rootPath}/${reportName}/${activeDataset}/${initialSubset ?? ''}`}
                     reportName={reportName}

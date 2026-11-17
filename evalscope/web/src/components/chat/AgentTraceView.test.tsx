@@ -107,7 +107,10 @@ it('shows a provider-confirmed tool error only on its matching result, including
   render(<TracedTimeline messages={messages} trace={trace}
     groups={buildStepGroups(messages, trace)} highlightStep={null} onStepClick={() => {}}
     findings={[{ detector: 'tool_failure', category: 'tool_failure', subtype: 'provider:runtime_error', attribution: 'model', confidence: 'medium', call_ids: ['bad'] }]} />)
-  expect(screen.getByText('Error: ValueError: invalid date')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Step 0 create_event/ }))
+  expect(screen.getByText('ValueError: invalid date')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Step 1 create_event/ }))
+  fireEvent.click(screen.getAllByRole('button', { name: /^create_event/ })[1])
   expect(screen.getByText('Event created')).toBeInTheDocument()
   expect(screen.queryByText('Error: Event created')).not.toBeInTheDocument()
 })
@@ -115,9 +118,9 @@ it('shows a provider-confirmed tool error only on its matching result, including
 
 it('highlights tool evidence in text order even when citation order is reversed', async () => {
   const { EvidenceByMessage } = await import('@/contexts/EvidenceContext')
-  const { ToolObservation } = await import('./ToolCallComponents')
+  const { ToolCallEntryRow } = await import('./ToolCallComponents')
   const { container } = render(<EvidenceByMessage.Provider value={{ result: ['later', 'earlier'] }}>
-    <ToolObservation msg={{ role: 'tool', id: 'result', content: 'earlier then later' } as ChatMessage} />
+    <ToolCallEntryRow entry={{ id: 'call', function: 'read', arguments: {}, result: { role: 'tool', id: 'result', content: 'earlier then later' } as ChatMessage }} />
   </EvidenceByMessage.Provider>)
   expect(Array.from(container.querySelectorAll('mark'), node => node.textContent)).toEqual(['earlier', 'later'])
 })
@@ -137,4 +140,23 @@ it('can reveal an agent step again after clearing selection and scrolling away',
   view.rerender(<LocaleProvider><VirtualList {...props} revealIndex={40} /></LocaleProvider>)
   expect(screen.getByText('Step content 40')).toBeInTheDocument()
   vi.stubGlobal('ResizeObserver', previousObserver)
+})
+
+it('reveals a searched result under its original call even when recorded on the following step', async () => {
+  const { buildStepGroups } = await import('@/domain/trace/stepGroups')
+  const { TracedTimeline } = await import('./AgentTraceView')
+  const messages = [
+    { role: 'assistant', id: 'm0', content: '', tool_calls: [{ id: 'call', function: 'read', arguments: {} }] },
+    { role: 'tool', id: 'result-0', tool_call_id: 'call', content: 'Complete searched result' },
+    { role: 'assistant', id: 'm1', content: 'Finished.' },
+  ] as ChatMessage[]
+  const trace = { events: [
+    event({ step: 0, message_id: 'm0', type: 'tool_call', payload: { id: 'call', name: 'read', arguments: {} } }),
+    event({ step: 1, message_id: 'result-0', type: 'tool_result', payload: { id: 'call', name: 'read' } }),
+    event({ step: 1, message_id: 'm1', type: 'model_generate' }),
+  ] } as import('@/api/types').AgentTrace
+  render(<TracedTimeline groups={buildStepGroups(messages, trace)} messages={messages} trace={trace}
+    highlightStep={null} highlightId="result-0" onStepClick={() => {}} />)
+  expect(screen.getByRole('button', { name: 'Step 0 read' })).toHaveAttribute('aria-expanded', 'true')
+  expect(screen.getByText('Complete searched result')).toBeInTheDocument()
 })

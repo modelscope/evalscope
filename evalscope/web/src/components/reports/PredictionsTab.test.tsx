@@ -136,6 +136,8 @@ it.each([false, true])('keeps diagnostic filters secondary and opens them for a 
   const summary = screen.getByText('Diagnostic filters')
   expect(screen.getByRole('combobox', { name: 'Select Subset' }).compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   if (active) {
+    expect(summary.closest('details')).not.toHaveAttribute('open')
+    fireEvent.click(summary)
     expect(summary.closest('details')).toHaveAttribute('open')
     expect(screen.getByRole('combobox', { name: 'Observation type' })).toBeInTheDocument()
   } else {

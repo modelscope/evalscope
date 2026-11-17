@@ -1,3 +1,4 @@
+import { scrollToContent } from './scrollToContent'
 import React, { useContext, useEffect, useRef } from 'react'
 import {
   Copy,
@@ -160,18 +161,20 @@ export function MessageRow({
 
   useEffect(() => {
     if (isHighlighted && ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      scrollToContent(ref.current)
     }
   }, [isHighlighted])
 
   return (
+    <>
     <ChatBubble
       role={roleToBubble(role)}
+      variant="card"
       highlighted={isHighlighted}
-      className="flex w-full px-3.5 py-2.5"
+      className="flex w-full px-4 py-3"
       style={{ animation: 'fadeInUp 240ms ease-out both' }}
     >
-      <div ref={ref} className="flex-1 min-w-0">
+      <div ref={ref} data-message-role={role} className="flex-1 min-w-0">
         {/* Header row */}
         {!compact && (
           <div className="flex items-center gap-2 mb-[0.4rem] flex-wrap">
@@ -180,10 +183,15 @@ export function MessageRow({
               {labelOverride ?? palette.label}
             </span>
             {toolFunction && <span className={CHIP_CLASS}>{toolFunction}</span>}
-            {model && <span className={CHIP_CLASS}>{model}</span>}
-            {headerExtra}
             <span className="flex-1" />
-            {msgId && <MsgIdChip msgId={msgId} />}
+            {(model || headerExtra || msgId) && <details className="relative text-[var(--text-muted)]">
+              <summary className="cursor-pointer list-none text-xs" aria-label={t('trace.recordDetails')}>{t('trace.recordDetails')}</summary>
+              <div className="absolute right-0 z-10 mt-2 flex w-max max-w-96 flex-wrap items-center gap-2 rounded border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-lg">
+                {model && <span className={CHIP_CLASS}>{model}</span>}
+                {headerExtra}
+                {msgId && <MsgIdChip msgId={msgId} />}
+              </div>
+            </details>}
             {copyText && <CopyIconButton text={copyText} />}
           </div>
         )}
@@ -205,9 +213,10 @@ export function MessageRow({
         </div>
 
         </EvidenceQuotes.Provider>
-        {children}
       </div>
     </ChatBubble>
+    {children}
+    </>
   )
 }
 

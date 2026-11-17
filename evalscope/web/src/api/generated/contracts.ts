@@ -247,8 +247,22 @@ export interface DeleteReportResponse {
  * Read-only diagnostic artifact and freshness state.
  */
 export interface DiagnosisResponse {
+  issues?: DiagnosisIssue[];
+  passed_observations?: number;
   report?: DiagnosisReport | null;
+  risk_samples?: number;
   status: "ready" | "missing" | "stale" | "error";
+}
+/**
+ * Primary classifications of failed or unscored samples, counted once per identity.
+ */
+export interface DiagnosisIssue {
+  failed?: number;
+  failure_type: string;
+  tools?: {
+    [k: string]: number;
+  };
+  unscored?: number;
 }
 /**
  * One analysis of a persisted (run, model, benchmark), with cache provenance.

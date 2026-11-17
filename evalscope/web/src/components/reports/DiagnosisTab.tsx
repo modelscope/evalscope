@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { AlertTriangle, ArrowRight, FileText } from 'lucide-react'
+import DiagnosisSamplePanel from './DiagnosisSamplePanel'
+import type { ReportMetric } from '@/domain/report/primaryMetrics'
 import { formatMetric, formatProportion } from '@/domain/metric'
 import { getDiagnosis, type DiagnosisFilters } from '@/api/reports'
 import type { Fact, SampleKey } from '@/api/types'
@@ -6,13 +10,12 @@ import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
 import ScoreBar from '@/components/ui/ScoreBar'
-import Badge from '@/components/ui/Badge'
-import Tooltip from '@/components/ui/Tooltip'
 import Skeleton from '@/components/ui/Skeleton'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 
 interface Props {
+  metrics?: ReportMetric[]
   legacyAnalysis?: string
   rootPath: string
   reportName: string
@@ -200,8 +203,18 @@ function FactData({ fact }: { fact: Fact }) {
   return null
 }
 
-export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis }: Props) {
+interface IssueSelection {
+  id: string
+  title: string
+  count: number
+  filters: DiagnosisFilters
+  description: string
+  suggestion: string
+}
+
+export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis, metrics }: Props) {
   const { t } = useLocale()
+  const [selection, setSelection] = useState<IssueSelection | null>(null)
   const resource = useAsyncResource(
     (signal) => getDiagnosis(rootPath, reportName, datasetName, signal),
     [rootPath, reportName, datasetName],
@@ -216,11 +229,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
   if (!state || state.status !== 'ready' || !state.report)
     return (
       <div className="space-y-3" role="status">
-        <p>
-          {t(
-            `diagnosis.${state?.status === 'stale' ? 'stale' : state?.status === 'error' ? 'error' : 'missing'}`,
-          )}
-        </p>
+        <p>{t(`diagnosis.${state?.status === 'stale' ? 'stale' : state?.status === 'error' ? 'error' : 'missing'}`)}</p>
         {state?.status === 'missing' && legacyAnalysis && legacyAnalysis !== 'N/A' && (
           <Card title={t('diagnosis.summary')}><MarkdownRenderer content={legacyAnalysis} /></Card>
         )}
@@ -229,391 +238,160 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         </code>
       </div>
     )
+
   const report = state.report
   const c = report.coverage
-  const subsets = [...new Set(report.patterns.flatMap((p) => Object.keys(p.by_subset)))].sort()
-  const types = [...new Set(report.patterns.map((p) => p.failure_type))]
-  const facts = [...report.facts].sort(
-    (a, b) => ({ critical: 0, warn: 1, info: 2 })[a.severity] - { critical: 0, warn: 1, info: 2 }[b.severity],
-  )
-  const issueName = (type: string) => t(`diagnosis.issue.${type}`)
-  const componentName = (value: string) => t(`diagnosis.${value === 'unknown' ? 'unknownComponent' : value}`)
-  const sampleLabel = (sample: SampleKey) =>
-    `${sample.subset === 'default' ? '' : `${sample.subset} · `}${t('diagnosis.sampleLink', { index: sample.index })}`
+  const translated = (group: string, key: string, fallback: string) => {
+    const path = `diagnosis.${group}.${key}`
+    return t(path) === path ? t(`diagnosis.${group}.${fallback}`) : t(path)
+  }
+  const issueTitle = (type: string) => translated('issue', type, 'other')
+  const makeEntry = (id: string, title: string, count: number, filters: DiagnosisFilters): IssueSelection => ({
+    id, title, count, filters,
+    description: translated('issueDescription', id, 'other'),
+    suggestion: translated('issueSuggestion', id, 'other'),
+  })
+  const issues = (state.issues ?? []).filter(issue => (issue.failed ?? 0) > 0 && issue.failure_type !== 'unexplained')
+    .sort((a, b) => (b.failed ?? 0) - (a.failed ?? 0) || a.failure_type.localeCompare(b.failure_type))
+    .map(issue => makeEntry(issue.failure_type, issueTitle(issue.failure_type), issue.failed ?? 0,
+      { failure_type: issue.failure_type, outcome: 'failed' }))
+  const pending = c.unexplained_failures > 0
+    ? makeEntry('unexplained', t('diagnosis.issue.unexplained'), c.unexplained_failures,
+      { failure_type: 'unexplained', outcome: 'failed' }) : null
+  const unscored = c.excluded > 0
+    ? makeEntry('unscored', t('diagnosis.unscored'), c.excluded, { outcome: 'unscored' }) : null
+  const risk = state.risk_samples
+    ? makeEntry('risk', t('diagnosis.riskTitle'), state.risk_samples, { outcome: 'risk' }) : null
+  const passed = state.passed_observations
+    ? makeEntry('passed', t('diagnosis.passedObservations'), state.passed_observations, { outcome: 'passed' }) : null
+  const selected = selection ?? issues[0] ?? pending ?? unscored ?? risk ?? passed
+  const tools = selected?.filters.failure_type
+    ? Object.keys(state.issues?.find(issue => issue.failure_type === selected.filters.failure_type)?.tools ?? {}) : []
   const factTitle = (fact: Fact) => {
     const key = `diagnosis.fact.${fact.id}`
     return t(key) === key ? fact.title : t(key)
   }
-  const factValue = (fact: Fact) =>
-    fact.value === null
-      ? ''
-      : fact.unit === 'fraction'
-        ? formatProportion(fact.value).primary
-        : formatMetric(fact.value, null).primary
-  const clues = Math.max(0, c.task_failed - c.unexplained_failures)
-  const attributions = ['model', 'guard', 'environment', 'benchmark', 'unknown']
-    .map((key) => ({
-      label: componentName(key),
-      tone: key,
-      count: report.patterns.filter((p) => p.attribution === key).reduce((sum, p) => sum + p.count, 0),
-    }))
-    .filter((item) => item.count > 0)
-  const cellCount = (subset: string, type: string) => report.patterns
-    .filter(p => p.failure_type === type)
-    .reduce((sum, p) => sum + (p.by_subset[subset] ?? 0), 0)
-  const maxCell = Math.max(1, ...subsets.flatMap(subset => types.map(type => cellCount(subset, type))))
-  const leading = report.patterns.find((p) => p.failure_type !== 'unexplained')
-  const basis = (fact: Fact) => {
-    const key = `diagnosis.description.${fact.id}`
-    return t(key) === key ? fact.definition : t(key)
+  const openSamples = (filters: DiagnosisFilters, sample?: SampleKey, title = t('diagnosis.samplePanel')) => {
+    setSelection(makeEntry('other', title, 0, sample ? { ...filters, subset_name: sample.subset, index: sample.index } : filters))
   }
-  const renderFact = (fact: Fact, expanded = false) => (
-    <li id={`${expanded ? 'detail-' : ''}${fact.id}`} key={fact.id} className="diagnosis-fact">
-      <div className="flex items-start gap-2">
-        <Badge
-          variant={fact.severity === 'critical' ? 'danger' : fact.severity === 'warn' ? 'warning' : 'default'}
-          className="shrink-0 rounded-md"
-        >
-          {t(`diagnosis.severity.${fact.severity}`)}
-        </Badge>
-        <div className="min-w-0 flex-1">
-          <Tooltip content={basis(fact)} maxWidth={340}>
-            <span className="text-sm">
-              {factTitle(fact)}
-              {fact.value !== null && (
-                <>
-                  {' '}
-                  · <strong className="font-mono">{factValue(fact)}</strong>
-                </>
-              )}
-            </span>
-          </Tooltip>
-          {expanded && fact.samples.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-x-3">
-              {fact.samples.map((sample) => (
-                <button
-                  key={`${sample.subset}:${sample.index}`}
-                  className="diagnosis-link text-xs"
-                  onClick={() => onSamples({}, sample)}
-                >
-                  {sampleLabel(sample)}
-                </button>
-              ))}
-            </div>
-          )}
-          {expanded && Object.keys(fact.data).length > 0 && (
-            <div className="mt-2 text-xs text-[var(--text-muted)]">
-              <FactData fact={fact} />
-            </div>
-          )}
-        </div>
-        {!expanded && fact.samples[0] && (
-          <button className="diagnosis-link shrink-0 text-xs" onClick={() => onSamples({}, fact.samples[0])}>
-            {sampleLabel(fact.samples[0])}
-          </button>
-        )}
-      </div>
-    </li>
+  const issueButton = (entry: IssueSelection) => (
+    <button
+      key={entry.id}
+      type="button"
+      aria-pressed={selected?.id === entry.id}
+      onClick={() => setSelection(entry)}
+      className={`w-full rounded-md border-l-4 px-3 py-3 text-left transition-colors ${selected?.id === entry.id
+        ? 'border-[var(--accent)] bg-[var(--accent-dim)]'
+        : 'border-transparent hover:bg-[var(--bg-card2)]'}`}
+    >
+      <span className="flex items-start justify-between gap-3 text-sm font-semibold">
+        <span>{entry.title}</span>
+        <span className="shrink-0 font-mono text-[var(--text-muted)]">{t('diagnosis.issueCount', { count: entry.count })}</span>
+      </span>
+      <span className="mt-2 block text-xs leading-relaxed text-[var(--text-muted)]">{entry.description}</span>
+    </button>
   )
+
   return (
     <div className="space-y-4">
-      <div className="text-xs text-[var(--text-muted)]">
-        {t(report.level === 'facts' ? 'diagnosis.ruleAnalysis' : 'diagnosis.modelAnalysis')} · {t('diagnosis.generated')}{' '}
-        {new Date(report.generated_at).toLocaleString()}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-[var(--border)] pb-4">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="text-base font-semibold">{t(c.task_success_known ? 'diagnosis.overview' : 'diagnosis.summaryNoOutcome', {
+            samples: c.samples, failed: c.task_failed, known: c.task_success_known,
+          })}</p>
+          {c.task_failed > 0 && <p className="text-sm text-[var(--text-muted)]">{t('diagnosis.clueSummary', {
+            clues: Math.max(0, c.task_failed - c.unexplained_failures), pending: c.unexplained_failures,
+          })}</p>}
+        </div>
+        {risk && <button type="button" className="flex items-center gap-2 text-sm text-[var(--yellow)]"
+          aria-pressed={selected?.id === 'risk'} onClick={() => setSelection(risk)}>
+          <AlertTriangle size={16} />{t('diagnosis.riskCount', { count: risk.count })}<ArrowRight size={14} />
+        </button>}
+        {(c.outcome_unknown > 0 || c.errored_without_record > 0 || c.unreadable > 0) && <p className="w-full text-xs text-[var(--text-muted)]">{[
+          ['unknown', c.outcome_unknown], ['executionErrors', c.errored_without_record], ['unreadable', c.unreadable],
+        ].filter(([, count]) => Number(count) > 0).map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`).join(' · ')}</p>}
       </div>
-      {report.level !== 'facts' && <Card title={t('diagnosis.modelCoverage')} className="min-w-0">
-        <p className="text-sm">{t('diagnosis.proposalCoverage', { ok: c.diagnosed_ok, selected: c.selected, total: c.diagnosis_population })}</p>
-        <p className="mt-2 text-xs text-[var(--text-muted)]">{t('diagnosis.proposalNotice')}</p>
-        {c.failed_unexplained_estimate && <p className="mt-2 text-sm">
-          {t('diagnosis.weightedUnresolved')}: {formatProportion(c.failed_unexplained_estimate.proportion).primary}
-          <span className="ml-2 text-xs text-[var(--text-muted)]">{t('diagnosis.stratifiedInterval')} {formatProportion(c.failed_unexplained_estimate.lower).primary}–{formatProportion(c.failed_unexplained_estimate.upper).primary}</span>
-        </p>}
-        {report.self_evaluation && <p className="mt-2 text-xs text-[var(--warning-text)]">{t('diagnosis.selfEvaluation')}</p>}
-      </Card>}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="min-w-0">
-          <h3 className="text-sm text-[var(--text-muted)]">{t('diagnosis.failureRate')}</h3>
-          <div className="mt-3 flex flex-wrap items-baseline gap-3">
-            <strong className="text-2xl font-semibold">
-              {c.task_success_known ? formatProportion(c.task_failed / c.task_success_known).primary : '—'}
-            </strong>
-            <span className="text-xs text-[var(--text-muted)]">
-              {c.task_success_known ? `${c.task_failed} / ${c.task_success_known}` : t('diagnosis.noTaskOutcome')}
-            </span>
-          </div>
-        </Card>
-        <Card className="min-w-0">
-          <h3 className="text-sm text-[var(--text-muted)]">{t('diagnosis.ruleCoverage')}</h3>
-          <Segments
-            emptyLabel={t(c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}
-            items={[
-              { label: t('diagnosis.hasClues'), count: clues, tone: 'rule' },
-              { label: t('diagnosis.pending'), count: c.unexplained_failures, tone: 'unknown' },
-            ]}
-          />
-        </Card>
-        <Card className="min-w-0">
-          <h3 className="text-sm text-[var(--text-muted)]">{t('diagnosis.attribution')}</h3>
-          <Segments items={attributions} />
-        </Card>
-        <Card className="min-w-0">
-          <h3 className="text-sm text-[var(--text-muted)]">{t('diagnosis.analysisUsage')}</h3>
-          <strong className="mt-3 block text-2xl font-semibold">
-            {t('diagnosis.callCount', { count: report.cost.calls })}
-          </strong>
-          <span className="text-xs text-[var(--text-muted)]">
-            {report.cost.calls
-              ? t('diagnosis.tokenCount', { count: report.cost.input_tokens + report.cost.output_tokens })
-              : !report.cost.cached_calls && t('diagnosis.noModelCalls')}
-          </span>
-          {report.cost.cached_calls > 0 && (
-            <p className="text-xs text-[var(--text-muted)]">
-              {t('diagnosis.cachedCalls', { count: report.cost.cached_calls })}
-            </p>
-          )}
-        </Card>
+      <div className="grid grid-cols-[250px_minmax(0,1fr)] items-start gap-5">
+        <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
+          <h3 className="border-b border-[var(--border)] pb-3 text-base font-semibold">{t('diagnosis.majorIssues')}</h3>
+          {issues.map(issueButton)}
+          {pending && <div className="border-t border-[var(--border)] pt-2">{issueButton(pending)}</div>}
+          {!issues.length && !pending && <p className="py-3 text-sm text-[var(--text-muted)]">
+            {t(c.task_failed ? 'diagnosis.noIdentifiedIssues' : c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}
+          </p>}
+          {unscored && issueButton(unscored)}
+          {passed && <button type="button" className="diagnosis-link mt-3 block text-left text-xs leading-relaxed"
+            aria-pressed={selected?.id === 'passed'} onClick={() => setSelection(passed)}>
+            {t('diagnosis.passedCount', { count: passed.count })}
+          </button>}
+          <a href="#diagnosis-analysis-record" className="diagnosis-link mt-6 flex items-center gap-2 border-t border-[var(--border)] pt-4 text-xs"
+            onClick={() => { const record = document.getElementById('diagnosis-analysis-record'); if (record instanceof HTMLDetailsElement) record.open = true }}>
+            <FileText size={14} />{t('diagnosis.analysisRecord')}
+          </a>
+        </section>
+        <div className="min-w-0 space-y-4">
+          {selected ? <>
+            <header className="space-y-1">
+              <h3 className="text-lg font-semibold">{selected.title}</h3>
+              <p className="text-xs text-[var(--text-muted)]">{selected.count > 0 && `${t(selected.filters.outcome === 'failed' ? 'diagnosis.failedCount' : 'diagnosis.sampleCount', { count: selected.count })} · `}
+                {t(report.level === 'facts' ? 'diagnosis.ruleObservation' : 'diagnosis.modelAnalysis')}</p>
+              <p className="text-sm leading-relaxed">{selected.description}</p>
+              <p className="border-l-2 border-[var(--accent)] pl-3 text-sm leading-relaxed">{selected.suggestion}</p>
+            </header>
+            <DiagnosisSamplePanel key={JSON.stringify(selected.filters)} rootPath={rootPath} reportName={reportName}
+              datasetName={datasetName} filters={selected.filters} metrics={metrics} onSamples={onSamples} />
+          </> : <p className="py-6 text-sm text-[var(--text-muted)]">{t(c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}</p>}
+        </div>
       </div>
-      <Card
-        className="min-w-0"
-        title={t('diagnosis.patterns', { count: c.needs_attention })}
-      >
-        {report.patterns.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left text-sm">
-              <thead>
-                <tr>
-                  {['patternId', 'type', 'attribution', 'count', 'share', 'source', 'examples'].map((key) => (
-                    <th key={key} className="whitespace-nowrap px-2 pb-2 text-xs font-medium text-[var(--text-muted)]">
-                      {t(`diagnosis.${key}`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {report.patterns.map((pattern, index) => (
-                  <tr
-                    key={pattern.id}
-                    className="cursor-pointer border-t border-[var(--border)] hover:bg-[var(--bg-card2)]"
-                    onClick={() => onSamples({ pattern_id: pattern.id })}
-                  >
-                    <td className="whitespace-nowrap px-2 py-1 font-mono text-xs">P{index + 1}</td>
-                    <td className="px-2 py-1">
-                      <button className="min-h-9 whitespace-nowrap text-left">{issueName(pattern.failure_type)}</button>
-                      {pattern.detail.includes(' @ ') && (
-                        <span className="block text-xs text-[var(--text-muted)]">
-                          {pattern.detail.split(' @ ').slice(1).join(' @ ')}
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-1 text-xs">{componentName(pattern.attribution)}</td>
-                    <td className="px-2 py-1 tabular-nums">{pattern.count}</td>
-                    <td className="px-2 py-1">
-                      <ScoreBar
-                        score={pattern.share}
-                        variant="proportion"
-                        track="fill"
-                        ariaLabel={issueName(pattern.failure_type)}
-                        className="diagnosis-pattern-bar"
-                      />
-                      {pattern.estimated_share && <div className="mt-1 text-xs text-[var(--text-muted)]">
-                        {t('diagnosis.populationEstimate')} {formatProportion(pattern.estimated_share.proportion).primary}
-                        <span className="block">{t('diagnosis.stratifiedInterval')} {formatProportion(pattern.estimated_share.lower).primary}–{formatProportion(pattern.estimated_share.upper).primary}</span>
-                      </div>}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-1 text-xs text-[var(--text-muted)]">
-                      {pattern.source === 'none' ? '—' : t(`diagnosis.sources.${pattern.source}`)}
-                    </td>
-                    <td className="px-2 py-1">
-                      <div className="flex flex-wrap gap-x-3">
-                        {pattern.examples.map((sample) => (
-                          <button
-                            key={`${sample.subset}:${sample.index}`}
-                            className="diagnosis-link min-h-9 whitespace-nowrap text-xs"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              onSamples({ pattern_id: pattern.id }, sample)
-                            }}
-                          >
-                            {sampleLabel(sample)}
-                          </button>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-sm text-[var(--text-muted)]">{t('diagnosis.noPatterns')}</p>
-        )}
-      </Card>
-      <div className="grid items-stretch gap-4 xl:grid-cols-2">
-        <Card className="min-w-0" title={t('diagnosis.heatmap')}>
-          {subsets.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-separate border-spacing-2 text-xs">
-                <thead>
-                  <tr>
-                    <th />
-                    <>
-                      {types.map((type) => (
-                        <th key={type} className="max-w-24 pb-1 font-medium text-[var(--text-muted)]">
-                          {issueName(type)}
-                        </th>
-                      ))}
-                    </>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subsets.map((subset) => (
-                    <tr key={subset}>
-                      <th className="pr-2 text-left font-normal text-[var(--text-muted)]">
-                        {subset === 'default' ? t('diagnosis.defaultSubset') : subset}
-                      </th>
-                      {types.map((type) => {
-                        const count = cellCount(subset, type)
-                        return (
-                          <td key={type}>
-                            <button
-                              disabled={!count}
-                              className={`min-h-10 w-full min-w-10 rounded text-sm tabular-nums disabled:text-[var(--text-muted)] ${count / maxCell < 2 / 3 ? 'diagnosis-heat-low' : ''}`}
-                              style={{
-                                background: count
-                                  ? `color-mix(in srgb, var(--accent-dark) ${25 + (75 * count) / maxCell}%, var(--bg-card2))`
-                                  : 'var(--bg-card2)',
-                                color: count ? 'var(--diagnosis-heat-text, var(--text-on-filled))' : undefined,
-                              }}
-                              aria-label={`${subset} · ${issueName(type)}: ${count}`}
-                              onClick={() => onSamples({ subset_name: subset, failure_type: type })}
-                            >
-                              {count || '—'}
-                            </button>
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-sm text-[var(--text-muted)]">{t('diagnosis.noPatterns')}</p>
-          )}
-        </Card>
-        <Card className="min-w-0" title={t('diagnosis.facts')}>
-          <ul className="space-y-2">{facts.slice(0, 5).map((fact) => renderFact(fact))}</ul>
-          {facts.length > 0 && (
-            <details className="mt-3 border-t border-[var(--border)] pt-2">
-              <summary className="cursor-pointer py-2 text-xs text-[var(--accent)]">
-                {t('diagnosis.allFacts', { count: facts.length })}
-              </summary>
-              <ul className="mt-2 space-y-3">{facts.map((fact) => renderFact(fact, true))}</ul>
-              {Object.keys(c.skipped_facts).length > 0 && (
-                <details className="mt-2 text-xs text-[var(--text-muted)]">
-                  <summary className="cursor-pointer py-2">
-                    {t('diagnosis.skipped')} ({Object.keys(c.skipped_facts).length})
-                  </summary>
-                  <ul className="space-y-1">
-                    {Object.keys(c.skipped_facts).map((key) => (
-                      <li key={key}>
-                        {t(`diagnosis.unavailable.${key}`) === `diagnosis.unavailable.${key}`
-                          ? t('diagnosis.noData')
-                          : t(`diagnosis.unavailable.${key}`)}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </details>
-          )}
-        </Card>
-      </div>
-      {report.narrative && <Card className="min-w-0" title={t('diagnosis.modelSummary')}>
+      {report.narrative && <section aria-label={t('diagnosis.modelSummary')} className="space-y-3 border-t border-[var(--border)] pt-4">
+        <h3 className="text-base font-semibold">{t('diagnosis.modelSummary')}</h3>
+        <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.proposalNotice')}</p>
         <ul className="space-y-3 text-sm">{[...report.narrative.findings, ...report.narrative.recommendations].map((item, index) => <li key={index}>
-          {item.text} {item.refs.map(ref => {
-            const pattern = report.patterns.find(p => p.id === ref)
-            const fact = report.facts.find(f => f.id === ref)
-            return <button key={ref} className="diagnosis-link ml-1" onClick={() => {
-              if (pattern) onSamples({ pattern_id: pattern.id })
-              else if (fact?.samples[0]) onSamples({}, fact.samples[0])
+          {item.text} {item.refs.map(reference => {
+            const pattern = report.patterns.find(p => p.id === reference)
+            const fact = report.facts.find(f => f.id === reference)
+            return <button type="button" key={reference} className="diagnosis-link ml-1" onClick={() => {
+              if (pattern) openSamples({ pattern_id: pattern.id }, undefined, issueTitle(pattern.failure_type))
+              else if (fact?.samples[0]) openSamples({}, fact.samples[0], factTitle(fact))
               else {
-                const element = document.getElementById(`detail-${ref}`)
-                const details = element?.closest('details')
-                if (details) details.open = true
+                const element = document.getElementById(`detail-${reference}`)
+                const record = document.getElementById('diagnosis-analysis-record')
+                if (record instanceof HTMLDetailsElement) record.open = true
                 element?.scrollIntoView({ block: 'center' })
               }
-            }}>[{pattern ? `P${report.patterns.indexOf(pattern) + 1}` : fact ? t(`diagnosis.fact.${fact.id}`) : ref}]</button>
+            }}>[{pattern ? `P${report.patterns.indexOf(pattern) + 1}` : fact ? factTitle(fact) : reference}]</button>
           })}
         </li>)}</ul>
-      </Card>}
-      <Card className="min-w-0" title={t('diagnosis.summary')}>
-        <ul className="space-y-2 text-sm">
-          <li>
-            {t(c.task_success_known ? 'diagnosis.summaryResults' : 'diagnosis.summaryNoOutcome', {
-              samples: c.samples,
-              failed: c.task_failed,
-              known: c.task_success_known,
-            })}
-          </li>
-          {(c.excluded > 0 || c.outcome_unknown > 0 || c.errored_without_record > 0 || c.unreadable > 0) && (
-            <li className="text-[var(--text-muted)]">
-              {[
-                ['unscored', c.excluded],
-                ['unknown', c.outcome_unknown],
-                ['executionErrors', c.errored_without_record],
-                ['unreadable', c.unreadable],
-              ]
-                .filter(([, count]) => Number(count) > 0)
-                .map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`)
-                .join(' · ')}
-            </li>
-          )}
-          {leading && (
-            <li>
-              {t('diagnosis.summaryPattern', { type: issueName(leading.failure_type), count: leading.count })}{' '}
-              <button className="diagnosis-link" onClick={() => onSamples({ pattern_id: leading.id })}>
-                [P{report.patterns.indexOf(leading) + 1}]
-              </button>
-            </li>
-          )}
-          {report.level === 'facts' && c.task_failed > 0 && (
-            <li>{t('diagnosis.summaryPending', { count: c.unexplained_failures, total: c.task_failed })}</li>
-          )}
-        </ul>
-      </Card>
-    </div>
-  )
-}
+      </section>}
+      <details id="diagnosis-analysis-record" className="border-t border-[var(--border)] pt-3">
+        <summary className="cursor-pointer text-sm text-[var(--text-muted)]">{t('diagnosis.analysisRecord')}</summary>
+        <div className="mt-4 space-y-4 text-sm">
+          <p className="text-xs text-[var(--text-muted)]">{t(report.level === 'facts' ? 'diagnosis.ruleAnalysis' : 'diagnosis.modelAnalysis')} · {t('diagnosis.generated')} {new Date(report.generated_at).toLocaleString()}</p>
+          {report.level !== 'facts' && <div className="space-y-2">
+            <p>{t('diagnosis.proposalCoverage', { ok: c.diagnosed_ok, selected: c.selected, total: c.diagnosis_population })}</p>
+            {c.failed_unexplained_estimate && <p>{t('diagnosis.weightedUnresolved')}: {formatProportion(c.failed_unexplained_estimate.proportion).primary}
+              <span className="ml-2 text-xs">{t('diagnosis.stratifiedInterval')} {formatProportion(c.failed_unexplained_estimate.lower).primary}–{formatProportion(c.failed_unexplained_estimate.upper).primary}</span>
+            </p>}
+            {report.self_evaluation && <p>{t('diagnosis.selfEvaluation')}</p>}
+          </div>}
+          <p>{t('diagnosis.callCount', { count: report.cost.calls })}{report.cost.cached_calls > 0 && ` · ${t('diagnosis.cachedCalls', { count: report.cost.cached_calls })}`}
+            {report.cost.calls > 0 && ` · ${t('diagnosis.tokenCount', { count: report.cost.input_tokens + report.cost.output_tokens })}`}
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.recordScope')}</p>
+              {tools.length > 0 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.relatedTools')}: <span className="font-mono">{tools.join(' / ')}</span></p>}
 
-function Segments({ items, emptyLabel }: { items: { label: string; count: number; tone: string }[]; emptyLabel?: string }) {
-  const total = items.reduce((sum, item) => sum + item.count, 0)
-  const { t } = useLocale()
-  if (!total) return <p className="mt-3 text-xs text-[var(--text-muted)]">{emptyLabel ?? t('diagnosis.noData')}</p>
-  return (
-    <div className="mt-3">
-      <div
-        role="img"
-        aria-label={items.map((item) => `${item.label}: ${item.count}`).join(' · ')}
-        className="flex h-3 overflow-hidden rounded bg-[var(--bg-card2)]"
-      >
-        {items
-          .filter((item) => item.count > 0)
-          .map((item) => (
-            <span
-              key={item.tone}
-              className={`diagnosis-segment-${item.tone}`}
-              style={{ width: `${(100 * item.count) / total}%` }}
-            />
-          ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs text-[var(--text-muted)]">
-        {items.map((item) => (
-          <span key={item.tone}>
-            {item.label} {total ? formatProportion(item.count / total).primary : '—'}
-          </span>
-        ))}
-      </div>
+          <ul className="divide-y divide-[var(--border)]">{report.facts.map(fact => <li id={`detail-${fact.id}`} key={fact.id} className="space-y-2 py-3">
+            <h4 className="font-medium">{factTitle(fact)}{fact.value !== null && ` · ${fact.unit === 'fraction' ? formatProportion(fact.value).primary : formatMetric(fact.value, null).primary}`}</h4>
+            <FactData fact={fact} />
+            {fact.samples.length > 0 && <div className="flex flex-wrap gap-x-3">{fact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs"
+              onClick={() => onSamples({}, sample)}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
+          </li>)}</ul>
+          {Object.keys(c.skipped_facts).length > 0 && <details>
+            <summary className="cursor-pointer text-xs text-[var(--text-muted)]">{t('diagnosis.skipped')} ({Object.keys(c.skipped_facts).length})</summary>
+            <ul className="mt-2 space-y-1 text-xs text-[var(--text-muted)]">{Object.keys(c.skipped_facts).map(key => <li key={key}>{translated('unavailable', key, 'predictions')}</li>)}</ul>
+          </details>}
+        </div>
+      </details>
     </div>
   )
 }

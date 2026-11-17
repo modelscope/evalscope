@@ -576,3 +576,73 @@ def test_html_distinguishes_unknown_outcomes_and_escapes_tool_details(make_run: 
     html = _render_diagnostic_facts(result)
     assert '&lt;script&gt;' in html and '<script>' not in html
     assert 'Share of 1 reviewed samples' in html and '<td>P1</td>' in html
+
+
+def test_service_priorities_and_navigation_use_the_same_distinct_samples(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from evalscope.api.analysis import SampleDiagnosis
+    from evalscope.service.app import create_app
+
+    root = make_run()
+    [report] = diagnose_run(str(root), config())
+    finding = {
+        'detector': 'tool_failure', 'category': 'tool_failure', 'subtype': 'runtime_error',
+        'attribution': 'unknown', 'confidence': 'high', 'data': {'tool': 'search'},
+    }
+    rows = [
+        SampleDiagnosis(key={'subset': 'a', 'index': 1}, task_success=False, score_status='success',
+                        failure_type='tool_error', findings=[finding, finding]),
+        SampleDiagnosis(key={'subset': 'b', 'index': 2}, task_success=False, score_status='success',
+                        failure_type='tool_error', findings=[finding]),
+        SampleDiagnosis(key={'subset': 'b', 'index': 3}, task_success=True, score_status='success',
+                        failure_type='tool_error', findings=[finding]),
+        SampleDiagnosis(key={'subset': 'b', 'index': 4}, score_status='parse_error',
+                        failure_type='judge_failure'),
+        SampleDiagnosis(key={'subset': 'b', 'index': 5}, score_status='success',
+                        failure_type='tool_error', findings=[finding]),
+        SampleDiagnosis(key={'subset': 'b', 'index': 6}, task_success=True, score_status='success',
+                        safety_violation=True),
+    ]
+    rows.append(SampleDiagnosis(key={'subset': 'b', 'index': 7}, task_success=False, score_status='success'))
+    rows.extend(SampleDiagnosis(key={'subset': 'b', 'index': i}, task_success=True, score_status=status)
+                for i, status in enumerate(('fallback', 'degraded'), 8))
+    path = root / 'analysis/m/demo/samples.jsonl'
+    path.write_text('\n'.join(row.model_dump_json() for row in [*rows, rows[0]]) + '\n')
+    monkeypatch.setattr('evalscope.report.diagnosis.load_diagnosis', lambda *args: ('ready', report))
+    client = create_app(outputs=str(root.parent)).test_client()
+    base = '/api/v1/reports/runs/run/models/m'
+    response = client.get(base + '/diagnosis', query_string={'dataset_name': 'demo'})
+    summary = response.get_json()
+    assert response.status_code == 200
+    assert summary['issues'][0]['failed'] == 2
+    assert summary['issues'][0]['tools'] == {'search': 2}
+    assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'judge_failure')['unscored'] == 1
+    assert summary['risk_samples'] == 1
+    assert summary['passed_observations'] == 1
+    params = {'dataset_name': 'demo', 'failure_type': 'tool_error', 'outcome': 'failed', 'page_size': 1}
+    first = client.get(base + '/diagnosis/samples', query_string=params).get_json()
+    second = client.get(base + '/diagnosis/samples', query_string={**params, 'page': 2}).get_json()
+    assert first['total'] == second['total'] == 2
+    assert first['items'][0]['key'] == {'subset': 'a', 'index': 1}
+    assert second['items'][0]['key'] == {'subset': 'b', 'index': 2}
+    unknown = client.get(base + '/diagnosis/samples', query_string={'dataset_name': 'demo', 'failure_type': 'unexplained', 'outcome': 'failed'}).get_json()
+    assert unknown['total'] == 1 and unknown['items'][0]['key']['index'] == 7
+    unscored = client.get(base + '/diagnosis/samples', query_string={
+        'dataset_name': 'demo', 'outcome': 'unscored',
+    }).get_json()
+    assert unscored['total'] == 1 and unscored['items'][0]['key']['index'] == 4
+    risk = client.get(base + '/diagnosis/samples', query_string={
+        'dataset_name': 'demo', 'outcome': 'risk',
+    }).get_json()
+    assert risk['total'] == 1 and risk['items'][0]['key']['index'] == 6
+    assert client.get(base + '/diagnosis/samples', query_string={
+        'dataset_name': 'demo', 'outcome': 'anything',
+    }).status_code == 400
+    full = client.get(base + '/predictions', query_string={
+        'dataset_name': 'demo', 'subset_name': 'default',
+    }).get_json()['predictions']
+    single = client.get(base + '/predictions', query_string={
+        'dataset_name': 'demo', 'subset_name': 'default', 'index': full[0]['Index'],
+    }).get_json()['predictions']
+    assert single == full[:1]

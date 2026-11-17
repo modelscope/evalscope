@@ -21,10 +21,10 @@ export default function ReportHeader({
   const { t } = useLocale()
   const navigate = useNavigate()
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
-      <div className="min-w-0 flex-1">
+    <div className="flex items-center justify-between gap-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] px-5 py-3">
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-1">
         <h1 className="break-words text-xl font-bold">{modelName}</h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">
+        <p className="text-sm text-[var(--text-muted)]">
           {t('reportDetail.datasetCount', { count: datasetCount })} ·{' '}
           {t('diagnosis.sampleCount', { count: totalSamples })}
         </p>

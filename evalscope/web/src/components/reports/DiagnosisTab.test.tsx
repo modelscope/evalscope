@@ -1,14 +1,17 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import type { DiagnosisReport } from '@/api/types'
 import DiagnosisTab from './DiagnosisTab'
 
-const { getDiagnosis } = vi.hoisted(() => ({ getDiagnosis: vi.fn() }))
-vi.mock('@/api/reports', () => ({ getDiagnosis }))
+const { getDiagnosis, getSampleDiagnoses, getPredictions } = vi.hoisted(() => ({ getDiagnosis: vi.fn(), getSampleDiagnoses: vi.fn(), getPredictions: vi.fn() }))
+vi.mock('@/api/reports', () => ({ getDiagnosis, getSampleDiagnoses, getPredictions }))
+beforeEach(() => {
+  getSampleDiagnoses.mockResolvedValue({ status: 'ready', items: [], total: 0, page: 1, page_size: 200 })
+})
 afterEach(() => {
   cleanup()
-  getDiagnosis.mockReset()
+  vi.resetAllMocks()
   localStorage.removeItem('evalscope-locale')
 })
 
@@ -79,168 +82,109 @@ it('offers a free, quoted command when diagnostics are missing or stale', async 
   expect(screen.queryByRole('button', { name: 'Sample 7' })).not.toBeInTheDocument()
 })
 
-it('shows denominators and opens the precise example or heatmap subset', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report })
-  const onSamples = vi.fn()
-  render(
-    <LocaleProvider>
-      <DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={onSamples} />
-    </LocaleProvider>,
-  )
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-  expect(screen.getByText('1 / 2')).toBeInTheDocument()
-  expect(screen.getByText('Issues to review · 2 samples')).toBeInTheDocument()
-  expect(screen.getByRole('progressbar', { name: 'Tool error' })).toHaveAttribute('aria-valuenow', '50')
-  fireEvent.click(screen.getByRole('button', { name: 'Sample 7' }))
-  expect(onSamples).toHaveBeenLastCalledWith({ pattern_id: 'P-a' }, { subset: 'default', index: 7 })
-  expect(onSamples).toHaveBeenCalledTimes(1)
-  for (const name of ['Task failure rate', 'Rule coverage', 'Analysis usage']) {
-    expect(screen.getByRole('heading', { name })).toBeInTheDocument()
-  }
-  expect(screen.getByRole('columnheader', { name: 'Source' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'default · Tool error: 1' }))
-  expect(onSamples).toHaveBeenLastCalledWith({ subset_name: 'default', failure_type: 'tool_error' })
+async function settle() {
+  await act(async () => { for (let i = 0; i < 8; i++) await Promise.resolve() })
+}
+
+it('selects the largest failed issue immediately and reuses the persistent sample panel', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report, issues: [
+    { failure_type: 'tool_error', failed: 1, unscored: 0, tools: { search: 1 } },
+    { failure_type: 'truncated', failed: 2, unscored: 0, tools: {} },
+  ] })
+  render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
+  await settle()
+  const issues = screen.getByRole('region', { name: 'Problem list' })
+  expect(within(issues).getAllByRole('button')[0]).toHaveTextContent('Output truncated')
+  expect(within(issues).getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true')
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'truncated', outcome: 'failed' }, 1, expect.any(AbortSignal))
+  expect(screen.getByRole('complementary', { name: 'Related sample' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Close sample' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'View example' })).not.toBeInTheDocument()
+  expect(screen.getByText('Analysis record', { selector: 'summary' }).closest('details')).not.toHaveAttribute('open')
+  fireEvent.click(within(issues).getByRole('button', { name: /Tool errors during execution/ }))
+  await settle()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'tool_error', outcome: 'failed' }, 1, expect.any(AbortSignal))
+  expect(screen.getByText(/Tools involved/)).toHaveTextContent('search')
+  expect(screen.queryByRole('img', { name: /Model:/ })).not.toBeInTheDocument()
 })
 
-it('uses readable labels without exposing rule IDs or implementation notes', async () => {
+it('keeps readable analysis records available without exposing them as primary issues', async () => {
   localStorage.setItem('evalscope-locale', 'zh')
-  getDiagnosis.mockResolvedValue({
-    status: 'ready',
-    report: {
-      ...report,
-      coverage: { ...report.coverage, skipped_facts: { 'F-agent': 'No agent trace or tool calls.' } },
-      facts: [
-        {
-          id: 'F-truncation',
-          kind: 'generation',
-          severity: 'warn',
-          title: 'Developer title',
-          value: 0.5,
-          unit: 'fraction',
-          definition: 'predictions.model_output.choices[0].stop_reason',
-          numerator: 1,
-          denominator: 2,
-          samples: [],
-          data: {},
-        },
-      ],
-    },
-  })
-  const { container } = render(
-    <LocaleProvider>
-      <DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} />
-    </LocaleProvider>,
-  )
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-  expect(screen.getByText('待排查问题 · 2 条样本')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '样本 7' })).toBeInTheDocument()
-  const fact = within(container.querySelector('#F-truncation') as HTMLElement)
-  const title = fact.getByText(/回答被截断/)
-  fireEvent.mouseEnter(title.closest('span[tabindex]') ?? title)
-  expect(screen.getByRole('tooltip')).toHaveTextContent('优先看回答的结束原因')
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: {
+    ...report, coverage: { ...report.coverage, skipped_facts: { 'F-agent': 'No trace.' } },
+    facts: [{ id: 'F-truncation', kind: 'generation', severity: 'warn', title: 'Developer title', value: 0.5,
+      unit: 'fraction', definition: 'internal.stop_reason', numerator: 1, denominator: 2, samples: [], data: {} }],
+  } })
+  const { container } = render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
+  await settle()
+  const record = screen.getByText('分析记录', { selector: 'summary' }).closest('details')!
+  expect(record).not.toHaveAttribute('open')
+  fireEvent.click(screen.getByRole('link', { name: '分析记录' }))
+  expect(record).toHaveAttribute('open')
+  expect(screen.getByText(/回答被截断/)).toBeInTheDocument()
   expect(screen.getByText('没有工具调用记录')).toBeInTheDocument()
-  expect(container.textContent).not.toMatch(/stop_reason|F-agent|Developer title|不代表|分母/)
-  expect(container.querySelector('meter')).toBeNull()
-  localStorage.removeItem('evalscope-locale')
+  expect(container.textContent).not.toMatch(/internal.stop_reason|F-agent|Developer title/)
+  expect(screen.queryByText('相关环节')).not.toBeInTheDocument()
+  expect(screen.queryByText('统计与分析详情')).not.toBeInTheDocument()
 })
 
-it.each([true, false])('distinguishes unknown outcomes from an all-pass run (known: %s)', async (known) => {
-  getDiagnosis.mockResolvedValue({
-    status: 'ready',
-    report: {
-      ...report,
-      coverage: {
-        ...report.coverage,
-        task_failed: 0,
-        task_success_known: known ? 3 : 0,
-        outcome_unknown: known ? 0 : 3,
-        unexplained_failures: 0,
-        needs_attention: 0,
-        excluded: 0,
-      },
-      patterns: [],
-    },
-  })
-  render(
-    <LocaleProvider>
-      <DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} />
-    </LocaleProvider>,
-  )
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-  if (known) {
-    expect(screen.getByText('0 / 3')).toBeInTheDocument()
-    expect(screen.getByText('No failed samples')).toBeInTheDocument()
-  } else {
-    expect(screen.getAllByText('Task outcomes unavailable')).toHaveLength(2)
-    expect(screen.getByText('Analyzed 3 samples; task outcomes cannot currently be determined.')).toBeInTheDocument()
-    expect(screen.queryByText('0 / 0')).not.toBeInTheDocument()
-    expect(screen.queryByText(/known results did not pass/)).not.toBeInTheDocument()
-  }
-})
-
-it('limits the summary ranking to identified issues when unexplained failures dominate', async () => {
-  getDiagnosis.mockResolvedValue({
-    status: 'ready',
-    report: {
-      ...report,
-      patterns: [
-        {
-          ...report.patterns[0],
-          id: 'P-unknown',
-          failure_type: 'unexplained',
-          count: 22,
-          denominator: 23,
-          share: 22 / 23,
-          source: 'none',
-        },
-        { ...report.patterns[0], failure_type: 'judge_failure', denominator: 23, share: 1 / 23 },
-      ],
-    },
-  })
-  render(
-    <LocaleProvider>
-      <DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} />
-    </LocaleProvider>,
-  )
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-  expect(screen.getByText(/Among identified issues, Scoring unavailable is the most common, found in 1 samples/)).toBeInTheDocument()
-  expect(screen.queryByText(/^The most common observation/)).not.toBeInTheDocument()
-})
-
-
-it('distinguishes cached model analysis from no model usage', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'full', cost: { ...report.cost, cached_calls: 16 } } })
+it.each([true, false])('distinguishes all-pass and unavailable outcomes without an empty evidence panel (%s)', async (known) => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [], coverage: {
+    ...report.coverage, task_failed: 0, task_success_known: known ? 3 : 0, outcome_unknown: known ? 0 : 3,
+    unexplained_failures: 0, needs_attention: 0, excluded: 0,
+  } } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-  expect(screen.getByText('16 cached analyses reused')).toBeInTheDocument()
-  expect(screen.getByText('0 new calls')).toBeInTheDocument()
-  expect(screen.queryByText('No model usage')).not.toBeInTheDocument()
+  await settle()
+  expect(screen.getAllByText(known ? 'No failed samples' : 'Task outcomes unavailable').length).toBeGreaterThan(0)
+  expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
+  expect(getSampleDiagnoses).not.toHaveBeenCalled()
+  if (!known) expect(screen.getByText('Analyzed 3 samples; task outcomes cannot currently be determined.')).toBeInTheDocument()
 })
 
-
-it('scales the heatmap by combined cell counts across different attributions', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [
-    { ...report.patterns[0], count: 2, by_subset: { default: 2 } },
-    { ...report.patterns[0], id: 'P-b', count: 3, attribution: 'model', by_subset: { default: 3 } },
-  ] } })
+it('provides an immediate unexplained-case entry instead of inventing an ordinary QA cause', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [], coverage: {
+    ...report.coverage, task_success_known: 3, outcome_unknown: 0, excluded: 0,
+  } }, issues: [{ failure_type: 'unexplained', failed: 1 }] })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
-  await act(async () => { await Promise.resolve(); await Promise.resolve() })
-  const cell = screen.getByRole('button', { name: 'default · Tool error: 5' })
-  expect(cell.getAttribute('style')).toContain('100%')
-  expect(cell).toHaveTextContent('5')
+  await settle()
+  expect(screen.getByRole('button', { name: /No explanation yet/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('0 have diagnostic clues; 1 still have no explanation.')).toBeInTheDocument()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'unexplained', outcome: 'failed' }, 1, expect.any(AbortSignal))
+  expect(screen.queryByText('Reasoning or calculation error')).not.toBeInTheDocument()
+})
+
+it('keeps risk, unscored and passed observations separate from failed issue counts', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report, risk_samples: 2, passed_observations: 3, issues: [
+    { failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} },
+    { failure_type: 'unexplained', failed: 22, unscored: 0, tools: {} },
+    { failure_type: 'judge_failure', failed: 0, unscored: 1, tools: {} },
+  ] })
+  render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
+  await settle()
+  const main = screen.getByRole('region', { name: 'Problem list' })
+  expect(within(main).queryByText('22 samples')).not.toBeInTheDocument()
+  expect(within(main).queryByText('Scoring unavailable')).not.toBeInTheDocument()
+  fireEvent.click(within(main).getByRole('button', { name: /Not scored/ }))
+  await settle()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { outcome: 'unscored' }, 1, expect.any(AbortSignal))
+  fireEvent.click(screen.getByRole('button', { name: 'Safety signals in 2 samples' }))
+  await settle()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { outcome: 'risk' }, 1, expect.any(AbortSignal))
+  fireEvent.click(screen.getByRole('button', { name: 'View process observations in 3 passed samples' }))
+  await settle()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { outcome: 'passed' }, 1, expect.any(AbortSignal))
+})
+
+it('keeps model analysis, references and cached usage accessible', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'full', cost: { ...report.cost, cached_calls: 16 },
+    narrative: { findings: [{ text: 'Inspect the tool reply.', refs: ['P-a'] }], recommendations: [] },
+  } })
+  render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
+  await settle()
+  expect(screen.getByText(/16 cached analyses reused/)).toBeInTheDocument()
+  expect(screen.getByText(/0 new calls/)).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Model summary and suggestions' })).toHaveTextContent('Inspect the tool reply.')
+  fireEvent.click(screen.getByRole('button', { name: '[P1]' }))
+  await settle()
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { pattern_id: 'P-a' }, 1, expect.any(AbortSignal))
 })

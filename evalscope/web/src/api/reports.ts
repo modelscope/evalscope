@@ -117,12 +117,14 @@ export async function getPredictions(
   datasetName: string,
   subsetName: string,
   signal?: AbortSignal,
+  index?: number,
 ): Promise<PredictionsResponse> {
   return apiValidated<PredictionsResponse>(`${reportPath(ref)}/predictions`, {
     params: {
       root_path: rootPath,
       dataset_name: datasetName,
       subset_name: subsetName,
+      index,
     },
     signal,
   })
@@ -151,6 +153,7 @@ export async function getDiagnosis(rootPath: string, ref: string, dataset: strin
 }
 
 export interface DiagnosisFilters {
+  outcome?: 'failed' | 'unscored' | 'risk' | 'passed'
   subset_name?: string
   pattern_id?: string
   failure_type?: string

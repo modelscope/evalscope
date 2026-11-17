@@ -972,6 +972,33 @@
       ],
       "type": "object"
     },
+    "DiagnosisIssue": {
+      "additionalProperties": false,
+      "description": "Primary classifications of failed or unscored samples, counted once per identity.",
+      "properties": {
+        "failed": {
+          "default": 0,
+          "type": "integer"
+        },
+        "failure_type": {
+          "type": "string"
+        },
+        "tools": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "unscored": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "failure_type"
+      ],
+      "type": "object"
+    },
     "DiagnosisReport": {
       "additionalProperties": false,
       "description": "One analysis of a persisted (run, model, benchmark), with cache provenance.",
@@ -1101,6 +1128,16 @@
       "additionalProperties": false,
       "description": "Read-only diagnostic artifact and freshness state.",
       "properties": {
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/DiagnosisIssue"
+          },
+          "type": "array"
+        },
+        "passed_observations": {
+          "default": 0,
+          "type": "integer"
+        },
         "report": {
           "anyOf": [
             {
@@ -1111,6 +1148,10 @@
             }
           ],
           "default": null
+        },
+        "risk_samples": {
+          "default": 0,
+          "type": "integer"
         },
         "status": {
           "enum": [

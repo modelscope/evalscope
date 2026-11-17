@@ -54,6 +54,14 @@ function evidencePlugin(quotes: string[]) {
   }
 }
 
+/** Keep currency from opening math spans; leave code and display equations intact. */
+function escapeCurrency(content: string): string {
+  return content.replace(
+    /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|(?<!\\)\$\$[\s\S]*?(?<!\\)\$\$)|(?<!\\)\$(?=<<|\d+(?:[,.]\d+)*[.,;:!?]?(?:\s+(?:[A-Za-z]{2,}|a\b)))/g,
+    (_match, literal: string | undefined) => literal ?? '\\$',
+  )
+}
+
 interface Props {
   content: string
   /**
@@ -140,7 +148,8 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
   const quotes = useContext(EvidenceQuotes)
   const { theme } = useTheme()
   const { t } = useLocale()
-  const { plugins: mathPlugins, state: mathState } = useMathPlugins(content, collapsed)
+  const displayContent = useMemo(() => escapeCurrency(content), [content])
+  const { plugins: mathPlugins, state: mathState } = useMathPlugins(displayContent, collapsed)
 
   const markdownComponents = useMemo<Components>(() => ({
     mark: ({ children }) => <mark className="rounded bg-[var(--warning-bg)] px-0.5 text-[var(--text)]">{children}</mark>,
@@ -211,7 +220,7 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
         urlTransform={(url) => url}
         components={markdownComponents}
       >
-        {content}
+        {displayContent}
       </ReactMarkdown>
     </div>
   )

@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react'
+import { scrollToContent } from './scrollToContent'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   Cpu,
@@ -7,6 +8,8 @@ import {
   Check,
   Play,
   Square,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import type { ChatMessage, AgentTrace, AgentTraceEvent, Finding } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -154,7 +157,7 @@ export function StructuredMessages({
             highlightId={highlightId}
             headerExtra={headerPerf}
           >
-            {entries.length > 0 && <ToolCallsGroup calls={entries} />}
+            {entries.length > 0 && <ToolCallsGroup calls={entries} highlightId={highlightId} />}
           </MessageRow>
         ),
       })
@@ -256,7 +259,9 @@ export function StepBlock({
   onStepClick,
   ctx,
   findings = [],
+  anchorId,
 }: {
+  anchorId?: string
   group: StepGroup
   highlightId?: string
   highlighted: boolean
@@ -267,9 +272,11 @@ export function StepBlock({
 }) {
   const { t } = useLocale()
   const stepRef = useRef<HTMLDivElement>(null)
+  const [expanded, setExpanded] = useState(Boolean(group.assistant && contentToText(group.assistant.content).trim()) || group.traceEvents.some(e => e.type === 'env_reset' || e.type === 'error'))
+  const open = highlighted || expanded
   useEffect(() => {
-    if (highlighted) stepRef.current?.scrollIntoView?.({ block: 'center' })
-  }, [highlighted])
+    if (highlighted && !highlightId) scrollToContent(stepRef.current)
+  }, [highlighted, highlightId])
 
   // Pre-agent messages (system/user) — render as-is, no wrapper
   if (group.step === -1) {
@@ -334,6 +341,7 @@ export function StepBlock({
   return (
     <div
       ref={stepRef}
+      id={anchorId}
       className={[
         'rounded-[0.6rem] border-l-2 transition-[background-color,border-color] duration-300',
         highlighted
@@ -341,36 +349,20 @@ export function StepBlock({
           : 'bg-transparent border-transparent py-[0.2rem] px-0',
       ].join(' ')}
     >
-      {/* Step header strip */}
       <button
-        onClick={() => onStepClick(group.step)}
-        className="flex items-center gap-2 w-full bg-transparent border-0 border-b border-dashed border-[var(--border)] pt-[0.3rem] pb-[0.4rem] mb-2 cursor-pointer"
+        onClick={() => { setExpanded(!open); if (highlighted) onStepClick(group.step) }}
+        aria-label={[t('trace.step'), group.step, entries.map(e => e.function).join(', ') || t('trace.assistant'), ...findings.map(f => t(`diagnosis.finding.${f.category}`))].join(' ')}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 rounded border border-[var(--border)] px-3 py-2 text-left text-sm hover:bg-[var(--bg-card2)]"
       >
-        <span
-          className={[
-            'text-[0.7rem] font-bold font-mono tracking-[0.04em]',
-            highlighted ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]',
-          ].join(' ')}
-        >
-          {t('trace.step')} {group.step}
-        </span>
-        {group.totalLatencyMs != null && (
-          <span className="text-[0.65rem] font-mono text-[var(--text-muted)] opacity-70">
-            {fmtMs(group.totalLatencyMs)}
-          </span>
-        )}
-        {/* Event pills */}
-        <div className="flex flex-wrap flex-1 gap-1">
-          {findings.map((f,i) => <span key={`finding-${i}`} className="rounded border border-[var(--border)] px-1 text-xs text-[var(--text)]">
-            {t(`diagnosis.finding.${f.category}`)}
-          </span>)}
-          {group.traceEvents.map((ev, i) => (
-            <TraceEventPill key={i} event={ev} />
-          ))}
-        </div>
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span className="shrink-0 text-xs text-[var(--text-muted)]">{t('trace.step')} {group.step}</span>
+        <span className="min-w-0 flex-1 truncate font-mono text-xs">{' '}{entries.map(e => e.function).join(', ') || (group.assistant ? t('trace.assistant') : t('trace.envExec'))}</span>
+        {findings.map((f,i) => <span key={i} className="text-xs text-[var(--danger)]">{t(`diagnosis.finding.${f.category}`)}</span>)}
+        {group.totalLatencyMs != null && <span className="text-xs text-[var(--text-muted)]">{fmtMs(group.totalLatencyMs)}</span>}
       </button>
 
-      <div className="flex flex-col gap-2">
+      {open && <div className="mt-2 flex flex-col gap-2">
         {/* Initial environment observation precedes the first model turn. */}
         {resetMessages.map((m, i) => (
           <MessageRow
@@ -395,6 +387,7 @@ export function StepBlock({
             {entries.length > 0 && (
               <ToolCallsGroup
                 calls={entries}
+                highlightId={highlightId}
                 failedCallIds={findings.filter(f => f.category === 'tool_failure').flatMap(f => f.call_ids ?? [])}
               />
             )}
@@ -445,7 +438,11 @@ export function StepBlock({
             />
           )
         })}
-      </div>
+        <details className="px-3 text-xs text-[var(--text-muted)]">
+          <summary className="cursor-pointer py-2">{t('trace.recordDetails')}</summary>
+          <div className="flex flex-wrap gap-2">{group.traceEvents.map((ev,i) => <TraceEventPill key={i} event={ev} />)}</div>
+        </details>
+      </div>}
     </div>
   )
 }
@@ -460,7 +457,9 @@ export function TracedTimeline({
   highlightId,
   onStepClick,
   findings = [],
+  anchorPrefix,
 }: {
+  anchorPrefix?: string
   groups: StepGroup[]
   messages: ChatMessage[]
   trace: AgentTrace
@@ -475,6 +474,12 @@ export function TracedTimeline({
     () => buildTraceContext(messages, trace, groups),
     [messages, trace, groups]
   )
+
+  const target = highlightId ? messages.find(m => m.id?.startsWith(highlightId)) : undefined
+  const owner = target ? agentGroups.find(g => g.assistant?.id === target.id ||
+    resolveToolCalls(g.assistant, g.traceEvents.filter(e => e.type === 'tool_call'), ctx).some(c => c.result?.id === target.id))
+    ?? agentGroups.find(g => g.tools.some(m => m.id === target.id)) : undefined
+  const focusedStep = owner?.step ?? highlightStep
 
   return (
     <div className="flex flex-col gap-[0.6rem]">
@@ -491,13 +496,14 @@ export function TracedTimeline({
           long traces mount only the visible step blocks. */}
       <VirtualList
         items={agentGroups}
-        revealIndex={agentGroups.findIndex(g => g.step === highlightStep)}
+        revealIndex={agentGroups.findIndex(g => g.step === focusedStep)}
         getKey={(g) => g.step}
         renderItem={(g) => (
           <StepBlock
             group={g}
+            anchorId={anchorPrefix ? `${anchorPrefix}-step-${g.step}` : undefined}
             highlightId={highlightId}
-            highlighted={highlightStep === g.step}
+            highlighted={focusedStep === g.step}
             onStepClick={onStepClick}
             ctx={ctx}
             findings={findings.filter(f => f.call_ids?.some(id =>

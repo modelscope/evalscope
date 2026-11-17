@@ -139,7 +139,7 @@ beforeEach(() => {
       ? { status: 'missing', items: [], total: 0, page: 1, page_size: 200 }
       : ({
           status: 'ready',
-          items: [{ key: { subset: 'example', index: 7 } }],
+          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, rule_failure_type: null, llm: null, sources: [], invalid_evidence: 0, evidence_errors: [], source: 'rule' }],
           total: 1,
           page: 1,
           page_size: 200,
@@ -200,11 +200,13 @@ describe('report workspace', () => {
     )
   })
   it('opens a pattern collection and restores diagnosis with browser back', async () => {
-    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS })
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS, issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }] })
     await renderDetail('?tab=diagnosis&dataset=gsm8k')
-    fireEvent.click(screen.getByRole('button', { name: 'Tool error' }))
     await settle()
-    expect(params().get('pattern')).toBe('P-a')
+    fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
+    await settle()
+    expect(params().get('failure_type')).toBe('tool_error')
+    expect(params().get('outcome')).toBe('failed')
     expect(params().get('dataset')).toBe('gsm8k')
     expect(screen.getByText('Sample 1 / 1')).toBeInTheDocument()
     expect(screen.getByText('(index: 7)')).toBeInTheDocument()
@@ -213,9 +215,10 @@ describe('report workspace', () => {
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
   })
   it('opens representative samples and preserves direct links', async () => {
-    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS })
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS, issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }] })
     await renderDetail('?tab=diagnosis&dataset=gsm8k')
-    fireEvent.click(screen.getByRole('button', { name: 'example · Sample 7' }))
+    await settle()
+    fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
     await settle()
     expect(params().get('subset')).toBe('example')
     expect(params().get('sample')).toBe('7')
@@ -245,7 +248,7 @@ describe('report workspace', () => {
     })
     await renderDetail()
     expect(screen.queryByRole('navigation', { name: 'Datasets' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Saved analysis text')).not.toBeInTheDocument()
+    expect(screen.getByText('Saved analysis text')).not.toBeVisible()
     fireEvent.click(screen.getByRole('tab', { name: 'Diagnosis' }))
     await settle()
     expect(screen.getByText('Saved analysis text')).toBeInTheDocument()

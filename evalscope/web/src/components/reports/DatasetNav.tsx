@@ -16,7 +16,7 @@ export default function DatasetNav({ reports, active, onChange }: Props) {
   return (
     <nav
       aria-label={t('reportDetail.datasets')}
-      className="sticky top-4 flex max-h-[80vh] w-64 shrink-0 flex-col gap-1 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-3"
+      className="sticky top-4 flex max-h-[80vh] w-52 shrink-0 flex-col gap-1 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-3"
     >
       <h2 className="border-b border-[var(--border)] px-3 pb-3 text-sm font-semibold">{t('reportDetail.datasets')}</h2>
       {reports.map((report) => {

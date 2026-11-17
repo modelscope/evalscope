@@ -88,7 +88,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   )
   const predictions = predictionsResource.data?.predictions ?? EMPTY_PREDICTIONS
   const filterKey = JSON.stringify([rootPath,reportName,datasetName,selectedSubset,diagnosisFilters])
-  const diagnosticFilterActive = Boolean(diagnosisFilters.pattern_id || diagnosisFilters.failure_type ||
+  const diagnosticFilterActive = Boolean(diagnosisFilters.outcome || diagnosisFilters.pattern_id || diagnosisFilters.failure_type ||
     diagnosisFilters.attribution || diagnosisFilters.finding_category || diagnosisFilters.only_diagnosed)
   const matches = useAsyncResource(async signal => {
     const ids = new Set<string>()
@@ -206,66 +206,203 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
   return (
     <div className="flex flex-col gap-3">
-      {/* ── Row 1: global config — Subset (left) + Threshold (right) ── */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        {/* Left: Subset selector */}
-        <div className="flex-none max-w-[280px] min-w-[160px]">
+      <div className="flex items-center justify-between gap-3">
+        <strong className="text-sm">{report?.dataset_pretty_name || datasetName}</strong>
+        <div className="w-36 shrink-0 [&_label]:sr-only">
           <Select
             label={t('reportDetail.selectSubset')}
             options={subsetOptions}
             value={selectedSubset}
-            onChange={value => {
+            onChange={(value) => {
               setSelectedSubset(value)
-              onDiagnosisFiltersChange?.({...diagnosisFilters, subset_name: value})
+              onDiagnosisFiltersChange?.({ ...diagnosisFilters, subset_name: value })
             }}
             placeholder={`-- ${t('reportDetail.selectSubset')} --`}
           />
         </div>
 
-        {/* Right: Score Threshold + ? icon */}
-        <div className="flex shrink-0 items-end gap-[0.4rem] pb-[2px]">
-          <ScoreThresholdInput
-            id="prediction-score-threshold"
-            value={threshold}
-            onChange={setThreshold}
-            label={t('single.scoreThreshold')}
-          />
-          {/* text-dim allowed: non-essential help affordance per DESIGN.md §Text */}
-          <Tooltip
-            content={t('prediction.thresholdHint')}
-            label={t('prediction.thresholdHint')}
-            className="mb-2 cursor-help text-[var(--text-dim)]"
-          >
-            <HelpCircle size={14} />
-          </Tooltip>
-        </div>
-      </div>
+        <SampleNavigator page={page} total={totalPages} onPageChange={goToSample}>
+          <span className="flex items-center gap-[0.3rem] text-sm tabular-nums text-[var(--text-muted)]">
+            <Hash size={13} className="opacity-50" />
+            {t('reportDetail.samplePosition', { page, total: totalPages })}
+            {row && (
+              <span className="ml-1 text-xs opacity-50">{t('reportDetail.sampleIndex', { index: row.Index })}</span>
+            )}
+          </span>
+        </SampleNavigator>
 
-      {onDiagnosisFiltersChange && (diagnosis.data?.status === 'ready' || diagnosticFilterActive) && (
-        <details open={diagnosticFilterActive || undefined} className="rounded-[var(--radius-sm)] border border-[var(--border)]">
-          <summary className="cursor-pointer px-3 py-2 text-sm text-[var(--text-muted)]">
+        <div className="flex items-center gap-2">
+          <div className="relative flex items-center">
+            <Search size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
+            <input
+              ref={indexInputRef}
+              aria-label={t('prediction.searchByIndex')}
+              name="prediction-index-search"
+              type="text"
+              value={indexSearch}
+              onChange={(e) => {
+                setIndexSearch(e.target.value)
+                setIndexError(false)
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleIndexSearch()}
+              placeholder={t('prediction.searchByIndex')}
+              className={`${searchInputBase} border ${indexError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
+            />
+            {indexError && (
+              <span className="absolute -right-5 text-[var(--danger)] inline-flex">
+                <AlertCircle size={13} />
+              </span>
+            )}
+          </div>
+
+          <div className="relative flex items-center">
+            <MessageSquare size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
+            <input
+              ref={msgIdInputRef}
+              aria-label={t('prediction.searchByMsgId')}
+              name="prediction-message-id-search"
+              type="text"
+              value={msgIdSearch}
+              onChange={(e) => {
+                setMsgIdSearch(e.target.value)
+                setMsgIdError(false)
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleMsgIdSearch()}
+              placeholder={t('prediction.searchByMsgId')}
+              className={`${searchInputBase} border ${msgIdError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
+            />
+            {msgIdError && (
+              <span className="absolute -right-5 text-[var(--danger)] inline-flex">
+                <AlertCircle size={13} />
+              </span>
+            )}
+          </div>
+        </div>
+        <details className="relative shrink-0">
+          <summary className="cursor-pointer rounded-md border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-muted)]">
             {t('diagnosis.filters')}
             {diagnosticFilterActive && <span className="ml-2 text-[var(--accent)]">{t('diagnosis.filterActive')}</span>}
           </summary>
-          <div className="flex flex-wrap items-end gap-3 border-t border-[var(--border)] p-3">
-            <Select label={t('diagnosis.type')} value={diagnosisFilters.failure_type ?? selectedPattern?.failure_type ?? ''}
-              options={[{value:'',label:t('diagnosis.all')}, ...[...new Set(diagnosis.data?.report?.patterns.map(p=>p.failure_type) ?? [])]
-                .map(value=>({value,label:t(`diagnosis.issue.${value}`)}))]}
-              onChange={failure_type=>onDiagnosisFiltersChange({...diagnosisFilters,pattern_id:undefined,failure_type,subset_name:selectedSubset})} />
-            <Select label={t('diagnosis.attribution')} value={diagnosisFilters.attribution ?? selectedPattern?.attribution ?? ''}
-              options={[{value:'',label:t('diagnosis.all')}, ...['model','guard','environment','benchmark','unknown']
-                .map(value=>({value,label:t(`diagnosis.${value==='unknown' ? 'unknownComponent' : value}`)}))]}
-              onChange={attribution=>onDiagnosisFiltersChange({...diagnosisFilters,pattern_id:undefined,attribution,subset_name:selectedSubset})} />
-            <Select label={t('diagnosis.category')} value={diagnosisFilters.finding_category ?? ''}
-              options={[{value:'',label:t('diagnosis.all')}, ...['tool_failure','repetition','termination','refusal','risky_command','attack_goal_action','tainted_side_effect','side_effect','outcome']
-                .map(value=>({value,label:t(`diagnosis.finding.${value}`)}))]}
-              onChange={finding_category=>onDiagnosisFiltersChange({...diagnosisFilters,pattern_id:undefined,finding_category,subset_name:selectedSubset})} />
-            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(diagnosisFilters.only_diagnosed)}
-              onChange={e=>onDiagnosisFiltersChange({...diagnosisFilters,only_diagnosed:e.target.checked,subset_name:selectedSubset})} />{t('diagnosis.recorded')}</label>
-            {diagnosticFilterActive && <button type="button" className="min-h-11 text-sm text-[var(--accent)]" onClick={()=>onDiagnosisFiltersChange({subset_name:selectedSubset})}>{t('diagnosis.reset')}</button>}
+          <div className="absolute right-0 top-full z-20 mt-2 flex max-h-[65vh] w-[700px] flex-wrap items-end gap-3 overflow-auto rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-lg">
+            <div className="flex shrink-0 items-end gap-[0.4rem] pb-[2px]">
+              <ScoreThresholdInput
+                id="prediction-score-threshold"
+                value={threshold}
+                onChange={setThreshold}
+                label={t('single.scoreThreshold')}
+              />
+              {/* text-dim allowed: non-essential help affordance per DESIGN.md §Text */}
+              <Tooltip
+                content={t('prediction.thresholdHint')}
+                label={t('prediction.thresholdHint')}
+                className="mb-2 cursor-help text-[var(--text-dim)]"
+              >
+                <HelpCircle size={14} />
+              </Tooltip>
+            </div>
+            <SegmentedControl
+              options={filterOptions}
+              value={mode}
+              onChange={(next) => {
+                setMode(next)
+                setPage(1)
+              }}
+              ariaLabel={t('prediction.aboveFilter')}
+            />
+            {onDiagnosisFiltersChange && (
+              <>
+                <Select
+                  label={t('diagnosis.type')}
+                  value={diagnosisFilters.failure_type ?? selectedPattern?.failure_type ?? ''}
+                  options={[
+                    { value: '', label: t('diagnosis.all') },
+                    ...[...new Set(diagnosis.data?.report?.patterns.map((p) => p.failure_type) ?? [])].map((value) => ({
+                      value,
+                      label: t(`diagnosis.issue.${value}`),
+                    })),
+                  ]}
+                  onChange={(failure_type) =>
+                    onDiagnosisFiltersChange({
+                      ...diagnosisFilters,
+                      pattern_id: undefined,
+                      failure_type,
+                      subset_name: selectedSubset,
+                    })
+                  }
+                />
+                <Select
+                  label={t('diagnosis.attribution')}
+                  value={diagnosisFilters.attribution ?? selectedPattern?.attribution ?? ''}
+                  options={[
+                    { value: '', label: t('diagnosis.all') },
+                    ...['model', 'guard', 'environment', 'benchmark', 'unknown'].map((value) => ({
+                      value,
+                      label: t(`diagnosis.${value === 'unknown' ? 'unknownComponent' : value}`),
+                    })),
+                  ]}
+                  onChange={(attribution) =>
+                    onDiagnosisFiltersChange({
+                      ...diagnosisFilters,
+                      pattern_id: undefined,
+                      attribution,
+                      subset_name: selectedSubset,
+                    })
+                  }
+                />
+                <Select
+                  label={t('diagnosis.category')}
+                  value={diagnosisFilters.finding_category ?? ''}
+                  options={[
+                    { value: '', label: t('diagnosis.all') },
+                    ...[
+                      'tool_failure',
+                      'repetition',
+                      'termination',
+                      'refusal',
+                      'risky_command',
+                      'attack_goal_action',
+                      'tainted_side_effect',
+                      'side_effect',
+                      'outcome',
+                    ].map((value) => ({ value, label: t(`diagnosis.finding.${value}`) })),
+                  ]}
+                  onChange={(finding_category) =>
+                    onDiagnosisFiltersChange({
+                      ...diagnosisFilters,
+                      pattern_id: undefined,
+                      finding_category,
+                      subset_name: selectedSubset,
+                    })
+                  }
+                />
+                <label className="flex min-h-11 items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(diagnosisFilters.only_diagnosed)}
+                    onChange={(e) =>
+                      onDiagnosisFiltersChange({
+                        ...diagnosisFilters,
+                        only_diagnosed: e.target.checked,
+                        subset_name: selectedSubset,
+                      })
+                    }
+                  />
+                  {t('diagnosis.recorded')}
+                </label>
+                {diagnosticFilterActive && (
+                  <button
+                    type="button"
+                    className="min-h-11 text-sm text-[var(--accent)]"
+                    onClick={() => onDiagnosisFiltersChange({ subset_name: selectedSubset })}
+                  >
+                    {t('diagnosis.reset')}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </details>
-      )}
+      </div>
 
       {/* Divider */}
       <hr className="border-none border-t border-[var(--border)] m-0" />
@@ -289,76 +426,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
       {!loading && predictions.length > 0 && (
         <>
-          {/* ── Row 2: actions — filters (left) + search box (right) ── */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            {/* Left: All / Above / Below filter group */}
-            <SegmentedControl
-              options={filterOptions}
-              value={mode}
-              onChange={(next) => { setMode(next); setPage(1) }}
-              ariaLabel={t('prediction.aboveFilter')}
-            />
-
-            {/* Right: search-jump box */}
-            <div className="flex items-center gap-2">
-              {/* Sample index search */}
-              <div className="relative flex items-center">
-                <Search size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
-                <input
-                  ref={indexInputRef}
-                  aria-label={t('prediction.searchByIndex')}
-                  name="prediction-index-search"
-                  type="text"
-                  value={indexSearch}
-                  onChange={e => { setIndexSearch(e.target.value); setIndexError(false) }}
-                  onKeyDown={e => e.key === 'Enter' && handleIndexSearch()}
-                  placeholder={t('prediction.searchByIndex')}
-                  className={`${searchInputBase} border ${indexError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
-                />
-                {indexError && (
-                  <span className="absolute -right-5 text-[var(--danger)] inline-flex">
-                    <AlertCircle size={13} />
-                  </span>
-                )}
-              </div>
-
-              {/* Message id search */}
-              <div className="relative flex items-center">
-                <MessageSquare size={12} className="absolute left-2 text-[var(--text-dim)] pointer-events-none" />
-                <input
-                  ref={msgIdInputRef}
-                  aria-label={t('prediction.searchByMsgId')}
-                  name="prediction-message-id-search"
-                  type="text"
-                  value={msgIdSearch}
-                  onChange={e => { setMsgIdSearch(e.target.value); setMsgIdError(false) }}
-                  onKeyDown={e => e.key === 'Enter' && handleMsgIdSearch()}
-                  placeholder={t('prediction.searchByMsgId')}
-                  className={`${searchInputBase} border ${msgIdError ? 'border-[var(--danger)]' : 'border-[var(--border)]'}`}
-                />
-                {msgIdError && (
-                  <span className="absolute -right-5 text-[var(--danger)] inline-flex">
-                    <AlertCircle size={13} />
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Row 2: Sample nav */}
-          <SampleNavigator page={page} total={totalPages} onPageChange={goToSample}>
-            {/* Sample X / Y with hash icon */}
-            <span className="flex items-center gap-[0.3rem] text-sm tabular-nums text-[var(--text-muted)]">
-              <Hash size={13} className="opacity-50" />
-              {t('reportDetail.samplePosition', { page, total: totalPages })}
-              {row && (
-                <span className="ml-1 text-xs opacity-50">
-                  {t('reportDetail.sampleIndex', { index: row.Index })}
-                </span>
-              )}
-            </span>
-          </SampleNavigator>
-
           {/* Content area */}
           {row && (
             <div className="transition-all duration-200">
@@ -367,7 +434,15 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   {t('prediction.messageLocated', { id: highlightMsgId })}
                 </p>
               )}
-              <ChatView prediction={row} threshold={threshold} highlightMsgId={highlightMsgId} metrics={report?.metrics} diagnosis={diagnosisRow} />
+              <ChatView
+                key={rowScope}
+                prediction={row}
+                threshold={threshold}
+                highlightMsgId={highlightMsgId}
+                metrics={report?.metrics}
+                diagnosis={diagnosisRow}
+                focusEvidence={diagnosticFilterActive}
+              />
             </div>
           )}
         </>
@@ -376,10 +451,17 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
       {!loading && predictions.length > 0 && filtered.length === 0 && !loadError && (
         <div role="status" className="space-y-2 py-4 text-[var(--text-muted)]">
           <p>{t('diagnosis.noMatch')}</p>
-          <button type="button" className="min-h-11 text-sm text-[var(--accent)]" onClick={() => {
-            setMode('All'); setPage(1)
-            onDiagnosisFiltersChange?.({ subset_name: selectedSubset })
-          }}>{t('reportDetail.clearFilters')}</button>
+          <button
+            type="button"
+            className="min-h-11 text-sm text-[var(--accent)]"
+            onClick={() => {
+              setMode('All')
+              setPage(1)
+              onDiagnosisFiltersChange?.({ subset_name: selectedSubset })
+            }}
+          >
+            {t('reportDetail.clearFilters')}
+          </button>
         </div>
       )}
 
