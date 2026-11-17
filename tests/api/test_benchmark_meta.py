@@ -1,13 +1,17 @@
 """Tests for benchmark metadata validation."""
 
 import json
+from copy import deepcopy
 
 import pytest
+from pydantic import ValidationError
 
 from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.metric import SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
+from evalscope.report.generator import ReportGenerator
 from evalscope.utils.doc_utils.generate_dataset_md import extract_benchmark_meta
 
 
@@ -178,3 +182,75 @@ def test_doc_metadata_serializes_structured_primary_metric() -> None:
         },
     }
     json.dumps(extracted)
+
+
+@pytest.mark.parametrize('runtime_update', [False, True])
+@pytest.mark.parametrize('selector', [
+    {'name': 'accuracy'},
+    {'name': 'accuracy', 'aggregation': 'vote_at_k', 'dimensions': {'k': 2}},
+])
+def test_primary_metric_mapping_round_trip(selector: dict, runtime_update: bool) -> None:
+    original = deepcopy(selector)
+    kwargs = {'name': 'structured_primary', 'dataset_id': 'local', 'metric_list': ['acc']}
+    if runtime_update:
+        meta = BenchmarkMeta(**kwargs)
+        meta._update({'primary_metric': selector})
+    else:
+        meta = BenchmarkMeta(**kwargs, primary_metric=selector)
+
+    expected = MetricSelector(name='accuracy', aggregation=selector.get('aggregation'),
+                              dimensions=selector.get('dimensions', {}))
+    assert meta.primary_metric == expected
+    assert BenchmarkMeta(**json.loads(json.dumps(meta.to_dict()))).primary_metric == expected
+    assert selector == original
+
+
+@pytest.mark.parametrize('runtime_update', [False, True])
+@pytest.mark.parametrize('selector', [
+    {},
+    {'aggregation': 'mean'},
+    {'name': 'accuracy', 'aggregaton': 'mean'},
+    {'name': 'accuracy', 'aggregation': 'vote@2'},
+    {'name': 'accuracy', 'dimensions': {'k': [2]}},
+])
+def test_invalid_primary_metric_mapping_is_validated(selector: dict, runtime_update: bool) -> None:
+    kwargs = {'name': 'invalid_primary', 'dataset_id': 'local', 'metric_list': ['accuracy']}
+    with pytest.raises(ValidationError):
+        if runtime_update:
+            BenchmarkMeta(**kwargs)._update({'primary_metric': selector})
+        else:
+            BenchmarkMeta(**kwargs, primary_metric=selector)
+
+
+@pytest.mark.parametrize('runtime_update', [False, True])
+def test_primary_metric_mapping_must_name_a_declared_metric(runtime_update: bool) -> None:
+    kwargs = {'name': 'undeclared_primary', 'dataset_id': 'local', 'metric_list': ['accuracy']}
+    selector = {'name': 'f1', 'aggregation': 'mean'}
+    with pytest.raises(ValueError, match="primary_metric='f1'.*not in metric_list"):
+        if runtime_update:
+            BenchmarkMeta(**kwargs)._update({'primary_metric': selector})
+        else:
+            BenchmarkMeta(**kwargs, primary_metric=selector)
+
+
+@pytest.mark.parametrize('selector, expected', [
+    (None, None),
+    ('acc', MetricSelector(name='accuracy')),
+    (MetricSelector(name='accuracy', aggregation='mean'), MetricSelector(name='accuracy', aggregation='mean')),
+])
+def test_primary_metric_update_keeps_existing_input_forms(selector: object, expected: object) -> None:
+    meta = BenchmarkMeta(name='compatible_primary', dataset_id='local', metric_list=['acc'])
+    meta._update({'primary_metric': selector})
+    assert meta.primary_metric == expected
+
+
+def test_primary_metric_mapping_does_not_hide_ambiguous_report_selection() -> None:
+    config = TaskConfig(datasets=['general_mcq'], dataset_args={'general_mcq': {
+        'aggregation': 'mean_and_vote_at_k', 'primary_metric': {'name': 'accuracy'},
+    }})
+    adapter = get_benchmark('general_mcq', config)
+    scores = [SampleScore(sample_id=i, group_id=0, generation_index=i,
+                          score=Score(value={'acc': 1.0}, extracted_prediction='A')) for i in range(2)]
+
+    with pytest.raises(ValueError, match='matched 3 identities'):
+        ReportGenerator.generate_report({'tiny': adapter.aggregate_scores(scores)}, 'mock', adapter)

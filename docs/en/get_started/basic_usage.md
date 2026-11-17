@@ -135,7 +135,9 @@ evalscope eval \
 
  **Example 2. Adjusting Result Aggregation Methods**
 
-For tasks that require multiple generations (such as math problems), you can specify the number of repeated generations k using the `--repeats` parameter, and adjust the result aggregation method through `dataset-args`, such as `mean_and_vote_at_k`, `mean_and_pass_at_k`, `mean_and_pass^k`.
+For tasks that require multiple generations (such as math problems), you can specify the number of repeated generations k using the `--repeats` parameter, and adjust the result aggregation method through `dataset-args`, such as `mean_and_vote_at_k`, `mean_and_pass_at_k`, `mean_and_pass_hat_k`.
+
+These aggregators retain the ordinary mean and every k-specific result. The example uses mean accuracy as the report headline by default.
 
 ```shell
 evalscope eval \
@@ -145,6 +147,8 @@ evalscope eval \
  --dataset-args '{"gsm8k": {"aggregation": "mean_and_vote_at_k"}}' \
  --repeats 5
 ```
+
+To select vote@5 instead, use `"primary_metric": {"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`. Use canonical metric names (for example, `accuracy`) in structured selectors. The same mapping is supported in JSON and YAML configuration files, including saved task configurations.
 
 ```{seealso}
 To view all configurable options, please refer to: [Complete Parameter Description](parameters.md)
