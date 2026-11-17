@@ -444,58 +444,94 @@ def _recognize_cvtg_words(image_path: str, gt_words: List[str], backend: str, la
     return words
 
 
-@register_metric(name='CVTGWordAccuracy')
-class CVTGWordAccuracy(T2IMetric):
-    """CVTG-2K Word Accuracy: exact word match against the prompt's quoted text.
+class _CountsStashMixin:
+    """Keep the per-image ``(numerator, denominator)`` of the last scoring call.
 
-    Ground-truth words are the single-quoted fragments of the prompt, matching the official
-    TextCrafter evaluator. The OCR backend loads lazily; ``backend='stub'`` echoes the
-    ground-truth words and exists for pipeline tests.
+    The adapters re-aggregate corpus-level (official protocol: total numerator over total
+    denominator), so the counts must survive the per-image ``apply()`` call. Keyed by image
+    path: concurrent workers score distinct images, and the adapter reads the entry for the
+    image it just scored. Bounded by the dataset size (two floats per image).
+    """
+
+    def _init_counts(self):
+        self._counts_by_image: dict = {}
+
+    def _stash_counts(self, image_path: str, numerator, denominator):
+        self._counts_by_image[image_path] = (numerator, denominator)
+
+    def counts_for(self, image_path: str):
+        """Return ``(numerator, denominator)`` recorded for an image, or ``None``."""
+        return self._counts_by_image.get(image_path)
+
+
+@register_metric(name='CVTGWordAccuracy')
+class CVTGWordAccuracy(_CountsStashMixin, T2IMetric):
+    """CVTG-2K Word Accuracy: each ground-truth word counts when it appears in the
+    recognized words (repeated ground-truth words are not consumed), matching the
+    official TextCrafter evaluator.
+
+    The OCR backend loads lazily; ``backend='stub'`` echoes the ground-truth words and
+    exists for pipeline tests.
     """
 
     def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
         self.backend = backend
         self.lang = lang
+        self._init_counts()
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
-        from evalscope.metrics.vision.text_render import extract_quoted_words, word_accuracy
+        from evalscope.metrics.vision.text_render import extract_quoted_words, word_accuracy_counts
 
-        return [
-            word_accuracy(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
-            for image_path, prompt in zip(images, texts)
-            for gt_words in [extract_quoted_words(prompt)]
-        ]
+        scores = []
+        for image_path, prompt in zip(images, texts):
+            gt_words = extract_quoted_words(prompt)
+            score, matched, total = word_accuracy_counts(
+                gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang)
+            )
+            self._stash_counts(image_path, matched, total)
+            scores.append(score)
+        return scores
 
 
 @register_metric(name='CVTGNED')
-class CVTGNED(T2IMetric):
+class CVTGNED(_CountsStashMixin, T2IMetric):
     """CVTG-2K NED: word-level best-match normalized Levenshtein distance (higher is better).
 
     Shares the OCR engine with :class:`CVTGWordAccuracy` and follows the same ground-truth
-    extraction from the prompt's quoted fragments.
+    extraction from the prompt's quoted fragments. The corpus aggregate is the similarity
+    sum over all ground-truth words, so the stash keeps ``sum(similarities), word_count``.
     """
 
     def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
         self.backend = backend
         self.lang = lang
+        self._init_counts()
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
-        from evalscope.metrics.vision.text_render import extract_quoted_words, word_level_ned
+        from evalscope.metrics.vision.text_render import extract_quoted_words, word_ned_counts
 
-        return [
-            word_level_ned(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
-            for image_path, prompt in zip(images, texts)
-            for gt_words in [extract_quoted_words(prompt)]
-        ]
+        scores = []
+        for image_path, prompt in zip(images, texts):
+            gt_words = extract_quoted_words(prompt)
+            score, sim_sum, word_count = word_ned_counts(
+                gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang)
+            )
+            self._stash_counts(image_path, sim_sum, word_count)
+            scores.append(score)
+        return scores
 
 
 @register_metric(name='LongTextScore')
-class LongTextScore(T2IMetric):
+class LongTextScore(_CountsStashMixin, T2IMetric):
     """LongText-Bench Text Score: Counter-intersection match of rendered text.
 
     Declares ``image_pair_metric`` so the adapter passes the ground-truth text (the
     sample target) instead of the prompt. The VLM transcription backend loads lazily;
     ``backend='stub'`` echoes the ground-truth text and exists for pipeline tests.
+
+    ``lang=None`` (default) detects the language per sample from the ground-truth text
+    (CJK -> ``zh``), so one run covers both languages; pass ``lang='en'``/``'zh'`` to
+    force the official single-language mode.
     """
 
     image_pair_metric = True
@@ -507,12 +543,13 @@ class LongTextScore(T2IMetric):
     )
 
     def _init_once(
-        self, backend: str = 'qwen_vl', model: str = 'Qwen/Qwen2.5-VL-7B-Instruct', lang: str = 'en', **kwargs
+        self, backend: str = 'qwen_vl', model: str = 'Qwen/Qwen2.5-VL-7B-Instruct', lang: str = None, **kwargs
     ):
         self.backend = backend
         self.model_name = model
         self.lang = lang
         self._vlm = None
+        self._init_counts()
 
     def _transcribe(self, image_path: str, gt_text: str) -> str:
         if self.backend == 'stub':
@@ -530,13 +567,12 @@ class LongTextScore(T2IMetric):
             )
         vlm_model, processor = self._vlm
         import base64
+        from io import BytesIO
 
         from PIL import Image
 
-        from evalscope.utils.utils import image2base64  # noqa: F401  (kept local to avoid hard dep at import time)
-
         with Image.open(image_path) as pil_image:
-            buffered = __import__('io').BytesIO()
+            buffered = BytesIO()
             pil_image.save(buffered, format='PNG')
             image_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
@@ -561,10 +597,12 @@ class LongTextScore(T2IMetric):
         generated = output[:, inputs.input_ids.shape[1] :]
         return processor.batch_decode(generated, skip_special_tokens=True)[0]
 
-    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Any]:
-        from evalscope.metrics.vision.text_render import text_score
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+        from evalscope.metrics.vision.text_render import text_score_counts
 
-        return [
-            text_score(gt_text, self._transcribe(image_path, gt_text), self.lang)
-            for image_path, gt_text in zip(images, texts)
-        ]
+        scores = []
+        for image_path, gt_text in zip(images, texts):
+            score, matched, total = text_score_counts(gt_text, self._transcribe(image_path, gt_text), self.lang)
+            self._stash_counts(image_path, matched, total)
+            scores.append(score)
+        return scores

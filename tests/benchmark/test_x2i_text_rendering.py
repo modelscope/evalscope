@@ -33,9 +33,12 @@ class TestTextRenderScoringCore:
     def test_word_accuracy_exact_match(self):
         assert text_render.word_accuracy(['hello', 'world'], ['hello', 'world', 'extra']) == 1.0
 
-    def test_word_accuracy_counts_duplicates(self):
-        # The word "hello" appears twice in the ground truth but only once in the prediction.
-        assert text_render.word_accuracy(['hello', 'hello'], ['hello', 'other']) == 0.5
+    def test_word_accuracy_repeated_words_not_consumed(self):
+        # Official rule: each GT word only checks membership in the recognized words, so a
+        # repeated GT word does not consume a second occurrence in the prediction.
+        assert text_render.word_accuracy(['hello', 'hello'], ['hello', 'other']) == 1.0
+        score, matched, total = text_render.word_accuracy_counts(['hello', 'hello'], ['hello'])
+        assert (score, matched, total) == (1.0, 2, 2)
 
     def test_word_accuracy_no_match(self):
         assert text_render.word_accuracy(['hello'], ['world']) == 0.0
@@ -47,6 +50,12 @@ class TestTextRenderScoringCore:
         # Each GT word matches its closest prediction: 'helo'~'hello' (1 - 1/5), 'cat'~'cat' (1.0)
         score = text_render.word_level_ned(['helo', 'cat'], ['hello', 'cat', 'dog'])
         assert abs(score - (0.8 + 1.0) / 2) < 1e-6
+
+    def test_word_level_ned_counts(self):
+        score, sim_sum, word_count = text_render.word_ned_counts(['helo', 'cat'], ['hello', 'cat', 'dog'])
+        assert abs(sim_sum - 1.8) < 1e-6
+        assert word_count == 2
+        assert abs(score - 0.9) < 1e-6
 
     def test_word_level_ned_no_prediction(self):
         assert text_render.word_level_ned(['hello'], []) == 0.0
@@ -64,8 +73,17 @@ class TestTextRenderScoringCore:
         assert text_render.text_score('出口A', '出口A出口', lang='zh') == 1.0
 
     def test_text_score_zh_counts_each_char_once(self):
-        # GT '出口A换乘' (5 chars); the prediction drops '乘' → 4/5.
-        assert abs(text_render.text_score('出口A换乘', '出口A换', lang='zh') - 4 / 5) < 1e-6
+        # Official Chinese example: GT '出口A换乘2号线' (8 chars) vs '出口A换乘2号' (7) → 0.875.
+        assert abs(text_render.text_score('出口A换乘2号线', '出口A换乘2号', lang='zh') - 0.875) < 1e-6
+
+    def test_text_score_zh_removes_whitespace(self):
+        # Official Chinese normalization removes all whitespace: '出口 A' equals '出口A'.
+        assert text_render.text_score('出口A', '出口 A', lang='zh') == 1.0
+
+    def test_text_score_detects_language_per_sample(self):
+        # lang=None detects the language from the ground truth, so one run covers en + zh.
+        assert text_render.text_score('Hello World', 'hello world') == 1.0
+        assert text_render.text_score('出口A换乘2号线', '出口A换乘2号') == 0.875
 
     def test_text_score_ignores_illegal_chars(self):
         # Punctuation and whitespace are stripped before matching.
@@ -170,3 +188,166 @@ class TestX2IFullPipeline:
 
         lt_scores = _read_report_scores(tmp_path, 'longtext_bench')
         assert lt_scores['text_score' + json.dumps({'scope': 'overall'}, sort_keys=True)] == 1.0
+
+
+class TestCorpusAggregation:
+    """Report-level regression: official corpus aggregation, not mean-of-ratios.
+
+    Reviewer example: one fully correct one-word sample + one fully wrong three-word
+    sample must score 1/4 (corpus), not 0.5 (mean of ratios).
+    """
+
+    @staticmethod
+    def _sample_score(metric_name: str, score: float, matched, total, category='cvtg'):
+        from evalscope.api.metric import SampleScore, Score
+
+        return SampleScore(
+            score=Score(
+                value={metric_name: score},
+                metadata={'corpus_counts': {metric_name: (matched, total)}},
+            ),
+            sample_id=0,
+            sample_metadata={'category': category},
+        )
+
+    def test_cvtg_corpus_aggregation(self):
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.benchmarks.text2image.cvtg2k_adapter import CVTG2KAdapter
+
+        meta = BenchmarkMeta(name='cvtg_2k', dataset_id='x', subset_list=['CVTG'], metric_list=['CVTGWordAccuracy'])
+        adapter = CVTG2KAdapter(benchmark_meta=meta)
+        sample_scores = [
+            self._sample_score('cvtg_word_accuracy', 1.0, 1, 1),
+            self._sample_score('cvtg_word_accuracy', 0.0, 0, 3),
+        ]
+        rows = {a.metric_name + json.dumps(a.dimensions, sort_keys=True): a.score for a in adapter.aggregate_scores(sample_scores)}
+        overall = rows['cvtg_word_accuracy' + json.dumps({'scope': 'overall'}, sort_keys=True)]
+        assert abs(overall - 0.25) < 1e-9, f'corpus aggregate must be 0.25, got {overall}'
+
+    def test_cvtg_corpus_aggregation_ned(self):
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.benchmarks.text2image.cvtg2k_adapter import CVTG2KAdapter
+
+        meta = BenchmarkMeta(name='cvtg_2k', dataset_id='x', subset_list=['CVTG'], metric_list=['CVTGNED'])
+        adapter = CVTG2KAdapter(benchmark_meta=meta)
+        sample_scores = [
+            self._sample_score('cvtg_ned', 1.0, 1.0, 1),
+            self._sample_score('cvtg_ned', 0.0, 0.0, 3),
+        ]
+        rows = {a.metric_name + json.dumps(a.dimensions, sort_keys=True): a.score for a in adapter.aggregate_scores(sample_scores)}
+        overall = rows['cvtg_ned' + json.dumps({'scope': 'overall'}, sort_keys=True)]
+        assert abs(overall - 0.25) < 1e-9
+
+    def test_longtext_corpus_aggregation_by_category(self):
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
+
+        meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
+        adapter = LongTextBenchAdapter(benchmark_meta=meta)
+        sample_scores = [
+            self._sample_score('text_score', 1.0, 2, 2, category='poster'),
+            self._sample_score('text_score', 0.5, 1, 2, category='poster'),
+            self._sample_score('text_score', 0.0, 0, 4, category='signage'),
+        ]
+        rows = {a.metric_name + json.dumps(a.dimensions, sort_keys=True): a.score for a in adapter.aggregate_scores(sample_scores)}
+        overall = rows['text_score' + json.dumps({'scope': 'overall'}, sort_keys=True)]
+        poster = rows['text_score' + json.dumps({'category': 'poster'}, sort_keys=True)]
+        signage = rows['text_score' + json.dumps({'category': 'signage'}, sort_keys=True)]
+        assert abs(overall - 3 / 8) < 1e-9
+        assert abs(poster - 3 / 4) < 1e-9
+        assert signage == 0.0
+
+    def test_zero_denominator_keeps_mean_fallback(self):
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
+
+        meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
+        adapter = LongTextBenchAdapter(benchmark_meta=meta)
+        # No corpus_counts at all (e.g. metric errored): the inherited mean must survive.
+        from evalscope.api.metric import SampleScore, Score
+
+        sample_scores = [
+            SampleScore(score=Score(value={'text_score': 0.4}), sample_id=0, sample_metadata={'category': 'poster'}),
+            SampleScore(score=Score(value={'text_score': 0.8}), sample_id=1, sample_metadata={'category': 'poster'}),
+        ]
+        rows = {a.metric_name + json.dumps(a.dimensions, sort_keys=True): a.score for a in adapter.aggregate_scores(sample_scores)}
+        overall = rows['text_score' + json.dumps({'scope': 'overall'}, sort_keys=True)]
+        assert abs(overall - 0.6) < 1e-9
+
+
+class TestNonStubTranscriptionPath:
+    """The real LongText transcription path must run end-to-end without a GPU.
+
+    Fake ``transformers``/``qwen_vl_utils`` modules are injected so the lazy model
+    loading succeeds and the prompt/image/generate/decode chain is exercised (the
+    reviewer reproduced a ModuleNotFoundError here before the fix).
+    """
+
+    def test_transcribe_via_fake_transformers(self, tmp_path, monkeypatch):
+        from PIL import Image
+
+        from evalscope.metrics.vision.metrics import LongTextScore
+
+        # Other tests may have initialized the singleton with backend='stub'; reset it so
+        # this test exercises the real lazy-loading path.
+        monkeypatch.delattr(LongTextScore, '_instance', raising=False)
+        image_path = tmp_path / 'render.png'
+        Image.new('RGB', (4, 4), 'white').save(image_path)
+
+        class FakeProcessor:
+
+            def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
+                assert messages[0]['content'][1]['text'] == LongTextScore.RECOGNIZE_PROMPT
+                assert messages[0]['content'][0]['image'].startswith('data:image/png;base64,')
+                return 'PROMPT'
+
+            def __call__(self, text, images, return_tensors):
+                import torch
+
+                class FakeInputs(dict):
+
+                    def to(self, device):
+                        return self
+
+                    def __getattr__(self, name):
+                        try:
+                            return self[name]
+                        except KeyError:
+                            raise AttributeError(name)
+
+                return FakeInputs({'input_ids': torch.tensor([[1, 2, 3]]), 'pixel_values': torch.zeros(1)})
+
+            def batch_decode(self, generated, skip_special_tokens=True):
+                return ['hello world']
+
+        class FakeModel:
+
+            device = 'cpu'
+
+            def generate(self, **kwargs):
+                import torch
+
+                return torch.tensor([[1, 2, 3, 4, 5]])
+
+        import importlib.machinery
+        import types
+
+        fake_transformers = types.ModuleType('transformers')
+        fake_transformers.__spec__ = importlib.machinery.ModuleSpec('transformers', None)
+        fake_transformers.Qwen2_5_VLForConditionalGeneration = type(
+            'Qwen2_5_VLForConditionalGeneration', (), {'from_pretrained': staticmethod(lambda *a, **k: FakeModel())}
+        )
+        fake_transformers.AutoProcessor = type('AutoProcessor', (), {'from_pretrained': staticmethod(lambda *a, **k: FakeProcessor())})
+        fake_qwen_vl_utils = types.ModuleType('qwen_vl_utils')
+        fake_qwen_vl_utils.__spec__ = importlib.machinery.ModuleSpec('qwen_vl_utils', None)
+        monkeypatch.setitem(__import__('sys').modules, 'transformers', fake_transformers)
+        monkeypatch.setitem(__import__('sys').modules, 'qwen_vl_utils', fake_qwen_vl_utils)
+
+        metric = LongTextScore(backend='qwen_vl')
+        transcript = metric._transcribe(str(image_path), 'HELLO WORLD')
+        assert transcript == 'hello world'
+
+        # The counts stash must reflect the real transcription through text_score_counts.
+        score = metric.apply([str(image_path)], ['HELLO WORLD'])[0]
+        assert score == 1.0
+        assert metric.counts_for(str(image_path)) == (2, 2)

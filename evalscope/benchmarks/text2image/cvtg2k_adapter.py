@@ -8,6 +8,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.text2image.corpus_aggregation import CorpusAggregationMixin
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -34,13 +35,23 @@ image must render; prompts are organized by region count under the CVTG and CVTG
 - **Task Type**: Text-to-Image Generation Evaluation (text rendering)
 - **Input**: Text prompt with quoted text regions
 - **Output**: Generated image scored with Word Accuracy and word-level NED against the quoted text
+- **Domain**: Complex visual text generation for text-to-image models
+
+## Key Features
+
+- 2,000 prompts (CVTG and CVTG-Style splits, 2-5 text regions each) from the official
+  TextCrafter release
+- Scores Word Accuracy and word-level NED against the single-quoted fragments of each prompt,
+  mirroring the official TextCrafter evaluator including its corpus-level aggregation
+- Shares one PaddleOCR engine across both metrics per language
 
 ## Evaluation Notes
 
 - Ground-truth words are the single-quoted fragments of each prompt, matching the official
-  TextCrafter evaluator
-- Metrics: cvtg_word_accuracy (exact word match) and cvtg_ned (word-level best-match Levenshtein
-  distance, higher is better), both normalized to [0, 1]
+  TextCrafter evaluator; repeated ground-truth words are not consumed
+- Metrics: cvtg_word_accuracy (membership word match) and cvtg_ned (word-level best-match
+  Levenshtein similarity, higher is better), both aggregated corpus-level (total numerator /
+  total denominator) as in the official evaluator
 - The OCR backend uses PaddleOCR (lang=en); scores degrade to 0 with an error note when the
   image contains no recognizable text
 """,
@@ -51,9 +62,15 @@ image must render; prompts are organized by region count under the CVTG and CVTG
         few_shot_num=0,
         train_split=None,
         eval_split='test',
+        evaluation_version='v1.0',
     )
 )
-class CVTG2KAdapter(Text2ImageAdapter):
+class CVTG2KAdapter(CorpusAggregationMixin, Text2ImageAdapter):
+    corpus_metrics = {
+        'CVTGWordAccuracy': 'cvtg_word_accuracy',
+        'CVTGNED': 'cvtg_ned',
+    }
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
