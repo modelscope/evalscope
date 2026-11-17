@@ -175,3 +175,38 @@ describe('ChatView rendering modes', () => {
     expect(screen.getByText('Legacy model response')).toBeInTheDocument()
   })
 })
+
+it('keeps the question and answer ahead of the result and collapsed diagnostic details', () => {
+  render(<LocaleProvider><ChatView
+    prediction={{ ...tracedPrediction, Input: 'Question first', Generated: 'Answer second', Messages: null, AgentTrace: null }}
+    diagnosis={{
+      llm: null, llm_status: 'not_selected', sources: [], rule_failure_type: null, source: 'none', invalid_evidence: 0, evidence_errors: [],
+      key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
+      score_status: 'success', stop_reason: 'stop', score_value: {}, needs_attention: true,
+      failure_type: 'unexplained', attribution: 'unknown', findings: [], pattern_id: null,
+    }}
+  /></LocaleProvider>)
+  const summary = screen.getByText(/Sample analysis · Needs further analysis/)
+  expect(screen.getByText('Answer second').compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(summary.closest('details')).not.toHaveAttribute('open')
+  fireEvent.click(summary)
+  expect(screen.getByRole('region', { name: 'Sample analysis' })).toBeInTheDocument()
+})
+
+it('highlights evidence only inside the referenced message', () => {
+  const diagnosis = {
+    key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
+    score_status: 'success', stop_reason: null, score_value: {}, needs_attention: true,
+    failure_type: 'reasoning_error', attribution: 'model', findings: [], pattern_id: null,
+    rule_failure_type: 'unexplained', source: 'llm', invalid_evidence: 0, evidence_errors: [], llm_status: 'ok',
+    sources: [{ id: 'm:1', text: 'Shared quotation', message_index: 1, step: null, excerpted: false, original_start: 0 }],
+    llm: { failure_type: 'reasoning_error', secondary_types: [], attribution: 'model', root_cause_step: null,
+      explanation: 'A candidate explanation.', confidence: 'medium', gold_suspect: false,
+      evidence: [{ source_id: 'm:1', start: 0, end: 16, quote: 'Shared quotation' }] },
+  } as import('@/api/types').SampleDiagnosis
+  const { container } = render(<LocaleProvider><ChatView prediction={{ ...tracedPrediction, AgentTrace: null,
+    Messages: [{ id: 'user-quote', role: 'user', content: 'Shared quotation' },
+      { id: 'answer-quote', role: 'assistant', content: 'Shared quotation' }] }} diagnosis={diagnosis} /></LocaleProvider>)
+  expect(container.querySelectorAll('.prose mark')).toHaveLength(1)
+  expect(container.querySelector('mark')).toHaveTextContent('Shared quotation')
+})

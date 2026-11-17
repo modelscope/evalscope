@@ -73,3 +73,15 @@ describe('ScoreBar', () => {
     expect(screen.getByText('91.2%')).toBeInTheDocument()
   })
 })
+
+it('renders proportions with a neutral color and a rounded percentage', () => {
+  render(<ScoreBar score={31 / 32} variant="proportion" ariaLabel="Truncated answers" />)
+  const bar = screen.getByRole('progressbar', {name:'Truncated answers'})
+  expect(bar).toHaveStyle({width:'96.875%', background:'var(--accent)'})
+  expect(screen.getByText('96.9%')).toBeInTheDocument()
+})
+
+it.each([null, Number.NaN])('does not invent a proportion for a missing value (%s)', value => {
+  render(<ScoreBar score={value} variant="proportion" ariaLabel="Missing proportion" />)
+  expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+})

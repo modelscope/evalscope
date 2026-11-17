@@ -53,6 +53,7 @@ describe('metric domain public surface', () => {
       'formatMetricIdentityLabel',
       'formatMetricLabel',
       'formatMetricLabels',
+      'formatProportion',
       'getBoundedQualityRatio',
       'getComparisonVerdict',
       'getValuePosition',

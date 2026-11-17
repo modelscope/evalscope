@@ -124,7 +124,7 @@ The details tab provides an in-depth view of the selected dataset's subset score
 
 - **Overall Score**: Displays the dataset's overall score using a large number and ring progress chart.
 - **Subset Score Table**: A sortable table listing each subset's name, metric (if applicable), score, and sample count. Click the subset name to jump directly to the sample browsing for that subset in the predictions tab.
-- **AI Analysis**: An intelligent analysis report rendered in Markdown format, interpreting the model's performance on this dataset.
+- **Diagnostic summary**: A rule-generated facts summary, with a link to the complete diagnostics tab.
 - **Performance Metrics**: When the evaluation includes performance data, displays latency distribution (with percentile table), TTFT (Time to First Token), TPOT (Time per Output Token), and token usage statistics.
 
 #### Predictions Tab
@@ -230,3 +230,7 @@ The stress test task page provides a configuration form and task monitoring pane
 ```{note}
 For detailed configuration instructions on online evaluation and stress test features, please refer to [Evaluation Quick Start](basic_usage.md) and [Stress Test Quick Start](../user_guides/stress_test/quick_start.md).
 ```
+
+### Diagnostics tab
+
+The tab shows outcome coverage, observed issue patterns, a subset-by-type table and facts. Patterns and examples open filtered predictions; Agent step badges use recorded tool-call IDs. Missing diagnostics offer a free offline command; changed source data marks old diagnostics as stale. Native evaluations launched from the Web generate facts by default, with no additional model calls. See [Evaluation diagnostics](../user_guides/diagnosis.md).

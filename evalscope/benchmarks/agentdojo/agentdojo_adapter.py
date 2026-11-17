@@ -630,3 +630,6 @@ class AgentDojoAdapter(AgentLoopAdapter):
             agg_score.dimensions = {**agg_score.dimensions, 'condition': condition}
             agg_score.metadata = {**(agg_score.metadata or {}), **run_metadata}
         return agg_scores
+
+
+from evalscope.benchmarks.agentdojo import trace_signals as _trace_signals  # noqa: E402,F401

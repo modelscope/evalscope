@@ -22,6 +22,8 @@ import { computeVirtualWindow } from './virtualWindow'
 export interface VirtualListProps<T> {
   /** Items to render. */
   items: T[]
+  /** Reveal a newly selected row, including one outside the mounted window. */
+  revealIndex?: number
   /** Stable key for an item (used as React key). */
   getKey: (item: T, index: number) => string | number
   /** Render a single item's content. */
@@ -44,6 +46,7 @@ export interface VirtualListProps<T> {
 
 export default function VirtualList<T>({
   items,
+  revealIndex = -1,
   getKey,
   renderItem,
   estimateHeight = 160,
@@ -63,6 +66,20 @@ export default function VirtualList<T>({
   const [viewportHeight, setViewportHeight] = useState(maxHeight)
   // Measured heights per index; missing entries fall back to `estimateHeight`.
   const [heights, setHeights] = useState<number[]>([])
+
+  const lastRevealed = useRef(-1)
+  useEffect(() => {
+    if (!active || revealIndex < 0 || revealIndex >= items.length) {
+      lastRevealed.current = -1
+      return
+    }
+    if (lastRevealed.current === revealIndex) return
+    lastRevealed.current = revealIndex
+    const offset = Array.from({ length: revealIndex }, (_, i) => (heights[i] ?? estimateHeight) + gap)
+      .reduce((sum, height) => sum + height, 0)
+    if (scrollRef.current) scrollRef.current.scrollTop = offset
+    setScrollTop(offset)
+  }, [active, revealIndex, items.length, heights, estimateHeight, gap])
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current

@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -85,4 +85,13 @@ describe('MarkdownRenderer image sources', () => {
     expect(images[0]).toHaveAttribute('src', 'HTTPS://example.com/a.png')
     expect(images[1]).toHaveAttribute('src', '//cdn.example.com/a.png')
   })
+})
+
+it('renders a real formula through the lazy math pipeline', async () => {
+  vi.useRealTimers()
+  const { container } = renderMarkdown('Equation: $x^2 + y^2 = z^2$')
+  await screen.findByText('Equation:', { exact: false })
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull())
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
 })

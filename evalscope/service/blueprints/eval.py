@@ -175,7 +175,9 @@ def _build_task_config(data: dict) -> TaskConfig:
             raise RequestValidationError('Dataset Args must map dataset names to configuration objects')
     task_config.no_timestamp = True
     task_config.enable_progress_tracker = True
-    task_config.analysis_report = True
+    from evalscope.api.analysis import AnalysisReportConfig
+
+    task_config.analysis_report = AnalysisReportConfig(level='facts')
     return task_config
 
 

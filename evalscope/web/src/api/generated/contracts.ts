@@ -2,6 +2,10 @@
 /** Generated from Pydantic Web API response models. Do not edit. */
 
 /**
+ * Who is responsible for a finding.
+ */
+export type Attribution = "model" | "guard" | "environment" | "benchmark" | "unknown";
+/**
  * Whether a score is usable, and why it is not.
  *
  * A failed judge is not a zero: only ``SUCCESS`` and ``FALLBACK`` carry a score that may
@@ -36,6 +40,23 @@ export type EventType =
   | "nudge"
   | "run_start"
   | "run_end";
+/**
+ * Top-level kind of a finding.
+ */
+export type FindingCategory =
+  | "tool_failure"
+  | "repetition"
+  | "termination"
+  | "outcome"
+  | "side_effect"
+  | "tainted_side_effect"
+  | "attack_goal_action"
+  | "risky_command"
+  | "refusal";
+/**
+ * How much a finding can be trusted.
+ */
+export type Confidence = "high" | "medium" | "low";
 
 /**
  * Schema-only root that keeps every public Web API type reachable for code generation.
@@ -51,6 +72,7 @@ export interface WebApiContracts {
   data_frame_response: DataFrameResponse;
   delete_perf_run_response: DeletePerfRunResponse;
   delete_report_response: DeleteReportResponse;
+  diagnosis_response: DiagnosisResponse;
   eval_invoke_response: EvalInvokeResponse;
   execution_summary: ExecutionSummary;
   judge_attempt: JudgeAttempt;
@@ -79,6 +101,7 @@ export interface WebApiContracts {
   report_group: ReportGroup;
   report_metric: ReportMetric;
   report_summary: ReportSummary;
+  sample_diagnoses_response: SampleDiagnosesResponse;
   task_status_response: TaskStatusResponse;
   tool_call: PredictionToolCall;
   value_range: ValueRange;
@@ -219,6 +242,212 @@ export interface DeleteReportResponse {
   model_id: string;
   run_id: string;
   success: boolean;
+}
+/**
+ * Read-only diagnostic artifact and freshness state.
+ */
+export interface DiagnosisResponse {
+  report?: DiagnosisReport | null;
+  status: "ready" | "missing" | "stale" | "error";
+}
+/**
+ * One analysis of a persisted (run, model, benchmark), with cache provenance.
+ */
+export interface DiagnosisReport {
+  analyzer_version: string;
+  benchmark: string;
+  config_fingerprint: string;
+  cost: DiagnosisCost;
+  coverage: DiagnosisCoverage;
+  data_fingerprint: string;
+  diagnosis_model: string | null;
+  facts: Fact[];
+  generated_at: string;
+  level: "facts" | "diagnose" | "full";
+  limitations: string[];
+  model: string;
+  narrative: Narrative | null;
+  narrative_status: string;
+  patterns: FailurePattern[];
+  run_dir: string;
+  samples_sha256: string;
+  schema_version: number;
+  self_evaluation: boolean;
+  taxonomy_version: string;
+}
+/**
+ * Analysis usage only, separate from evaluation and scoring usage.
+ */
+export interface DiagnosisCost {
+  cached_calls: number;
+  calls: number;
+  estimated_calls: number;
+  estimated_input_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  usage_missing_calls: number;
+}
+/**
+ * Do not equate unavailable outcomes or absent facts with success or zero events.
+ */
+export interface DiagnosisCoverage {
+  analysis_errors: {
+    [k: string]: number;
+  };
+  citations_total: number;
+  citations_valid: number;
+  diagnosed_ok: number;
+  diagnosis_population: number;
+  diagnosis_statuses: {
+    [k: string]: number;
+  };
+  errored_without_record: number;
+  excluded: number;
+  failed_unexplained_estimate: ProportionEstimate | null;
+  needs_attention: number;
+  outcome_unknown: number;
+  rule_agreements: number;
+  rule_reviews: number;
+  samples: number;
+  selected: number;
+  skipped_facts: {
+    [k: string]: string;
+  };
+  strata: SamplingStratum[];
+  task_failed: number;
+  task_success_known: number;
+  unexplained_failures: number;
+  unreadable: number;
+}
+/**
+ * Stratified inverse-probability estimate; bounds use simultaneous stratum Wilson intervals.
+ */
+export interface ProportionEstimate {
+  lower: number;
+  method: string;
+  population: number;
+  proportion: number;
+  selected: number;
+  upper: number;
+}
+/**
+ * Disjoint subset/cohort stratum sampled without replacement.
+ */
+export interface SamplingStratum {
+  cohort: "task_failure" | "scoring_unavailable" | "safety_signal" | "process_finding";
+  inclusion_probability: number;
+  population: number;
+  selected: number;
+  subset: string;
+}
+/**
+ * An observation with an explicit denominator and computation definition.
+ */
+export interface Fact {
+  data: {
+    [k: string]: any;
+  };
+  definition: string;
+  denominator: number | null;
+  id: string;
+  kind: "generic" | "generation" | "mcq" | "repeats" | "agent" | "judge" | "perf";
+  numerator: number | null;
+  samples: SampleKey[];
+  severity: "info" | "warn" | "critical";
+  title: string;
+  unit: string;
+  value: number | null;
+}
+/**
+ * A persisted sample identity within one model and benchmark.
+ */
+export interface SampleKey {
+  index: number;
+  subset: string;
+}
+/**
+ * Grounded summary and suggestions, without an unreferenced free-form summary field.
+ */
+export interface Narrative {
+  /**
+   * @maxItems 8
+   */
+  findings:
+    | []
+    | [NarrativeItem]
+    | [NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
+    | [
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem,
+        NarrativeItem
+      ];
+  /**
+   * @maxItems 5
+   */
+  limitations:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string];
+  /**
+   * @maxItems 5
+   */
+  recommendations:
+    | []
+    | [NarrativeItem]
+    | [NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
+    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem];
+}
+/**
+ * Every sentence has resolvable fact/pattern references; it remains model-generated text.
+ */
+export interface NarrativeItem {
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  refs:
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string];
+  text: string;
+}
+/**
+ * Observed issue types, counted once per sample, including the unexplained group.
+ */
+export interface FailurePattern {
+  attribution: Attribution;
+  by_subset: {
+    [k: string]: number;
+  };
+  count: number;
+  denominator: number;
+  detail: string;
+  estimated_share: ProportionEstimate | null;
+  examples: SampleKey[];
+  failure_type: string;
+  id: string;
+  share: number;
+  source: "rule" | "llm" | "rule+llm" | "none";
 }
 export interface EvalInvokeResponse {
   error?: string | null;
@@ -653,6 +882,147 @@ export interface ProgressResponse {
   percent: number;
   status?: string | null;
   [k: string]: any;
+}
+/**
+ * Filtered sample observations, paged after matching.
+ */
+export interface SampleDiagnosesResponse {
+  items: SampleDiagnosis[];
+  page: number;
+  page_size: number;
+  status: "ready" | "missing" | "stale" | "error";
+  total: number;
+}
+/**
+ * Official outcome and observed findings; a finding is not a proved root cause.
+ */
+export interface SampleDiagnosis {
+  /**
+   * Who is responsible for a finding.
+   */
+  attribution: "model" | "guard" | "environment" | "benchmark" | "unknown";
+  evidence_errors: string[];
+  failure_type: string | null;
+  findings: Finding[];
+  invalid_evidence: number;
+  key: SampleKey;
+  llm: LLMDiagnosis | null;
+  llm_status: "not_selected" | "ok" | "parse_error" | "transport_error" | "invalid_evidence" | "unexplained";
+  needs_attention: boolean;
+  pattern_id: string | null;
+  rule_failure_type: string | null;
+  safety_violation: boolean | null;
+  score_status: string;
+  score_value: {
+    [k: string]: number;
+  };
+  source: "rule" | "llm" | "rule+llm" | "none";
+  sources: DiagnosticSource[];
+  stop_reason: string | null;
+  task_success: boolean | null;
+}
+/**
+ * One problem detected in one sample.
+ */
+export interface Finding {
+  /**
+   * Who is responsible for a finding.
+   */
+  attribution?: "model" | "guard" | "environment" | "benchmark" | "unknown";
+  call_ids?: string[];
+  category: FindingCategory;
+  confidence: Confidence;
+  data?: {
+    [k: string]: any;
+  };
+  detector: string;
+  evidence?: Evidence[];
+  first_position?: number | null;
+  positions?: number[];
+  rule_id?: string;
+  subtype: string;
+  text?: string;
+  [k: string]: any;
+}
+/**
+ * A short excerpt supporting a finding.
+ */
+export interface Evidence {
+  excerpt: string;
+  message_index?: number | null;
+  position?: number | null;
+  [k: string]: any;
+}
+/**
+ * A model hypothesis; valid citations do not establish semantic correctness.
+ */
+export interface LLMDiagnosis {
+  attribution: Attribution;
+  confidence: "low" | "medium" | "high";
+  /**
+   * @maxItems 3
+   */
+  evidence:
+    | []
+    | [EvidenceReference]
+    | [EvidenceReference, EvidenceReference]
+    | [EvidenceReference, EvidenceReference, EvidenceReference];
+  explanation: string;
+  failure_type:
+    | "knowledge_error"
+    | "reasoning_error"
+    | "instruction_violation"
+    | "incomplete_answer"
+    | "hallucination"
+    | "missing_step"
+    | "ignored_tool_error"
+    | "followed_injection"
+    | "unrequested_action"
+    | "harmful_compliance"
+    | "benchmark_issue"
+    | "tool_error"
+    | "wrong_tool"
+    | "bad_arguments"
+    | "environment_failure"
+    | "guard_block"
+    | "truncated"
+    | "empty_output"
+    | "extraction_failure"
+    | "premature_stop"
+    | "loop_or_budget"
+    | "attack_goal_action"
+    | "safety_violation"
+    | "unsafe_command"
+    | "refusal"
+    | "judge_failure"
+    | "unexplained"
+    | "other";
+  gold_suspect: boolean;
+  root_cause_step: number | null;
+  /**
+   * @maxItems 3
+   */
+  secondary_types: [] | [string] | [string, string] | [string, string, string];
+}
+/**
+ * Offsets are zero-based Python Unicode character offsets, end-exclusive, in the supplied source.
+ */
+export interface EvidenceReference {
+  end: number | null;
+  quote: string;
+  source_id: string;
+  start: number | null;
+}
+/**
+ * Redacted exact text supplied to the model, with an optional original message/step identity.
+ */
+export interface DiagnosticSource {
+  excerpted: boolean;
+  id: string;
+  message_index: number | null;
+  original_start: number;
+  step: number | null;
+  text: string;
 }
 export interface TaskStatusResponse {
   status: string;

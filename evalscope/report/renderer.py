@@ -1,14 +1,18 @@
 import os
 import re
+from html import escape
 from typing import Dict, List, Optional
 
 import pandas as pd
 
+from evalscope.api.analysis import DiagnosisReport
+from evalscope.api.analysis.taxonomy import ISSUE_NAMES
 from evalscope.api.metric.semantics import MetricKind
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.metrics.semantics import format_metric_labels, format_metric_value
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report.combinator import get_report_list
+from evalscope.report.diagnosis import load_diagnosis
 from evalscope.report.report import Report, ReportKey
 from evalscope.report.visualization import (
     plot_single_dataset_scores,
@@ -27,6 +31,98 @@ _PLOTLY_CDN_CONFIG = {'responsive': True}
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _render_diagnostic_facts(report: DiagnosisReport) -> str:
+    def label(en: str, zh: str) -> str:
+        return (
+            f'<span class="desc-lang-content" data-desc-lang="en">{escape(en)}</span>'
+            f'<span class="desc-lang-content" data-desc-lang="zh" style="display:none">{escape(zh)}</span>'
+        )
+
+    c = report.coverage
+    outcome = (
+        f'{label("Task failures", "任务未通过")}: {c.task_failed}/{c.task_success_known}'
+        if c.task_success_known
+        else label('Task outcomes unavailable', '任务成败暂无法判定')
+    )
+    parts = [
+        f'<h3>{label("Diagnostic facts", "诊断统计")}</h3>',
+        f'<p>{label("Analyzed samples", "已分析样本")}: {c.samples} · {outcome} · '
+        f'{label("Unknown outcomes", "成败未知")}: {c.outcome_unknown} · '
+        f'{label("Excluded scores", "未计入评分")}: {c.excluded} · '
+        f'{label("Analysis calls", "分析调用")}: {report.cost.calls}</p>',
+    ]
+    if report.level != 'facts':
+        parts.append(
+            f'<p>{label("Referenced model proposals", "带引用的模型分析")}: '
+            f'{c.diagnosed_ok}/{c.selected} · {label("Review population", "待排查样本")}: {c.diagnosis_population}</p>'
+        )
+        parts.append(
+            f'<p>{label("References are locatable; conclusions await review.", "引用可定位，分析结论仍待复核。")}</p>'
+        )
+        estimate = c.failed_unexplained_estimate
+        if estimate:
+            parts.append(
+                f'<p>{label("Unresolved failed samples (weighted)", "未获得模型解释的失败样本（加权估计）")}: '
+                f'{estimate.proportion:.1%} · 95% [{estimate.lower:.1%}, {estimate.upper:.1%}]</p>'
+            )
+    prefix = f'diagnosis-{report.benchmark}-'
+    reference_names = {fact.id: fact.title for fact in report.facts}
+    reference_names.update({pattern.id: f'P{i}' for i, pattern in enumerate(report.patterns, 1)})
+    if report.narrative:
+        parts.append(f'<h4>{label("Model summary and suggestions", "模型总结与建议")}</h4><ul>')
+        for item in report.narrative.findings + report.narrative.recommendations:
+            if not item.refs or any(ref not in reference_names for ref in item.refs):
+                continue
+            links = ' '.join(
+                f'<a href="#{escape(prefix + ref, quote=True)}">[{escape(reference_names[ref])}]</a>'
+                for ref in item.refs
+            )
+            parts.append(f'<li>{escape(item.text)} {links}</li>')
+        parts.append('</ul>')
+    if report.patterns:
+        columns = [
+            ('ID', '编号'),
+            ('Issue type', '问题类型'),
+            ('Related component', '相关环节'),
+            ('Count', '样本数'),
+            (f'Share of {c.needs_attention} reviewed samples', f'占 {c.needs_attention} 条待排查样本'),
+            ('Examples', '代表样本'),
+        ]
+        parts.append(
+            '<div class="table-wrap"><table><thead><tr>'
+            + ''.join(f'<th>{label(en, zh)}</th>' for en, zh in columns)
+            + '</tr></thead><tbody>'
+        )
+        components = {
+            'model': ('Model', '模型'),
+            'guard': ('Guard', '防护'),
+            'environment': ('Environment', '环境'),
+            'benchmark': ('Benchmark', '评测基准'),
+            'unknown': ('Not determined', '暂不确定'),
+        }
+        for index, pattern in enumerate(report.patterns[:10], 1):
+            name = label(*ISSUE_NAMES.get(pattern.failure_type, ISSUE_NAMES['other']))
+            component = label(*components[pattern.attribution.value])
+            examples = escape(', '.join(f'{sample.subset}:{sample.index}' for sample in pattern.examples))
+            tool = pattern.detail.split(' @ ', 1)[1] if ' @ ' in pattern.detail else ''
+            detail = f'<br><small>{escape(tool)}</small>' if tool else ''
+            parts.append(
+                f'<tr id="{escape(prefix + pattern.id, quote=True)}"><td>P{index}</td><td>{name}{detail}</td><td>{component}</td>'
+                f'<td>{pattern.count}</td><td>{pattern.share:.1%}</td><td>{examples}</td></tr>'
+            )
+        parts.append('</tbody></table></div>')
+    warnings = [fact for fact in report.facts if fact.severity in ('warn', 'critical')]
+    if warnings:
+        parts.append('<ul>')
+        for fact in warnings:
+            value = '' if fact.value is None else f'{fact.value:.1%}' if fact.unit == 'fraction' else f'{fact.value:g}'
+            parts.append(
+                f'<li id="{escape(prefix + fact.id, quote=True)}"><span title="{escape(fact.definition, quote=True)}">{escape(fact.title)}</span>: {value}</li>'
+            )
+        parts.append('</ul>')
+    return ''.join(parts)
 
 
 def _process_readme_content(content: str) -> str:
@@ -289,19 +385,6 @@ def gen_html_report_file(
                 primary_metric.semantics if primary_metric else None,
             )
 
-            if not rpt.metrics:
-                model_sections.append(
-                    dict(
-                        model_name=model,
-                        subset_rows=[],
-                        diagnostic_rows=[],
-                        show_category=False,
-                        chart_div='',
-                        analysis_html='',
-                    )
-                )
-                continue
-
             subset_rows: List[dict] = []
             diagnostic_rows: List[dict] = []
             metric_labels = format_metric_labels((metric.identity, metric.semantics) for metric in rpt.metrics)
@@ -338,6 +421,11 @@ def gen_html_report_file(
             )
             analysis_raw = rpt.analysis if rpt.analysis and rpt.analysis.strip() not in ('', 'N/A') else ''
             analysis_html = _md_to_html(analysis_raw) if analysis_raw else ''
+            diagnosis_status, diagnosis = load_diagnosis(str(os.path.dirname(reports_dir)), model, ds)
+            if diagnosis_status == 'ready' and diagnosis is not None:
+                analysis_html = _render_diagnostic_facts(diagnosis)
+            elif diagnosis_status in ('stale', 'error'):
+                analysis_html = '<p>Diagnosis is stale or unavailable. Re-run evalscope analyze --level facts.</p>'
             model_sections.append(
                 dict(
                     model_name=model,

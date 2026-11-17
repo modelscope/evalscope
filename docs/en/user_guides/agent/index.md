@@ -48,3 +48,5 @@ For mode-specific issues, see each sub-page: [Native AgentLoop FAQ](native.md#fa
 native.md
 bridge.md
 ```
+
+After evaluation, use [Evaluation diagnostics](../diagnosis.md) to inspect facts, trace findings and example samples.

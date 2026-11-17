@@ -77,6 +77,9 @@ class ToolCallTraceItem(BaseModel):
     formatter_error: bool = False
     """``tool_result_to_str`` raised; ``observation`` is the formatted ``TypeError``."""
 
+    runtime_error: bool = False
+    """The upstream functions runtime returned an error; ``observation`` is the error text. Not used for scoring."""
+
 
 class AgentDojoToolBinding:
     """Bind the upstream functions of one suite to one sample's environment, with its own ``FunctionsRuntime``."""
@@ -138,6 +141,7 @@ class AgentDojoToolBinding:
                 call_id=call_id,
                 valid_function=True,
                 formatter_error=formatter_error,
+                runtime_error=error is not None,
             )
         )
         return observation
