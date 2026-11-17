@@ -225,7 +225,7 @@ def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:
     return 'N/A'
 
 
-def _load_perf_map(cache_manager: CacheManager, dataset_name: str, subset_name: str) -> Dict[int, Any]:
+def _load_perf_map(pred_cache_path: str) -> Dict[int, Any]:
     """Build an index -> perf_metrics mapping from the prediction cache.
 
     Old single-turn caches store perf data at the ModelOutput level rather than
@@ -236,8 +236,6 @@ def _load_perf_map(cache_manager: CacheManager, dataset_name: str, subset_name: 
     """
     perf_map: Dict[int, Any] = {}
     try:
-        pred_subset = 'default' if dataset_name == DataCollection.NAME else subset_name
-        pred_cache_path = cache_manager.get_prediction_cache_path(pred_subset)
         if os.path.exists(pred_cache_path):
             for item in jsonl_to_list(pred_cache_path):
                 idx = item.get('index')
@@ -449,6 +447,16 @@ def _build_prediction_row(
     }
 
 
+def get_prediction_source_paths(work_dir: str, model_name: str, dataset_name: str, subset_name: str) -> tuple[str, str]:
+    """Return review and prediction cache paths without creating directories."""
+    outputs = OutputsStructure(work_dir, is_make=False)
+    cache_manager = CacheManager(outputs, model_name, dataset_name)
+    cache_key = 'default' if dataset_name == DataCollection.NAME else subset_name
+    review_cache_path = cache_manager.get_review_cache_path(cache_key)
+    prediction_cache_path = cache_manager.get_prediction_cache_path(cache_key)
+    return review_cache_path, prediction_cache_path
+
+
 def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subset_name: str):
     """Load all prediction / review rows for a given model + dataset subset.
 
@@ -457,15 +465,14 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
     :func:`_build_prediction_row`.
     """
     # Locate and load the review cache for this model / dataset / subset
-    outputs = OutputsStructure(work_dir, is_make=False)
-    cache_manager = CacheManager(outputs, model_name, dataset_name)
-    cache_key = 'default' if dataset_name == DataCollection.NAME else subset_name
-    review_cache_path = cache_manager.get_review_cache_path(cache_key)
+    review_cache_path, prediction_cache_path = get_prediction_source_paths(
+        work_dir, model_name, dataset_name, subset_name
+    )
     logger.debug(f'review_path: {review_cache_path}')
     review_caches = jsonl_to_list(review_cache_path)
 
     # Build index -> perf_metrics fallback map from the prediction cache
-    perf_map = _load_perf_map(cache_manager, dataset_name, subset_name)
+    perf_map = _load_perf_map(prediction_cache_path)
 
     ds = []
     for cache in review_caches:

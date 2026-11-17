@@ -20,7 +20,7 @@ from evalscope.api.judge import (
     Placement,
     ReducedVerdict,
 )
-from evalscope.api.messages import ChatMessageUser
+from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
 from evalscope.constants import ScoreStatus
@@ -49,7 +49,9 @@ class ScriptedJudge:
         response = self.responses[min(len(self.calls) - 1, len(self.responses) - 1)]
         if isinstance(response, Exception):
             raise response
-        return ModelOutput.from_content(model=self.model_id, content=response)
+        if isinstance(response, ModelOutput):
+            return response
+        return ModelOutput.from_content(model=self.model_id, content=[ContentText(text=response)])
 
 
 class SimpleAdapter(JudgeDefinition):
@@ -122,14 +124,25 @@ def test_single_request_parses_and_persists_full_io():
     assert attempt.raw_response == YES_REPLY
 
 
-def test_parse_failure_is_one_call_without_automatic_correction():
-    executor, judge = make_executor(['not JSON', YES_REPLY])
+@pytest.mark.parametrize('reply', [
+    'not JSON',
+    f'```json\n{YES_REPLY}\n```',
+    f'<think>The answer matches.</think>\n{YES_REPLY}',
+    f'Final verdict: {YES_REPLY}',
+    f'{{broken: {YES_REPLY}}}',
+    f'{YES_REPLY}\n{NO_REPLY}',
+])
+def test_parse_failure_is_one_call_without_automatic_correction(reply: str) -> None:
+    executor, judge = make_executor([reply, YES_REPLY])
 
     review = executor.execute(SimpleAdapter(), {})
 
     assert len(judge.calls) == 1
     assert review.status is ScoreStatus.EXCLUDED
+    assert review.value == {}
     assert review.failure_counts == {'parse_error': 1}
+    assert review.attempts[0].raw_response == reply
+    assert review.attempts[0].parsed_value is None
 
 
 def test_transport_failure_is_typed_and_not_retried_by_executor():
@@ -141,6 +154,17 @@ def test_transport_failure_is_typed_and_not_retried_by_executor():
     assert review.status is ScoreStatus.EXCLUDED
     assert review.failure_counts == {'transport_error': 1}
     assert review.attempts[0].error.startswith('ConnectionError:')
+
+
+def test_reasoning_separated_by_the_model_layer_does_not_invalidate_final_json() -> None:
+    output = ModelOutput.from_content('judge', f'<think>The answer matches.</think>\n{YES_REPLY}')
+    executor, _ = make_executor([output])
+
+    review = executor.execute(SimpleAdapter(), {})
+
+    assert review.status is ScoreStatus.SUCCESS
+    assert review.value == {'acc': 1.0}
+    assert review.attempts[0].raw_response.strip() == YES_REPLY
 
 
 def test_atomic_swap_excludes_a_half_completed_pair():

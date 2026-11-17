@@ -89,10 +89,12 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
         super().__init__(**kwargs)
 
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
-        if self.multiple_correct:
-            self.prompt_template = MultipleChoiceTemplate.MULTIPLE_ANSWER
-        else:
-            self.prompt_template = MultipleChoiceTemplate.SINGLE_ANSWER
+        # keep a prompt_template passed in dataset_args
+        if self.prompt_template is None:
+            if self.multiple_correct:
+                self.prompt_template = MultipleChoiceTemplate.MULTIPLE_ANSWER
+            else:
+                self.prompt_template = MultipleChoiceTemplate.SINGLE_ANSWER
 
     def record_to_sample(self, record) -> Sample:
         if not self.multiple_correct:

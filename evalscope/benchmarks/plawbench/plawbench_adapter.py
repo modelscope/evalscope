@@ -2,7 +2,7 @@
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -20,6 +20,7 @@ from .utils import (
     JUDGE_TYPE_CASE_ANALYSIS,
     JUDGE_TYPE_LEGAL_QA,
     JUDGE_USER_PROMPTS,
+    RUBRIC_TAG_TO_JUDGE_KEY,
     TASK_INSTRUCTIONS,
     USER_PROMPTS,
     build_conversation,
@@ -38,12 +39,14 @@ class SectionScore(BaseModel):
 class CaseAnalysisGrade(BaseModel):
     """The ``case_analysis`` judge reply; section denominators come from the dataset, not the judge."""
 
+    reasoning: str = ''
     score_details: Dict[str, SectionScore]
 
 
 class TotalPointsGrade(BaseModel):
     """The single-total judge reply for ``legal_qa`` / ``document_generation``."""
 
+    reasoning: str = ''
     total_points: float
     max_points: Optional[float] = None
 
@@ -85,8 +88,9 @@ rubric rather than against a single reference answer.
   - `defendant_statement` (6): drafting a statement of defense from the client's account and the opposing complaint.
 - Client statements are deliberately vague, emotional, or misleading, so models must detect traps instead of
   restating the client's claims.
-- Task prompts and judge prompts are ported verbatim from the official release, and the `case_analysis` rubric
-  retains its per-dimension point allocation.
+- Task prompts and grading criteria follow the official release, and the `case_analysis` rubric retains its
+  per-dimension point allocation. Judge output instructions are adapted to a single JSON object, with explanations
+  inside declared fields; scores are not guaranteed to match the official prompt format.
 
 ## Evaluation Notes
 
@@ -130,6 +134,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
         eval_split='test',
         metric_list=['acc', 'conclusion_acc', 'fact_acc', 'reasoning_acc', 'law_acc'],
         primary_metric='accuracy',
+        evaluation_version='v1.1',
         aggregation='mean',
         prompt_template='{question}',
         extra_params=_EXTRA_PARAMS,
@@ -167,6 +172,21 @@ class PLawBenchAdapter(DefaultDataAdapter):
         metadata = context.task_state.metadata or {}
         judge_type = metadata['judge_type']
         schema = CaseAnalysisGrade if judge_type == JUDGE_TYPE_CASE_ANALYSIS else TotalPointsGrade
+        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
+            sections = parse_rubric_sections(metadata['rubrics'])
+            section_names = dict.fromkeys(
+                RUBRIC_TAG_TO_JUDGE_KEY[section['tags']]
+                for section in sections
+                if section.get('tags') in RUBRIC_TAG_TO_JUDGE_KEY
+            )
+            details_schema = create_model(
+                'CaseAnalysisScoreDetails', **{name: (SectionScore, ...) for name in section_names}
+            )
+            schema = create_model(
+                'CaseAnalysisGrade',
+                __base__=CaseAnalysisGrade,
+                score_details=(details_schema, Field(description='Use the exact Chinese section names in the schema.')),
+            )
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             current_metadata = judge_context.task_state.metadata or {}
@@ -181,7 +201,15 @@ class PLawBenchAdapter(DefaultDataAdapter):
                 rubric_sections=rubric_sections,
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=system_prompt), ChatMessageUser(content=user_prompt)]
+                messages=[
+                    ChatMessageSystem(content=system_prompt),
+                    ChatMessageUser(
+                        content=user_prompt
+                        + case.output_contract.instruction()
+                        + '\n\nJSON Schema:\n'
+                        + json.dumps(case.output_contract.schema_model.model_json_schema(), ensure_ascii=False)
+                    ),
+                ]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:

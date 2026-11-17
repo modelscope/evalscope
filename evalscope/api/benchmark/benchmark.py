@@ -96,6 +96,14 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """Return the resolved benchmark metadata used by this adapter."""
         return self._benchmark_meta
 
+    def evaluation_dependencies(self) -> Dict[str, 'DataAdapter']:
+        """Return member adapters whose semantics contribute to this benchmark's cache identity.
+
+        Composite adapters may load their data here to discover the members actually used by the run.
+        Ordinary benchmarks have no dependencies and do not load data during identity resolution.
+        """
+        return {}
+
     @abstractmethod
     def load_dataset(self) -> DatasetDict:
         pass

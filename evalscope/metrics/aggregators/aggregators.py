@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def collect_metric_names(scores: List[SampleScore]) -> List[str]:
@@ -18,6 +21,17 @@ def collect_metric_names(scores: List[SampleScore]) -> List[str]:
         for metric_name in sample_score.score.value:
             metric_names.setdefault(metric_name, None)
     return list(metric_names)
+
+
+def has_binary_outcomes(scores: List[SampleScore], metric_name: str) -> bool:
+    """Require success/failure outcomes before estimating a pass probability."""
+    if any(score.score.value[metric_name] not in (0, 1) for score in scores if metric_name in score.score.value):
+        logger.warning(
+            f'Skipping pass aggregation for metric {metric_name!r}: outcomes must be binary (0 or 1). '
+            'The mean is retained; use mean aggregation for partial-credit or continuous metrics.'
+        )
+        return False
+    return True
 
 
 def collect_planned_attempts(
@@ -212,6 +226,8 @@ class MeanPassAtK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
+            if not has_binary_outcomes(scores, metric_name):
+                continue
             group_attempts = collect_planned_attempts(scores, metric_name)
             prefixes = eligible_prefixes(group_attempts)
             if not prefixes:
@@ -254,7 +270,7 @@ class MeanVoteAtK(Aggregator):
         """Aggregate scores by computing vote@n for all n <= k for each metric using group_id.
 
         Vote@n selects the most frequent prediction among first n samples, then checks if
-        that prediction is correct. This ensures vote@n has proper monotonicity properties.
+        that prediction is correct. Ties are broken by the prediction's first occurrence.
 
         Note: vote@n computes accuracy per unique problem (one score per group_id), while
         mean_acc averages over all samples (including repeats). Therefore, vote@n can be
@@ -280,38 +296,38 @@ class MeanVoteAtK(Aggregator):
 
         for metric_name in metrics:
             group_attempts = collect_planned_attempts(scores, metric_name)
-            prefixes = eligible_prefixes(group_attempts)
-            if not prefixes:
-                continue
-            for n, eligible in prefixes.items():
-                vote_at_n_map: Dict[Any, float] = {}
-                for group_id, attempts in eligible:
-                    n_samples = [
-                        (attempts[index].score.extracted_prediction, attempts[index].score.value[metric_name])
-                        for index in range(n)
-                    ]
-
-                    # Count prediction frequencies, ignoring failed extractions (None or blank)
-                    prediction_counts = defaultdict(int)
-                    for prediction, _ in n_samples:
-                        if prediction is None or (isinstance(prediction, str) and not prediction.strip()):
-                            continue
+            max_k = min((max(attempts, default=-1) + 1 for attempts in group_attempts.values()), default=0)
+            votes_by_k: Dict[int, Dict[Any, float]] = defaultdict(dict)
+            for group_id, attempts in group_attempts.items():
+                prediction_counts: Dict[str, int] = defaultdict(int)
+                first_seen: Dict[str, int] = {}
+                correct_predictions = set()
+                winner: Optional[str] = None
+                for n in range(1, max_k + 1):
+                    attempt = attempts.get(n - 1)
+                    # Once a planned attempt is unavailable, no longer prefix is eligible.
+                    if attempt is None:
+                        break
+                    score = attempt.score
+                    prediction = score.extracted_prediction
+                    if prediction is not None and prediction.strip():
                         prediction_counts[prediction] += 1
+                        first_seen.setdefault(prediction, n)
+                        if score.value[metric_name] == 1.0:
+                            correct_predictions.add(prediction)
+                        # An earlier prediction can regain the lead by tying the current winner.
+                        if (
+                            winner is None
+                            or prediction_counts[prediction] > prediction_counts[winner]
+                            or (
+                                prediction_counts[prediction] == prediction_counts[winner]
+                                and first_seen[prediction] < first_seen[winner]
+                            )
+                        ):
+                            winner = prediction
+                    votes_by_k[n][group_id] = float(winner in correct_predictions)
 
-                    if not prediction_counts:
-                        vote_at_n_map[group_id] = 0.0
-                        continue
-
-                    # Select most frequent prediction (ties broken by first occurrence)
-                    most_frequent_pred = max(prediction_counts, key=prediction_counts.get)
-
-                    # Check if this prediction was ever correct in the first n samples
-                    is_correct = any(
-                        pred == most_frequent_pred and correctness == 1.0 for pred, correctness in n_samples
-                    )
-
-                    vote_at_n_map[group_id] = 1.0 if is_correct else 0.0
-
+            for n, vote_at_n_map in votes_by_k.items():
                 values = list(vote_at_n_map.values())
                 aggregated_scores.append(
                     AggScore(
@@ -355,6 +371,8 @@ class MeanPassHatK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
+            if not has_binary_outcomes(scores, metric_name):
+                continue
             group_attempts = collect_planned_attempts(scores, metric_name)
             prefixes = eligible_prefixes(group_attempts)
             if not prefixes:

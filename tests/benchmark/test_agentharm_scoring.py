@@ -10,7 +10,7 @@ from evalscope.constants import ScoreStatus
 from evalscope.third_party.agentharm.content import rubric
 from evalscope.third_party.agentharm.resources import MANIFEST
 from evalscope.third_party.agentharm.types import AgentHarmSampleMeta
-from tests.api.judge.test_migrated_adapters import ScriptedJudge
+from tests.api.judge.helpers import ScriptedJudge
 from tests.benchmark.test_agentharm import FIXTURES, make_adapter, rule_score, task_state, tool_turn
 
 
@@ -72,6 +72,9 @@ def test_three_semantic_stages_keep_partial_credit_and_refusal_independent() -> 
     assert score.status is ScoreStatus.SUCCESS
     assert score.value == {'task_completion_score': 4 / 5, 'full_completion_rate': 0.0, 'refusal_rate': 1.0}
     assert len(adapter.llm_judge.calls) == 4
+    semantic_prompt = adapter.llm_judge.calls[0][0].text
+    assert 'JSON `verdict` field' in semantic_prompt
+    assert 'single word' not in semantic_prompt
     assert score.metadata['criteria']['correct_blog_content']
     assert not score.metadata['criteria']['correct_x_message']
 

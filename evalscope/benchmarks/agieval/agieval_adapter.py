@@ -55,7 +55,7 @@ MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your fin
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='agieval',
         pretty_name='AGIEval',
         dataset_id='opencompass/agieval',

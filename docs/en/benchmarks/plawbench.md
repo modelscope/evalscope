@@ -28,8 +28,9 @@ rubric rather than against a single reference answer.
   - `defendant_statement` (6): drafting a statement of defense from the client's account and the opposing complaint.
 - Client statements are deliberately vague, emotional, or misleading, so models must detect traps instead of
   restating the client's claims.
-- Task prompts and judge prompts are ported verbatim from the official release, and the `case_analysis` rubric
-  retains its per-dimension point allocation.
+- Task prompts and grading criteria follow the official release, and the `case_analysis` rubric retains its
+  per-dimension point allocation. Judge output instructions are adapted to a single JSON object, with explanations
+  inside declared fields; scores are not guaranteed to match the official prompt format.
 
 ## Evaluation Notes
 
@@ -97,7 +98,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
 {
   "input": [
     {
-      "id": "06c8a1d7",
+      "id": "7ccab4ca",
       "content": "\n## 角色\n\n你是一名具有十年以上执业经验的法律实务专家，精通中国现行法律法规与司法实践。你擅长将复杂的法律问题分解为清晰的逻辑模块，并严格依据“结论先行、事实为重、推理严密、依据支撑”的专业风格进行解答。\n\n## 核心要求\n\n1. 严格顺序：回答必须按照以下四部分顺序展开，并使用对应标题：\n【结论】\n【案件事实】\n【推理过程】\n【法条依据】\n2. 内容规范：\n结论：直接、明确，针对提问的核心争议点给出肯定或否定的判断。\n案件事实：基于用户提供的案情，简明、客观地摘录与法律判断 ... [TRUNCATED 1912 chars] ... 并赔偿精神损害抚慰金。庭审中查明，某摄影服务公司已完成除摄像外的其他服务项目；某文化传媒公司系独立法人，其工作人员在操作设备时存在重大过失。另查，某甲在签订合同时未特别声明婚礼录像的重要性，但合同附件中列有\"全程跟拍记录\"服务项目。某摄影服务公司辩称其仅需承担合同违约责任，精神损害赔偿缺乏依据。某文化传媒公司以非合同相对方为由拒绝承担责任。\n\n## 问题\n以【结论 + 案情简述 + 分析过程+依据法条】的逻辑回答以下问题：在上述案例中，某甲能否向某摄影服务公司主张精神损害赔偿？\n"
     }
   ],

@@ -28,6 +28,7 @@ from .utils.async_client import LoopBoundAsyncClientPool
 from .utils.openai import (
     EmptyCompletionError,
     _NonRetryableEmptyCompletionError,
+    _uses_openai_reasoning_defaults,
     async_collect_stream_response,
     chat_choices_from_openai,
     collect_stream_response,
@@ -68,7 +69,6 @@ class OpenAICompatibleAPI(ModelAPI):
         config: GenerateConfig = GenerateConfig(),
         **model_args: Any,
     ) -> None:
-
         super().__init__(
             model_name=model_name,
             base_url=base_url,
@@ -287,11 +287,29 @@ class OpenAICompatibleAPI(ModelAPI):
         """Provides an opportunity for concrete classes to customize tool resolution."""
         return tools, tool_choice, config
 
+    def _warn_on_openai_reasoning_sampling(self, config: GenerateConfig) -> None:
+        if not _uses_openai_reasoning_defaults(self.model_name, self.base_url):
+            return
+        omitted = {name for name in ('temperature', 'top_p') if getattr(config, name) is not None}
+        if not omitted:
+            return
+        warned = getattr(self, '_openai_reasoning_sampling_warned', set())
+        new_parameters = omitted - warned
+        if not new_parameters:
+            return
+        logger.warning(
+            f'OpenAI reasoning model [{self.model_name}] on api.openai.com omits '
+            f'{", ".join(sorted(new_parameters))} from requests; their configured values will not affect generation.'
+        )
+        self._openai_reasoning_sampling_warned = warned | new_parameters
+
     def completion_params(self, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
+        self._warn_on_openai_reasoning_sampling(config)
         return openai_completion_params(
             model=self.model_name,
             config=config,
             tools=tools,
+            base_url=self.base_url,
         )
 
     def validate_request_params(self, params: Dict[str, Any]):

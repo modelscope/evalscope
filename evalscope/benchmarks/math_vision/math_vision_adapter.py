@@ -24,7 +24,7 @@ SUBSET_LIST = ['level 1', 'level 2', 'level 3', 'level 4', 'level 5']
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='math_vision',
         pretty_name='MathVision',
         dataset_id='evalscope/MathVision',

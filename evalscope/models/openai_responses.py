@@ -208,10 +208,12 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
         return output
 
     def response_params(self, config: GenerateConfig, tools: bool) -> Dict[str, Any]:
+        self._warn_on_openai_reasoning_sampling(config)
         return openai_response_params(
             model=self.model_name,
             config=config,
             tools=tools,
+            base_url=self.base_url,
         )
 
     def validate_request_params(self, params: Dict[str, Any]) -> None:

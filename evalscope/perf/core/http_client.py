@@ -1,5 +1,6 @@
 import asyncio
 import time
+import urllib.request
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
@@ -21,6 +22,22 @@ logger = get_logger()
 _PREFLIGHT_DEADLINE = 60  # total wall-clock seconds for the whole probe
 _PREFLIGHT_MAX_ATTEMPTS = 3  # hard cap on attempts regardless of time left
 _PREFLIGHT_RETRY_INTERVAL = 2  # seconds between attempts (clamped to remaining time)
+
+
+def _has_request_environment() -> bool:
+    """Keep environment handling whenever an initial or redirected request could need it.
+
+    With ``trust_env=True``, aiohttp looks up the netrc entry and the proxy for every request,
+    each in a worker thread. Under load, these lookups delay each request before its headers
+    go out, and the delay counts in TTFT. Disable these lookups only when no configuration
+    could apply. A redirect may change both host and scheme, so checking only
+    the initial URL would lose proxy settings or netrc authentication for its destination.
+    """
+    proxies = urllib.request.getproxies()
+    if any(scheme in proxies for scheme in ('http', 'https', 'ws', 'wss')):
+        return True
+    credentials = aiohttp.helpers.netrc_from_env()
+    return credentials is not None and bool(credentials.hosts)
 
 
 class AioHttpClient:
@@ -55,7 +72,7 @@ class AioHttpClient:
 
         self.client = aiohttp.ClientSession(
             connector=connector,
-            trust_env=True,
+            trust_env=_has_request_environment(),
             timeout=client_timeout,
             trace_configs=[self._create_trace_config()] if args.debug else [],
         )

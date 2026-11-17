@@ -46,7 +46,7 @@ FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='cmmu',
         pretty_name='CMMU',
         dataset_id='evalscope/CMMU',

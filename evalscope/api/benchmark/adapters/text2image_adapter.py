@@ -1,6 +1,7 @@
 import base64
 import os
 import re
+import uuid
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
@@ -11,7 +12,7 @@ from evalscope.api.messages.content import ContentImage
 from evalscope.api.metric import AggScore, MetricIdentity, MetricKind, MetricSelector, SampleScore, Score
 from evalscope.api.model import ChatCompletionChoice, Model, ModelOutput
 from evalscope.api.registry import get_metric
-from evalscope.constants import EvalType, FileConstants
+from evalscope.constants import EvalType, FileConstants, ScoreStatus
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.utils import get_logger
@@ -156,7 +157,9 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 completed=True,
             )
         else:
-            image_id = f'{sample.metadata.get(FileConstants.ID) or sample.id}_{sample.group_id}'
+            # Dataset IDs and group IDs repeat across generations and subsets. Cache the
+            # unique artifact path so later inference cannot overwrite a reviewed image.
+            image_id = uuid.uuid4().hex
             output_path = os.path.join(output_dir, 'images', f'{image_id}.png')
             # Concurrent workers share this directory, so creation must tolerate a parallel winner.
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -226,11 +229,21 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 self._record_metric_result(score, metric_name, 0)
                 score.metadata[metric_name] = f'error: {str(e)}'
 
+        if score.metadata.get('metric_errors'):
+            score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
         return score
 
     def _record_metric_result(self, score: Score, scorer_name: str, metric_score: Any) -> None:
         """Store scorer output together with its canonical report identity."""
         metric_name = self.canonical_metric_name(scorer_name)
+        if isinstance(metric_score, Score):
+            if not metric_score.status.is_usable:
+                error = metric_score.explanation or metric_score.status.value
+                score.metadata.setdefault('metric_errors', {})[metric_name] = error
+                logger.error(f'Error calculating metric {scorer_name}: {error}')
+                return
+            score.metadata.setdefault('metric_metadata', {})[metric_name] = metric_score.metadata or {}
+            metric_score = metric_score.main_value if len(metric_score.value) == 1 else metric_score.value
         identities = score.metadata.setdefault(_METRIC_IDENTITIES_KEY, {})
 
         if not isinstance(metric_score, dict):

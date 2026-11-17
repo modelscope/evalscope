@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "pretty_name": "CVTG-2K",
+    "dataset_id": "evalscope/CVTG-2K",
+    "paper_url": "https://arxiv.org/abs/2503.23461",
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "CVTGWordAccuracy",
+      "CVTGNED"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "CVTG",
+      "CVTG-Style"
+    ],
+    "description": "\n## Overview\n\nCVTG-2K is a benchmark of 2,000 prompts for evaluating complex visual text generation\n(TextCrafter, arXiv:2503.23461). Prompts contain 2-5 quoted text regions that the generated\nimage must render; prompts are organized by region count under the CVTG and CVTG-Style splits\n(the latter annotates style attributes such as size, color and font).\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation (text rendering)\n- **Input**: Text prompt with quoted text regions\n- **Output**: Generated image scored with Word Accuracy and word-level NED against the quoted text\n- **Domain**: Complex visual text generation for text-to-image models\n\n## Key Features\n\n- 2,000 prompts (CVTG and CVTG-Style splits, 2-5 text regions each) from the official\n  TextCrafter release\n- Scores Word Accuracy and word-level NED against the single-quoted fragments of each prompt,\n  mirroring the official TextCrafter evaluator including its corpus-level aggregation\n- Shares one PaddleOCR engine across both metrics per language\n\n## Evaluation Notes\n\n- Ground-truth words are the single-quoted fragments of each prompt, matching the official\n  TextCrafter evaluator; repeated ground-truth words are not consumed\n- Metrics: cvtg_word_accuracy (membership word match) and cvtg_ned (word-level best-match\n  Levenshtein similarity, higher is better), both aggregated corpus-level (total numerator /\n  total denominator) as in the official evaluator\n- Loads the complete 2,000-prompt ModelScope mirror by default. The CVTG and CVTG-Style\n  configurations contain 1,002 and 998 test examples, respectively; the original source is\n  [dnkdnk/CVTG-2K](https://huggingface.co/datasets/dnkdnk/CVTG-2K).\n- Install PaddleOCR 2.x and PaddlePaddle for OCR scoring (for example, paddleocr==2.10.0\n  and paddlepaddle==2.6.2). Missing dependencies or OCR failures exclude the affected\n  metric instead of assigning a zero. A valid image with no recognized text counts as missing text.\n- Images can be generated with a local diffusion model or an OpenAI-compatible image\n  generation service; set model_task='image_generation' and eval_type='text2image'.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc",
+    "primary_metric": {
+      "name": "cvtg_word_accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
+    "eval_type": "text2image",
+    "requires_local_dataset": false
+  },
+  "statistics": {
+    "total_samples": 2000,
+    "subset_stats": [
+      {
+        "name": "CVTG",
+        "sample_count": 1002,
+        "prompt_length_mean": 161.05,
+        "prompt_length_min": 67,
+        "prompt_length_max": 343,
+        "prompt_length_std": 50.72,
+        "target_length_mean": null
+      },
+      {
+        "name": "CVTG-Style",
+        "sample_count": 998,
+        "prompt_length_mean": 230.93,
+        "prompt_length_min": 106,
+        "prompt_length_max": 462,
+        "prompt_length_std": 67.89,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 195.92,
+      "min": 67,
+      "max": 462,
+      "std": 69.34
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-11-17T17:02:35.480975"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "dd076101",
+          "content": "A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 0,
+        "prompt": "A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'.",
+        "carrier_list": [
+          "sign",
+          "cup"
+        ],
+        "sentence_list": [
+          "a sign that says 'READ'.",
+          "a coffee cup on the table with the word 'MORNING'."
+        ],
+        "benchmark_type": "CVTG",
+        "region_count": 2,
+        "category": "CVTG"
+      }
+    },
+    "subset": "CVTG",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# CVTG-2K\n\n\n## Overview\n\nCVTG-2K is a benchmark of 2,000 prompts for evaluating complex visual text generation\n(TextCrafter, arXiv:2503.23461). Prompts contain 2-5 quoted text regions that the generated\nimage must render; prompts are organized by region count under the CVTG and CVTG-Style splits\n(the latter annotates style attributes such as size, color and font).\n\n## Task Description\n\n- **Task Type**: Text-to-Image Generation Evaluation (text rendering)\n- **Input**: Text prompt with quoted text regions\n- **Output**: Generated image scored with Word Accuracy and word-level NED against the quoted text\n- **Domain**: Complex visual text generation for text-to-image models\n\n## Key Features\n\n- 2,000 prompts (CVTG and CVTG-Style splits, 2-5 text regions each) from the official\n  TextCrafter release\n- Scores Word Accuracy and word-level NED against the single-quoted fragments of each prompt,\n  mirroring the official TextCrafter evaluator including its corpus-level aggregation\n- Shares one PaddleOCR engine across both metrics per language\n\n## Evaluation Notes\n\n- Ground-truth words are the single-quoted fragments of each prompt, matching the official\n  TextCrafter evaluator; repeated ground-truth words are not consumed\n- Metrics: cvtg_word_accuracy (membership word match) and cvtg_ned (word-level best-match\n  Levenshtein similarity, higher is better), both aggregated corpus-level (total numerator /\n  total denominator) as in the official evaluator\n- Loads the complete 2,000-prompt ModelScope mirror by default. The CVTG and CVTG-Style\n  configurations contain 1,002 and 998 test examples, respectively; the original source is\n  [dnkdnk/CVTG-2K](https://huggingface.co/datasets/dnkdnk/CVTG-2K).\n- Install PaddleOCR 2.x and PaddlePaddle for OCR scoring (for example, paddleocr==2.10.0\n  and paddlepaddle==2.6.2). Missing dependencies or OCR failures exclude the affected\n  metric instead of assigning a zero. A valid image with no recognized text counts as missing text.\n- Images can be generated with a local diffusion model or an OpenAI-compatible image\n  generation service; set model_task='image_generation' and eval_type='text2image'.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cvtg_2k` |\n| **Dataset ID** | [evalscope/CVTG-2K](https://modelscope.cn/datasets/evalscope/CVTG-2K/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2503.23461) |\n| **Tags** | `TextToImage` |\n| **Metrics** | `CVTGWordAccuracy`, `CVTGNED` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,000 |\n| Prompt Length (Mean) | 195.92 chars |\n| Prompt Length (Min/Max) | 67 / 462 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `CVTG` | 1,002 | 161.05 | 67 | 343 |\n| `CVTG-Style` | 998 | 230.93 | 106 | 462 |\n\n## Sample Example\n\n**Subset**: `CVTG`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dd076101\",\n      \"content\": \"A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"prompt\": \"A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'.\",\n    \"carrier_list\": [\n      \"sign\",\n      \"cup\"\n    ],\n    \"sentence_list\": [\n      \"a sign that says 'READ'.\",\n      \"a coffee cup on the table with the word 'MORNING'.\"\n    ],\n    \"benchmark_type\": \"CVTG\",\n    \"region_count\": 2,\n    \"category\": \"CVTG\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cvtg_2k \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['cvtg_2k'],\n    dataset_args={\n        'cvtg_2k': {\n            # subset_list: ['CVTG', 'CVTG-Style']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CVTG-2K\n\n\n## 概述\n\nCVTG-2K 是一个包含 2,000 条提示词的基准测试，用于评估复杂的视觉文本生成能力（TextCrafter, arXiv:2503.23461）。这些提示词包含 2-5 个带引号的文本区域，生成的图像必须准确渲染这些内容；提示词按区域数量组织在 CVTG 和 CVTG-Style 两个子集下（后者标注了大小、颜色和字体等风格属性）。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成评估（文本渲染）\n- **输入**：包含带引号文本区域的文本提示词\n- **输出**：生成的图像，通过单词准确率（Word Accuracy）和针对带引号文本的单词级归一化编辑距离（NED）进行评分\n- **领域**：面向文本到图像模型的复杂视觉文本生成\n\n## 主要特点\n\n- 来自官方 TextCrafter 发布的 2,000 条提示词（CVTG 和 CVTG-Style 子集，每条包含 2-5 个文本区域）\n- 针对每条提示词中的单引号片段计算单词准确率和单词级 NED，复刻了官方 TextCrafter 评估器及其语料库级别的聚合方式\n- 每种语言的两个指标共享同一个 PaddleOCR 引擎\n\n## 评估说明\n\n- 真实标签（Ground-truth）单词为每条提示词中的单引号片段，与官方 TextCrafter 评估器保持一致；重复出现的真实标签单词不会被消耗\n- 指标包括：`cvtg_word_accuracy`（成员单词匹配）和 `cvtg_ned`（单词级最佳匹配 Levenshtein 相似度，值越高越好），两者均按照官方评估器的做法进行语料库级别聚合（总分子 / 总分母）\n- 默认加载完整的 2,000 条提示词的 ModelScope 镜像。CVTG 和 CVTG-Style 配置分别包含 1,002 和 998 个测试样本；原始数据源为 [dnkdnk/CVTG-2K](https://huggingface.co/datasets/dnkdnk/CVTG-2K)。\n- 安装 PaddleOCR 2.x 和 PaddlePaddle 以支持 OCR 评分（例如 `paddleocr==2.10.0` 和 `paddlepaddle==2.6.2`）。如果缺少依赖项或 OCR 失败，受影响的指标将被排除而不是记为零分。对于有效图像但未识别出任何文本的情况，视为缺失文本。\n- 图像可以使用本地扩散模型或兼容 OpenAI 的图像生成服务生成；请设置 `model_task='image_generation'` 和 `eval_type='text2image'`。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cvtg_2k` |\n| **数据集ID** | [evalscope/CVTG-2K](https://modelscope.cn/datasets/evalscope/CVTG-2K/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2503.23461) |\n| **标签** | `TextToImage` |\n| **指标** | `CVTGWordAccuracy`, `CVTGNED` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,000 |\n| 提示词长度（平均） | 195.92 字符 |\n| 提示词长度（最小/最大） | 67 / 462 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `CVTG` | 1,002 | 161.05 | 67 | 343 |\n| `CVTG-Style` | 998 | 230.93 | 106 | 462 |\n\n## 样例示例\n\n**子集**: `CVTG`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"dd076101\",\n      \"content\": \"A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"prompt\": \"A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'.\",\n    \"carrier_list\": [\n      \"sign\",\n      \"cup\"\n    ],\n    \"sentence_list\": [\n      \"a sign that says 'READ'.\",\n      \"a coffee cup on the table with the word 'MORNING'.\"\n    ],\n    \"benchmark_type\": \"CVTG\",\n    \"region_count\": 2,\n    \"category\": \"CVTG\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cvtg_2k \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['cvtg_2k'],\n    dataset_args={\n        'cvtg_2k': {\n            # subset_list: ['CVTG', 'CVTG-Style']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ea659e703f6feaf84c0eaa9ebd4994a7",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-17T17:06:21.235348",
+  "translation_updated_at": "2026-11-17T17:06:22"
+}

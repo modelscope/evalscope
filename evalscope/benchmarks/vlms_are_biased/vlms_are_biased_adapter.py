@@ -24,31 +24,27 @@ SUBSET_LIST = [
 DESCRIPTION = """
 ## Overview
 
-VLMs Are Biased (VLMBias) evaluates whether vision-language models answer objective visual questions from the image or fall back to memorized prior knowledge. It uses counterfactual images whose visible properties conflict with familiar concepts, such as an Adidas-style logo with four stripes or an animal with an unusual number of legs.
+VLMs Are Biased (VLMBias) tests whether vision-language models follow visual evidence when it conflicts with familiar concepts, such as a logo with an unusual number of stripes.
 
 ## Task Description
 
-- **Task Type**: Free-form visual question answering for counting and identification
-- **Input**: A counterfactual or control image paired with a counting, binary identification, or short-answer question
-- **Output**: A number, `Yes`/`No`, or a short identity enclosed in curly brackets
+- **Task Type**: Visual question answering for counting and identification
+- **Input**: A counterfactual or control image and a question
+- **Output**: A number, `Yes`/`No`, or a short answer in curly brackets
 - **Domain**: Animals, logos, flags, chess pieces, game boards, optical illusions, and patterned grids
 
 ## Key Features
 
-- The primary `main` split contains 2,784 objective visual questions over 1,392 counterfactual images at 384, 768, and 1152 pixel resolutions
-- Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants
-- Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`
-- The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets
+- 11,594 image-question pairs across six splits; `main` contains 2,784 questions
+- Seven topics and nineteen sub-topics, with identification, title-injection, original-image, and background-removal analyses
+- Default data: **v2**, with revised optical-illusion images/questions, unique IDs, and a repaired identification image
 
 ## Evaluation Notes
 
-- The dataset prompt is used verbatim, including its required curly-bracket answer format
-- Primary metric: **Accuracy** (`acc`), using the official case-insensitive comparison after stripping outer braces; if exact text matching fails, digit sequences are compared
-- Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization
-- Accuracy is also reported by topic, matching the official lmms-eval integration
-- `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`
-- The six official dataset splits are exposed as separate EvalScope subsets and evaluated by default; select only `main` to reproduce the paper's headline benchmark
-- Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens
+- Metrics: **Accuracy** (`acc`, overall and by topic) and **Bias Ratio** (`bias_ratio`, lower is better), using official answer normalization and digit matching; `original` omits Bias Ratio
+- All six splits run by default; set `subset_list=['main']` for the primary counting evaluation
+- For the paper's v1 data, set `default_subset='v1-legacy'` in `dataset_args`. Use a new output directory when switching versions. The legacy `identification` split retains a truncated image
+- Prompts are used verbatim. The official lmms-eval setup uses `temperature=0` and at most 32 new tokens
 - [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)
 """
 
@@ -58,7 +54,9 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
         name='vlms_are_biased',
         pretty_name='VLMs Are Biased',
         dataset_id='evalscope/vlms-are-biased',
+        dataset_revision='2e92cd147b735190b8f6a35bccf1b750bce3c399',
         hf_dataset_id='anvo25/vlms-are-biased',
+        hf_dataset_revision='a6ebd68831ee7299d85631c929fea5016c03863f',
         subset_list=SUBSET_LIST,
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.REASONING],
         description=DESCRIPTION,
@@ -66,7 +64,7 @@ VLMs Are Biased (VLMBias) evaluates whether vision-language models answer object
         metric_list=['acc', 'bias_ratio'],
         primary_metric=MetricSelector(name='accuracy', dimensions={'scope': 'overall'}),
         eval_split='main',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class VLMsAreBiasedAdapter(VisionLanguageAdapter):
@@ -75,9 +73,18 @@ class VLMsAreBiasedAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.split_as_subset = True
+        self.data_version = 'v1-legacy' if self.default_subset == 'v1-legacy' else 'v2'
+        if self.data_version == 'v1-legacy':
+            self.benchmark_meta.evaluation_version = 'v1.0'
+            self.benchmark_meta.pretty_name = 'VLMs Are Biased (v1 legacy)'
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert one visual question into an EvalScope sample."""
+        if self.data_version == 'v2' and not record.get('legacy_ID'):
+            raise ValueError(
+                'VLMs Are Biased v2 requires legacy_ID. Select default_subset="v1-legacy" '
+                'explicitly when evaluating v1 data.'
+            )
         image = self._image_bytes_to_base64(record['image']['bytes'], guess_mimetype=True)
         expected_bias = record.get('expected_bias')
         return Sample(
@@ -92,6 +99,8 @@ class VLMsAreBiasedAdapter(VisionLanguageAdapter):
             target=str(record['ground_truth']).strip(),
             metadata={
                 'id': record['ID'],
+                'legacy_id': record.get('legacy_ID'),
+                'data_version': self.data_version,
                 'topic': record['topic'],
                 'sub_topic': record['sub_topic'],
                 'type_of_question': record['type_of_question'],

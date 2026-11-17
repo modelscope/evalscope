@@ -50,7 +50,7 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 """,
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM],
         dataset_id='general_mcq',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         subset_list=['default'],
         metric_list=['acc'],
         few_shot_num=0,

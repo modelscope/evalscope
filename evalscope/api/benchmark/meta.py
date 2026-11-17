@@ -105,7 +105,7 @@ class BenchmarkMeta:
     aggregation: str = 'mean'
     """ Aggregation function for the metrics. Default is 'mean'. Can be 'mean', 'pass@<k>' or a custom function name."""
 
-    primary_metric: Optional[Union[str, MetricSelector]] = None
+    primary_metric: Optional[Union[str, MetricSelector, Dict[str, Any]]] = None
     """Structured selector for the benchmark's primary report metric.
 
     This is the report-level authoritative declaration. Optional for single-metric benchmarks
@@ -231,11 +231,12 @@ class BenchmarkMeta:
         self.metric_list = normalized
 
     def _normalize_primary_metric(self) -> None:
-        """Normalize the common string shorthand to a selector."""
-        if not isinstance(self.primary_metric, str):
-            return
-        identity = migrate_legacy_identity(self.primary_metric, self.aggregation, benchmark_name=self.name)
-        self.primary_metric = MetricSelector(name=identity.name)
+        """Normalize serialized selectors and legacy string shorthand."""
+        if isinstance(self.primary_metric, dict):
+            self.primary_metric = MetricSelector.model_validate(self.primary_metric)
+        elif isinstance(self.primary_metric, str):
+            identity = migrate_legacy_identity(self.primary_metric, self.aggregation, benchmark_name=self.name)
+            self.primary_metric = MetricSelector(name=identity.name)
 
     def _metric_names(self) -> List[str]:
         """Return the distinct raw metric names declared in ``metric_list``.

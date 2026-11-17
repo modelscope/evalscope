@@ -1,16 +1,19 @@
+import json
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 
 from .utils import (
-    GRADE_CONTRACT,
+    _answer_keys,
+    _grade_model,
+    _reference_parts,
     aggregate_official_scores,
     build_grader_prompt,
     metrics_from_grade,
@@ -65,6 +68,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
         hf_dataset_id='google/deepsearchqa',
         metric_list=['f1', 'precision', 'recall'],
         primary_metric='f1',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='eval',
@@ -131,6 +135,10 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                 reason='empty_model_output',
             )
 
+        reference_parts = _reference_parts(context.reference, context.task_state.metadata['answer_type'])
+        expected_answers = _answer_keys(reference_parts)
+        contract = OutputContract(schema_model=_grade_model(expected_answers))
+
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             prompt = build_grader_prompt(
                 question=judge_context.task_state.input_text,
@@ -138,6 +146,11 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                 answer_type=judge_context.task_state.metadata['answer_type'],
                 response=judge_context.filtered_prediction,
             )
+            prompt += '\n\nCorrectness Details must contain exactly these dataset-derived answer keys: ' + json.dumps(
+                case.metadata['expected_answers'], ensure_ascii=False
+            )
+            if case.metadata['expected_answers'] != reference_parts:
+                prompt += '\nNumbered keys distinguish repeated answer parts by their order in the Correct Answer.'
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -145,7 +158,9 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             return ReducedVerdict(value=value, metadata=metadata)
 
         return JudgeDefinition.workflow(
-            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            cases=[
+                JudgeCase(case_id='grade', output_contract=contract, metadata={'expected_answers': expected_answers})
+            ],
             request=request,
             reduce=reduce,
             main_score_name='f1',

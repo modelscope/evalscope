@@ -1,10 +1,9 @@
-"""The judge output contract: what a reply must satisfy, and what it must reject.
-
-Every rejection case here was observed in the wild before the refactor and used to produce a
-score instead of a parse failure.
-"""
+"""The judge output contract: accept one complete JSON object without recovering fragments."""
+import json
+from decimal import Decimal
 from typing import Literal
 
+import pytest
 from pydantic import BaseModel, Field
 
 from evalscope.api.judge import OutputContract
@@ -20,6 +19,10 @@ class Rating(BaseModel):
     verdict: float = Field(ge=0.0, le=10.0)
 
 
+class UnboundedRating(BaseModel):
+    verdict: float
+
+
 class MultiField(BaseModel):
     extracted_final_answer: str = ''
     reasoning: str = ''
@@ -29,6 +32,7 @@ class MultiField(BaseModel):
 
 GRADE = OutputContract(schema_model=Grade)
 RATING = OutputContract(schema_model=Rating)
+UNBOUNDED_RATING = OutputContract(schema_model=UnboundedRating)
 MULTI = OutputContract(schema_model=MultiField)
 
 
@@ -48,15 +52,18 @@ def test_accepts_surrounding_whitespace():
     assert GRADE.parse('\n  {"verdict": "B"}  \n').value.verdict == 'B'
 
 
-def test_accepts_a_fenced_json_block():
-    """Models wrap JSON in a fence even when told not to."""
-    result = GRADE.parse('Here is my grade:\n```json\n{"verdict": "C"}\n```\n')
-
-    assert result.value.verdict == 'C'
-
-
-def test_accepts_a_fence_without_a_language_tag():
-    assert GRADE.parse('```\n{"verdict": "A"}\n```').value.verdict == 'A'
+@pytest.mark.parametrize('reply', [
+    '```json\n{"verdict": "A"}\n```',
+    '```\n{"verdict": "A"}\n```',
+    'Here is my grade:\n{"verdict": "A"}',
+    '{"verdict": "A"}\nThis answer is correct.',
+    '<think>The answers match.</think>\n{"verdict": "A"}',
+    'The answers match.</think>\n{"verdict": "A"}',
+    'The reference is \\frac{1}{2}.\n{"verdict": "A"}',
+    'The screen is 5" wide.\n{"verdict": "A"}',
+])
+def test_rejects_wrapped_json(reply: str) -> None:
+    assert not GRADE.parse(reply).ok
 
 
 def test_omitted_optional_field_takes_its_default():
@@ -68,6 +75,29 @@ def test_accepts_additional_keys_when_required_keys_exist():
 
     assert result.ok
     assert result.value.verdict == 'A'
+
+
+def test_instruction_describes_nested_objects_without_requesting_a_string() -> None:
+    class NestedVerdict(BaseModel):
+        details: Grade
+        scores: dict[str, float]
+
+    contract = OutputContract(schema_model=NestedVerdict)
+
+    assert '"details": an object' in contract.instruction()
+    assert '"scores": an object' in contract.instruction()
+    assert contract.parse('{"details": {"verdict": "A"}, "scores": {"acc": 1.0}}').ok
+
+
+def test_instruction_describes_an_optional_number_without_requesting_a_string() -> None:
+    class OptionalPoints(BaseModel):
+        max_points: float | None = None
+
+    contract = OutputContract(schema_model=OptionalPoints)
+
+    assert '"max_points": a number or null' in contract.instruction()
+    assert contract.parse('{"max_points": 10}').value.max_points == 10
+    assert contract.parse('{"max_points": null}').value.max_points is None
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +117,7 @@ def test_rejects_prose_containing_the_verdict_letter():
     result = GRADE.parse('The Answer is correct, so grade A applies.')
 
     assert not result.ok
-    assert 'no JSON object' in result.error
+    assert 'not valid JSON' in result.error
 
 
 def test_rejects_a_bare_verdict_token():
@@ -98,7 +128,7 @@ def test_rejects_truncated_json():
     result = GRADE.parse('{"verdict": "A"')
 
     assert not result.ok
-    assert 'no JSON object' in result.error
+    assert 'not valid JSON' in result.error
 
 
 def test_rejects_malformed_json_that_looks_like_an_object():
@@ -124,7 +154,7 @@ def test_rejects_two_fenced_objects_that_disagree():
     result = GRADE.parse('```json\n{"verdict": "A"}\n```\nOn reflection:\n```json\n{"verdict": "B"}\n```')
 
     assert not result.ok
-    assert 'exactly one' in result.error
+    assert 'not valid JSON' in result.error
 
 
 def test_rejects_two_fenced_objects_even_when_they_agree():
@@ -179,6 +209,37 @@ def test_accepts_a_numeric_string_rating():
     assert RATING.parse('{"verdict": "8"}').value.verdict == 8.0
 
 
+@pytest.mark.parametrize('reply', [
+    '{"verdict": 1e309}',
+    '{"verdict": -1e309}',
+    '{"verdict": "Infinity"}',
+    '{"verdict": "-Infinity"}',
+])
+def test_rejects_non_finite_unbounded_ratings(reply: str) -> None:
+    result = UNBOUNDED_RATING.parse(reply)
+
+    assert not result.ok
+    assert 'finite' in result.error
+
+
+def test_rejects_non_finite_numbers_in_nested_containers() -> None:
+    class Containers(BaseModel):
+        scores: set[float] = Field(default_factory=set)
+        labels: dict[float, str] = Field(default_factory=dict)
+
+    contract = OutputContract(schema_model=Containers)
+
+    assert not contract.parse('{"scores":["Infinity"]}').ok
+    assert not contract.parse('{"labels":{"Infinity":"invalid"}}').ok
+
+
+def test_rejects_non_finite_decimal_ratings() -> None:
+    class DecimalRating(BaseModel):
+        verdict: Decimal
+
+    assert not OutputContract(schema_model=DecimalRating).parse('{"verdict":"Infinity"}').ok
+
+
 # ---------------------------------------------------------------------------
 # Prompt-side instruction
 # ---------------------------------------------------------------------------
@@ -200,11 +261,31 @@ def test_instruction_states_the_numeric_bounds():
     assert 'a number >= 0.0 and <= 10.0' in instruction
 
 
+def test_instruction_renders_literals_as_json_values() -> None:
+    class LiteralValues(BaseModel):
+        number: Literal[0, 1]
+        flag: Literal[True, False]
+        text: Literal['A', 'B']
+
+    instruction = OutputContract(schema_model=LiteralValues).instruction()
+
+    assert 'exactly one of 0 or 1' in instruction
+    assert 'exactly one of true or false' in instruction
+    assert 'exactly one of "A" or "B"' in instruction
+
+
 def test_instruction_covers_every_field_of_a_multi_field_schema():
     instruction = MULTI.instruction()
 
     for name in MultiField.model_fields:
         assert f'"{name}"' in instruction
+
+
+def test_instruction_does_not_impose_explanation_style():
+    instruction = GRADE.instruction()
+
+    assert 'final conclusions' not in instruction
+    assert 'concise explanations' not in instruction
 
 
 def test_a_reply_following_the_instruction_parses():
@@ -214,10 +295,31 @@ def test_a_reply_following_the_instruction_parses():
     assert MULTI.parse(reply).ok
 
 
-def test_accepts_json_after_a_reasoning_block():
-    """A reasoning judge emits its thinking before the answer."""
-    result = GRADE.parse('<think>The prediction says Marlowe, the gold says Shakespeare.</think>\n{"verdict": "B"}')
+@pytest.mark.parametrize('reply', [
+    '{"verdict": "A"} {"verdict": "B"}',
+    '{"verdict": "A"} {"verdict": "A"}',
+    '{broken: {"verdict": "A"}}',
+    '{"broken": {"verdict": "A"}',
+    '{"verdict": "B",}\n{"verdict": "A"}',
+    '[{"verdict": "A"}]',
+    '{"wrapper": {"verdict": "A"}}',
+    '"{\\"verdict\\": \\"A\\"}"',
+    '{"verdict": "B", "verdict": "A"}',
+    '{"trace": {"x": 1, "x": 2}, "verdict": "A"}',
+    '{"verdict": "A", "trace": NaN}',
+    '{"verdict": "A", "trace": Infinity}',
+    '{"verdict": "A", "trace": -Infinity}',
+])
+def test_never_promotes_or_selects_a_verdict_fragment(reply: str) -> None:
+    assert not GRADE.parse(reply).ok
 
+
+def test_accepts_reasoning_and_nested_data_inside_the_json_object() -> None:
+    reply = '{"reasoning": "Compare \\u007b1, 2\\u007d and \\"A\\".", "verdict": "B", "trace": {"step": 1}}'
+
+    result = GRADE.parse(reply)
+
+    assert result.ok
     assert result.value.verdict == 'B'
 
 
@@ -231,6 +333,15 @@ def test_accepts_an_escaped_quote_inside_a_string_field():
     result = GRADE.parse('{"reasoning": "the answer is \\"42\\"", "verdict": "A"}')
 
     assert result.value.verdict == 'A'
+
+
+def test_reasoning_with_math_quotes_and_newlines_must_be_json_escaped() -> None:
+    reasoning = 'Compare "x" with ' + r'\boxed{902}' + '\nThe answers match.'
+
+    result = GRADE.parse(json.dumps({'reasoning': reasoning, 'verdict': 'A'}))
+
+    assert result.ok and result.value.reasoning == reasoning
+    assert not GRADE.parse('{"reasoning": "' + reasoning + '", "verdict": "A"}').ok
 
 
 def test_rejects_prose_holding_two_objects():

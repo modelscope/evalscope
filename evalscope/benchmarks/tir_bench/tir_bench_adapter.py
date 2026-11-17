@@ -52,7 +52,7 @@ diverse task categories requiring spatial, compositional, and multi-step visual 
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='tir_bench',
         pretty_name='TIR-Bench',
         dataset_id='evalscope/TIR-Bench',

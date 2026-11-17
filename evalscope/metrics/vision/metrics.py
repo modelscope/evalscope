@@ -1,10 +1,11 @@
 import base64
 import binascii
 import math
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.metric import Metric, SingletonMetric, T2IMetric
+from evalscope.api.metric import Metric, Score, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_metric
+from evalscope.constants import ScoreStatus
 from evalscope.utils.import_utils import check_import
 
 # #######################
@@ -444,28 +445,32 @@ def _recognize_cvtg_words(image_path: str, gt_words: List[str], backend: str, la
     return words
 
 
-class _CountsStashMixin:
-    """Keep the per-image ``(numerator, denominator)`` of the last scoring call.
+class _TextRenderingMetric(T2IMetric):
+    """Return a sample's value and corpus counts together; exclude scoring failures."""
 
-    The adapters re-aggregate corpus-level (official protocol: total numerator over total
-    denominator), so the counts must survive the per-image ``apply()`` call. Keyed by image
-    path: concurrent workers score distinct images, and the adapter reads the entry for the
-    image it just scored. Bounded by the dataset size (two floats per image).
-    """
+    def _score_counts(self, image_path: str, text: str) -> Tuple[float, float, int]:
+        raise NotImplementedError
 
-    def _init_counts(self):
-        self._counts_by_image: dict = {}
-
-    def _stash_counts(self, image_path: str, numerator, denominator):
-        self._counts_by_image[image_path] = (numerator, denominator)
-
-    def counts_for(self, image_path: str):
-        """Return ``(numerator, denominator)`` recorded for an image, or ``None``."""
-        return self._counts_by_image.get(image_path)
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Score]:
+        results = []
+        for image_path, text in zip(images, texts):
+            try:
+                value, numerator, denominator = self._score_counts(image_path, text)
+                if denominator <= 0:
+                    raise ValueError('The ground truth contains no scorable text.')
+                results.append(
+                    Score(
+                        value={'score': value},
+                        metadata={'corpus_counts': {'numerator': numerator, 'denominator': denominator}},
+                    )
+                )
+            except Exception as error:
+                results.append(Score(status=ScoreStatus.EXCLUDED, explanation=str(error)))
+        return results
 
 
 @register_metric(name='CVTGWordAccuracy')
-class CVTGWordAccuracy(_CountsStashMixin, T2IMetric):
+class CVTGWordAccuracy(_TextRenderingMetric):
     """CVTG-2K Word Accuracy: each ground-truth word counts when it appears in the
     recognized words (repeated ground-truth words are not consumed), matching the
     official TextCrafter evaluator.
@@ -474,60 +479,44 @@ class CVTGWordAccuracy(_CountsStashMixin, T2IMetric):
     exists for pipeline tests.
     """
 
-    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
+    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs) -> None:
         self.backend = backend
         self.lang = lang
-        self._init_counts()
 
-    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+    def _score_counts(self, image_path: str, prompt: str) -> Tuple[float, float, int]:
         from evalscope.metrics.vision.text_render import extract_quoted_words, word_accuracy_counts
 
-        scores = []
-        for image_path, prompt in zip(images, texts):
-            gt_words = extract_quoted_words(prompt)
-            score, matched, total = word_accuracy_counts(
-                gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang)
-            )
-            self._stash_counts(image_path, matched, total)
-            scores.append(score)
-        return scores
+        gt_words = extract_quoted_words(prompt)
+        return word_accuracy_counts(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
 
 
 @register_metric(name='CVTGNED')
-class CVTGNED(_CountsStashMixin, T2IMetric):
+class CVTGNED(_TextRenderingMetric):
     """CVTG-2K NED: word-level best-match normalized Levenshtein distance (higher is better).
 
     Shares the OCR engine with :class:`CVTGWordAccuracy` and follows the same ground-truth
-    extraction from the prompt's quoted fragments. The corpus aggregate is the similarity
-    sum over all ground-truth words, so the stash keeps ``sum(similarities), word_count``.
+    extraction from the prompt's quoted fragments. Returns the similarity sum and word
+    count together with the score for corpus aggregation.
     """
 
-    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs):
+    def _init_once(self, backend: str = 'paddleocr', lang: str = 'en', **kwargs) -> None:
         self.backend = backend
         self.lang = lang
-        self._init_counts()
 
-    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+    def _score_counts(self, image_path: str, prompt: str) -> Tuple[float, float, int]:
         from evalscope.metrics.vision.text_render import extract_quoted_words, word_ned_counts
 
-        scores = []
-        for image_path, prompt in zip(images, texts):
-            gt_words = extract_quoted_words(prompt)
-            score, sim_sum, word_count = word_ned_counts(
-                gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang)
-            )
-            self._stash_counts(image_path, sim_sum, word_count)
-            scores.append(score)
-        return scores
+        gt_words = extract_quoted_words(prompt)
+        return word_ned_counts(gt_words, _recognize_cvtg_words(image_path, gt_words, self.backend, self.lang))
 
 
 @register_metric(name='LongTextScore')
-class LongTextScore(_CountsStashMixin, T2IMetric):
+class LongTextScore(_TextRenderingMetric):
     """LongText-Bench Text Score: Counter-intersection match of rendered text.
 
     Declares ``image_pair_metric`` so the adapter passes the ground-truth text (the
-    sample target) instead of the prompt. The VLM transcription backend loads lazily;
-    ``backend='stub'`` echoes the ground-truth text and exists for pipeline tests.
+    sample target) instead of the prompt. Text is transcribed through an OpenAI-compatible
+    vision API; no local VLM weights are required.
 
     ``lang=None`` (default) detects the language per sample from the ground-truth text
     (CJK -> ``zh``), so one run covers both languages; pass ``lang='en'``/``'zh'`` to
@@ -543,66 +532,65 @@ class LongTextScore(_CountsStashMixin, T2IMetric):
     )
 
     def _init_once(
-        self, backend: str = 'qwen_vl', model: str = 'Qwen/Qwen2.5-VL-7B-Instruct', lang: str = None, **kwargs
-    ):
-        self.backend = backend
+        self,
+        model: str = 'qwen3.8-flash',
+        lang: Optional[str] = None,
+        api_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        generation_config: Optional[Dict[str, Any]] = None,
+    ) -> None:
         self.model_name = model
         self.lang = lang
-        self._vlm = None
-        self._init_counts()
+        self.api_url = api_url
+        self.api_key = api_key
+        self.generation_config = generation_config or {}
+        self._api_model = None
 
-    def _transcribe(self, image_path: str, gt_text: str) -> str:
-        if self.backend == 'stub':
-            # Echo the ground truth so pipeline tests exercise the full scoring path.
-            return gt_text
-        if self._vlm is None:
-            check_import(['transformers', 'qwen_vl_utils'], raise_error=True, feature_name='LongText-Bench Metric')
-            from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+    def _transcribe(self, image_path: str) -> str:
+        import os
 
-            self._vlm = (
-                Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                    self.model_name, torch_dtype='auto', device_map='auto'
-                ),
-                AutoProcessor.from_pretrained(self.model_name),
+        from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
+        from evalscope.api.model import GenerateConfig, get_model
+        from evalscope.utils.argument_utils import get_secret_value
+        from evalscope.utils.io_utils import bytes_to_base64
+        from evalscope.utils.uri_utils import file_as_data
+
+        if self._api_model is None:
+            base_url = self.api_url or os.getenv(
+                'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
             )
-        vlm_model, processor = self._vlm
-        import base64
-        from io import BytesIO
+            api_key = get_secret_value(self.api_key) if self.api_key else os.getenv('EVALSCOPE_API_KEY')
+            if not api_key and self.api_url is None:
+                api_key = os.getenv('DASHSCOPE_API_KEY')
+            defaults: Dict[str, Any] = {'max_tokens': 1024, 'temperature': 0}
+            if self.model_name == 'qwen3.8-flash':
+                defaults['extra_body'] = {'enable_thinking': False}
+            self._api_model = get_model(
+                self.model_name,
+                eval_type='openai_api',
+                base_url=base_url,
+                api_key=api_key,
+                config=GenerateConfig(**{**defaults, **self.generation_config}),
+                model_args={'max_retries': 0},
+            )
+        image_bytes, _ = file_as_data(image_path)
+        output = self._api_model.generate(
+            input=[
+                ChatMessageUser(
+                    content=[
+                        ContentImage(image=bytes_to_base64(image_bytes, add_header=True, guess_mimetype=True)),
+                        ContentText(text=self.RECOGNIZE_PROMPT),
+                    ]
+                )
+            ]
+        )
+        if output.error or output.empty or output.completion.startswith('[ERROR]'):
+            raise RuntimeError(output.error or 'VLM API transcription failed.')
+        if output.stop_reason == 'max_tokens':
+            raise ValueError('VLM transcription reached max_tokens; increase the scorer generation_config.max_tokens.')
+        return output.completion.replace('No text recognized.', '')
 
-        from PIL import Image
-
-        with Image.open(image_path) as pil_image:
-            buffered = BytesIO()
-            pil_image.save(buffered, format='PNG')
-            image_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-        messages = [
-            {
-                'role': 'user',
-                'content': [
-                    {
-                        'type': 'image',
-                        'image': f'data:image/png;base64,{image_b64}',
-                    },
-                    {
-                        'type': 'text',
-                        'text': self.RECOGNIZE_PROMPT,
-                    },
-                ],
-            }
-        ]
-        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = processor(text=[text], images=[Image.open(image_path)], return_tensors='pt').to(vlm_model.device)
-        output = vlm_model.generate(**inputs, max_new_tokens=1024)
-        generated = output[:, inputs.input_ids.shape[1] :]
-        return processor.batch_decode(generated, skip_special_tokens=True)[0]
-
-    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
+    def _score_counts(self, image_path: str, gt_text: str) -> Tuple[float, float, int]:
         from evalscope.metrics.vision.text_render import text_score_counts
 
-        scores = []
-        for image_path, gt_text in zip(images, texts):
-            score, matched, total = text_score_counts(gt_text, self._transcribe(image_path, gt_text), self.lang)
-            self._stash_counts(image_path, matched, total)
-            scores.append(score)
-        return scores
+        return text_score_counts(gt_text, self._transcribe(image_path), self.lang)

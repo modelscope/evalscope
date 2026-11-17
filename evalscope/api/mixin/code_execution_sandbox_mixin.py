@@ -19,9 +19,9 @@ from evalscope.api.sandbox import (
     PoolHandle,
     SandboxEngine,
     build_and_acquire_pool_sync,
-    merge_sandbox_config_dicts,
     prepare_docker_image,
     resolve_engine,
+    resolve_sandbox_config,
 )
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.function_utils import thread_safe
@@ -168,9 +168,8 @@ class EnclaveCodeExecutionBackend(CodeExecutionBackend):
         return dict(self._task_config.sandbox.manager_config or {})
 
     def _resolve_sandbox_config_dict(self) -> Dict[str, Any]:
-        task_default = dict(self._task_config.sandbox.default_config or {})
         meta_default = dict(getattr(self._benchmark_meta, 'sandbox_config', None) or {})
-        return merge_sandbox_config_dicts(meta_default, task_default)
+        return resolve_sandbox_config(meta_default, self._task_config.sandbox)
 
     # ------------------------------------------------------------------
     # Accessor used by ``CodeExecutionSandboxMixin.sandbox_manager``

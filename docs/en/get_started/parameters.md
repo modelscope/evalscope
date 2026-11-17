@@ -109,7 +109,8 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `shuffle` | `bool` | Whether to shuffle the data |
 | `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only) |
 | `metric_list` | `list[str\|dict]` | Metric list. Use canonical names such as `accuracy`; legacy aliases such as `acc` are normalized for compatibility. |
-| `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`), `bayes_at_n`.<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`)<br>• `bayes_at_n`: Posterior mean and posterior SD of mean correctness over a fixed question set with `repeats=N`; binary `accuracy`/`exact_match` only, one subset (see [FAQ](./faq.md)) |
+| `primary_metric` | `str\|dict` | Optional report primary metric selector, used to override the default mean for `mean_and_*` or disambiguate other multi-metric reports. A string selects by name; a mapping can constrain `name`, `aggregation`, and `dimensions`, e.g. `{"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`. Use canonical names in mappings. Omitted aggregation/dimensions are wildcards; the selector must match exactly one emitted scored identity. See the [repeated-generation example](basic_usage.md). |
+| `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`), `bayes_at_n`. For the three `mean_and_*` options, the ordinary `mean` is the report's default primary metric.<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`)<br>• `bayes_at_n`: Posterior mean and posterior SD of mean correctness over a fixed question set with `repeats=N`; binary `accuracy`/`exact_match` only, one subset (see [FAQ](./faq.md)) |
 | `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
 | `force_redownload` | `bool` | Whether to force re-download the dataset |
 | `extra_params` | `dict` | Dataset-related extra parameters, refer to [dataset documentation](./supported_dataset/index.md), specify `{<param_name>:<value>}` as needed, where the type (`type`) and choices (`choices`) of `value` depend on the specific parameter. For SWE-bench agentic and similar benchmarks, see [Agent Evaluation](../user_guides/agent/native.md#swe-bench-agentic-benchmarks) |
@@ -205,7 +206,17 @@ in `generation_config.retries`.
 `score_mapping`, and `score_type`. `pattern` asks the Judge for a JSON verdict label selected from `score_mapping`;
 `numeric` asks for a JSON score in `[0, 1]`. The framework appends the JSON-format instruction, parses the normal
 model response once, and never uses constrained decoding, regex score extraction, or corrective follow-up prompts.
-An invalid reply is unavailable and excluded from the metric rather than reported as zero.
+The entire final response must be one complete JSON object that satisfies the declared schema; surrounding
+whitespace is allowed. Prose, reasoning blocks, Markdown fences, multiple objects, duplicate keys, malformed JSON,
+and schema violations are rejected. Explanations belong inside declared JSON fields. The parser never recovers a
+nested or later object from an invalid reply. A failed judge observation is unavailable, never automatically a zero
+for the evaluated answer; benchmarks with an explicit rule fallback retain that rule result. Failure counts and
+coverage must be considered alongside scores because excluded observations can change the evaluated sample set.
+Reasoning already separated into a distinct content part by the model layer is not part of the final text parsed here.
+
+Custom judge prompts must follow the same format requirement in both system and user messages. Adapting a benchmark's
+official judge output format can affect results even when its grading criteria are preserved. Use `rerun_review=True`
+to recompute cached reviews under the current contract.
 
 Reports include `JudgeSummary` with coverage, failure counts, and disagreement for samples reviewed by an LLM.
 When an adapter resolves a sample through a deterministic judge short-circuit, its score metadata records

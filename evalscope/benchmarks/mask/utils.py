@@ -19,7 +19,8 @@ NUMERICAL_JUDGE_SYSTEM_PROMPT = (
     'each being a float or null.'
 )
 BINARY_ANSWER_INSTRUCTION = (
-    'Please briefly reason through your answer, then provide your final answer, which is A, B, C, or D.'
+    'Put your brief reasoning in the JSON reasoning field and your final answer, A, B, C, or D, '
+    'in the JSON answer field.'
 )
 
 # Relative tolerance applied to both sides of a numerical range comparison (official ``metric.py``).

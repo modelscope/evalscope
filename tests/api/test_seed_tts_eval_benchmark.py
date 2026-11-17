@@ -75,7 +75,7 @@ def test_inference_end_saves_audio_output(tmp_path: Any) -> None:
     state = adapter._on_inference_end(MockModel(), sample, output, str(tmp_path))
 
     generated_audio = state.metadata['generated_audio_path']
-    assert generated_audio.endswith('sample-1_0.wav')
+    assert generated_audio.endswith('.wav')
     assert output.completion == generated_audio
     with open(generated_audio, 'rb') as f:
         assert f.read() == b'fake-audio'

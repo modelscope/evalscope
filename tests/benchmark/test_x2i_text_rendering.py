@@ -12,12 +12,22 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Iterator
 
+import pytest
+
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import SampleScore, Score, SingletonMetric
+from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.constants import EvalType, ModelTask
+from evalscope.constants import EvalType, FileConstants, ModelTask, ScoreStatus
 from evalscope.metrics.vision import text_render
 from evalscope.run import run_task
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'x2i'
+
+
+@pytest.fixture(autouse=True)
+def isolated_metric_cache(monkeypatch):
+    monkeypatch.setattr(SingletonMetric, '_instances', {})
 
 
 class TestTextRenderScoringCore:
@@ -58,7 +68,7 @@ class TestTextRenderScoringCore:
         assert abs(score - 0.9) < 1e-6
 
     def test_word_level_ned_no_prediction(self):
-        assert text_render.word_level_ned(['hello'], []) == 0.0
+        assert text_render.word_level_ned(['hello'], []) == pytest.approx(1 - 5 / (5 + 1e-5))
 
     def test_text_score_en(self):
         # English: word-level Counter intersection over the ground truth.
@@ -147,7 +157,6 @@ def _image_service() -> Iterator[str]:
 
 
 def _read_report_scores(work_dir: Path, benchmark: str) -> dict:
-    report_file = next((work_dir).glob('*/reports/*/cvtg_2k.json')) if benchmark == 'cvtg_2k' else None
     report_file = next((work_dir).glob(f'*/reports/*/{benchmark}.json'))
     report = json.loads(report_file.read_text(encoding='utf-8'))
     return {m['identity']['name'] + json.dumps(m['identity']['dimensions'], sort_keys=True): m['score'] for m in report['metrics']}
@@ -156,7 +165,10 @@ def _read_report_scores(work_dir: Path, benchmark: str) -> dict:
 class TestX2IFullPipeline:
     """Full flow: local jsonl dataset + local image service + stubbed scoring backends."""
 
-    def test_run_text_rendering_benchmarks(self, tmp_path):
+    def test_run_text_rendering_benchmarks(self, tmp_path, monkeypatch):
+        from evalscope.metrics.vision.metrics import LongTextScore
+
+        monkeypatch.setattr(LongTextScore, '_transcribe', lambda self, path: 'SOUND OF FREEDOM AUGUST 16 2026 出口A换乘2号线')
         with _image_service() as api_url:
             task_cfg = TaskConfig(
                 model='test-image-model',
@@ -173,7 +185,6 @@ class TestX2IFullPipeline:
                     },
                     'longtext_bench': {
                         'dataset_id': str(FIXTURES / 'longtext.jsonl'),
-                        'metric_list': [{'LongTextScore': {'backend': 'stub'}}],
                     },
                 },
             )
@@ -199,12 +210,12 @@ class TestCorpusAggregation:
 
     @staticmethod
     def _sample_score(metric_name: str, score: float, matched, total, category='cvtg'):
-        from evalscope.api.metric import SampleScore, Score
+        from evalscope.api.metric import SampleScore
 
         return SampleScore(
             score=Score(
                 value={metric_name: score},
-                metadata={'corpus_counts': {metric_name: (matched, total)}},
+                metadata={'metric_metadata': {metric_name: {'corpus_counts': {'numerator': matched, 'denominator': total}}}},
             ),
             sample_id=0,
             sample_metadata={'category': category},
@@ -257,97 +268,211 @@ class TestCorpusAggregation:
         assert abs(poster - 3 / 4) < 1e-9
         assert signage == 0.0
 
-    def test_zero_denominator_keeps_mean_fallback(self):
+    def test_cached_scores_without_counts_require_review(self):
         from evalscope.api.benchmark import BenchmarkMeta
         from evalscope.benchmarks.text2image.longtext_bench_adapter import LongTextBenchAdapter
 
         meta = BenchmarkMeta(name='longtext_bench', dataset_id='x', subset_list=['en'], metric_list=['LongTextScore'])
         adapter = LongTextBenchAdapter(benchmark_meta=meta)
-        # No corpus_counts at all (e.g. metric errored): the inherited mean must survive.
-        from evalscope.api.metric import SampleScore, Score
+        # Old cached reviews cannot silently fall back to a different aggregation protocol.
+        from evalscope.api.metric import SampleScore
 
         sample_scores = [
             SampleScore(score=Score(value={'text_score': 0.4}), sample_id=0, sample_metadata={'category': 'poster'}),
             SampleScore(score=Score(value={'text_score': 0.8}), sample_id=1, sample_metadata={'category': 'poster'}),
         ]
-        rows = {a.metric_name + json.dumps(a.dimensions, sort_keys=True): a.score for a in adapter.aggregate_scores(sample_scores)}
-        overall = rows['text_score' + json.dumps({'scope': 'overall'}, sort_keys=True)]
-        assert abs(overall - 0.6) < 1e-9
+        with pytest.raises(ValueError, match='rerun_review=True'):
+            adapter.aggregate_scores(sample_scores)
 
 
-class TestNonStubTranscriptionPath:
-    """The real LongText transcription path must run end-to-end without a GPU.
+def _score_image(adapter, target: str, image_path: str, sample_id: int) -> SampleScore:
+    sample = adapter.record_to_sample({'prompt': target, 'text': target, 'category': 'poster'})
+    sample.metadata[FileConstants.IMAGE_PATH] = image_path
+    state = TaskState(model='test', sample=sample)
+    return SampleScore(
+        score=adapter.match_score('', '', target, state), sample_id=sample_id, sample_metadata=sample.metadata,
+    )
 
-    Fake ``transformers``/``qwen_vl_utils`` modules are injected so the lazy model
-    loading succeeds and the prompt/image/generate/decode chain is exercised (the
-    reviewer reproduced a ModuleNotFoundError here before the fix).
-    """
 
-    def test_transcribe_via_fake_transformers(self, tmp_path, monkeypatch):
-        from PIL import Image
+def test_counts_travel_through_actual_scoring_and_failed_rereview(monkeypatch):
+    from evalscope.metrics.vision.metrics import LongTextScore
 
-        from evalscope.metrics.vision.metrics import LongTextScore
+    config = TaskConfig(model='test', datasets=['longtext_bench'])
+    adapter = get_benchmark('longtext_bench', config)
+    transcripts = {'first.png': 'a', 'second.png': ''}
+    monkeypatch.setattr(LongTextScore, '_transcribe', lambda self, path: transcripts[path])
+    first = _score_image(adapter, 'a', 'first.png', 0)
+    second = _score_image(adapter, 'b c d', 'second.png', 1)
+    aggregates = adapter.aggregate_scores([first, second])
+    assert next(a for a in aggregates if a.dimensions == {'scope': 'overall'}).score == 0.25
 
-        # Other tests may have initialized the singleton with backend='stub'; reset it so
-        # this test exercises the real lazy-loading path.
-        monkeypatch.delattr(LongTextScore, '_instance', raising=False)
-        image_path = tmp_path / 'render.png'
-        Image.new('RGB', (4, 4), 'white').save(image_path)
+    def fail(self, path):
+        raise RuntimeError('transcription failed')
 
-        class FakeProcessor:
+    monkeypatch.setattr(LongTextScore, '_transcribe', fail)
+    failed = _score_image(adapter, 'a', 'first.png', 0)
+    assert failed.score.status is ScoreStatus.EXCLUDED
+    assert not failed.score.value
+    assert 'corpus_counts' not in str(failed.score.metadata)
+    # A valid zero remains scored; a transcription failure is excluded from both score and num.
+    aggregate = next(a for a in adapter.aggregate_scores([second, failed]) if a.dimensions == {'scope': 'overall'})
+    assert aggregate.score == 0.0
+    assert aggregate.num == 1
+    assert aggregate.ids == [1]
 
-            def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
-                assert messages[0]['content'][1]['text'] == LongTextScore.RECOGNIZE_PROMPT
-                assert messages[0]['content'][0]['image'].startswith('data:image/png;base64,')
-                return 'PROMPT'
 
-            def __call__(self, text, images, return_tensors):
-                import torch
+def test_cvtg_report_retains_word_weighting_across_subsets_and_reload(monkeypatch):
+    import evalscope.metrics.vision.metrics as metrics
+    from evalscope.report import Report
 
-                class FakeInputs(dict):
+    config = TaskConfig(model='test', datasets=['cvtg_2k'], dataset_args={
+        'cvtg_2k': {'metric_list': [{'CVTGWordAccuracy': {'backend': 'stub'}}]},
+    })
+    adapter = get_benchmark('cvtg_2k', config)
+    monkeypatch.setattr(metrics, '_recognize_cvtg_words', lambda path, *args: ['a'] if path == 'hit.png' else [])
+    hit = _score_image(adapter, "sign 'a'", 'hit.png', 0)
+    miss = _score_image(adapter, "sign 'b c d'", 'miss.png', 1)
+    report = adapter._on_generate_report({
+        'CVTG': adapter.aggregate_scores([hit]), 'CVTG-Style': adapter.aggregate_scores([miss]),
+    }, 'test')
+    reloaded = Report.model_validate_json(report.model_dump_json())
+    assert reloaded.score == 0.25
+    assert reloaded.primary_metric.categories[0].score == 0.25
+    assert reloaded.primary_metric.num == 2
+    assert reloaded.model_dump(mode='json') == report.model_dump(mode='json')
 
-                    def to(self, device):
-                        return self
 
-                    def __getattr__(self, name):
-                        try:
-                            return self[name]
-                        except KeyError:
-                            raise AttributeError(name)
+def test_one_failed_metric_keeps_only_the_other_metric(monkeypatch):
+    from evalscope.metrics.vision.metrics import CVTGNED
 
-                return FakeInputs({'input_ids': torch.tensor([[1, 2, 3]]), 'pixel_values': torch.zeros(1)})
+    def fail(self, image_path, prompt):
+        raise RuntimeError('NED recognition failed')
 
-            def batch_decode(self, generated, skip_special_tokens=True):
-                return ['hello world']
+    monkeypatch.setattr(CVTGNED, '_score_counts', fail)
+    config = TaskConfig(model='test', datasets=['cvtg_2k'], dataset_args={
+        'cvtg_2k': {'metric_list': [{'CVTGWordAccuracy': {'backend': 'stub'}}, {'CVTGNED': {'backend': 'stub'}}]},
+    })
+    adapter = get_benchmark('cvtg_2k', config)
+    sample = _score_image(adapter, "sign 'hello'", 'one.png', 0)
+    assert sample.score.status is ScoreStatus.DEGRADED
+    assert sample.score.value == {'cvtg_word_accuracy': 1.0}
+    assert all(a.metric_name == 'cvtg_word_accuracy' for a in adapter.aggregate_scores([sample]))
 
-        class FakeModel:
 
-            device = 'cpu'
+def test_longtext_report_averages_languages_after_corpus_aggregation():
+    from evalscope.report import Report
 
-            def generate(self, **kwargs):
-                import torch
+    adapter = get_benchmark('longtext_bench')
+    samples = TestCorpusAggregation._sample_score
+    report = adapter._on_generate_report({
+        'en': adapter.aggregate_scores([samples('text_score', 1 / 3, 1, 3)]),
+        'zh': adapter.aggregate_scores([samples('text_score', 1.0, 7, 7)]),
+    }, 'test')
+    reloaded = Report.model_validate_json(report.model_dump_json())
+    # Official Avg. = mean(English, Chinese), not token-weighted 8/10 or image-weighted rounded inputs.
+    assert reloaded.score == 0.6667
+    assert reloaded.primary_metric.categories[0].score == 0.6667
+    assert reloaded.model_dump(mode='json') == report.model_dump(mode='json')
 
-                return torch.tensor([[1, 2, 3, 4, 5]])
 
-        import importlib.machinery
-        import types
+def test_hf_archive_loading_preserves_standard_sampling(tmp_path, monkeypatch):
+    from zipfile import ZipFile
 
-        fake_transformers = types.ModuleType('transformers')
-        fake_transformers.__spec__ = importlib.machinery.ModuleSpec('transformers', None)
-        fake_transformers.Qwen2_5_VLForConditionalGeneration = type(
-            'Qwen2_5_VLForConditionalGeneration', (), {'from_pretrained': staticmethod(lambda *a, **k: FakeModel())}
-        )
-        fake_transformers.AutoProcessor = type('AutoProcessor', (), {'from_pretrained': staticmethod(lambda *a, **k: FakeProcessor())})
-        fake_qwen_vl_utils = types.ModuleType('qwen_vl_utils')
-        fake_qwen_vl_utils.__spec__ = importlib.machinery.ModuleSpec('qwen_vl_utils', None)
-        monkeypatch.setitem(__import__('sys').modules, 'transformers', fake_transformers)
-        monkeypatch.setitem(__import__('sys').modules, 'qwen_vl_utils', fake_qwen_vl_utils)
+    import evalscope.benchmarks.text2image.cvtg2k_adapter as module
 
-        metric = LongTextScore(backend='qwen_vl')
-        transcript = metric._transcribe(str(image_path), 'HELLO WORLD')
-        assert transcript == 'hello world'
+    archive_path = tmp_path / 'CVTG-2K.zip'
+    with ZipFile(archive_path, 'w') as archive:
+        for region_count in range(2, 6):
+            archive.writestr(f'CVTG-2K/CVTG/{region_count}.json', json.dumps({
+                'data_list': [{'prompt': f"sign '{region_count}'", 'index': region_count}],
+            }))
+    downloads = []
 
-        # The counts stash must reflect the real transcription through text_score_counts.
-        score = metric.apply([str(image_path)], ['HELLO WORLD'])[0]
-        assert score == 1.0
-        assert metric.counts_for(str(image_path)) == (2, 2)
+    def download(*args, **kwargs):
+        downloads.append(kwargs)
+        return str(archive_path)
+
+    monkeypatch.setattr(module, 'download_dataset_file', download)
+    config = TaskConfig(model='test', eval_type='mock_llm', datasets=['cvtg_2k'], dataset_hub='huggingface',
+                        limit=0.5, repeats=2, seed=7,
+                        dataset_args={'cvtg_2k': {'subset_list': ['CVTG'], 'shuffle': True}})
+    adapter = get_benchmark('cvtg_2k', config)
+    data = adapter.load_dataset()['CVTG']
+    assert len(data) == 4
+    assert data[0].input == data[1].input
+    assert data[2].input == data[3].input
+    assert data[0].group_id != data[2].group_id
+    assert downloads[0]['data_source'] == 'huggingface'
+    assert downloads[0]['revision'] == adapter.dataset_revision
+
+
+def test_hf_language_files_and_list_targets(tmp_path, monkeypatch):
+    import evalscope.benchmarks.text2image.longtext_bench_adapter as module
+
+    for filename, fragments in [('text_prompts.jsonl', ['hello', 'world']), ('text_prompts_zh.jsonl', ['出口', '换乘'])]:
+        (tmp_path / filename).write_text(json.dumps({'prompt': 'poster', 'text': fragments}) + '\n')
+    monkeypatch.setattr(module, 'download_dataset_file', lambda repo, filename, **kwargs: str(tmp_path / filename))
+    config = TaskConfig(model='test', eval_type='mock_llm', datasets=['longtext_bench'], dataset_hub='huggingface')
+    adapter = get_benchmark('longtext_bench', config)
+    data = adapter.load_dataset()
+    assert data['en'][0].target == 'hello world'
+    assert data['zh'][0].target == '出口 换乘'
+
+
+@pytest.mark.parametrize('status, finish_reason, transcript, expected', [
+    (200, 'stop', 'hello world', 1.0),
+    (200, 'stop', 'No text recognized.', 0.0),
+    (200, 'length', 'hello world', None),
+    (503, 'stop', '', None),
+])
+def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, finish_reason, transcript, expected):
+    import sys
+
+    from PIL import Image
+
+    from evalscope.metrics.vision.metrics import LongTextScore
+
+    monkeypatch.setitem(sys.modules, 'transformers', None)
+    monkeypatch.setitem(sys.modules, 'qwen_vl_utils', None)
+    image_path = tmp_path / 'image.png'
+    Image.new('RGB', (4, 4)).save(image_path)
+    calls = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            assert self.path == '/v1/chat/completions'
+            body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+            calls.append(body)
+            assert body['messages'][0]['content'][0]['image_url']['url'].startswith('data:image/png;base64,')
+            assert body['messages'][0]['content'][1]['text'] == LongTextScore.RECOGNIZE_PROMPT
+            response = {'id': 'test', 'object': 'chat.completion', 'created': 1, 'model': 'vision',
+                        'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': transcript},
+                                     'finish_reason': finish_reason}]} if status == 200 else {'error': {'message': 'unavailable'}}
+            encoded = json.dumps(response).encode()
+            self.send_response(status)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        metric = LongTextScore(model='vision', api_url=f'http://127.0.0.1:{server.server_port}/v1',
+                               api_key='test-key', generation_config={'retries': 1, 'max_tokens': 128})
+        result = metric(str(image_path), 'hello world')
+        assert result.status.is_usable is (expected is not None)
+        assert len(calls) == 1
+        if expected is not None:
+            assert result.main_value == expected
+            assert result.metadata['corpus_counts'] == {'numerator': 2 * expected, 'denominator': 2}
+        else:
+            assert not result.value
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)

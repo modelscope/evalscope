@@ -242,6 +242,8 @@ def _format_usage_section(
     if eval_type:
         cli_lines.insert(2, f'    --eval-type {eval_type} ' + '\\')
         cli_lines = [line.replace('OPENAI_API_COMPAT_URL', 'http://127.0.0.1:18131/v1') for line in cli_lines]
+    if eval_type == 'text2image':
+        cli_lines.insert(2, '    --model-task image_generation ' + '\\')
     if requires_local_dataset:
         local_args = json.dumps({name: {'local_path': '/path/to/data'}})
         cli_lines.append(f"    --dataset-args '{local_args}' " + '\\')
@@ -289,6 +291,8 @@ def _format_usage_section(
         python_judge_config = "    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n"
 
     python_eval_type = f"    eval_type='{eval_type}',\n" if eval_type else ''
+    if eval_type == 'text2image':
+        python_eval_type += "    model_task='image_generation',\n"
     api_url = 'http://127.0.0.1:18131/v1' if eval_type else 'OPENAI_API_COMPAT_URL'
     python_code = f"""{chr(10).join(python_imports)}
 

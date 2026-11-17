@@ -88,6 +88,7 @@ def _decode_maybe_json(value: Any) -> Any:
 @register_benchmark(
     BenchmarkMeta(
         name='minimax_verifier',
+        evaluation_version='v1.1',
         pretty_name='MiniMax-Vendor-Verifier',
         description=MINIMAX_VERIFIER_DESCRIPTION,
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],

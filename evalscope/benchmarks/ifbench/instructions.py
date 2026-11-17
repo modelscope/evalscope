@@ -507,6 +507,8 @@ class AlphabetLoopChecker(Instruction):
         """Checks if each word of the response starts with the next letter of the alphabet."""
         value = value.translate(str.maketrans('', '', string.punctuation))
         words = value.strip(''.join(string.punctuation) + ' ').split()
+        if not words:  # a response with no words follows no word-order instruction
+            return False
         alphabet = string.ascii_lowercase
         correct_letter = words[0][0].lower()
         if correct_letter not in alphabet:  # numbers are fails
@@ -1107,10 +1109,13 @@ class IncludeKeywordChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the {N}th sentence of the response includes keyword {word}."""
+        # Match upstream: require a word-boundary match, not a substring
+        # (so "catalog" does not satisfy keyword "cat").
         sentences = instructions_util.split_into_sentences(value)
         if len(sentences) < self._keyword_position:
             return False
-        return self._keyword.lower() in sentences[int(self._keyword_position - 1)].lower()
+        pattern = r'\b{}\b'.format(re.escape(self._keyword))
+        return bool(re.search(pattern, sentences[int(self._keyword_position - 1)], re.IGNORECASE))
 
 
 class PronounCountChecker(Instruction):
@@ -1143,46 +1148,90 @@ class PronounCountChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the response includes at least {N} pronouns."""
+        # Keep this set identical to the upstream IFBench checker. Beyond personal, possessive and reflexive
+        # pronouns it also counts demonstrative, interrogative and indefinite ones, so a response such as
+        # "This is good." satisfies `count:pronouns` with N=1 upstream.
         pronouns = set(
             [
+                # Personal (subject / object)
                 'i',
                 'me',
-                'my',
-                'mine',
-                'myself',
                 'we',
                 'us',
-                'our',
-                'ours',
-                'ourselves',
                 'you',
-                'your',
-                'yours',
-                'yourself',
-                'yourselves',
                 'he',
                 'him',
-                'his',
-                'himself',
                 'she',
                 'her',
-                'hers',
-                'herself',
                 'it',
-                'its',
-                'itself',
                 'they',
                 'them',
+                # Possessive (determiner + independent)
+                'my',
+                'mine',
+                'our',
+                'ours',
+                'your',
+                'yours',
+                'his',
+                'her',
+                'hers',
+                'its',
                 'their',
                 'theirs',
+                # Reflexive
+                'myself',
+                'ourselves',
+                'yourself',
+                'yourselves',
+                'himself',
+                'herself',
+                'itself',
                 'themselves',
+                # Demonstrative
+                'this',
+                'that',
+                'these',
+                'those',
+                # Interrogative
+                'who',
+                'whom',
+                'whose',
+                'which',
+                'what',
+                # Relative / compound interrogative
+                'whoever',
+                'whomever',
+                'whatever',
+                'whichever',
+                # Indefinite
+                'anybody',
+                'anyone',
+                'anything',
+                'everybody',
+                'everyone',
+                'everything',
+                'nobody',
+                'nothing',
+                'somebody',
+                'someone',
+                'something',
+                'each',
+                'either',
+                'neither',
+                'both',
+                'all',
+                'some',
+                'any',
+                'none',
             ]
         )
         value = value.replace(
             '/', ' '
         )  # to correctly count pronoun sets like she/her/hers, a common use case of pronouns
-        value = value.lower().translate(str.maketrans('', '', string.punctuation))
-        words = value.split()
+        # Match upstream tokenization: nltk.word_tokenize keeps "they" in "They're".
+        # Stripping punctuation first would turn "They're" into "theyre", which is not in the set.
+        words = nltk.word_tokenize(value.lower())
         pronoun_count = sum(1 for word in words if word in pronouns)
         return pronoun_count >= self._num_pronouns
 
@@ -1231,9 +1280,11 @@ class LastWordFirstNextChecker(Instruction):
         """Checks if the last word of each sentence in the response is the first word of the next sentence."""
         sentences = instructions_util.split_into_sentences(value)
         for i in range(len(sentences) - 1):
-            last_word = sentences[i].rstrip(''.join(string.punctuation) + ' ').split()[-1]
-            first_word = sentences[i + 1].lstrip(''.join(string.punctuation) + ' ').split()[0]
-            if last_word.lower() != first_word.lower():
+            last_words = sentences[i].rstrip(''.join(string.punctuation) + ' ').split()
+            first_words = sentences[i + 1].lstrip(''.join(string.punctuation) + ' ').split()
+            if not last_words or not first_words:  # a wordless sentence cannot satisfy a word-order rule
+                return False
+            if last_words[-1].lower() != first_words[0].lower():
                 return False
         return True
 
@@ -1397,7 +1448,8 @@ class QuoteExplanationChecker(Instruction):
         value = ''.join(value.split())  # remove all whitespace
         if '""' in value:
             return False
-        if value.strip(string.digits + string.punctuation.replace('"', ''))[-1] == '"':
+        stripped = value.strip(string.digits + string.punctuation.replace('"', ''))
+        if stripped and stripped[-1] == '"':
             return False
         return True
 
@@ -1778,6 +1830,7 @@ class EuropeanCapitalsSortChecker(Instruction):
             'Warsaw',
             'London',
             'Brussels',
+            'Kyiv',
             'Prague',
             'Luxembourg',
             'Paris',
@@ -2086,7 +2139,8 @@ class KeywordSpecificPositionChecker(Instruction):
         words = _word_tokens_without_punctuation(sentences[self._n - 1])
         if len(words) < self._m:
             return False
-        if words[self._m - 1] == self._keyword:
+        # Match upstream: compare the position case-insensitively.
+        if words[self._m - 1].lower() == self._keyword.lower():
             return True
         else:
             return False
@@ -2285,6 +2339,14 @@ class TitleCaseChecker(Instruction):
         """
         words = instructions_util.nltk.word_tokenize(value)
         for word in words:
+            # Match upstream: skip empty / non-alphabetic tokens (punctuation)
+            # and require a single-letter word to be uppercase ("a Cat" fails).
+            if not word or not word[0].isalpha():
+                continue
+            if len(word) == 1:
+                if word[0].islower():
+                    return False
+                continue
             if word[0].isupper() and word[1:].islower():
                 continue
             elif word[0].islower() and word[1:].isupper():

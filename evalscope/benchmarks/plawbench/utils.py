@@ -1,9 +1,9 @@
 # flake8: noqa: E501
 """Prompts and rubric grading helpers for PLawBench.
 
-Prompts are ported verbatim from the official release
-(https://github.com/skylenage/PLawbench): ``prompt_generate.py`` for the task prompts and
-``prompt_zh.py`` for the judge prompts.
+Task prompts and grading criteria follow the official release
+(https://github.com/skylenage/PLawbench): ``prompt_generate.py`` and ``prompt_zh.py``.
+Judge output instructions use EvalScope's single-JSON contract.
 """
 
 import json
@@ -169,18 +169,8 @@ JUDGE_SYSTEM_PROMPTS: Dict[str, str] = {
 2、标准答案的rubric（总分N分；每个要点为“（+X分）要点描述”）
 3、案情描述
 
-输出格式固定为：
-总分为「得分」/「总分」，得分率为「百分比」%
-分析如下：
--要点1:「得分情况」，理由为：.......。
--要点2:「得分情况」，理由为：......。
--......
-```json
-    {
-        "total_points": 模型得分,
-        "max_points": 该题总分,
-    },
-```
+仅输出一个完整的 JSON 对象，不要输出 Markdown 代码围栏或 JSON 外的文字。
+将逐项得分分析放入 reasoning 字符串字段，总得分放入 total_points 数值字段，总分放入 max_points 数值字段。
 
 ## 评分规则
 1、你无须对答案本身的准确性进行判断，只需严格按照标准答案，判断律师追问的问题中有没有相同或本质相同的内容，并计算最终得分。
@@ -198,18 +188,8 @@ JUDGE_SYSTEM_PROMPTS: Dict[str, str] = {
 1、待评分的法律文书。
 2、标准rubric
 
-输出格式固定为：
-总分为「得分」/「总分」，得分率为「百分比」%
-分析如下：
--要点1:「得分情况」，理由为：.......。
--要点2:「得分情况」，理由为：......。
--......
-```json
-    {
-        "total_points": 模型得分,
-        "max_points": 该题总分,
-    },
-```
+仅输出一个完整的 JSON 对象，不要输出 Markdown 代码围栏或 JSON 外的文字。
+将逐项得分分析放入 reasoning 字符串字段，总得分放入 total_points 数值字段，总分放入 max_points 数值字段。
 
 ## 评分规则
 1、你无须对答案本身的准确性进行判断，只需严格按照标准答案，判断模型的回答中有没有相同或本质相同的内容，并计算最终得分。
@@ -289,59 +269,11 @@ JUDGE_SYSTEM_PROMPTS: Dict[str, str] = {
 
 ## 输出格式
 
-要求输出以下四个部分的详细评分，以及总分和整体反馈。
-
-```json
-{
-  "score_details": {
-    "法条依据": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [
-        {
-          "rubric_item": "具体得分项描述",
-          "max_points": ...,
-          "points_awarded": ...,
-          "mentions": [...],
-          "rationale": "评分理由"
-        }
-      ]
-    },
-    "案件事实": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    },
-    "推理过程": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    },
-    "结论": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    }
-  },
-  "total_score": {
-    "total_awarded": ...,
-    "total_max": ...,
-    "percentage": ...
-  },
-  "overall_feedback": {
-
-    "strengths": [ ],
-
-
-    "weaknesses": [ ],
-
-
-    "suggestions": [ ]
-
-  }
-}
-
-```""",
+仅输出一个完整的 JSON 对象，不要输出 Markdown 代码围栏或 JSON 外的文字。
+将评分分析放入 reasoning 字符串字段。score_details 对象包含法条依据、案件事实、推理过程和结论四个部分。
+每个部分包含 total_points 数值字段、max_points 数值字段和 breakdown 逐项评分列表。
+breakdown 每项包含 rubric_item、max_points、points_awarded、mentions 和 rationale。
+总分放入 total_score 对象，整体反馈放入 overall_feedback 对象。""",
 }
 
 # The consultation and drafting judges share a single-total verdict prompt.
@@ -356,13 +288,8 @@ _TOTAL_POINTS_JUDGE_PROMPT = """
 <<score>>
 
 # 输出格式
-请按照指令，先分析，再给出得分，务必在回答的结尾按照以下json格式输出：
-```json
-    {
-        "total_points": 模型得分,
-        "max_points": 该题总分,
-    },
-```
+仅输出一个完整的 JSON 对象，不要输出 Markdown 代码围栏或 JSON 外的文字。
+将逐项得分分析放入 reasoning 字符串字段，总得分放入 total_points 数值字段，总分放入 max_points 数值字段。
 
 """
 
@@ -377,59 +304,8 @@ JUDGE_USER_PROMPTS: Dict[str, str] = {
 <<rubric_item>>
 
 # 输出格式
-请务必在回答的结尾按照以下json格式输出：
-
-```json
-{
-  "score_details": {
-    "法条依据": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [
-        {
-          "rubric_item": "具体得分项描述",
-          "max_points": ...,
-          "points_awarded": ...,
-          "mentions": [...],
-          "rationale": "评分理由"
-        }
-      ]
-    },
-    "案件事实": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    },
-    "推理过程": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    },
-    "结论": {
-      "total_points": ...,
-      "max_points": ...,
-      "breakdown": [...]
-    }
-  },
-  "total_score": {
-    "total_awarded": ...,
-    "total_max": ...,
-    "percentage": ...
-  },
-  "overall_feedback": {
-
-    "strengths": [ ],
-
-
-    "weaknesses": [ ],
-
-
-    "suggestions": [ ]
-
-  }
-}
-
-```
+仅输出一个完整的 JSON 对象，不要输出 Markdown 代码围栏或 JSON 外的文字。
+按照系统提示中的字段返回 reasoning、score_details、total_score 和 overall_feedback。
 """,
 }
 

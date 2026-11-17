@@ -26,7 +26,7 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 - Primary metric: **Accuracy** with LLM judge
 - Response format includes: Explanation, Answer, and Confidence (0-100%)
 - **Note**: Set `extra_params["include_multi_modal"]` to `False` for text-only models
-- Uses GRADE: C/I format for LLM judge scoring
+- Uses a single JSON object with a C/I verdict and reasoning for LLM judge scoring
 
 
 ## Properties
@@ -81,14 +81,14 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 {
   "input": [
     {
-      "id": "906a518f",
+      "id": "312e7e8b",
       "content": "Your response should be in the following format:\nExplanation: {your explanation for your answer choice}\nAnswer: {your chosen answer}\nConfidence: {your confidence score between 0% and 100% for your answer}"
     },
     {
-      "id": "d03d8d4e",
+      "id": "dfe4cc1b",
       "content": [
         {
-          "text": "In a bioinformatics lab, Watterson's estimator (theta) and pi (nucleotide diversity) will be calculated from variant call files which contain human phased samples with only single nucleotide variants present, and there are no completely missi ... [TRUNCATED] ... y pi (nucleotide diversity) is biased.\nC. Both Watterson's estimator (theta) and pi (nucleotide diversity) are biased.\nD. Neither Watterson's estimator (theta) nor pi (nucleotide diversity) are biased.\nE. None of the other answers are correct"
+          "text": "In a bioinformatics lab, Watterson's estimator (theta) and pi (nucleotide diversity) will be calculated from variant call files which contain human phased samples with only single nucleotide variants present, and there are no completely missi ... [TRUNCATED 1042 chars] ... y pi (nucleotide diversity) is biased.\nC. Both Watterson's estimator (theta) and pi (nucleotide diversity) are biased.\nD. Neither Watterson's estimator (theta) nor pi (nucleotide diversity) are biased.\nE. None of the other answers are correct"
         }
       ]
     }
@@ -100,7 +100,7 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
   "metadata": {
     "uid": "66e88728ba7d8bc0d5806f3a",
     "author_name": "Scott S",
-    "rationale": "First, we recognize that all single nucleotide variants are included somewhere in the sample. It is given that, across “all samples,” there are no “missing single nucleotide variants.” Further, since “[t]he number of samples is arbitrarily la ... [TRUNCATED] ... fferent genotypes that that position, the analysis would consider these two genomes to have the same nucleotide at the position. This reduces the estimated nucleotide diversity, pi. Therefore, pi would be biased in the circumstance described.",
+    "rationale": "First, we recognize that all single nucleotide variants are included somewhere in the sample. It is given that, across “all samples,” there are no “missing single nucleotide variants.” Further, since “[t]he number of samples is arbitrarily la ... [TRUNCATED 1162 chars] ... fferent genotypes that that position, the analysis would consider these two genomes to have the same nucleotide at the position. This reduces the estimated nucleotide diversity, pi. Therefore, pi would be biased in the circumstance described.",
     "raw_subject": "Bioinformatics",
     "category": "Biology/Medicine",
     "has_image": false

@@ -19,7 +19,11 @@ logger = get_logger()
 
 class CLGrade(BaseModel):
     grading_rationale: str = Field(alias='Grading Rationale', default='')
-    requirement_status: List[str] = Field(alias='List of Requirement Satisfaction Status', default_factory=list)
+    requirement_status: List[str] = Field(
+        alias='List of Requirement Satisfaction Status',
+        default_factory=list,
+        description='A list of strings, one per requirement, summarizing its satisfaction status and explanation.',
+    )
     overall_score: Literal[0, 1] = Field(alias='Overall Score')
 
     @field_validator('overall_score', mode='before')
@@ -41,7 +45,11 @@ GRADING_TEMPLATE = (
     "To receive a score of 1, the student's answer must perfectly satisfy every single requirement listed in the 【Rubrics】.\n"
     'If even one requirement is not fully met, the final score will be 0.\n'
     'Grading Process\n'
-    'Please strictly follow the steps below for analysis—no steps may be skipped:\n'
+    'Put your analysis in the JSON Grading Rationale field and the per-requirement results in '
+    'the JSON List of Requirement Satisfaction Status field. Do not write analysis outside the JSON object.\n'
+    'The per-requirement results must be a list of strings, not a list of objects.\n'
+    'Perform the following checks internally before composing the JSON reply. '
+    'Summarize only the final findings: one short string per requirement and a brief overall rationale.\n'
     'Step 1: Analyze the Standard Answer\n'
     'List all explicit requirements in the 【Rubrics】 item by item (including format, content, quantity, order, etc.).\n'
     'Identify implicit requirements in the 【Rubrics】 (e.g., language style, logical structure).\n'
@@ -54,6 +62,8 @@ GRADING_TEMPLATE = (
     '  Strictness Check: Whether the evaluation strictly adheres to the "fully satisfied" standard without relaxing requirements due to subjective judgment.\n'
     '  Consistency Check: Whether the grading rationale aligns logically with the final score.\n'
     '  Objectivity Check: Whether judgments are based on objective facts rather than subjective speculation.\n\n'
+    'Do not invent requirements beyond the rubrics. Examples illustrate acceptable content; '
+    'do not require their exact wording or numbering unless the rubric explicitly requires it.\n\n'
     'Content to Be Graded\n'
     '【Rubrics】:\n{rubrics}\n'
     '【Student Response】:\n{response}\n'

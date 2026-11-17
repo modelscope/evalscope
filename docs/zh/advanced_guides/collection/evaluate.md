@@ -51,6 +51,12 @@ evalscope eval \
 - 输出结构：outputs/<timestamp>/{logs,predictions,reviews,reports,configs}。
 - 推理并发：eval_batch_size。
 
+## 复用评测缓存
+
+使用 `use_cache` 时，会检查实际参与评测的子基准版本和配置。子基准的评分配置或评测版本发生变化后，需要显式重新评分；缺少成员信息的旧集合缓存也需要执行此步骤。
+
+将 `use_cache` 设为上次的输出目录，并设置 `rerun_review=True`，即可保留模型预测并重新计算评分。此操作不会重新生成模型输出，也不会改写已编译集合中的提示词。如果需要更新这些内容，请按需重新生成集合并开始一次新的评测。
+
 ## 指标与输出
 
 系统会在五个“观察视角”输出报告：

@@ -1,3 +1,7 @@
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 from evalscope.api.dataset import Sample
@@ -192,6 +196,67 @@ def test_parse_answers_zh_wrapped_label() -> None:
         assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}\nNote: hope this helps.')) == {'B'}, answer_line
 
 
+def test_parse_answers_bracketed_labels_without_separator() -> None:
+    """Joined labels such as '[AD]' are read as multiple choices."""
+    for answer_line in ['答案：[AD]', '答案：[BD]', '答案：[ABD]', '答案：[BCD]', '答案：[AC]', '答案：[ABCD]']:
+        expected = set(answer_line.split('[')[1].split(']')[0])
+        assert parse_answers_zh(_make_state(f'推理过程\n{answer_line}'), multiple_correct=True) == expected, answer_line
+    assert parse_answers(_make_state('reasoning\nANSWER: [AD]'), multiple_correct=True) == {'A', 'D'}
+
+
+def test_parse_answers_bracketed_labels_with_separator_or_space() -> None:
+    """Comma and space separators are accepted inside brackets."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A,D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A D]'), multiple_correct=True) == {'A', 'D'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
+
+
+def test_parse_answers_single_choice_bracket_unchanged() -> None:
+    """Single-answer extraction still accepts a bracketed label."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[A]')) == {'A'}
+    assert parse_answers(_make_state('reasoning\nANSWER: [A]')) == {'A'}
+
+
+def test_parse_answers_bracketed_non_labels_are_not_answers() -> None:
+    """Bracket contents must use the sample's option labels."""
+    assert parse_answers_zh(_make_state('推理过程\n答案：[注]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[1]'), multiple_correct=True) == set()
+    assert parse_answers_zh(_make_state('推理过程\n答案：[see the diagram above]'), multiple_correct=True) == set()
+
+
+def _parse_in_child_process(contents: list[str]) -> None:
+    """Isolate parsing so a regex regression cannot hang the test runner."""
+    script = textwrap.dedent(
+        f'''
+        from evalscope.api.dataset import Sample
+        from evalscope.api.evaluator import TaskState
+        from evalscope.api.model import ModelOutput
+        from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
+
+        for parse in (parse_answers, parse_answers_zh):
+            for content in {contents!r}:
+                state = TaskState(
+                    model='mock',
+                    sample=Sample(input='question', choices=['a', 'b', 'c', 'd'], target='A'),
+                    output=ModelOutput.from_content(model='mock', content=content),
+                )
+                assert parse(state, multiple_correct=True) == {{'A'}}, (parse.__name__, content)
+        '''
+    )
+    completed = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=15)
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_parse_answers_repeated_labels_with_invalid_suffix() -> None:
+    """Malformed repeated labels return promptly through the existing fallback."""
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40 + '!]', '答案：' + '[' + 'A ' * 40 + '!]'])
+
+
+def test_parse_answers_repeated_labels_without_closing_bracket() -> None:
+    """Repeated labels without a closing bracket must not stall parsing."""
+    _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40, '答案：' + '[' + 'A ' * 40])
+
+
 def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
     completion = 'The last line of your response should be ANSWER: [LETTER] and nothing else.'
     assert parse_answers(_make_state(completion)).isdisjoint({'A', 'B', 'C', 'D'})
@@ -362,3 +427,47 @@ def test_extract_answer_line_without_marker() -> None:
 def test_extract_answer_line_drops_punctuation_after_closing_bold(text: str, expected: str) -> None:
     # The closing '**' used to survive when punctuation followed it: '**ANSWER: 45**.' -> '45**.' (#2027).
     assert extract_answer_line(text) == expected
+
+
+@pytest.mark.parametrize('text', ['**Answer**: 45', '**ANSWER**: **45**', '**Final Answer**: 45', '*Answer*: 45'])
+def test_extract_answer_line_reads_a_bold_answer_key(text: str) -> None:
+    # The bold run closes before the colon, so the marker was not found and no answer was read.
+    assert extract_answer_line(text) == '45'
+
+
+@pytest.mark.parametrize(
+    'reply', ['**Answer**: (B) Second', '**Answer**: B. The second option.', '**Answer**: B\n\nNote: A is wrong.']
+)
+def test_parse_answers_reads_a_bold_answer_key(reply: str) -> None:
+    # Without the marker the reply fell back to its last capital letter ('S', 'T', 'N'; none is an option).
+    assert parse_answers(_make_state(f'reasoning\n{reply}')) == {'B'}
+
+
+def test_parse_answers_zh_reads_a_bold_answer_key() -> None:
+    assert parse_answers_zh(_make_state('推理\n**答案**：B。Note: A is wrong.')) == {'B'}
+
+
+@pytest.mark.parametrize(
+    'text',
+    [
+        'ANSWER: 45\n**Answer**: [LETTER]',
+        'ANSWER: 45\n**Answer**: [ANSWER]',
+        'ANSWER: 45\n**Answer**: ',
+        'ANSWER: 45\nUse **Answer**: [LETTER] as the format.',
+        'ANSWER: 45\nANSWER: [LETTER]',
+    ],
+)
+def test_extract_answer_line_ignores_trailing_placeholder_or_empty_marker(text: str) -> None:
+    assert extract_answer_line(text) == '45'
+
+
+@pytest.mark.parametrize(
+    'text, expected',
+    [('**Answer**: 2*3', '2*3'), ('**Answer**: 2**3', '2**3'), ('**Answer**: Pa**ris', 'Pa**ris')],
+)
+def test_bold_answer_key_preserves_literal_asterisks(text: str, expected: str) -> None:
+    assert extract_answer_line(text) == expected
+
+
+def test_bold_placeholder_does_not_hide_an_earlier_choice() -> None:
+    assert parse_answers(_make_state('ANSWER: A\n**Answer**: [LETTER]')) == {'A'}

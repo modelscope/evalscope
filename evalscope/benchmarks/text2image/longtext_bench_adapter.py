@@ -1,15 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """LongText-Bench adapter: long text rendering benchmark (X-Omni, arXiv:2507.22058)."""
 
-from typing import Any, Dict
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Type
 
 from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DataLoader, Dataset, Sample, build_dataset_from_records, download_dataset_file
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.text2image.corpus_aggregation import CorpusAggregationMixin
-from evalscope.constants import Tags
+from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -19,7 +21,11 @@ logger = get_logger()
     BenchmarkMeta(
         name='longtext_bench',
         pretty_name='LongText-Bench',
-        dataset_id='X-Omni/LongText-Bench',
+        paper_url='https://arxiv.org/abs/2507.22058',
+        dataset_id='evalscope/LongText-Bench',
+        dataset_revision='0d375b2e1ad13fa36bec2c2fb28ed4f7dc1e060a',
+        hf_dataset_id='X-Omni/LongText-Bench',
+        hf_dataset_revision='429e30e9c1e0dea535038ae4238ea6ec42823098',
         description="""
 ## Overview
 
@@ -47,11 +53,22 @@ materials, webpages, slides, posters, subtitles, dialogues).
 - The ground truth is the dataset ``text`` field (a list of rendered fragments, joined with
   spaces like the official evaluator), passed to the scorer as the sample target
 - Text Score is a Counter-intersection match ratio: word-level for English, character-level
-  for Chinese (whitespace removed); aggregated corpus-level (total matched / total ground
-  truth tokens). Pass metric args ``lang='en'``/``'zh'`` to force the official
-  single-language mode
-- The default transcription backend uses Qwen2.5-VL-7B via transformers; scores degrade to 0
-  with an error note when transcription fails
+  for Chinese (whitespace removed). Each language score is total matched / total ground
+  truth tokens; the overall score averages the English and Chinese scores, as in the
+  official leaderboard. Evaluating one language returns that language's score.
+- Loads the ModelScope mirror by default, with 160 test examples in each of the en and zh
+  configurations. Original data: [X-Omni/LongText-Bench](https://huggingface.co/datasets/X-Omni/LongText-Bench).
+- Transcription uses an OpenAI-compatible vision API, defaulting to qwen3.8-flash on
+  DashScope with thinking disabled. Set DASHSCOPE_API_KEY; no local VLM weights or accelerator
+  are required. Metric args model, api_url, api_key and generation_config configure a different
+  transcription service independently of the image generation model.
+- Matching and language aggregation follow the official evaluator. The official transcription
+  model is Qwen2.5-VL-7B; using qwen3.8-flash or another VLM can change the score, so those
+  results must be identified by transcription model and are not directly comparable to the official results.
+- Transcription failures and API token-limit truncation exclude the affected metric instead
+  of assigning zero; a valid empty transcription scores zero.
+- Set model_task='image_generation' and eval_type='text2image'. For the official repeated-image
+  protocol, use repeats=4; limit is intended only for smoke runs.
 """,
         tags=[Tags.TEXT_TO_IMAGE],
         subset_list=['en', 'zh'],
@@ -68,8 +85,37 @@ class LongTextBenchAdapter(CorpusAggregationMixin, Text2ImageAdapter):
         'LongTextScore': 'text_score',
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _corpus_report_score(self, counts: List[Dict[str, Any]]) -> float:
+        """Average language scores, matching the official LongText-Bench leaderboard."""
+        return sum(item['numerator'] / item['denominator'] for item in counts) / len(counts)
+
+    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
+        """Load each official HF language file through the shared download and conversion flow."""
+        if self.dataset_hub != HubType.HUGGINGFACE or self.dataset_id != 'X-Omni/LongText-Bench':
+            return super().load_subset(subset, data_loader)
+        if self.eval_split != 'test' or subset not in {'en', 'zh'}:
+            raise ValueError('LongText-Bench provides the test split for en and zh only.')
+        filename = 'text_prompts_zh.jsonl' if subset == 'zh' else 'text_prompts.jsonl'
+        source = download_dataset_file(
+            self.dataset_id,
+            filename,
+            data_source=self.dataset_hub,
+            revision=self.dataset_revision,
+            cache_dir=self.dataset_dir,
+            force_redownload=self.force_redownload,
+        )
+        records = [json.loads(line) for line in Path(source).read_text(encoding='utf-8').splitlines() if line.strip()]
+        return build_dataset_from_records(
+            records,
+            self.record_to_sample,
+            name=subset,
+            location=source,
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+            seed=self.seed,
+            filter_func=self.sample_filter,
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Records carry prompt_id/prompt/text; the ``text`` field is the rendering ground truth."""

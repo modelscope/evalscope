@@ -15,8 +15,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-# The judge prompt requires the verdict as "[[YES]]" or "[[NO]]" after its explanation; a bare
-# "YES" anywhere in that explanation must not decide the score.
+# The judge returns its explanation and YES/NO verdict in one JSON object.
 class Equivalence(BaseModel):
     reasoning: str = ''
     verdict: Literal['YES', 'NO']
@@ -37,7 +36,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='docmath',
         pretty_name='DocMath',
         tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],

@@ -10,7 +10,11 @@ from evalscope.config import TaskConfig
 
 
 @pytest.mark.parametrize(
-    'answer_line', ['ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45', '**ANSWER: 45**.', '**ANSWER: 45**,']
+    'answer_line',
+    [
+        'ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45', '**ANSWER: 45**.', '**ANSWER: 45**,',
+        '**Answer**: 45',
+    ],
 )
 def test_chartqa_answer_line(answer_line):
     adapter = get_benchmark('chartqa', TaskConfig(model='mock', datasets=['chartqa']))

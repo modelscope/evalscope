@@ -63,9 +63,9 @@ NARRATIVE_EVALUATION_TEMPLATE = """
 Please act as an impartial judge and evaluate how accurately the candidate narrative matches the given reference narrative.
 Your evaluation should consider factors such as the relevance, accuracy, depth, and level of detail of the candidate narrative compared to the reference.
 
-Begin your evaluation by providing a short explanation in English. Be as objective as possible.
+Provide a short explanation in English in the JSON reasoning field. Be as objective as possible.
 
-After providing your explanation, you must rate the match on a Likert scale from 1 to 5, where:
+Set the JSON rating field to the match score on a Likert scale from 1 to 5, where:
 1 = Very poor match
 2 = Poor match
 3 = Moderate match

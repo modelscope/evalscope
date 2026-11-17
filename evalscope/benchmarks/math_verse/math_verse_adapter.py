@@ -29,7 +29,7 @@ SUBSET_LIST = ['Text Dominant', 'Text Lite', 'Vision Intensive', 'Vision Dominan
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='math_verse',
         pretty_name='MathVerse',
         dataset_id='evalscope/MathVerse',

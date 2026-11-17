@@ -110,6 +110,58 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.get_json()['predictions']), 1)
 
+    def _write_prediction_sources(self, answer: str = 'answer') -> None:
+        from evalscope.api.evaluator import ReviewResult
+        from evalscope.api.metric import SampleScore, Score
+        from evalscope.report.data_frames import get_prediction_source_paths
+
+        review_path, _ = get_prediction_source_paths(
+            str(Path(self.tmp) / '20260101_120000'), 'model-a', 'gsm8k', 'main'
+        )
+        review = ReviewResult(
+            index=0,
+            target=['answer'],
+            sample_score=SampleScore(sample_id='0', score=Score(value={'acc': 1.0}, prediction=answer)),
+        )
+        path = Path(review_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(review.model_dump_json() + '\n', encoding='utf-8')
+
+    def _get_predictions(self, headers: dict[str, str] | None = None) -> flask.Response:
+        return self.client.get(
+            '/api/v1/reports/runs/20260101_120000/models/model-a/predictions',
+            query_string={'root_path': self.tmp, 'dataset_name': 'gsm8k', 'subset_name': 'main'},
+            headers=headers or {},
+        )
+
+    def test_predictions_conditional_get_skips_loading_and_serialization(self) -> None:
+        self._write_prediction_sources()
+        first = self._get_predictions()
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.get_json()['predictions'][0]['Generated'], 'answer')
+        for prefix in ('', 'W/'):
+            with (
+                mock.patch('evalscope.service.blueprints.reports.get_model_prediction', side_effect=AssertionError),
+                mock.patch('evalscope.service.blueprints.reports.json_response', side_effect=AssertionError),
+            ):
+                second = self._get_predictions(headers={'If-None-Match': prefix + first.headers['ETag']})
+            self.assertEqual(second.status_code, 304)
+            self.assertEqual(second.data, b'')
+            self.assertEqual(second.headers['ETag'], first.headers['ETag'])
+            self.assertEqual(second.headers['Cache-Control'], 'no-cache')
+
+    def test_predictions_changed_sources_invalidate_etag(self) -> None:
+        self._write_prediction_sources()
+        first = self._get_predictions()
+        etag = first.headers['ETag']
+
+        self._write_prediction_sources(answer='updated answer')
+
+        res = self._get_predictions(headers={'If-None-Match': etag})
+        self.assertEqual(res.status_code, 200)
+        self.assertNotEqual(res.headers.get('ETag'), etag)
+        self.assertEqual(res.get_json()['predictions'][0]['Generated'], 'updated answer')
+
     def test_predictions_returns_multiple_gold_answers(self):
         import pandas as pd
 

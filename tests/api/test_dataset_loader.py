@@ -188,23 +188,31 @@ def test_direct_loaders_reject_invalid_limits(
     'limit, expected',
     [
         (None, 4),
-        (0, 4),
+        (0, 0),
+        (0.0, 0),
+        (0.01, 0),
         (0.5, 2),
         (1.0, 4),
         (2, 2),
     ],
 )
+@pytest.mark.parametrize('repeats', [1, 3])
+@pytest.mark.parametrize('shuffle', [False, True])
 def test_direct_loaders_preserve_valid_limit_semantics(
     loader_kind: str,
     limit: Optional[float | int],
     expected: int,
+    repeats: int,
+    shuffle: bool,
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
-    loader = _make_direct_loader(loader_kind, tmp_path, monkeypatch, limit)
+    loader = _make_direct_loader(loader_kind, tmp_path, monkeypatch, limit, repeats=repeats)
+    loader.shuffle = shuffle
+    loader.seed = 0
 
-    assert len(loader.load()) == expected
-    assert len(loader.load()) == expected
+    assert len(loader.load()) == expected * repeats
+    assert len(loader.load()) == expected * repeats
     assert loader.limit == limit
 
 

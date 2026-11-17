@@ -27,7 +27,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-# The judge prompt ends with "Reply only with CORRECT or INCORRECT."
+# The judge returns CORRECT or INCORRECT in the JSON verdict field.
 class Grade(BaseModel):
     reasoning: str = ''
     verdict: Literal['CORRECT', 'INCORRECT']
@@ -42,7 +42,7 @@ The question, for reference only: {question}
 The OFFICIAL ANSWER: {correct_answer}
 CANDIDATE ANSWER TO ASSESS: {response}
 
-Reply only with CORRECT or INCORRECT."""
+Set the JSON verdict field to CORRECT or INCORRECT."""
 
 PROMPT_TEMPLATE = """
 BEGIN INPUT DOCUMENTS

@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.agent.tools.python_exec import PYTHON_EXEC_TOOL_INFO, run_python_exec
@@ -56,9 +56,25 @@ class _CriterionVerdict(BaseModel):
 
 
 class _RubricVerdict(BaseModel):
-    criteria_results: List[_CriterionVerdict] = Field(default_factory=list)
+    criteria_results: List[_CriterionVerdict]
     rubric_passed: bool
     overall_reasoning: str = ''
+
+
+def _rubric_verdict_model(criteria_count: int) -> type[BaseModel]:
+    expected = set(range(criteria_count))
+
+    class RubricVerdict(_RubricVerdict):
+        @model_validator(mode='after')
+        def validate_criteria_indices(self) -> 'RubricVerdict':
+            actual = [item.index for item in self.criteria_results]
+            if len(actual) != len(set(actual)):
+                raise ValueError('criteria_results indices must be unique')
+            if set(actual) != expected:
+                raise ValueError(f'criteria_results indices must exactly match {sorted(expected)}')
+            return self
+
+    return RubricVerdict
 
 
 _DATASET_ID = 'evalscope/job-bench'
@@ -113,6 +129,7 @@ Your final message may summarize what you produced, but files requested by the t
         prompt_template='{question}',
         metric_list=['normalized_score', 'pass_rate', 'judge_score'],
         primary_metric='normalized_score',
+        evaluation_version='v1.1',
     )
 )
 class JobBenchAdapter(AgentLoopAdapter):
@@ -253,7 +270,7 @@ class JobBenchAdapter(AgentLoopAdapter):
         return [
             JudgeCase(
                 case_id=f'rubric:{index}',
-                output_contract=OutputContract(schema_model=_RubricVerdict),
+                output_contract=OutputContract(schema_model=_rubric_verdict_model(len(normalize_criteria(rubric)))),
                 metadata={
                     'index': index,
                     'rubric': rubric,

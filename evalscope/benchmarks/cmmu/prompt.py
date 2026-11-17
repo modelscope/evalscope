@@ -17,8 +17,8 @@ The above values should be returned in JSON format. I should be able to directly
 
 Remember, your output should only contain the following format:
 {
-"analysis":,
-"correct":
+"analysis": "All expected answers are present.",
+"correct": 1.0
 }
 Be sure to use double backslashes if necessary, not single backslashes.
 """

@@ -25,7 +25,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-# The judge prompt requires "GRADE: C" or "GRADE: I" as the final line.
+# The judge returns the C/I verdict and its explanation in one JSON object.
 class Grade(BaseModel):
     reasoning: str = ''
     verdict: Literal['C', 'I']
@@ -60,7 +60,7 @@ JUDGE_PROMPT = """Judge whether the following [response] to [question] is correc
 
 [correct_answer]: {correct_answer}
 
-Your judgment must focus only on if there are meaningful differences between [correct_answer] and the [response]. Do not comment on any background to the problem, do not attempt to solve the problem, do not argue for any answer different than [correct_answer], focus only on whether the answers match. Explain why the [response] is correct or incorrect based on [correct_answer] in one or two sentences. Finally, write your answer in the format 'GRADE: C' for correct answer or 'GRADE: I' for incorrect answer.
+Your judgment must focus only on if there are meaningful differences between [correct_answer] and the [response]. Do not comment on any background to the problem, do not attempt to solve the problem, do not argue for any answer different than [correct_answer], focus only on whether the answers match. Explain why the [response] is correct or incorrect based on [correct_answer] in one or two sentences in the JSON reasoning field. Set the JSON verdict field to C for a correct answer or I for an incorrect answer.
 """
 
 
@@ -95,7 +95,7 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 - Primary metric: **Accuracy** with LLM judge
 - Response format includes: Explanation, Answer, and Confidence (0-100%)
 - **Note**: Set `extra_params["include_multi_modal"]` to `False` for text-only models
-- Uses GRADE: C/I format for LLM judge scoring
+- Uses a single JSON object with a C/I verdict and reasoning for LLM judge scoring
 """,  # noqa: E501
         dataset_id='cais/hle',
         subset_list=SUBSET_LIST,

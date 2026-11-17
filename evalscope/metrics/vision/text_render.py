@@ -85,6 +85,8 @@ def word_ned_counts(gt_words: list, pred_words: list) -> tuple:
     total = len(gt_words)
     if not total:
         return 0.0, 0.0, 0
+    # The official OCR evaluator substitutes one empty word when recognition finds no text.
+    pred_words = pred_words or ['']
     similarities = []
     for gt_word in gt_words:
         closest = get_close_matches(gt_word, pred_words, n=1, cutoff=0)

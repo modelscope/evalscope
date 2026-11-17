@@ -109,7 +109,8 @@
 | `shuffle` | `bool` | 是否打乱数据 |
 | `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
 | `metric_list` | `list[str\|dict]` | 指标列表。应使用 `accuracy` 等规范名称；`acc` 等旧别名仅为兼容用途并会被规范化。 |
-| `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）、`bayes_at_n`。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`）<br>• `bayes_at_n`：固定题集上重复正确率的后验均值与后验标准差（`repeats=N`；仅二元 `accuracy`/`exact_match`，限单个 subset；见[常见问题](./faq.md)） |
+| `primary_metric` | `str\|dict` | 可选的报告主指标选择器，用于覆盖 `mean_and_*` 的默认 mean，或消除其他多指标报告的主指标歧义。字符串按名称选择；字典可指定 `name`、`aggregation` 和 `dimensions`，例如 `{"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`。字典中的指标名称需使用规范名称。省略的聚合方式和维度不作限制；选择器应唯一匹配一个已输出的评分指标。参见[重复生成示例](basic_usage.md)。 |
+| `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）、`bayes_at_n`。三种 `mean_and_*` 方式均默认将普通 `mean` 作为报告主指标。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`）<br>• `bayes_at_n`：固定题集上重复正确率的后验均值与后验标准差（`repeats=N`；仅二元 `accuracy`/`exact_match`，限单个 subset；见[常见问题](./faq.md)） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
 | `force_redownload` | `bool` | 是否强制重新下载数据集 |
 | `extra_params` | `dict` | 数据集相关的**额外参数**，具体参考[各数据集说明](./supported_dataset/index.md)，指定`{<param_name>:<value>}`即可, `value`的类型(`type`)和选择范围(`choices`)根据具体参数而定。SWE-bench agentic 等基准的扩展参数请参见 [Agent 评测](../user_guides/agent/native.md#用例swe-bench-agentic) |
@@ -200,7 +201,16 @@ TaskConfig(
 `judge.contract` 仅配置通用单 verdict Judge：`system_prompt`、`prompt_template`、`score_mapping` 和
 `score_type`。`pattern` 要求 Judge 在 JSON 中返回 `score_mapping` 之一；`numeric` 要求 JSON 分数位于
 `[0, 1]`。框架会在 prompt 中追加 JSON 格式要求，只解析一次普通模型回复；不使用 constrained decoding、
-正则提分或纠正性追问。无效回复显示为 unavailable，并从指标中排除，而非记为 0。
+正则提分或纠正性追问。
+
+最终回复的完整内容必须是一个符合声明 schema 的 JSON 对象，允许前后空白。不接受说明文字、思考块、
+Markdown 代码围栏、多个对象、重复键、非法 JSON 或不符合 schema 的回复。解释应放在声明的 JSON 字段内。
+解析器不会从无效回复中提取嵌套或后续对象。失败的 Judge 观测记为不可用，不会自动将被测答案判为 0 分；
+benchmark 明确定义的规则回退仍保留规则结果。排除观测可能改变参与评测的样本集合，应结合覆盖率和失败计数解读分数。
+模型层已分离到独立内容部分的推理不属于这里解析的最终文本。
+
+自定义裁判的 system 和 user prompt 都应遵守同一格式要求。即使保留评分标准，修改 benchmark 官方裁判的输出格式
+也可能影响结果。使用 `rerun_review=True`，可按当前约定重新计算已缓存的评分。
 
 对于经过 LLM 判定的样本，报告包含 `JudgeSummary`：覆盖率、失败计数与分歧。当 adapter 通过确定性的
 Judge 短路直接判定样本时，得分 metadata 会记录 `judge_skipped=true` 和 `judge_skip_reason`；Web review

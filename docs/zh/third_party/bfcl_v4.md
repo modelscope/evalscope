@@ -61,8 +61,7 @@ SUBSET_LIST = [
 在运行评测之前需要安装以下依赖：
 
 ```bash
-pip install evalscope
-pip install bfcl-eval==2025.10.27.1 
+pip install 'evalscope[bfcl]'
 ```
 
 ## 使用方法

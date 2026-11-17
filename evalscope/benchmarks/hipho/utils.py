@@ -56,13 +56,13 @@ CHINESE_PROMPT = """你正在参加高中物理竞赛。
 {question}"""
 
 # Answer-level judge, adapted from the PHYSICS design (HiPhO paper, Appendix B.2).
-ANSWER_JUDGE_PROMPT = """You are a diligent and precise assistant tasked with evaluating the correctness of responses. You will receive a question, an output sentence, and the correct answer. Your task is to determine if the output sentence accurately answers the question based on the provided correct answer. Respond with either [Correct] or [Incorrect].
+ANSWER_JUDGE_PROMPT = """You are a diligent and precise assistant tasked with evaluating the correctness of responses. You will receive a question, an output sentence, and the correct answer. Your task is to determine if the output sentence accurately answers the question based on the provided correct answer. Set the JSON correct field to true or false.
 Special considerations:
-1. Multiple Answers: If the output contains multiple answers, evaluate whether later answers modify or correct earlier ones. In such cases, compare the final answer with the correct answer. If the final answer is unclear or incorrect, respond with [Incorrect].
-2. Mathematical Problems: If the formats differ but the answers are mathematically equivalent such as 256/55=4.65, respond with [Correct].
-3. Physics Problems: If the values match such as 3=3 GHz, respond with [Correct].
+1. Multiple Answers: If the output contains multiple answers, evaluate whether later answers modify or correct earlier ones. In such cases, compare the final answer with the correct answer. If the final answer is unclear or incorrect, set the JSON correct field to false.
+2. Mathematical Problems: If the formats differ but the answers are mathematically equivalent such as 256/55=4.65, set the JSON correct field to true.
+3. Physics Problems: If the values match such as 3=3 GHz, set the JSON correct field to true.
 4. Explicit Options: If the question provides explicit candidate answers, the output will be considered correct if it clearly indicates the correct option's code or the correct option's content.
-5. No Explicit Options: If the question does not provide explicit options, the output must align with the correct answer in content and meaning to be considered [Correct].
+5. No Explicit Options: If the question does not provide explicit options, the output must align with the correct answer in content and meaning to be considered correct.
 Question: {question}
 Output sentence: {given_answer}
 Correct answer: {ground_truth}

@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple
 
 import plotly.express as px
 import plotly.graph_objects as go
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
 
@@ -27,6 +27,7 @@ from evalscope.report.data_frames import (
     get_compare_report_df,
     get_comparison_quality_report_df,
     get_model_prediction,
+    get_prediction_source_paths,
     get_quality_metric_df,
     get_quality_report_df,
     get_report_analysis,
@@ -53,6 +54,7 @@ from evalscope.service.api_models import (
     LoadReportResponse,
     PredictionsResponse,
 )
+from evalscope.service.prediction_cache import prediction_etag
 from evalscope.service.report_meta_cache import (
     Fingerprint,
     build_report_meta_cached,
@@ -669,14 +671,23 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'dataset_name and subset_name are required'}), 400
 
     try:
-        work_dir = os.path.join(_root_path(), ref.run_id)
-        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-        return json_response(
-            PredictionsResponse,
-            {
-                'predictions': _df_to_records(df),
-            },
-        )
+        root = _root_path()
+        work_dir = os.path.join(root, ref.run_id)
+
+        # Fingerprint the source cache files so an unchanged subset revalidates
+        # as 304 before any expensive loading or response serialization.
+        review_path, prediction_path = get_prediction_source_paths(work_dir, ref.model_id, dataset_name, subset_name)
+        cache_key = f'{os.path.realpath(root)}\x00{ref.run_id}\x00{ref.model_id}\x00{dataset_name}\x00{subset_name}'
+        etag = prediction_etag(cache_key, review_path, prediction_path)
+
+        if request.if_none_match.contains_weak(etag) and os.path.isfile(review_path):
+            resp = Response()
+        else:
+            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+            resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
+        resp.set_etag(etag)
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp.make_conditional(request)
     except Exception:
         logger.error('Failed to get predictions', exc_info=True)
         return jsonify({'error': 'Failed to get predictions'}), 500

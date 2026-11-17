@@ -14,24 +14,8 @@ from evalscope.benchmarks.mt_bench.mt_bench_adapter import MTBenchAdapter
 from evalscope.benchmarks.prbench.prbench_adapter import PRBenchAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeScoreType, ScoreStatus
-from evalscope.metrics.judge.llm_judge import DEFAULT_PROMPT_TEMPLATE, LLMJudge
-
-
-class ScriptedJudge:
-    score_type = JudgeScoreType.PATTERN
-    score_mapping = {'A': 1.0, 'B': 0.0}
-    prompt_template = DEFAULT_PROMPT_TEMPLATE
-    system_prompt = None
-    build_prompt = LLMJudge.build_prompt
-
-    def __init__(self, replies: List[str]) -> None:
-        self.replies = replies
-        self.judge_id = self.model_id = 'scripted'
-        self.calls: List[Any] = []
-
-    def generate(self, messages):
-        self.calls.append(messages)
-        return ModelOutput.from_content('scripted', self.replies[min(len(self.calls) - 1, len(self.replies) - 1)])
+from evalscope.metrics.judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE
+from tests.api.judge.helpers import ScriptedJudge, make_state
 
 
 class TransportFailingJudge(ScriptedJudge):
@@ -43,9 +27,33 @@ class TransportFailingJudge(ScriptedJudge):
         raise RuntimeError('judge transport unavailable')
 
 
-def make_state(prediction: str, target: str) -> TaskState:
-    sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
-    return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+@pytest.mark.parametrize(('judge', 'expected'), [
+    (ScriptedJudge(['{"explanation": "The condition is preserved.", "criteria_met": true}']), 1.0),
+    (ScriptedJudge(['{"explanation": "The condition is omitted.", "criteria_met": false}']), 0.0),
+    (ScriptedJudge(['not JSON']), None),
+    (ScriptedJudge(['[ERROR] judge transport unavailable']), None),
+    (TransportFailingJudge(), None),
+])
+def test_health_bench_contract_preserves_zero_verdicts_and_excludes_invalid_replies(
+    judge: ScriptedJudge, expected: float | None,
+) -> None:
+    config = TaskConfig(model='m', datasets=['health_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('health_bench', config)
+    adapter.llm_judge = judge
+    state = make_state('The outcomes apply under different conditions.', '')
+    state.metadata = {
+        'prompt': [{'role': 'user', 'content': 'Explain the conditional recommendations.'}],
+        'rubrics': [{'criterion': 'Preserves each condition.', 'points': 5, 'tags': ['axis:accuracy']}],
+    }
+
+    score = adapter.score_with_judge_contracts(state.output.completion, state.output.completion, '', state)
+
+    assert len(judge.calls) == 1
+    if expected is None:
+        assert score.status is ScoreStatus.EXCLUDED and score.value == {}
+    else:
+        assert score.status is ScoreStatus.SUCCESS
+        assert score.value == {'overall_score': expected, 'accuracy': expected}
 
 
 @pytest.mark.parametrize('answers', [[], [''], [' '], [r'\frac{'], ['1', r'\frac{']])
@@ -270,6 +278,92 @@ def test_generic_pattern_contract_supports_simple_judge_benchmarks(benchmark_nam
     assert score.value == {'acc': 1.0}
 
 
+@pytest.mark.parametrize(('name', 'reply', 'field', 'legacy_instruction'), [
+    ('aime24', '{"verdict": "Yes"}', 'verdict', 'Respond with only "Yes" or "No"'),
+    ('aime25', '{"verdict": "Yes"}', 'verdict', 'Respond with only "Yes" or "No"'),
+    ('aime26', '{"verdict": "Yes"}', 'verdict', 'Respond with only "Yes" or "No"'),
+    ('aa_lcr', '{"verdict": "CORRECT"}', 'verdict', 'Reply only with CORRECT or INCORRECT'),
+    ('hle', '{"reasoning": "matches", "verdict": "C"}', 'reasoning', 'GRADE: C'),
+    ('drivel_writing', '{"reasoning": "matches", "rating": 4}', 'reasoning', 'After providing your explanation'),
+    ('alpaca_eval', '{"verdict": "M"}', 'verdict', 'no quotes, no spaces, no new lines'),
+    ('arena_hard', '{"reasoning": "equal", "verdict": "A=B"}', 'reasoning', 'After providing your explanation'),
+    ('general_arena', '{"reasoning": "equal", "verdict": "A=B"}', 'reasoning', 'After providing your explanation'),
+    ('docmath', '{"reasoning": "equal", "verdict": "YES"}', 'reasoning', 'Your output must follow'),
+    ('frames', '{"reasoning": "equal", "verdict": "YES"}', 'reasoning', 'Your output must follow'),
+    ('longmemeval', '{"verdict": "yes"}', 'verdict', 'Please answer yes'),
+])
+@pytest.mark.parametrize('envelope', ['{reply}', '```json\n{reply}\n```', 'Explanation first.\n{reply}'])
+def test_adapted_judge_prompts_and_reply_boundaries(
+    name: str, reply: str, field: str, legacy_instruction: str, envelope: str,
+) -> None:
+    config = TaskConfig(model='m', datasets=[name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(name, config)
+    raw = envelope.format(reply=reply)
+    judge = ScriptedJudge([raw])
+    adapter.llm_judge = judge
+    state = make_state('Shakespeare', 'Shakespeare')
+    state.metadata = {
+        'question': 'Who wrote Hamlet?', 'model_1': 'model-a', 'model_2': 'model-b', 'answer_1': 'Shakespeare',
+        'question_type': 'single-session-user',
+    }
+
+    score = adapter.score_with_judge_contracts('Shakespeare', 'Shakespeare', 'Shakespeare', state)
+
+    assert judge.calls
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert legacy_instruction not in prompt
+    assert f'JSON {field} field' in prompt
+    assert 'single JSON object and no other text' in prompt
+    if envelope == '{reply}':
+        assert score.status.is_usable
+        assert score.value
+    else:
+        assert score.status is ScoreStatus.EXCLUDED
+        assert score.value == {}
+        assert score.judge_summary.failures == {'parse_error': 1}
+        assert score.metadata['judge_attempts'][0]['raw_response'] == raw
+        assert len(judge.calls) == 1
+
+
+def test_generic_numeric_judge_keeps_explanation_inside_json() -> None:
+    config = TaskConfig(model='m', datasets=['general_qa'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('general_qa', config)
+    judge = ScriptedJudge(['{"reasoning": "helpful", "score": 0.8}'])
+    judge.score_type = JudgeScoreType.NUMERIC
+    judge.prompt_template = DEFAULT_NUMERIC_SCORE_TEMPLATE
+    adapter.llm_judge = judge
+
+    score = adapter.score_with_judge_contracts('answer', 'answer', 'reference', make_state('answer', 'reference'))
+
+    assert score.status.is_usable
+    assert score.main_value == 0.8
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'JSON reasoning field' in prompt
+    assert 'Begin your evaluation by providing a short explanation' not in prompt
+
+
+@pytest.mark.parametrize('envelope', ['{reply}', '```json\n{reply}\n```', 'The answers match.\n{reply}'])
+def test_math_recall_retains_rule_evidence_when_judge_format_fails(envelope: str) -> None:
+    config = TaskConfig(
+        model='m', datasets=['math_500'], judge={'strategy': 'llm_recall', 'models': [{'model_id': 'j'}]},
+    )
+    adapter = get_benchmark('math_500', config)
+    judge = ScriptedJudge([envelope.format(reply='{"verdict": "A"}')])
+    adapter.llm_judge = judge
+
+    score = adapter.calculate_metrics(make_state('It is one half.', r'\frac{1}{2}')).score
+
+    assert len(judge.calls) == 1
+    if envelope == '{reply}':
+        assert score.status is ScoreStatus.SUCCESS
+        assert score.main_value == 1.0
+    else:
+        assert score.status is ScoreStatus.FALLBACK
+        assert score.main_value == 0.0
+        assert score.judge_summary.failures == {'parse_error': 1}
+        assert score.metadata['judge_unavailable'] == 'excluded'
+
+
 def test_arena_hard_swap_is_driven_by_the_executor():
     config = TaskConfig(model='m', datasets=['arena_hard'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
     adapter = get_benchmark('arena_hard', config)
@@ -416,15 +510,26 @@ def test_mt_bench_valid_verdict_scores_both_turns() -> None:
     assert score.value == {'judge_score': 8.0, 'first_turn_judge_score': 9.0, 'second_turn_judge_score': 7.0}
 
 
-def test_mt_bench_invalid_judge_reply_excludes_the_sample() -> None:
+@pytest.mark.parametrize('reply', [
+    'not JSON',
+    '```json\n{"explanation": "correct", "score": 9}\n```',
+    'The answer is correct.\n{"score": 9}',
+    '<think>Correct.</think>\n{"score": 9}',
+    '{broken: {"score": 9}}',
+    '{"score": 9}\n{"score": 7}',
+])
+def test_mt_bench_invalid_judge_reply_excludes_the_sample(reply: str) -> None:
     adapter = make_mt_bench_adapter()
-    adapter.llm_judge = ScriptedJudge(['not JSON'])
+    judge = ScriptedJudge([reply])
+    adapter.llm_judge = judge
 
     score = adapter.calculate_metrics(make_mt_bench_state(adapter)).score
 
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}
     assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+    assert score.metadata['judge_attempts'][0]['raw_response'] == reply
+    assert len(judge.calls) == 1
 
 
 def test_mt_bench_transport_failure_excludes_the_sample() -> None:
@@ -619,12 +724,16 @@ def make_mask_adapter():
 
 def test_mask_valid_verdict_scores_the_sample() -> None:
     adapter = make_mask_adapter()
-    adapter.llm_judge = ScriptedJudge(['{"reasoning": "denies the theft", "answer": "B"}'])
+    judge = ScriptedJudge(['{"reasoning": "denies the theft", "answer": "B"}'])
+    adapter.llm_judge = judge
 
     score = adapter.calculate_metrics(make_mask_state(adapter)).score
 
     assert score.status is ScoreStatus.SUCCESS
     assert score.value == {'honesty_score': 0.0, 'honest_rate': 0.0}
+    prompt = '\n'.join(message.text for message in judge.calls[0])
+    assert 'JSON reasoning field' in prompt and 'JSON answer field' in prompt
+    assert 'then provide your final answer' not in prompt
 
 
 @pytest.mark.parametrize('judge', [ScriptedJudge(['Answer: B']), TransportFailingJudge()])

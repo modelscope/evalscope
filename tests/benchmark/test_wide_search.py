@@ -1,3 +1,4 @@
+import ast
 import json
 import tempfile
 import unittest
@@ -17,11 +18,13 @@ from evalscope.benchmarks.wide_search.utils import (
     aggregate_official_scores,
     date_near,
     extract_number,
+    norm_str,
     number_near,
     url_match,
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import DEFAULT_DATASET_CACHE_DIR, JudgeStrategy
+from evalscope.run import evaluate_model
 
 try:
     import evalscope.agent.environments.enclave  # noqa: F401
@@ -74,6 +77,22 @@ class TestWideSearchSession(unittest.TestCase):
         self.assertEqual(extra['row_precision'], 2 / 3)
         self.assertEqual(wrong['row_precision'], 0.5)
         self.assertEqual(wrong['item_precision'], 0.75)
+
+    def test_duplicate_gold_keys_use_the_same_denominator_as_matching(self) -> None:
+        gold = 'id,value\nA,one\nB,two\nA,one\n'
+        for rows in ('| A | one |\n| B | two |', '| A | one |\n| B | two |\n| A | one |'):
+            session = WideSearchSession.create('| id | value |\n| --- | --- |\n' + rows, gold, _evaluation())
+
+            values, diagnostics = session.score({})
+
+            self.assertEqual(diagnostics['gold_rows'], 2)
+            self.assertEqual(diagnostics['matched_rows'], 2)
+            self.assertEqual(values, {name: 1.0 for name in METRIC_NAMES})
+
+        session = WideSearchSession.create('| id | value |\n| --- | --- |\n| A | one |', gold, _evaluation())
+        values, _ = session.score({})
+        self.assertEqual(values['row_recall'], 0.5)
+        self.assertEqual(values['item_recall'], 0.5)
 
     def test_invalid_table_returns_zero_scores(self) -> None:
         values, diagnostics = self._score('not a table')
@@ -233,16 +252,75 @@ class TestWideSearchAdapter(unittest.TestCase):
         self.assertEqual(sample_score.group_id, 2)
         self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
 
-    def test_rule_only_judge_is_rejected(self) -> None:
+    def test_primary_key_judge_aligns_raw_keys(self) -> None:
+        aliases = {'mit': 'massachusettsinstituteoftechnology', 'oxforduniversity': 'universityofoxford'}
+
+        def entity(value: str) -> str:
+            return aliases.get(norm_str(value), norm_str(value))
+
+        def vocabulary(prompt: str, heading: str) -> list:
+            return ast.literal_eval(prompt.split(f'{heading}\n', 1)[1].split('\n', 1)[0])
+
+        def align(messages: list) -> ModelOutput:
+            # A faithful judge: pair entries naming the same entity, keyed exactly as they were shown.
+            prompt = messages[-1].content
+            response = vocabulary(prompt, 'The vocabulary to be aligned is as follows:')
+            reference = vocabulary(prompt, 'The reference vocabulary is as follows:')
+            mapping = {
+                origin: target for origin in response for target in reference if entity(origin) == entity(target)
+            }
+            return ModelOutput.from_content(model='mock', content=json.dumps({'mapping': mapping}))
+
         config = TaskConfig(
             model='mock',
+            datasets=['wide_search'],
+            judge={'strategy': JudgeStrategy.LLM, 'models': {'model_id': 'mock'}},
+        )
+        adapter = get_benchmark('wide_search', config=config)
+        adapter.llm_judge = Mock(generate=Mock(side_effect=align))
+        sample = Sample(
+            input='question',
+            target='id,value\nMassachusetts Institute of Technology,one\nUniversity of Oxford,two\n',
+            metadata={
+                'instance_id': 'ws_en_001',
+                'language': 'en',
+                'evaluation': _evaluation(),
+            },
+        )
+        task_state = TaskState(
+            model='mock',
+            sample=sample,
+            output=ModelOutput.from_content(
+                model='mock', content='| id | value |\n| --- | --- |\n| MIT | one |\n| Oxford University | two |'
+            ),
+            completed=True,
+        )
+
+        sample_score = adapter.calculate_metrics(task_state)
+
+        self.assertEqual(sample_score.score.value, {name: 1.0 for name in METRIC_NAMES})
+        prompt = adapter.llm_judge.generate.call_args.args[0][-1].content
+        self.assertIn("['MIT', 'Oxford University']", prompt)
+        self.assertEqual(adapter.benchmark_meta.evaluation_version, 'v1.2')
+
+    def test_rule_only_judge_is_rejected_before_evaluation(self) -> None:
+        config = TaskConfig(
+            model='mock',
+            eval_type='mock_llm',
             datasets=['wide_search'],
             judge={'strategy': JudgeStrategy.RULE, 'models': {'model_id': 'mock'}},
         )
 
-        # ``get_benchmark`` is the only construction path, so the run fails before generation.
-        with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
-            get_benchmark('wide_search', config=config)
+        # Metadata construction is allowed; evaluation must reject this before model loading.
+        get_benchmark('wide_search', config=config)
+        with (
+            patch('evalscope.api.registry.create_evaluator') as create_evaluator,
+            patch('evalscope.api.model.model.get_model_with_task_config') as load_model,
+        ):
+            with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
+                evaluate_model(config, outputs=Mock())
+            create_evaluator.assert_not_called()
+            load_model.assert_not_called()
 
     @unittest.skipUnless(_ENCLAVE_AVAILABLE, 'ms_enclave (sandbox extra) is not installed')
     def test_docker_uses_unified_sandbox_config(self) -> None:

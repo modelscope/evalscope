@@ -15,6 +15,7 @@ from evalscope.constants import Tags
 @register_benchmark(
     BenchmarkMeta(
         name='general_fc',
+        evaluation_version='v1.1',
         pretty_name='General-FunctionCalling',
         description="""
 ## Overview
@@ -115,7 +116,9 @@ class GeneralFCAdapter(FunctionCallAdapter):
             if is_call_tool:
                 score.prediction = task_state.messages_markdown
                 score.extracted_prediction = task_state.messages_markdown
-            is_valid_tool_call, error_reason = self.validate_tool_call(tool_calls, tools)
+            is_valid_tool_call, error_reason = (
+                self.validate_tool_call(tool_calls, tools) if is_call_tool else (False, '')
+            )
             is_call_successful = is_call_tool and is_valid_tool_call
             if should_call_tool:
                 passed = is_call_successful

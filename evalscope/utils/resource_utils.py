@@ -1,5 +1,6 @@
 import json
 import os
+import stat
 import zipfile
 from functools import lru_cache
 from pathlib import Path
@@ -56,6 +57,27 @@ MIRROR_MAP: Dict[str, Dict[str, Any]] = {
 }
 
 
+def _tighten_entry(path: str) -> None:
+    """Remove group and other write bits without following a symlink."""
+    try:
+        mode = os.lstat(path).st_mode
+        if stat.S_ISLNK(mode):
+            return
+        os.chmod(path, mode & ~0o022)
+    except OSError as exc:
+        logger.debug(f'Could not tighten permissions on {path}: {exc}')
+
+
+def _make_owner_private(path: str) -> None:
+    """Tighten the installed resource tree, leaving symlink targets untouched."""
+    if os.path.islink(path):
+        return
+    _tighten_entry(path)
+    for root, dirnames, filenames in os.walk(path):
+        for name in (*dirnames, *filenames):
+            _tighten_entry(os.path.join(root, name))
+
+
 @lru_cache
 def check_nltk_data(name: str) -> None:
     """
@@ -75,6 +97,10 @@ def check_nltk_data(name: str) -> None:
     def download_from_mirrors(meta: Dict[str, Any]) -> None:
         nltk_base = os.path.expanduser('~/nltk_data')
         extract_dir = os.path.join(nltk_base, meta['extract_dir'])
+        resource_dir = os.path.join(nltk_base, meta['resource_path'].rstrip('/'))
+        for path in (nltk_base, extract_dir, resource_dir):
+            if os.path.islink(path):
+                raise RuntimeError(f'Refusing to install NLTK data through a symlink: {path}')
         os.makedirs(extract_dir, exist_ok=True)
         zip_path = os.path.join(extract_dir, meta['zip_name'])
         last_error = None
@@ -84,6 +110,10 @@ def check_nltk_data(name: str) -> None:
                 download_url(url, zip_path, sha256=mirror['sha256'])
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(extract_dir)
+                # Newer NLTK rejects group-writable resources created under a permissive umask.
+                _tighten_entry(nltk_base)
+                _tighten_entry(extract_dir)
+                _make_owner_private(resource_dir)
                 return
             except Exception as e:
                 last_error = e

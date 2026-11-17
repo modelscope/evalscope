@@ -174,7 +174,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         evaluators.append(evaluator)
 
         meta = benchmark.benchmark_meta
-        resolved_benchmarks[dataset_name] = ResolvedBenchmarkSpec.from_meta(meta, task_config)
+        resolved_benchmarks[dataset_name] = ResolvedBenchmarkSpec.from_adapter(benchmark, task_config)
         evaluation_versions[dataset_name] = meta.evaluation_version
 
     evaluation_identity = build_evaluation_identity(resolved_benchmarks, evaluation_versions, task_config)

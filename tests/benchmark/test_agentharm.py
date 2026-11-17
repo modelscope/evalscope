@@ -18,7 +18,7 @@ from evalscope.constants import ScoreStatus
 from evalscope.third_party.agentharm.content import tool_function, tool_info
 from evalscope.third_party.agentharm.resources import MANIFEST, resource_path
 from evalscope.third_party.agentharm.types import AgentHarmSampleMeta
-from tests.api.judge.test_migrated_adapters import ScriptedJudge
+from tests.api.judge.helpers import ScriptedJudge
 
 FIXTURES = Path(__file__).parent / 'fixtures/agentharm'
 

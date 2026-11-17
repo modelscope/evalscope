@@ -21,6 +21,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `banking77` | [BANKING77](../../benchmarks/banking77.md) | `MCQ` |
+| `bbeh` | [BBEH](../../benchmarks/bbeh.md) | `Reasoning` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
@@ -42,6 +43,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
 | `cl_bench` | [CL-bench](../../benchmarks/cl_bench.md) | `InstructionFollowing`, `Reasoning` |
+| `cluewsc` | [CLUEWSC](../../benchmarks/cluewsc.md) | `Chinese`, `MCQ`, `Reasoning` |
 | `cmath` | [CMATH](../../benchmarks/cmath.md) | `Chinese`, `Math`, `Reasoning` |
 | `cmmlu` | [C-MMLU](../../benchmarks/cmmlu.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `coin_flip` | [CoinFlip](../../benchmarks/coin_flip.md) | `Reasoning`, `Yes/No` |
@@ -193,6 +195,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/arxivrollbench.md
 ../../benchmarks/arxivrollbench_full.md
 ../../benchmarks/banking77.md
+../../benchmarks/bbeh.md
 ../../benchmarks/bbh.md
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
@@ -214,6 +217,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
 ../../benchmarks/cl_bench.md
+../../benchmarks/cluewsc.md
 ../../benchmarks/cmath.md
 ../../benchmarks/cmmlu.md
 ../../benchmarks/coin_flip.md

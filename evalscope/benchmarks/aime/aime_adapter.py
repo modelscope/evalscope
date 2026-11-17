@@ -26,8 +26,7 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-# The judge answers with a bare Yes/No on a line of its own; a judge that explains itself
-# ("Yes, the answer is incorrect") must not set the verdict.
+# The judge returns a Yes/No verdict in one JSON object.
 class Equivalence(BaseModel):
     verdict: Literal['Yes', 'No']
 
@@ -42,45 +41,45 @@ Examples:
     Expression 1: $2x+3$
     Expression 2: $3+2x$
 
-Yes
+{{"verdict": "Yes"}}
 
     Expression 1: 3/2
     Expression 2: 1.5
 
-Yes
+{{"verdict": "Yes"}}
 
     Expression 1: $x^2+2x+1$
     Expression 2: $y^2+2y+1$
 
-No
+{{"verdict": "No"}}
 
     Expression 1: $x^2+2x+1$
     Expression 2: $(x+1)^2$
 
-Yes
+{{"verdict": "Yes"}}
 
     Expression 1: 3245/5
     Expression 2: 649
 
-No
+{{"verdict": "No"}}
 (these are actually equal, don't mark them equivalent if you need to do nontrivial simplifications)
 
     Expression 1: 2/(-3)
     Expression 2: -2/3
 
-Yes
+{{"verdict": "Yes"}}
 (trivial simplifications are allowed)
 
     Expression 1: 72 degrees
     Expression 2: 72
 
-Yes
+{{"verdict": "Yes"}}
 (give benefit of the doubt to units)
 
     Expression 1: 64
     Expression 2: 64 square feet
 
-Yes
+{{"verdict": "Yes"}}
 (give benefit of the doubt to units)
 
 ---
@@ -88,7 +87,7 @@ Yes
 YOUR TASK
 
 
-Respond with only "Yes" or "No" (without quotes). Do not include a rationale.
+Set the JSON verdict field to "Yes" or "No". Do not include a rationale.
 
     Expression 1: {expression1}
     Expression 2: {expression2}
@@ -105,7 +104,7 @@ Remember to put your answer inside \\boxed{{}}."""
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime24',
         pretty_name='AIME-2024',
         tags=[Tags.MATH, Tags.REASONING],
@@ -204,7 +203,7 @@ class AIME24Adapter(DefaultDataAdapter):
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime25',
         pretty_name='AIME-2025',
         tags=[Tags.MATH, Tags.REASONING],
@@ -249,7 +248,7 @@ class AIME25Adapter(AIME24Adapter): ...
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='aime26',
         pretty_name='AIME-2026',
         tags=[Tags.MATH, Tags.REASONING],
