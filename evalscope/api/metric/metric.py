@@ -10,6 +10,8 @@ logger = get_logger()
 if TYPE_CHECKING:
     from evalscope.api.evaluator import Target
 
+    from .scorer import Score
+
 
 class MetricUnavailableError(RuntimeError):
     """Invalid scoring inputs or execution failures must remain excluded from recall."""
@@ -110,8 +112,8 @@ class T2IMetric(SingletonMetric):
             cache_dir = CACHE_DIR
         return device, cache_dir
 
-    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Union[float, dict]]:
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Union[float, dict, 'Score']]:
         pass
 
-    def __call__(self, image: str, text: str, **kwargs) -> Union[float, dict]:
+    def __call__(self, image: str, text: str, **kwargs) -> Union[float, dict, 'Score']:
         return self.apply([image], [text], **kwargs)[0]
