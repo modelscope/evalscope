@@ -10,7 +10,8 @@ A suspected gold problem must be marked gold_suspect and attributed to benchmark
 gold_suspect is a boolean field, never a failure_type or secondary type. JSON-escape double quotes,
 backslashes and control characters in every string, including verbatim evidence quotes.
 
-Return a concise explanation (at most 300 words), one primary failure_type and at most 3 secondary types.
+Return an explanation in at most 3 short sentences, one primary failure_type and at most 3 secondary types.
+Use plain prose in explanation; put verbatim quotations only in evidence.quote.
 Use secondary_types: [] unless another category from types has separate supporting evidence. Boolean flags,
 attributions and confidence values are never categories. To flag a questionable reference, set only
 gold_suspect: true; do not add "gold_suspect" to secondary_types.

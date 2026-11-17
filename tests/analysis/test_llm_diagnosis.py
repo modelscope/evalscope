@@ -607,3 +607,57 @@ def test_low_rate_failures_remain_summary_sources_without_valid_model_hypotheses
     fact = next(f for f in payload['facts'] if f['id'] == 'F-task-failure')
     assert fact['numerator'] == 1 and fact['denominator'] == 50
     assert payload['sample_hypotheses'] == [] and report.narrative_status == 'ok'
+
+
+@pytest.mark.parametrize('fixture', ['gsm8k_invalid_type.txt', 'gsm8k_invalid_json.txt'])
+def test_real_gsm8k_bad_replies_remain_rejected_and_are_not_cached(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, fixture: str,
+) -> None:
+    raw = (Path(__file__).with_name('fixtures') / fixture).read_text()
+    calls = []
+    def reply(prompt: str, n: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+        return raw
+    fake_model(monkeypatch, reply, calls)
+    root = make_run()
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert report.coverage.diagnosis_statuses == {'parse_error': 1}
+    assert report.coverage.diagnosed_ok == 0
+    diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert sum('Summarize evaluation' not in prompt for prompt in calls) == 2
+    prompt = calls[0]
+    schema = json.loads(prompt[prompt.index('\nJSON schema:\n') + len('\nJSON schema:\n'):])
+    assert schema['additionalProperties'] is False
+    assert 'gold_suspect' not in schema['properties']['secondary_types']['items']['enum']
+    assert '(additional keys are allowed)' not in prompt
+
+
+def test_summary_uses_short_whitelisted_refs_without_repairing_real_reference_typos(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evalscope.analysis.llm import summarize
+
+    root = make_run()
+    report = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace={'use_providers': False}))
+    row = sample(37, 'Level 5')
+    row.llm = verdict()
+    row.llm_status = 'ok'
+    row.sources = [DiagnosticSource(id='m:1', text='ANSWER: B')]
+    actual_bad = json.loads((Path(__file__).with_name('fixtures') / 'math_invalid_reference.json').read_text())
+    calls = []
+    def reply(prompt: str, n: int) -> str:
+        schema = json.loads(prompt[prompt.index('\nJSON schema:\n') + len('\nJSON schema:\n'):])
+        allowed = schema['$defs']['NarrativeItem']['properties']['refs']['items']['enum']
+        assert 'S-1' in allowed and actual_bad['refs'][0] not in allowed
+        return json.dumps({
+            'findings': [{'text': 'Inspect this sample.', 'refs': ['S-1']}],
+            'recommendations': [actual_bad, {'text': 'Do not keep a partly invented citation.', 'refs': ['S-1', 'S-11']}],
+            'limitations': [],
+        })
+    fake_model(monkeypatch, reply, calls)
+    summarize(report, [row], options(), root, False, lambda *a: None)
+    assert report.narrative_status == 'partial_references'
+    assert report.narrative.recommendations == []
+    assert report.narrative_samples['S-1'].sample == row.key
+    assert set(report.narrative_samples) == {'S-1'}

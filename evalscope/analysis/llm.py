@@ -32,7 +32,7 @@ from .trace.export import _env_secrets, redact
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
-PROTOCOL_VERSION = '3.3'
+PROTOCOL_VERSION = '3.4'
 
 
 def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
@@ -240,6 +240,7 @@ def _request(
     target: Path,
     force: bool,
     write: Callable[[Path, str], None],
+    output_schema: Optional[Dict] = None,
 ) -> Tuple[Optional[BaseModel], str, Dict[str, int]]:
     contract = OutputContract(schema_model=schema)
     language = config.language if config.language != 'auto' else DEFAULT_LANGUAGE
@@ -248,7 +249,11 @@ def _request(
         f'Write explanations, narrative text and limitations in {"Chinese" if language == "zh" else "English"}. '
         'Keep schema enum values and quoted evidence unchanged.'
     )
-    prompt += '\nJSON schema:\n' + json.dumps(schema.model_json_schema(), ensure_ascii=False) + contract.instruction()
+    prompt += (
+        contract.instruction()
+        + '\nThe following JSON schema is authoritative, including enum values and additionalProperties.\nJSON schema:\n'
+        + json.dumps(output_schema if output_schema is not None else schema.model_json_schema(), ensure_ascii=False)
+    )
     model_config = config.model
     identity = {
         'protocol': PROTOCOL_VERSION,
@@ -467,8 +472,7 @@ def summarize(
         step = sample.llm.root_cause_step
         if step not in evidence_steps:
             step = min(evidence_steps) if evidence_steps else None
-        identity = json.dumps([sample.key.subset, sample.key.index, step], ensure_ascii=False)
-        reference = 'S-' + hashlib.sha256(identity.encode()).hexdigest()[:16]
+        reference = f'S-{len(hypotheses) + 1}'
         hypotheses.append(
             {
                 'sample': sample.key.model_dump(mode='json'),
@@ -515,7 +519,9 @@ def summarize(
         'Do not invent values or assert causation. Use limitations for uncertainties.\n'
         + json.dumps(payload, ensure_ascii=False)
     )
-    parsed, status, usage = _request(prompt, Narrative, config, target, force, write)
+    output_schema = Narrative.model_json_schema()
+    output_schema['$defs']['NarrativeItem']['properties']['refs']['items']['enum'] = sorted(ids)
+    parsed, status, usage = _request(prompt, Narrative, config, target, force, write, output_schema=output_schema)
     for key, value in usage.items():
         setattr(report.cost, key, getattr(report.cost, key) + value)
     report.narrative_status = status

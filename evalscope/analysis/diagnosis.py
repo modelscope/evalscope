@@ -29,7 +29,7 @@ from .inputs import has_nontext_output, is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.3.0'
+ANALYZER_VERSION = '3.3.1'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 

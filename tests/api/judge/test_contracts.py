@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Literal
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.judge import OutputContract
 
@@ -252,6 +252,16 @@ def test_instruction_lists_the_allowed_verdicts():
     assert '"reasoning"' in instruction
     assert 'single JSON object' in instruction
     assert 'additional keys are allowed' in instruction
+
+
+def test_instruction_respects_schemas_that_forbid_extra_fields() -> None:
+    class StrictGrade(Grade):
+        model_config = ConfigDict(extra='forbid')
+
+    contract = OutputContract(schema_model=StrictGrade)
+    assert '(no additional keys are allowed)' in contract.instruction()
+    assert not contract.parse('{"verdict":"A","unexpected":true}').ok
+    assert contract.parse('{"verdict":"A"}').ok
 
 
 def test_instruction_states_the_numeric_bounds():
