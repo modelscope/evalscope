@@ -54,10 +54,7 @@ from evalscope.service.api_models import (
     LoadReportResponse,
     PredictionsResponse,
 )
-from evalscope.service.prediction_cache import (
-    prediction_etag,
-    prediction_fingerprint,
-)
+from evalscope.service.prediction_cache import prediction_etag
 from evalscope.service.report_meta_cache import (
     Fingerprint,
     build_report_meta_cached,
@@ -680,18 +677,14 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         # Fingerprint the source cache files so an unchanged subset revalidates
         # as 304 before any expensive loading or response serialization.
         review_path, prediction_path = get_prediction_source_paths(work_dir, ref.model_id, dataset_name, subset_name)
-        fingerprint = prediction_fingerprint(review_path, prediction_path)
         cache_key = f'{os.path.realpath(root)}\x00{ref.run_id}\x00{ref.model_id}\x00{dataset_name}\x00{subset_name}'
-        etag = prediction_etag(cache_key, fingerprint)
+        etag = prediction_etag(cache_key, review_path, prediction_path)
 
         if request.if_none_match.contains_weak(etag) and os.path.isfile(review_path):
             resp = Response()
-            resp.set_etag(etag)
-            resp.headers['Cache-Control'] = 'no-cache'
-            return resp.make_conditional(request)
-
-        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-        resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
+        else:
+            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+            resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
         resp.set_etag(etag)
         resp.headers['Cache-Control'] = 'no-cache'
         return resp.make_conditional(request)
