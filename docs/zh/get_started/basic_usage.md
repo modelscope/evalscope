@@ -195,7 +195,7 @@ evalscope eval \
 
 **示例2. 调整结果聚合方式**
 
-对于需要多次生成的任务（如数学题），可以通过 `--repeats` 参数指定重复生成次数k，并使用 `dataset-args` 调整结果聚合方式，例如 `mean_and_vote_at_k`、`mean_and_pass_at_k`、`mean_and_pass^k`。
+对于需要多次生成的任务（如数学题），可以通过 `--repeats` 参数指定重复生成次数k，并使用 `dataset-args` 调整结果聚合方式，例如 `mean_and_vote_at_k`、`mean_and_pass_at_k`、`mean_and_pass_hat_k`。
 
 ```shell
 evalscope eval \
@@ -206,6 +206,7 @@ evalscope eval \
  --repeats 5
 ```
 
+这些 `mean_and_*` 方式默认将普通 `mean` 作为报告主指标，同时保留各项 k 聚合结果作为附加指标。
 
 ```{seealso}
 查看所有可配置项，请参考：[全部参数说明](parameters.md)
