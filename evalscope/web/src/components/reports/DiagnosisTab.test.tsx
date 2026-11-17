@@ -17,7 +17,7 @@ afterEach(() => {
 
 const report: DiagnosisReport = {
   narrative_samples: {},
-  schema_version: 2,
+  schema_version: 4,
   analyzer_version: '1',
   taxonomy_version: '1',
   run_dir: '/outputs/run',
@@ -123,11 +123,12 @@ it('keeps facts information compact and excludes statistics dumps, inapplicable 
   expect(info).not.toHaveAttribute('open')
   fireEvent.click(screen.getByRole('link', { name: '分析信息' }))
   expect(info).toHaveAttribute('open')
-  expect(within(info).getByText('规则统计')).toBeInTheDocument()
+  expect(within(info).getByText('基础分析')).toBeInTheDocument()
   expect(within(info).getByText('3 条样本')).toBeInTheDocument()
   expect(within(info).getByText('未调用模型')).toBeInTheDocument()
   expect(within(info).queryByText('Token 用量')).not.toBeInTheDocument()
   expect(within(info).queryByText('分析模型')).not.toBeInTheDocument()
+  expect(within(info).queryByText('总结状态')).not.toBeInTheDocument()
   expect(container.textContent).not.toMatch(/internal.stop_reason|F-agent|Developer title|没有工具调用记录/)
   expect(screen.queryByText(/回答被截断/)).not.toBeInTheDocument()
 })
@@ -178,7 +179,7 @@ it('keeps risk and unscored cases separate and removes the passed-observation fe
 })
 
 it('keeps model analysis, references and cached usage accessible', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }], report: { ...report, level: 'full', narrative_status: 'ok', cost: { ...report.cost, cached_calls: 16 },
+  getDiagnosis.mockResolvedValue({ status: 'ready', issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }], report: { ...report, level: 'diagnose', narrative_status: 'ok', cost: { ...report.cost, cached_calls: 16 },
     narrative_samples: { 'S-a': { sample: { subset: '跨子集', index: 42 }, step: 3 } },
     narrative: { findings: [{ text: 'Inspect the tool reply.', refs: ['S-a'] }], recommendations: [] },
   } })
@@ -199,7 +200,7 @@ it('keeps model analysis, references and cached usage accessible', async () => {
 })
 
 
-it('shows sample-analysis scope, citation counts and compact usage without a full-summary section', async () => {
+it('shows model-analysis scope, citation counts, usage and summary status', async () => {
   getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'diagnose', diagnosis_model: 'reviewer',
     coverage: { ...report.coverage, selection_scope: 'failed', selected: 2, diagnosis_population: 5,
       diagnosed_ok: 1, citations_valid: 3, citations_total: 4, diagnosis_statuses: { ok: 1, invalid_evidence: 1 } },
@@ -209,14 +210,14 @@ it('shows sample-analysis scope, citation counts and compact usage without a ful
   await settle()
   const info = screen.getByText('Analysis information', { selector: 'summary span' }).closest('details')!
   fireEvent.click(screen.getByRole('link', { name: 'Analysis information' }))
-  expect(within(info).getByText('Sample analysis')).toBeInTheDocument()
+  expect(within(info).getByText('Model analysis')).toBeInTheDocument()
   expect(within(info).getByText('Failed tasks')).toBeInTheDocument()
   expect(within(info).getByText('reviewer')).toBeInTheDocument()
   expect(within(info).getByText('2 / 5')).toBeInTheDocument()
   expect(within(info).getByText('3 / 4')).toBeInTheDocument()
   expect(within(info).getByText('Input 1.5M · output 2.3K')).toHaveAttribute('title', 'Input tokens: 1,500,000 · Output tokens: 2,300')
   expect(screen.queryByRole('region', { name: 'Model summary and suggestions' })).not.toBeInTheDocument()
-  expect(within(info).queryByText('Summary status')).not.toBeInTheDocument()
+  expect(within(info).getByText('Summary status')).toBeInTheDocument()
 })
 
 it.each([
@@ -225,8 +226,8 @@ it.each([
   ['parse_error', 'Invalid summary response'],
   ['invalid_references', 'Summary references unavailable'],
   ['not_requested', 'Not generated'],
-])('shows the correct full-summary state without a fake narrative (%s)', async (status, text) => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'full', narrative_status: status } })
+])('shows the correct model-summary state without a fake narrative (%s)', async (status, text) => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'diagnose', narrative_status: status } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
   const info = screen.getByText('Analysis information', { selector: 'summary span' }).closest('details')!
@@ -235,8 +236,8 @@ it.each([
   expect(screen.queryByRole('region', { name: 'Model summary and suggestions' })).not.toBeInTheDocument()
 })
 
-it('keeps full findings and recommendations distinct and opens only the cited statistic', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'full', narrative_status: 'partial_references',
+it('keeps model findings and recommendations distinct and opens only the cited statistic', async () => {
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'diagnose', narrative_status: 'partial_references',
     narrative: { findings: [{ text: 'One answer was cut off.', refs: ['F-truncation'] }],
       recommendations: [{ text: 'Check the output limit.', refs: ['F-truncation'] }], limitations: [] },
     facts: [

@@ -17,7 +17,7 @@ import ReportDetailPage from './ReportDetailPage'
 const REPORT = loadFixture<LoadReportResponse>('report-multi-dataset')
 const PREDICTIONS = loadFixture<PredictionsResponse>('predictions-tool-trace')
 const DIAGNOSIS: DiagnosisReport = {
-  schema_version: 1,
+  schema_version: 4,
   analyzer_version: '1',
   taxonomy_version: '1',
   run_dir: '/outputs/run',
@@ -235,7 +235,7 @@ describe('report workspace', () => {
   it('opens the exact cited sample and step, preserves it in Samples, and restores Diagnosis', async () => {
     const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [], source: 'rule' } as SampleDiagnosesResponse['items'][number]
     vi.mocked(api.getSampleDiagnoses).mockResolvedValue({ status: 'ready', items: [item], total: 1, page: 1, page_size: 200 })
-    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'full',
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'diagnose',
       narrative_status: 'ok', narrative_samples: { 'S-exact': { sample: item.key, step: 0 } },
       narrative: { findings: [{ text: 'Inspect this sample.', refs: ['S-exact'] }], recommendations: [], limitations: [] },
     } })

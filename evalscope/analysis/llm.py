@@ -339,7 +339,7 @@ def enrich(
             'language': config.language if config.language != 'auto' else DEFAULT_LANGUAGE,
         }
         prompts.append(PROMPT.read_text() + '\n' + json.dumps(payload, ensure_ascii=False))
-    report.cost.estimated_calls = len(prompts) + (config.level == 'full')
+    report.cost.estimated_calls = len(prompts) + 1
     report.cost.estimated_input_tokens = sum(len(p) // 3 for p in prompts)
     logger.info(
         f'Diagnostic budget: at most {report.cost.estimated_calls} calls, approximately '

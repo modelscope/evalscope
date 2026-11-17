@@ -37,10 +37,10 @@ class AnalysisModelConfig(BaseModel):
 
 
 class AnalysisReportConfig(BaseModel):
-    """Facts are free; deeper analysis requires an explicitly configured model."""
+    """Facts make no model calls; diagnose requires an explicit model for sample hypotheses and a summary."""
 
     model_config = ConfigDict(extra='forbid')
-    level: Literal['facts', 'diagnose', 'full'] = 'facts'
+    level: Literal['facts', 'diagnose'] = 'facts'
     language: Literal['auto', 'zh', 'en'] = 'auto'
     model: Optional[AnalysisModelConfig] = None
     max_diagnosed_samples: Optional[int] = Field(default=50, ge=1, strict=True)
@@ -233,13 +233,13 @@ class DiagnosisCost(DiagnosticData):
 class DiagnosisReport(DiagnosticData):
     """One analysis of a persisted (run, model, benchmark), with cache provenance."""
 
-    schema_version: int = 3
+    schema_version: int = 4
     analyzer_version: str
     taxonomy_version: str = TAXONOMY_VERSION
     run_dir: str
     model: str
     benchmark: str
-    level: Literal['facts', 'diagnose', 'full'] = 'facts'
+    level: Literal['facts', 'diagnose'] = 'facts'
     diagnosis_model: Optional[str] = None
     self_evaluation: bool = False
     narrative: Optional[Narrative] = None

@@ -232,7 +232,7 @@ function AnalysisInformation({ report }: { report: DiagnosisReport }) {
       { label: t('diagnosis.tokenUsage'), value: tokenUsage,
         title: cost.usage_missing_calls ? undefined : `${t('diagnosis.inputTokens')}: ${cost.input_tokens.toLocaleString()} · ${t('diagnosis.outputTokens')}: ${cost.output_tokens.toLocaleString()}` },
     ] : [{ label: t('diagnosis.modelCalls'), value: t('diagnosis.noModelCalls') }]),
-    ...(report.level === 'full' ? [{ label: t('diagnosis.summaryStatus'), value:
+    ...(report.level === 'diagnose' ? [{ label: t('diagnosis.summaryStatus'), value:
       <Badge variant={summaryFailed || summaryStatus === 'partial_references' ? 'warning' : 'default'}>
         {t(`diagnosis.summaryState.${summaryStatus}`)}
       </Badge> }] : []),
@@ -243,7 +243,7 @@ function AnalysisInformation({ report }: { report: DiagnosisReport }) {
     <details id="diagnosis-analysis-info" className="group rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2 font-medium"><FileText size={15} />{t('diagnosis.analysisInformation')}</span>
-        <span className="flex items-center gap-3"><Badge>{mode}</Badge>{report.level === 'full' && <span className={summaryFailed ? 'text-[var(--warning-text)]' : 'text-[var(--text-muted)]'}>{t(`diagnosis.summaryState.${summaryStatus}`)}</span>}<ChevronDown size={15} className="transition-transform group-open:rotate-180" /></span>
+        <span className="flex items-center gap-3"><Badge>{mode}</Badge>{report.level === 'diagnose' && <span className={summaryFailed ? 'text-[var(--warning-text)]' : 'text-[var(--text-muted)]'}>{t(`diagnosis.summaryState.${summaryStatus}`)}</span>}<ChevronDown size={15} className="transition-transform group-open:rotate-180" /></span>
       </summary>
       <div className="space-y-4 border-t border-[var(--border)] p-4">
         <dl className="grid grid-cols-3 gap-x-8 gap-y-4">
@@ -329,7 +329,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     { key: 'summaryFindings', items: report.narrative.findings },
     { key: 'summaryRecommendations', items: report.narrative.recommendations },
   ].filter(group => group.items.length) : []
-  const hasNarrative = report.level === 'full' && ['ok', 'partial_references'].includes(report.narrative_status)
+  const hasNarrative = report.level === 'diagnose' && ['ok', 'partial_references'].includes(report.narrative_status)
     && Boolean(report.narrative && (report.narrative.findings.length || report.narrative.recommendations.length))
   const factTitle = (fact: Fact) => {
     const key = `diagnosis.fact.${fact.id}`

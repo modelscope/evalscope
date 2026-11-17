@@ -29,7 +29,7 @@ from .inputs import is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.1.1'
+ANALYZER_VERSION = '3.2.0'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -136,7 +136,7 @@ def diagnose_benchmark(
     """Analyze a benchmark and persist a readable failure state without changing scores."""
     config = config or AnalysisReportConfig()
     if config.level != 'facts' and config.model is None:
-        raise ValueError('diagnose/full requires an explicit analysis model; facts makes no model calls.')
+        raise ValueError('diagnose requires an explicit analysis model; facts makes no model calls.')
     run_dir = str(Path(run_dir).resolve())
     target = diagnosis_dir(run_dir, model, benchmark)
     target.mkdir(parents=True, exist_ok=True)
@@ -316,9 +316,8 @@ def _diagnose_benchmark(
             )
         )
     report.patterns = patterns
-    if config.level != 'facts':
-        if config.level == 'full':
-            summarize(report, samples, config, target, force, _atomic_write)
+    if config.level == 'diagnose':
+        summarize(report, samples, config, target, force, _atomic_write)
         report.limitations += [
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
             'Model hypotheses describe only the selected samples; no population cause estimates are made.',

@@ -21,7 +21,7 @@ from tests.analysis.helpers import review
 
 
 def options(**kw: object) -> AnalysisReportConfig:
-    return AnalysisReportConfig(level='full', model={'model_id':'independent-reviewer'}, trace={'use_providers':False}, **kw)
+    return AnalysisReportConfig(level='diagnose', model={'model_id':'independent-reviewer'}, trace={'use_providers':False}, **kw)
 
 
 def verdict(**kw: object) -> LLMDiagnosis:
@@ -100,7 +100,7 @@ def fake_model(monkeypatch: pytest.MonkeyPatch,reply: Callable, calls: list) -> 
     monkeypatch.setattr('evalscope.analysis.llm.get_model',lambda *a,**kw:FakeModel())
 
 
-def test_full_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
+def test_model_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
     root=make_run()
     original=(root/'reviews/m/demo_default.jsonl').read_bytes()
     calls=[]
@@ -134,6 +134,8 @@ def test_failed_diagnoses_never_count_as_explained(make_run: Callable,monkeypatc
     root=make_run()
     calls=[]
     def reply(prompt: str,n: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
         if mode=='transport':
             raise ConnectionError('private credential must not leak')
         if mode=='parse':
@@ -145,19 +147,19 @@ def test_failed_diagnoses_never_count_as_explained(make_run: Callable,monkeypatc
             d.confidence='low'
         return d.model_dump_json()
     fake_model(monkeypatch,reply,calls)
-    report=diagnose_benchmark(str(root),'m','demo',options().model_copy(update={'level':'diagnose'}))
+    report=diagnose_benchmark(str(root),'m','demo',options())
     assert report.coverage.diagnosis_statuses=={status:1}
     assert report.coverage.diagnosed_ok == 0 and report.coverage.unexplained_failures == 1
     assert report.patterns[0].failure_type=='unexplained'
     if mode in ('parse','transport'):
-        diagnose_benchmark(str(root),'m','demo',options().model_copy(update={'level':'diagnose'}))
-        assert len(calls)==2
+        diagnose_benchmark(str(root),'m','demo',options())
+        assert sum('Summarize evaluation' not in prompt for prompt in calls) == 2
 
 
 def test_no_model_configuration_never_silently_calls_evaluation_model(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr('evalscope.analysis.llm.get_model',lambda *a,**kw:pytest.fail('No explicit model'))
     with pytest.raises(ValueError,match='explicit analysis model'):
-        diagnose_benchmark(str(make_run()),'m','demo',AnalysisReportConfig(level='full'))
+        diagnose_benchmark(str(make_run()),'m','demo',AnalysisReportConfig(level='diagnose'))
 
 
 def test_validation_does_not_turn_locatable_citations_into_semantic_accuracy() -> None:
@@ -311,7 +313,7 @@ def test_long_input_keeps_middle_finding_recovery_and_final_answer(make_run: Cal
     assert sum(len(source.text) for source in sources) <= 4000
 
 
-def test_full_model_analysis_never_claims_population_cause_estimates(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_model_analysis_never_claims_population_cause_estimates(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
     calls = []
     fake_model(monkeypatch, lambda prompt, n: json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
                if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls)
@@ -442,3 +444,47 @@ def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
     assert '[main · 样本 30 · 步骤 7]' in markdown
     assert ref not in markdown
     assert report.narrative_status == 'ok'
+
+
+def test_analysis_config_and_cli_expose_only_basic_and_model_analysis() -> None:
+    from argparse import ArgumentParser
+
+    from evalscope.api.analysis import DiagnosisReport
+    from evalscope.cli.analyze import AnalyzeCMD
+
+    assert AnalysisReportConfig().level == 'facts'
+    for schema in (AnalysisReportConfig.model_json_schema(), DiagnosisReport.model_json_schema()):
+        assert schema['properties']['level']['enum'] == ['facts', 'diagnose']
+    with pytest.raises(ValueError):
+        AnalysisReportConfig(level='full')
+    parser = ArgumentParser()
+    AnalyzeCMD.define_args(parser.add_subparsers())
+    for level in ('facts', 'diagnose'):
+        assert parser.parse_args(['analyze', '--run-dir', 'run', '--level', level]).level == level
+    with pytest.raises(SystemExit):
+        parser.parse_args(['analyze', '--run-dir', 'run', '--level', 'full'])
+
+
+@pytest.mark.parametrize('failure', ['parse', 'transport'])
+def test_summary_failure_preserves_sample_diagnosis_and_resumes_without_reanalyzing_samples(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    root = make_run()
+    original = (root / 'reviews/m/demo_default.jsonl').read_bytes()
+    calls = []
+    def reply(prompt: str, n: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            if failure == 'transport':
+                raise ConnectionError('Scripted summary failure')
+            return 'Not JSON'
+        return verdict().model_dump_json()
+    fake_model(monkeypatch, reply, calls)
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert report.level == 'diagnose' and report.coverage.diagnosed_ok == 1
+    assert report.narrative_status == ('parse_error' if failure == 'parse' else 'transport_error')
+    assert report.cost.calls == 2
+    resumed = diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert resumed.coverage.diagnosed_ok == 1
+    assert resumed.cost.calls == resumed.cost.cached_calls == 1
+    assert sum('Summarize evaluation' not in prompt for prompt in calls) == 1
+    assert (root / 'reviews/m/demo_default.jsonl').read_bytes() == original

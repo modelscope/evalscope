@@ -25,7 +25,7 @@ run_task(TaskConfig(
 ))
 ```
 
-Python `analysis_report=True` and CLI `--analysis-report` default to free `facts`, including future deliveries; analysis is otherwise off by default. Native evaluations launched from the Web enable facts automatically. `diagnose` and `full` require an explicitly configured analysis model, as described below.
+Python `analysis_report=True` and CLI `--analysis-report` default to free `facts`, including future deliveries; analysis is otherwise off by default. Native evaluations launched from the Web enable facts automatically. `diagnose` requires an explicitly configured analysis model, as described below.
 
 Offline configuration accepts JSON or a JSON file:
 
@@ -67,15 +67,14 @@ Cache identity includes reviews, corresponding predictions, report metadata and 
 
 ## Model analysis, evidence and statistical scope
 
-`analysis_report=True` still defaults to free `facts`. `diagnose` analyzes selected samples;
-`full` also generates a referenced summary. Both require an explicit analysis model and remain experimental.
+`analysis_report=True` still defaults to free `facts`. `diagnose` includes basic analysis, model analysis of selected samples, citation checks, and a referenced summary with suggested checks. It requires an explicit analysis model and remains experimental.
 The evaluation or scoring model is never selected implicitly. Set `include_trace=False` to send only the task and final answer instead of intermediate messages and tool observations.
 
 ```python
 from evalscope.api.analysis import AnalysisReportConfig
 
 analysis = AnalysisReportConfig(
-    level='full',
+    level='diagnose',
     model={
         'model_id': 'qwen3.8-max',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -136,6 +135,8 @@ positive and negative detector labels. An unannotated detector is not assumed ne
 agreement, attribution confusion, root-step agreement, citation locatability and reviewed evidence support
 separately. Preserve annotator identity: agreement with model-assisted labels is not human-validated accuracy.
 
-In the Web dashboard, **Analysis information** reflects the mode: `facts` shows the complete rule-statistics scope, no model usage, and generation time; `diagnose` adds the actual selection scope, selected samples, citation checks, model, new requests, and cache reuse; `full` also shows summary status. Summaries distinguish population rule statistics from unverified proposals about selected samples. Proposal examples use `max_examples` and do not estimate population causes. Up to three observations and three suggested next checks appear separately; a statistic reference opens its supporting data. A locatable citation does not confirm a cause. There is no separate entry for process observations in passing samples.
+In the Web dashboard, **Analysis information** reflects the mode: `facts` (basic analysis) shows the complete rule-statistics scope, no model usage, and generation time; `diagnose` (model analysis) adds the actual selection scope, selected samples, citation checks, model, new requests, cache reuse, and summary status. Summaries distinguish population rule statistics from unverified proposals about selected samples. Proposal examples use `max_examples` and do not estimate population causes. Up to three observations and three suggested next checks appear separately; a statistic reference opens its supporting data. A locatable citation does not confirm a cause. There is no separate entry for process observations in passing samples.
 
 Diagnosis lists show issue names and counts. “Other failed samples” means no known record anomaly matched; a model proposal may still exist. Embedded samples use top navigation and a step selector while sharing the complete QA/trace reader with Samples. Explanations cite specific subsets, samples and evidence-backed steps; opening Samples preserves the step. Statistical references expand their supporting data and denominator. Analysis information remains available. Older group citations are marked stale rather than guessed into sample references; rerun `evalscope analyze` to rebuild diagnostics. `facts` remains free of model calls.
+
+Change older experimental configurations from `level='full'` to `level='diagnose'` and regenerate old diagnostic artifacts. Sample analyses and summaries are cached separately; a failed summary preserves completed sample analyses so a resumed run can reuse them.

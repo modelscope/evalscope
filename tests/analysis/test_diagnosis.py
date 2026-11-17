@@ -141,10 +141,10 @@ def test_excluded_reasons_use_saved_error_and_reveal_missing_details(make_run: C
     assert '1 excluded' in report.coverage.skipped_facts['score-error-reasons']
 
 
-def test_paid_levels_require_explicit_model_without_hidden_downgrades(make_run: Callable) -> None:
+def test_model_analysis_requires_explicit_model_without_hidden_downgrades(make_run: Callable) -> None:
     root = make_run()
     with pytest.raises(ValueError, match='explicit analysis model'):
-        diagnose_run(str(root), AnalysisReportConfig(level='full'))
+        diagnose_run(str(root), AnalysisReportConfig(level='diagnose'))
     assert (
         TaskConfig(model='m', eval_type='mock_llm', datasets=['gsm8k'], analysis_report=True)
         .resolved_analysis_config()
@@ -651,7 +651,7 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert single == full[:1]
 
 
-@pytest.mark.parametrize('version', [1, 2])
+@pytest.mark.parametrize('version', [1, 2, 3])
 def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable, version: int) -> None:
     from evalscope.report.diagnosis import load_diagnosis
 
@@ -660,6 +660,8 @@ def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_cou
     path = root / 'analysis/m/demo/diagnosis.json'
     data = json.loads(path.read_text())
     data['schema_version'] = version
+    if version == 3:
+        data['level'] = 'full'
     path.write_text(json.dumps(data))
     assert load_diagnosis(str(root), 'm', 'demo') == ('stale', None)
 

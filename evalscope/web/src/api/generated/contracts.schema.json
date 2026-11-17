@@ -1036,8 +1036,7 @@
           "default": "facts",
           "enum": [
             "facts",
-            "diagnose",
-            "full"
+            "diagnose"
           ],
           "type": "string"
         },
@@ -1085,7 +1084,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": 3,
+          "default": 4,
           "type": "integer"
         },
         "self_evaluation": {

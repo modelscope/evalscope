@@ -276,7 +276,7 @@ export interface DiagnosisReport {
   diagnosis_model: string | null;
   facts: Fact[];
   generated_at: string;
-  level: "facts" | "diagnose" | "full";
+  level: "facts" | "diagnose";
   limitations: string[];
   model: string;
   narrative: Narrative | null;

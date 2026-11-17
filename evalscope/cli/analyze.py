@@ -19,7 +19,12 @@ class AnalyzeCMD(CLICommand):
         parser.add_argument('--run-dir', required=True)
         parser.add_argument('--model', action='append')
         parser.add_argument('--benchmark', action='append')
-        parser.add_argument('--level', choices=['facts', 'diagnose', 'full'], default=None)
+        parser.add_argument(
+            '--level',
+            choices=['facts', 'diagnose'],
+            default=None,
+            help='facts: basic analysis without model calls; diagnose: sample analysis and a referenced summary with an explicit model.',
+        )
         parser.add_argument('--analysis-config', default=None, help='JSON configuration or JSON file path.')
         parser.add_argument(
             '--max-samples', help='Model-analysis sample limit per benchmark; a positive integer or all.'
@@ -48,7 +53,7 @@ class AnalyzeCMD(CLICommand):
             failure_rate = f'{c.task_failed / c.task_success_known:.1%}' if c.task_success_known else 'unknown'
             print(
                 f'{report.run_dir} / {report.model}/{report.benchmark}: '
-                f'{c.samples} reviews; task failures={c.task_failed}/{c.task_success_known}; '
+                f'{c.samples} reviews; level={report.level}; task failures={c.task_failed}/{c.task_success_known}; '
                 f'failure rate={failure_rate}; rule clues={c.task_failed - c.unexplained_failures}/{c.task_failed}; '
                 f'unknown outcomes={c.outcome_unknown}; without rule clues={c.unexplained_failures}/{c.task_failed}; '
                 f'issue groups (all samples; may overlap): {patterns}; calls={report.cost.calls}; '

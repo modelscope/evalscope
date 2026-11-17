@@ -25,7 +25,7 @@ run_task(TaskConfig(
 ))
 ```
 
-Python 的 `analysis_report=True` 和 CLI 的 `--analysis-report` 均默认启用免费 `facts`（后续也保持此默认值）；默认不开启。Web 发起的原生评测默认开启。`diagnose`、`full` 必须显式配置分析模型，详见下文。
+Python 的 `analysis_report=True` 和 CLI 的 `--analysis-report` 均默认启用免费 `facts`（后续也保持此默认值）；默认不开启。Web 发起的原生评测默认开启。`diagnose` 必须显式配置分析模型，详见下文。
 
 离线配置可传 JSON 或 JSON 文件，例如：
 
@@ -67,13 +67,13 @@ Web 报告按“评测结果 → 结果诊断 → 样本详情”组织。多数
 
 ## 模型分析、证据与统计口径
 
-`analysis_report=True` 继续默认免费 `facts`。`diagnose` 对样本分析，`full` 再生成带引用的总结；两者必须显式配置分析模型，不自动沿用评测或评分模型。模型分析目前为实验性能力。设置 `include_trace=False` 可仅发送任务和最终回答，省略中间消息和工具返回。
+`analysis_report=True` 继续默认免费 `facts`。`diagnose` 在基础分析上对所选样本进行模型分析、校验引用，并生成带引用的总结与检查建议；必须显式配置分析模型，不自动沿用评测或评分模型。模型分析目前为实验性能力。设置 `include_trace=False` 可仅发送任务和最终回答，省略中间消息和工具返回。
 
 ```python
 from evalscope.api.analysis import AnalysisReportConfig
 
 analysis = AnalysisReportConfig(
-    level='full',
+    level='diagnose',
     model={
         'model_id': 'qwen3.8-max',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -119,6 +119,8 @@ python -m evalscope.analysis.validation --samples <samples.jsonl> --labels <labe
 
 标注使用 `DiagnosticLabel`，每份文件只对应一个 run/model/benchmark。`rule_decisions` 显式标注检测项的正反例；未标的检测项不假定为负例。工具分别报告分类一致性、归因混淆、根因步骤、引用可定位性和已复核证据支持率。模型辅助标注须保留标注者身份，不能当作人工准确率验收。
 
-Web 中的“分析信息”按模式展示：`facts` 只显示全量规则统计范围、未调用模型和生成时间；`diagnose` 增加实际选样范围、选取数、引用校验、模型及本次调用与缓存用量；`full` 再显示总结生成状态。总结区分全量规则统计与已选样本的待核查模型提议；模型提议示例数沿用 `max_examples`，不外推总体原因。主要发现与排查建议各最多 3 条，分开展示，点击统计引用可查看对应依据。引用可定位与原因已确认是两回事。页面不再单独提供“已通过样本的过程线索”入口。
+Web 中的“分析信息”按模式展示：`facts`（基础分析）显示全量规则统计范围、未调用模型和生成时间；`diagnose`（模型分析）增加实际选样范围、选取数、引用校验、模型、本次调用与缓存用量，以及总结生成状态。总结区分全量规则统计与已选样本的待核查模型提议；模型提议示例数沿用 `max_examples`，不外推总体原因。主要发现与排查建议各最多 3 条，分开展示，点击统计引用可查看对应依据。引用可定位与原因已确认是两回事。页面不再单独提供“已通过样本的过程线索”入口。
 
 诊断页左侧只显示问题名称与数量；“其他未通过样本”表示尚未匹配到已知记录异常，不代表没有模型提议。嵌入样本使用顶部导航和步骤定位菜单，完整问答与轨迹仍与“样本详情”共用查看器。总结中的解释引用具体子集、样本及可定位的步骤；点击后打开该样本，进入完整详情时保留步骤位置。统计引用展开对应统计及分母。“分析信息”继续保留。旧版分组引用不会自动猜成样本引用，需重新运行 `evalscope analyze` 生成新诊断；`facts` 仍不调用模型。
+
+旧实验配置中的 `level='full'` 请改为 `level='diagnose'`，旧诊断产物需重新生成。样本分析与总结分别缓存；总结失败会保留已获得的样本分析，续跑时复用有效缓存。
