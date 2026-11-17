@@ -125,8 +125,15 @@ class LLMDiagnosis(DiagnosticData):
         return value
 
 
+class NarrativeSampleReference(DiagnosticData):
+    """A summary citation resolved by the analyzer to one inspected sample and optional evidence step."""
+
+    sample: SampleKey
+    step: Optional[int] = Field(default=None, ge=0)
+
+
 class NarrativeItem(DiagnosticData):
-    """Every sentence has resolvable fact/pattern references; it remains model-generated text."""
+    """Every sentence has resolvable fact/sample references; it remains model-generated text."""
 
     text: str = Field(min_length=1, max_length=2000)
     refs: List[str] = Field(min_length=1, max_length=8)
@@ -135,7 +142,7 @@ class NarrativeItem(DiagnosticData):
     @classmethod
     def separate_references(cls, text: str) -> str:
         """Render references once through the validated ref list, without leaking internal IDs in prose."""
-        text = re.sub(r'(?:,\s*)?\b[FP]-[\w-]+\b', '', text)
+        text = re.sub(r'(?:,\s*)?\b[FPS]-[\w-]+\b', '', text)
         return re.sub(r'\s*(?:\[\s*\]|\(\s*\)|（\s*）|【\s*】)', '', text).strip()
 
 
@@ -226,7 +233,7 @@ class DiagnosisCost(DiagnosticData):
 class DiagnosisReport(DiagnosticData):
     """One analysis of a persisted (run, model, benchmark), with cache provenance."""
 
-    schema_version: int = 2
+    schema_version: int = 3
     analyzer_version: str
     taxonomy_version: str = TAXONOMY_VERSION
     run_dir: str
@@ -237,6 +244,7 @@ class DiagnosisReport(DiagnosticData):
     self_evaluation: bool = False
     narrative: Optional[Narrative] = None
     narrative_status: str = 'not_requested'
+    narrative_samples: Dict[str, NarrativeSampleReference] = Field(default_factory=dict)
     generated_at: str
     config_fingerprint: str
     data_fingerprint: str

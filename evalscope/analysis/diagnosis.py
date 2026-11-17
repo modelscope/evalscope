@@ -29,7 +29,7 @@ from .inputs import is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.0.1'
+ANALYZER_VERSION = '3.1.1'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -106,7 +106,17 @@ def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
         ]
     if report.narrative:
         for item in report.narrative.findings + report.narrative.recommendations:
-            lines.append(f'- {item.text} ' + ' '.join(f'[{ref}]' for ref in item.refs))
+            labels = []
+            for ref in item.refs:
+                sample_ref = report.narrative_samples.get(ref)
+                if sample_ref:
+                    label = f'{sample_ref.sample.subset} · {"样本" if zh else "Sample"} {sample_ref.sample.index}'
+                    if sample_ref.step is not None:
+                        label += f' · {"步骤" if zh else "Step"} {sample_ref.step}'
+                    labels.append(f'[{label}]')
+                else:
+                    labels.append(f'[{ref}]')
+            lines.append(f'- {item.text} ' + ' '.join(labels))
     for fact in report.facts:
         value = '' if fact.value is None else f' {fact.value:.1%}' if fact.unit == 'fraction' else f' {fact.value:g}'
         lines.append(f'- [{fact.id}] {fact.title}:{value} — {fact.definition}')

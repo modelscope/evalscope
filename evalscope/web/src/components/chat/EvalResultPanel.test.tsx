@@ -105,3 +105,23 @@ describe('EvalResultPanel', () => {
     ).toBeInTheDocument()
   })
 })
+
+it('keeps embedded scores compact and hides an absent reference answer', () => {
+  const { container } = render(<LocaleProvider><EvalResultPanel compact pred="" gold="*No Gold Provided*" nScore={0}
+    score={{ value: { targeted_asr: 0, utility: 0 }, main_score_name: 'targeted_asr' }} metadata={{}} threshold={0.99} showPred={false} /></LocaleProvider>)
+  const details = container.querySelector('details')!
+  expect(details).not.toHaveAttribute('open')
+  expect(details.querySelector('summary')).toHaveTextContent('targeted_asr')
+  expect(details.querySelector('summary')).toHaveTextContent('utility')
+  expect(screen.queryByText('No Gold Provided')).not.toBeInTheDocument()
+  expect(screen.queryByText('Expected Answer')).not.toBeInTheDocument()
+})
+
+it('keeps the extracted and reference answers visible in the compact QA score', () => {
+  const { container } = render(<LocaleProvider><EvalResultPanel compact pred="12" gold="13" nScore={0}
+    score={{ value: { accuracy: 0 }, main_score_name: 'accuracy' }} metadata={{}} threshold={0.99} showPred /></LocaleProvider>)
+  const summary = container.querySelector('summary')!
+  expect(summary).toHaveTextContent('Extracted Answer: 12')
+  expect(summary).toHaveTextContent('Expected Answer: 13')
+  expect(container.querySelector('details')).not.toHaveAttribute('open')
+})

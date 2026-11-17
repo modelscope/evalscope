@@ -11,6 +11,7 @@ from .schema import (
     LLMDiagnosis,
     Narrative,
     NarrativeItem,
+    NarrativeSampleReference,
     SampleDiagnosis,
     SampleKey,
 )

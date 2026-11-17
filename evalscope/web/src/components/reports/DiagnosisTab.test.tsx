@@ -16,6 +16,7 @@ afterEach(() => {
 })
 
 const report: DiagnosisReport = {
+  narrative_samples: {},
   schema_version: 2,
   analyzer_version: '1',
   taxonomy_version: '1',
@@ -106,6 +107,7 @@ it('selects the largest failed issue immediately and reuses the persistent sampl
   expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'tool_error', outcome: 'failed' }, 1, expect.any(AbortSignal))
   expect(screen.getByText(/Tools involved/)).toHaveTextContent('search')
   expect(screen.queryByRole('img', { name: /Model:/ })).not.toBeInTheDocument()
+  expect(within(issues).queryByText('Tools returned errors during execution. Their effect on the final result still needs review.')).not.toBeInTheDocument()
 })
 
 it('keeps facts information compact and excludes statistics dumps, inapplicable items and model fields', async () => {
@@ -149,8 +151,8 @@ it('provides an immediate unexplained-case entry instead of inventing an ordinar
   } }, issues: [{ failure_type: 'unexplained', failed: 1 }] })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
-  expect(screen.getByRole('button', { name: /No rule clues yet/ })).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByText('0 have rule clues; 1 have no rule clues yet.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Other failed samples/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('0 have record anomalies; 1 are other failed samples.')).toBeInTheDocument()
   expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'unexplained', outcome: 'failed' }, 1, expect.any(AbortSignal))
   expect(screen.queryByText('Reasoning or calculation error')).not.toBeInTheDocument()
 })
@@ -177,7 +179,8 @@ it('keeps risk and unscored cases separate and removes the passed-observation fe
 
 it('keeps model analysis, references and cached usage accessible', async () => {
   getDiagnosis.mockResolvedValue({ status: 'ready', issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }], report: { ...report, level: 'full', narrative_status: 'ok', cost: { ...report.cost, cached_calls: 16 },
-    narrative: { findings: [{ text: 'Inspect the tool reply.', refs: ['P-a'] }], recommendations: [] },
+    narrative_samples: { 'S-a': { sample: { subset: '跨子集', index: 42 }, step: 3 } },
+    narrative: { findings: [{ text: 'Inspect the tool reply.', refs: ['S-a'] }], recommendations: [] },
   } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
@@ -188,10 +191,11 @@ it('keeps model analysis, references and cached usage accessible', async () => {
   const workspace = document.getElementById('diagnosis-issues')!
   const scroll = vi.fn()
   workspace.scrollIntoView = scroll
-  fireEvent.click(screen.getByRole('button', { name: '[Tool errors during execution]' }))
+  fireEvent.click(screen.getByRole('button', { name: '[跨子集 · Sample 42 · Step 3]' }))
   expect(scroll).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' })
   await settle()
-  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { pattern_id: 'P-a', outcome: 'failed' }, 1, expect.any(AbortSignal))
+  expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { subset_name: '跨子集', index: 42 }, 1, expect.any(AbortSignal))
+  expect(screen.queryByRole('button', { name: '[Other failed samples]' })).not.toBeInTheDocument()
 })
 
 

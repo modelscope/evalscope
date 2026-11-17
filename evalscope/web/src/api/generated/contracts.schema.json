@@ -1061,6 +1061,12 @@
           ],
           "default": null
         },
+        "narrative_samples": {
+          "additionalProperties": {
+            "$ref": "#/$defs/NarrativeSampleReference"
+          },
+          "type": "object"
+        },
         "narrative_status": {
           "default": "not_requested",
           "type": "string"
@@ -1079,7 +1085,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": 2,
+          "default": 3,
           "type": "integer"
         },
         "self_evaluation": {
@@ -1103,6 +1109,7 @@
         "self_evaluation",
         "narrative",
         "narrative_status",
+        "narrative_samples",
         "generated_at",
         "config_fingerprint",
         "data_fingerprint",
@@ -2236,7 +2243,7 @@
     },
     "NarrativeItem": {
       "additionalProperties": false,
-      "description": "Every sentence has resolvable fact/pattern references; it remains model-generated text.",
+      "description": "Every sentence has resolvable fact/sample references; it remains model-generated text.",
       "properties": {
         "refs": {
           "items": {
@@ -2255,6 +2262,32 @@
       "required": [
         "text",
         "refs"
+      ],
+      "type": "object"
+    },
+    "NarrativeSampleReference": {
+      "additionalProperties": false,
+      "description": "A summary citation resolved by the analyzer to one inspected sample and optional evidence step.",
+      "properties": {
+        "sample": {
+          "$ref": "#/$defs/SampleKey"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "sample",
+        "step"
       ],
       "type": "object"
     },

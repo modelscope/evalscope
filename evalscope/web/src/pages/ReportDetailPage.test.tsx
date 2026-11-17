@@ -27,7 +27,7 @@ const DIAGNOSIS: DiagnosisReport = {
   diagnosis_model: null,
   self_evaluation: false,
   narrative: null,
-  narrative_status: 'not_requested',
+  narrative_samples: {}, narrative_status: 'not_requested',
   generated_at: '2026-11-17T00:00:00Z',
   config_fingerprint: 'c',
   data_fingerprint: 'd',
@@ -185,13 +185,13 @@ describe('report workspace', () => {
   })
   it('clears old dataset filters but keeps the tab and root', async () => {
     await renderDetail(
-      '?tab=predictions&dataset=gsm8k&subset=example&sample=7&pattern=P-a&failure_type=tool_error&root_path=/saved',
+      '?tab=predictions&dataset=gsm8k&subset=example&sample=7&pattern=P-a&failure_type=tool_error&step=0&root_path=/saved',
     )
     fireEvent.click(dataset('arc_challenge'))
     await settle()
     expect(params().get('tab')).toBe('predictions')
     expect(params().get('root_path')).toBe('/saved')
-    for (const key of ['subset', 'sample', 'pattern', 'failure_type']) expect(params().has(key)).toBe(false)
+    for (const key of ['subset', 'sample', 'pattern', 'failure_type', 'step']) expect(params().has(key)).toBe(false)
     expect(api.getPredictions).toHaveBeenLastCalledWith(
       '/saved',
       '20260810_112700/test-model-a',
@@ -231,6 +231,32 @@ describe('report workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back to diagnosis' }))
     await settle()
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
+  })
+  it('opens the exact cited sample and step, preserves it in Samples, and restores Diagnosis', async () => {
+    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [], source: 'rule' } as SampleDiagnosesResponse['items'][number]
+    vi.mocked(api.getSampleDiagnoses).mockResolvedValue({ status: 'ready', items: [item], total: 1, page: 1, page_size: 200 })
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'full',
+      narrative_status: 'ok', narrative_samples: { 'S-exact': { sample: item.key, step: 0 } },
+      narrative: { findings: [{ text: 'Inspect this sample.', refs: ['S-exact'] }], recommendations: [], limitations: [] },
+    } })
+    await renderDetail('?tab=diagnosis&dataset=gsm8k')
+    fireEvent.click(screen.getByRole('button', { name: '[example · Sample 7 · Step 0]' }))
+    await settle()
+    expect(api.getSampleDiagnoses).toHaveBeenLastCalledWith('./outputs', '20260810_112700/test-model-a', 'gsm8k',
+      { subset_name: 'example', index: 7 }, 1, expect.any(AbortSignal))
+    expect(screen.getByRole('combobox', { name: 'Locate step' })).toHaveValue('0')
+    fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
+    await settle()
+    expect(params().get('subset')).toBe('example')
+    expect(params().get('sample')).toBe('7')
+    expect(params().get('step')).toBe('0')
+    expect(params().has('pattern')).toBe(false)
+    expect(params().has('failure_type')).toBe(false)
+    expect(screen.getByRole('navigation', { name: 'Sample contents' }).querySelector('[aria-current="step"]')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Browser back' }))
+    await settle()
+    expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Locate step' })).toHaveValue('0')
   })
   it('opens a subset without an old diagnostic filter', async () => {
     await renderDetail('?tab=results&dataset=gsm8k&pattern=old&sample=99')

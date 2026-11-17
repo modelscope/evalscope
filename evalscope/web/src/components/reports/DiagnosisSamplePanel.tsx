@@ -15,7 +15,8 @@ interface Props {
   datasetName: string
   filters: DiagnosisFilters
   metrics?: ReportMetric[]
-  onSamples: (filters: DiagnosisFilters, sample?: SampleKey) => void
+  focusStep?: number
+  onSamples: (filters: DiagnosisFilters, sample?: SampleKey, step?: number) => void
 }
 
 /** Browse one issue's complete sample set, including identities from other subsets. */
@@ -25,6 +26,7 @@ export default function DiagnosisSamplePanel({
   datasetName,
   filters,
   metrics,
+  focusStep,
   onSamples,
 }: Props) {
   const { t } = useLocale()
@@ -55,7 +57,7 @@ export default function DiagnosisSamplePanel({
   return (
     <aside
       aria-label={t('diagnosis.samplePanel')}
-      className="[--sample-reader-height:calc(100vh-430px)] min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)]"
+      className="[--sample-reader-height:max(28rem,calc(100vh-330px))] min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)]"
     >
       <header className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 text-xs">
         <span className="min-w-0 truncate text-sm">{sample ? `${sample.key.subset} · ${t('diagnosis.sampleLink', { index: sample.key.index })}` : '—'}</span>
@@ -79,7 +81,7 @@ export default function DiagnosisSamplePanel({
           </button>
           {sample && (
             <button
-              onClick={() => onSamples(filters, sample.key)}
+              onClick={() => onSamples(filters, sample.key, focusStep)}
               className="diagnosis-link ml-3 flex items-center gap-1"
             >
               <ExternalLink size={13} />
@@ -100,7 +102,7 @@ export default function DiagnosisSamplePanel({
         ) : !sample || !row ? (
           <p className="p-3 text-sm">{t('diagnosis.noSamples')}</p>
         ) : (
-          <ChatView key={identity} prediction={row} diagnosis={sample} metrics={metrics} focusEvidence />
+          <ChatView key={identity} prediction={row} diagnosis={sample} metrics={metrics} focusEvidence focusStep={focusStep} navigation="toolbar" />
         )}
       </div>
     </aside>

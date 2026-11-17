@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { PredictionRow, PredictionsResponse } from '@/api/types'
@@ -186,7 +186,7 @@ it('keeps the question and answer ahead of the result and collapsed diagnostic d
       failure_type: 'unexplained', attribution: 'unknown', findings: [], pattern_id: null,
     }}
   /></LocaleProvider>)
-  const summary = screen.getByText(/Sample analysis · No rule clues yet/)
+  const summary = screen.getByText(/Related evidence/)
   expect(screen.getByText('Answer second').compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(summary.closest('details')).not.toHaveAttribute('open')
   fireEvent.click(summary)
@@ -221,4 +221,19 @@ it.each(['fallback', 'degraded'])('preserves usable %s scoring in the shared rea
   }} /></LocaleProvider>)
   expect(screen.getByRole('navigation', { name: 'Sample contents' })).toHaveTextContent('Task passed')
   expect(screen.queryByText('Score unavailable')).not.toBeInTheDocument()
+})
+
+it('uses a top step selector in the embedded reader while keeping the standalone outline', () => {
+  const { container, rerender } = render(<LocaleProvider><ChatView prediction={tracedPrediction} navigation="toolbar" focusStep={0} /></LocaleProvider>)
+  const picker = screen.getByRole('combobox', { name: 'Locate step' })
+  expect(picker).toHaveValue('0')
+  const options = [...picker.querySelectorAll('option')].filter(option => option.value !== '')
+  expect(options.length).toBeGreaterThan(0)
+  fireEvent.change(picker, { target: { value: options.at(-1)!.value } })
+  expect(picker).toHaveValue(options.at(-1)!.value)
+  expect(within(screen.getByRole('navigation', { name: 'Sample contents' })).queryByRole('button', { name: /^Step 0/ })).not.toBeInTheDocument()
+  expect(container.querySelector('[data-reader-toolbar]')).toBeInTheDocument()
+  rerender(<LocaleProvider><ChatView prediction={tracedPrediction} /></LocaleProvider>)
+  expect(screen.queryByRole('combobox', { name: 'Locate step' })).not.toBeInTheDocument()
+  expect(screen.getByRole('navigation', { name: 'Sample contents' }).querySelector('[aria-current="step"]')).toBeInTheDocument()
 })

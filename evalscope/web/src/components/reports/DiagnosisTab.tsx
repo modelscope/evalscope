@@ -21,7 +21,7 @@ interface Props {
   rootPath: string
   reportName: string
   datasetName: string
-  onSamples: (filters: DiagnosisFilters, sample?: SampleKey) => void
+  onSamples: (filters: DiagnosisFilters, sample?: SampleKey, step?: number) => void
 }
 
 function numericEntries(value: unknown): [string, number][] {
@@ -267,6 +267,7 @@ interface IssueSelection {
   filters: DiagnosisFilters
   description: string
   suggestion: string
+  focusStep?: number
 }
 
 export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis, metrics }: Props) {
@@ -334,8 +335,9 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     const key = `diagnosis.fact.${fact.id}`
     return t(key) === key ? fact.title : t(key)
   }
-  const openSamples = (filters: DiagnosisFilters, sample?: SampleKey, title = t('diagnosis.samplePanel')) => {
-    setSelection(makeEntry('other', title, 0, sample ? { ...filters, subset_name: sample.subset, index: sample.index } : filters))
+  const openSample = (sample: SampleKey, step?: number) => {
+    setSelection({ id: 'sample', title: '', count: 0, description: '', suggestion: '',
+      filters: { subset_name: sample.subset, index: sample.index }, focusStep: step })
     document.getElementById('diagnosis-issues')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
   }
   const issueButton = (entry: IssueSelection) => (
@@ -352,7 +354,6 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         <span>{entry.title}</span>
         <span className="shrink-0 font-mono text-[var(--text-muted)]">{t('diagnosis.issueCount', { count: entry.count })}</span>
       </span>
-      <span className="mt-2 block text-xs leading-relaxed text-[var(--text-muted)]">{entry.description}</span>
     </button>
   )
 
@@ -376,7 +377,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         ].filter(([, count]) => Number(count) > 0).map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`).join(' · ')}</p>}
       </div>
       {issues.length > 1 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.overlappingIssues')}</p>}
-      <div id="diagnosis-issues" className="grid scroll-mt-20 grid-cols-[250px_minmax(0,1fr)] items-start gap-5">
+      <div id="diagnosis-issues" className="grid scroll-mt-20 grid-cols-[220px_minmax(0,1fr)] items-start gap-5">
         <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
           <h3 className="border-b border-[var(--border)] pb-3 text-base font-semibold">{t('diagnosis.majorIssues')}</h3>
           {issues.map(issueButton)}
@@ -392,16 +393,14 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         </section>
         <div className="min-w-0 space-y-4">
           {selected ? <>
-            <header className="space-y-1">
+            {selected.filters.index === undefined && <header className="space-y-1">
               <h3 className="text-lg font-semibold">{selected.title}</h3>
-              <p className="text-xs text-[var(--text-muted)]">{selected.count > 0 && `${t(selected.filters.outcome === 'failed' ? 'diagnosis.failedCount' : 'diagnosis.sampleCount', { count: selected.count })} · `}
-                {t('diagnosis.ruleObservation')}</p>
               {tools.length > 0 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.relatedTools')}: <span className="font-mono">{tools.join(' / ')}</span></p>}
               <p className="text-sm leading-relaxed">{selected.description}</p>
-              <p className="border-l-2 border-[var(--accent)] pl-3 text-sm leading-relaxed">{selected.suggestion}</p>
-            </header>
-            <DiagnosisSamplePanel key={JSON.stringify(selected.filters)} rootPath={rootPath} reportName={reportName}
-              datasetName={datasetName} filters={selected.filters} metrics={metrics} onSamples={onSamples} />
+              {selected.suggestion && <p className="text-sm leading-relaxed text-[var(--text-muted)]">{selected.suggestion}</p>}
+            </header>}
+            <DiagnosisSamplePanel key={JSON.stringify([selected.filters, selected.focusStep])} rootPath={rootPath} reportName={reportName}
+              datasetName={datasetName} filters={selected.filters} metrics={metrics} focusStep={selected.focusStep} onSamples={onSamples} />
           </> : <p className="py-6 text-sm text-[var(--text-muted)]">{t(c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}</p>}
         </div>
       </div>
@@ -410,16 +409,19 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.proposalNotice')}</p>
         <div className={narrativeGroups.length > 1 ? 'grid grid-cols-2 gap-6' : 'space-y-3'}>{narrativeGroups.map(group => <section key={group.key} className="space-y-2"><h4 className="text-sm font-medium">{t(`diagnosis.${group.key}`)}</h4><ul className="space-y-3 text-sm">{group.items.map((item, index) => <li key={index}>
           {item.text} {item.refs.map(reference => {
-            const pattern = report.patterns.find(p => p.id === reference)
+            const sample = report.narrative_samples[reference]
             const fact = report.facts.find(f => f.id === reference)
+            if (!sample && !fact) return null
+            const label = sample
+              ? `${sample.sample.subset} · ${t('diagnosis.sampleLink', { index: sample.sample.index })}${sample.step != null ? ` · ${t('trace.step')} ${sample.step}` : ''}`
+              : fact!.id === 'F-task-failure' && fact!.numerator !== null
+                ? t('diagnosis.failedSampleReference', { count: fact!.numerator }) : factTitle(fact!)
             return <button type="button" key={reference} className="diagnosis-link ml-1" onClick={() => {
-              if (pattern) {
+              if (sample) {
                 setFactReference(null)
-                const issue = state.issues?.find(item => item.failure_type === pattern.failure_type)
-                const outcome = issue?.failed ? 'failed' : issue?.unscored ? 'unscored' : undefined
-                openSamples({ pattern_id: pattern.id, ...(outcome ? { outcome } : {}) }, undefined, issueTitle(pattern.failure_type))
+                openSample(sample.sample, sample.step ?? undefined)
               } else if (fact) setFactReference(fact.id)
-            }}>[{pattern ? issueTitle(pattern.failure_type) : fact ? factTitle(fact) : reference}]</button>
+            }}>[{label}]</button>
           })}
         </li>)}</ul></section>)}</div>
         {referencedFact && <aside aria-label={t('diagnosis.referenceBasis')} className="space-y-2 rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4">
@@ -427,7 +429,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           <p className="text-xs text-[var(--text-muted)]">{t(`diagnosis.description.${referencedFact.id}`) === `diagnosis.description.${referencedFact.id}` ? referencedFact.definition : t(`diagnosis.description.${referencedFact.id}`)}</p>
           {referencedFact.denominator !== null && <p className="text-xs">{referencedFact.numerator} / {referencedFact.denominator}</p>}
           <FactData fact={referencedFact} />
-          {referencedFact.samples.length > 0 && <div className="flex flex-wrap gap-3">{referencedFact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs" onClick={() => openSamples({}, sample, factTitle(referencedFact))}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
+          {referencedFact.samples.length > 0 && <div className="flex flex-wrap gap-3">{referencedFact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs" onClick={() => openSample(sample)}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
         </aside>}
       </section>}
       <AnalysisInformation report={report} />

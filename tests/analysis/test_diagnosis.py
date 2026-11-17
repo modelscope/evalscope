@@ -651,14 +651,15 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert single == full[:1]
 
 
-def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable) -> None:
+@pytest.mark.parametrize('version', [1, 2])
+def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable, version: int) -> None:
     from evalscope.report.diagnosis import load_diagnosis
 
     root = make_run()
     diagnose_benchmark(str(root), 'm', 'demo', config())
     path = root / 'analysis/m/demo/diagnosis.json'
     data = json.loads(path.read_text())
-    data['schema_version'] = 1
+    data['schema_version'] = version
     path.write_text(json.dumps(data))
     assert load_diagnosis(str(root), 'm', 'demo') == ('stale', None)
 

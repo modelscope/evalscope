@@ -32,6 +32,8 @@ interface Props {
   metrics?: ReportMetric[]
   diagnosis?: SampleDiagnosis
   focusEvidence?: boolean
+  focusStep?: number
+  navigation?: 'sidebar' | 'toolbar'
 }
 
 /** Plain input/output rendering when no structured Messages or AgentTrace are available. */
@@ -65,6 +67,8 @@ export default function ChatView({
   metrics,
   diagnosis,
   focusEvidence = false,
+  focusStep,
+  navigation = 'sidebar',
 }: Props) {
   const { t } = useLocale()
   const showPred =
@@ -82,12 +86,13 @@ export default function ChatView({
     agentTrace?.events.find(
       (e) => e.type === 'tool_call' && diagnosis?.findings?.some((f) => f.call_ids?.includes(String(e.payload.id))),
     )?.step ?? null
-  const rootStep =
+  const rootStep = focusStep ?? (
     diagnosis?.llm_status === 'ok' ? (diagnosis.llm?.root_cause_step ?? null) : focusEvidence ? findingStep : null
+  )
   useEffect(() => {
-    if (focusEvidence && presentation !== 'traced' && diagnosis?.llm_status !== 'ok') {
-      scrollToContent(document.getElementById(`${prefix}-scoring`))
-    }
+    if (!focusEvidence || presentation === 'traced') return
+    const answers = readerRef.current?.querySelectorAll<HTMLElement>('[data-message-role="assistant"]')
+    scrollToContent(diagnosis?.llm_status === 'ok' ? answers?.[answers.length - 1] : document.getElementById(`${prefix}-scoring`))
   }, [focusEvidence, presentation, diagnosis?.llm_status, prefix])
   const [pickedStep, setHighlightedStep] = useState<number | null | undefined>(undefined)
   const highlightedStep = pickedStep === undefined ? rootStep : pickedStep
@@ -139,13 +144,19 @@ export default function ChatView({
   const steps = stepGroups?.filter((g) => g.step >= 0) ?? []
   const answerStep = steps.filter((g) => g.assistant && contentToText(g.assistant.content).trim()).at(-1)?.step
 
+  const toolbar = navigation === 'toolbar'
+  const navButtonClass = `flex items-center gap-2 rounded p-2 text-left hover:bg-[var(--accent-dim)] ${toolbar ? 'shrink-0' : 'w-full'}`
+
   return (
     <EvidenceByMessage.Provider value={evidenceByMessage}>
       <div data-sample-scroll
-        className="grid max-h-[var(--sample-reader-height,calc(100vh-360px))] grid-cols-[150px_minmax(0,1fr)] items-start gap-4 overflow-auto py-2" ref={readerRef}>
+        className={`grid max-h-[var(--sample-reader-height,calc(100vh-360px))] ${toolbar ? 'grid-cols-1 gap-3' : 'grid-cols-[150px_minmax(0,1fr)] gap-4'} items-start overflow-auto ${toolbar ? 'pb-2' : 'py-2'}`} ref={readerRef}>
         <nav
           aria-label={t('trace.readingOutline')}
-          className={`sticky top-0 max-h-[var(--sample-reader-height,calc(100vh-380px))] space-y-1 overflow-auto border-r border-[var(--border)] pr-3 text-xs`}
+          data-reader-toolbar={toolbar || undefined}
+          className={toolbar
+            ? 'sticky top-0 z-10 flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-card)] py-2 text-xs'
+            : 'sticky top-0 max-h-[var(--sample-reader-height,calc(100vh-380px))] space-y-1 overflow-auto border-r border-[var(--border)] pr-3 text-xs'}
         >
           {diagnosis && (diagnosis.task_success !== null || !isUsableStatus(diagnosis.score_status)) && (
             <div
@@ -162,12 +173,29 @@ export default function ChatView({
           )}
           <button
             onClick={() => goTo('question')}
-            className="flex w-full items-center gap-2 rounded p-2 text-left hover:bg-[var(--accent-dim)]"
+            className={navButtonClass}
           >
             <User size={14} />
             {t('trace.question')}
           </button>
-          {steps.map((g) => {
+          {toolbar && steps.length > 0 && <select
+            aria-label={t('trace.locateStep')}
+            className="ml-auto max-w-64 rounded border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 text-sm"
+            value={highlightedStep == null ? '' : String(highlightedStep)}
+            onChange={event => {
+              const step = Number(event.target.value)
+              setHighlightedStep(step)
+              scrollToContent(document.getElementById(`${prefix}-step-${step}`))
+            }}
+          >
+            <option value="" disabled>{t('trace.locateStep')}</option>
+            {steps.map(group => <option key={group.step} value={group.step}>
+              {t('trace.step')} {group.step} · {group.assistant?.tool_calls?.map(call => call.function).join(', ')
+                || group.traceEvents.filter(event => event.type === 'tool_call').map(event => String(event.payload.name ?? '')).join(', ')
+                || t('trace.assistant')}
+            </option>)}
+          </select>}
+          {!toolbar && steps.map((g) => {
             const calls =
               g.assistant?.tool_calls?.map((c) => c.function) ??
               g.traceEvents.filter((e) => e.type === 'tool_call').map((e) => String(e.payload.name ?? ''))
@@ -205,14 +233,14 @@ export default function ChatView({
                 scrollToContent(document.getElementById(`${prefix}-step-${answerStep}`))
               } else goTo('answer')
             }}
-            className="flex w-full items-center gap-2 rounded p-2 text-left hover:bg-[var(--accent-dim)]"
+            className={navButtonClass}
           >
             <Flag size={14} />
             {t('trace.answer')}
           </button>
           <button
             onClick={() => goTo('scoring')}
-            className="flex w-full items-center gap-2 rounded p-2 text-left hover:bg-[var(--accent-dim)]"
+            className={navButtonClass}
           >
             <Star size={14} />
             {t('trace.scoring')}
@@ -254,9 +282,10 @@ export default function ChatView({
             threshold={threshold}
             showPred={!!showPred}
             metrics={metrics}
+            compact={toolbar}
           />
 
-          {diagnosis && <SampleDiagnosisCard diagnosis={diagnosis} />}
+          {diagnosis && <SampleDiagnosisCard diagnosis={diagnosis} showFindings={!toolbar || presentation !== 'traced'} />}
 
           {judgeReview && <JudgeReviewPanel review={judgeReview} />}
         </div>

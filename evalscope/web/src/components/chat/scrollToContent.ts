@@ -3,7 +3,8 @@ export function scrollToContent(element: HTMLElement | null | undefined): void {
   if (!element) return
   const scroller = element.closest<HTMLElement>('[data-sample-scroll]')
   if (scroller) {
-    scroller.scrollTo?.({ top: scroller.scrollTop + element.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12 })
+    const toolbar = scroller.querySelector<HTMLElement>('[data-reader-toolbar]')
+    scroller.scrollTo?.({ top: scroller.scrollTop + element.getBoundingClientRect().top - scroller.getBoundingClientRect().top - (toolbar?.getBoundingClientRect().height ?? 0) - 12 })
     return
   }
   element.scrollIntoView?.({ block: 'center' })

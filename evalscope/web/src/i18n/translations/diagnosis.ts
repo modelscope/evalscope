@@ -1,6 +1,8 @@
 import type { Dict } from './types'
 
 export const en: Dict = {
+  failedSampleReference: '${count} failed samples',
+  relatedEvidence: 'Related evidence',
   analysisInformation: 'Analysis information',
   analysisMode: { facts: 'Rule statistics', diagnose: 'Sample analysis', full: 'Sample analysis and summary' },
   statisticsScope: 'Rule statistics cover',
@@ -28,7 +30,7 @@ export const en: Dict = {
 
   issueCount: '${count}',
   overview: '${failed} of ${samples} samples did not pass',
-  clueSummary: '${clues} have rule clues; ${pending} have no rule clues yet.',
+  clueSummary: '${clues} have record anomalies; ${pending} are other failed samples.',
   ruleObservation: 'Rule observation',
   relatedTools: 'Tools involved',
   issueDescription: {
@@ -42,7 +44,7 @@ export const en: Dict = {
     bad_arguments: 'A tool rejected the supplied arguments.',
     wrong_tool: 'An unrecognized tool was requested.',
     refusal: 'The answer contains a detected refusal.',
-    unexplained: 'The task did not pass, but the current analysis has no explanation.',
+    unexplained: 'No known record anomaly was matched. Review the original answer and any model proposal.',
     unscored: 'These samples were excluded from the reported score.',
     risk: 'The benchmark or trace contains safety signals. These can overlap failed samples.',
     other: 'These samples share a diagnostic classification. Review the original evidence before concluding why they failed.',
@@ -267,7 +269,7 @@ export const en: Dict = {
     unsafe_command: 'Potentially risky command',
     refusal: 'Refusal detected',
     judge_failure: 'Scoring unavailable',
-    unexplained: 'No rule clues yet',
+    unexplained: 'Other failed samples',
     other: 'Other finding',
   },
   finding: {
@@ -284,6 +286,8 @@ export const en: Dict = {
 }
 
 export const zh: Dict = {
+  failedSampleReference: '${count} 条未通过样本',
+  relatedEvidence: '相关证据',
   analysisInformation: '分析信息',
   analysisMode: { facts: '规则统计', diagnose: '样本分析', full: '样本分析与总结' },
   statisticsScope: '规则统计范围',
@@ -311,7 +315,7 @@ export const zh: Dict = {
 
   issueCount: '${count} 条',
   overview: '${samples} 条样本中，${failed} 条任务未通过',
-  clueSummary: '${clues} 条发现规则线索，${pending} 条暂无线索。',
+  clueSummary: '${clues} 条发现记录异常，其他未通过样本 ${pending} 条。',
   ruleObservation: '规则观察',
   relatedTools: '涉及工具',
   issueDescription: {
@@ -325,7 +329,7 @@ export const zh: Dict = {
     bad_arguments: '工具拒绝了传入的调用参数。',
     wrong_tool: '请求调用的工具未被识别。',
     refusal: '回答中检测到了拒绝作答的表达。',
-    unexplained: '任务未通过，暂未发现可直接定位的规则线索。',
+    unexplained: '暂未匹配到截断、工具报错等已知记录异常，可查看原始回答与模型解释。',
     unscored: '这些样本没有计入报告得分。',
     risk: '基准判定或执行记录中出现安全风险信号，可能与未通过样本重叠。',
     other: '这些样本被归入同一类问题，需结合原始证据核对原因判断。',
@@ -535,7 +539,7 @@ export const zh: Dict = {
     unrequested_action: '未经授权的操作',
     harmful_compliance: '执行有害请求',
     benchmark_issue: '疑似基准问题',
-    tool_error: '执行中出现工具错误',
+    tool_error: '工具调用报错',
     wrong_tool: '工具不存在',
     bad_arguments: '调用参数异常',
     environment_failure: '环境相关异常',
@@ -545,12 +549,12 @@ export const zh: Dict = {
     extraction_failure: '未能提取答案',
     premature_stop: '提前终止',
     loop_or_budget: '重复调用或步数耗尽',
-    attack_goal_action: '执行中出现攻击目标操作',
+    attack_goal_action: '出现攻击目标操作',
     safety_violation: '触发安全风险信号',
     unsafe_command: '潜在风险命令',
     refusal: '检测到拒答',
     judge_failure: '评分不可用',
-    unexplained: '暂无规则线索',
+    unexplained: '其他未通过样本',
     other: '其他发现',
   },
   finding: {

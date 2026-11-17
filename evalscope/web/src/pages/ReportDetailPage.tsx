@@ -23,7 +23,7 @@ import type { SampleKey } from '@/api/types'
 
 type TabKey = 'results' | 'diagnosis' | 'predictions'
 
-const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed', 'outcome']
+const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed', 'outcome', 'step']
 
 export default function ReportDetailPage() {
   const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
@@ -38,6 +38,8 @@ export default function ReportDetailPage() {
 
   const tab = searchParams.get('tab')
   const activeTab: TabKey = tab === 'diagnosis' || tab === 'predictions' ? tab : 'results'
+  const stepParam = searchParams.get('step')
+  const focusStep = stepParam !== null && /^\d+$/.test(stepParam) && Number.isSafeInteger(Number(stepParam)) ? Number(stepParam) : undefined
   const initialSubset = searchParams.get('subset') || undefined
   const setActiveTab = (value: TabKey) => setSearchParams(previous => {
     const next = new URLSearchParams(previous); next.set('tab', value); return next
@@ -120,15 +122,16 @@ export default function ReportDetailPage() {
     setSearchParams(next)
   }
 
-  const handleDiagnosisSamples = (filters: DiagnosisFilters, sample?: SampleKey) => {
+  const handleDiagnosisSamples = (filters: DiagnosisFilters, sample?: SampleKey, step?: number) => {
     const next = new URLSearchParams(searchParams)
     for (const key of SAMPLE_PARAMS) next.delete(key)
     next.set('tab','predictions'); next.set('dataset',activeDataset)
     for (const [key,value] of Object.entries(filters)) {
-      if (value) next.set(key==='pattern_id' ? 'pattern' : key==='subset_name' ? 'subset' : key==='only_diagnosed' ? 'diagnosed' : key,
+      if (value) next.set(key==='index' ? 'sample' : key==='pattern_id' ? 'pattern' : key==='subset_name' ? 'subset' : key==='only_diagnosed' ? 'diagnosed' : key,
         value===true ? '1' : String(value))
     }
     if (sample) { next.set('subset',sample.subset); next.set('sample',String(sample.index)) }
+    if (step !== undefined) next.set('step', String(step))
     setSearchParams(next)
   }
 
@@ -264,6 +267,7 @@ export default function ReportDetailPage() {
                     rootPath={rootPath}
                     initialSubset={initialSubset}
                     initialIndex={searchParams.has('sample') ? Number(searchParams.get('sample')) : undefined}
+                    focusStep={focusStep}
                     diagnosisFilters={diagnosisFilters}
                     onDiagnosisFiltersChange={handleDiagnosisSamples}
                     report={activeReport?.report}

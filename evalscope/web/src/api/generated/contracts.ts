@@ -280,6 +280,9 @@ export interface DiagnosisReport {
   limitations: string[];
   model: string;
   narrative: Narrative | null;
+  narrative_samples: {
+    [k: string]: NarrativeSampleReference;
+  };
   narrative_status: string;
   patterns: FailurePattern[];
   run_dir: string;
@@ -379,7 +382,7 @@ export interface Narrative {
     [] | [NarrativeItem] | [NarrativeItem, NarrativeItem] | [NarrativeItem, NarrativeItem, NarrativeItem];
 }
 /**
- * Every sentence has resolvable fact/pattern references; it remains model-generated text.
+ * Every sentence has resolvable fact/sample references; it remains model-generated text.
  */
 export interface NarrativeItem {
   /**
@@ -396,6 +399,13 @@ export interface NarrativeItem {
     | [string, string, string, string, string, string, string]
     | [string, string, string, string, string, string, string, string];
   text: string;
+}
+/**
+ * A summary citation resolved by the analyzer to one inspected sample and optional evidence step.
+ */
+export interface NarrativeSampleReference {
+  sample: SampleKey;
+  step: number | null;
 }
 /**
  * Observed issue types, counted once per sample, including the unexplained group.

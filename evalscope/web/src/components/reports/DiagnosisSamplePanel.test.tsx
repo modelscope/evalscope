@@ -84,7 +84,7 @@ it('browses the issue across subsets, fetches only the selected prediction, and 
   expect(getPredictions).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', 'b', expect.any(AbortSignal), 8)
   expect(screen.getByRole('button', { name: 'Next sample' })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
-  expect(onSamples).toHaveBeenCalledWith({ failure_type: 'tool_error', outcome: 'failed' }, { subset: 'b', index: 8 })
+  expect(onSamples).toHaveBeenCalledWith({ failure_type: 'tool_error', outcome: 'failed' }, { subset: 'b', index: 8 }, undefined)
   expect(screen.getByRole('navigation', { name: 'Sample contents' })).toBeInTheDocument()
 })
 

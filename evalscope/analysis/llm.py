@@ -17,6 +17,7 @@ from evalscope.api.analysis import (
     DiagnosticSource,
     LLMDiagnosis,
     Narrative,
+    NarrativeSampleReference,
     SampleDiagnosis,
 )
 from evalscope.api.analysis.taxonomy import ISSUE_DEFINITIONS
@@ -31,7 +32,7 @@ from .trace.export import _env_secrets, redact
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
-PROTOCOL_VERSION = '3.1'
+PROTOCOL_VERSION = '3.2'
 
 
 def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
@@ -393,36 +394,30 @@ def summarize(
     sources = [
         f.model_dump(mode='json') for f in report.facts if f.severity != 'info' or (f.id == 'F-safety' and f.numerator)
     ][:15]
-    counts = defaultdict(lambda: {'failed_samples': 0, 'unscored_samples': 0})
-    for sample in samples:
-        for kind in sample.observed_types or ([sample.failure_type] if sample.failure_type else []):
-            counts[kind]['failed_samples'] += sample.task_success is False
-            counts[kind]['unscored_samples'] += sample.score_status not in ('success', 'fallback', 'degraded')
-    patterns = [
-        {'id': p.id, 'observation_type': p.failure_type, **counts[p.failure_type]}
-        for p in report.patterns
-        if any(counts[p.failure_type].values())
-    ]
-    patterns.sort(key=lambda p: (-p['failed_samples'], -p['unscored_samples'], p['id']))
-    patterns = [{'id': p['id'], 'observation_type': p['observation_type']} for p in patterns[:10]]
-    ids = {s['id'] for s in sources + patterns}
+    ids = {source['id'] for source in sources}
     hypotheses = []
     for sample in samples:
         if sample.llm_status != 'ok' or sample.llm is None:
             continue
-        refs = [
-            p.id
-            for p in report.patterns
-            if p.id in ids and (p.failure_type in sample.observed_types or p.failure_type == sample.failure_type)
-        ]
-        if refs:
-            hypotheses.append(
-                {
-                    'sample': sample.key.model_dump(mode='json'),
-                    'refs': refs,
-                    'hypothesis': sample.llm.model_dump(mode='json'),
-                }
-            )
+        evidence_steps = {
+            source.step
+            for source in sample.sources
+            if source.step is not None and any(ref.source_id == source.id for ref in sample.llm.evidence)
+        }
+        step = sample.llm.root_cause_step
+        if step not in evidence_steps:
+            step = min(evidence_steps) if evidence_steps else None
+        identity = json.dumps([sample.key.subset, sample.key.index, step], ensure_ascii=False)
+        reference = 'S-' + hashlib.sha256(identity.encode()).hexdigest()[:16]
+        report.narrative_samples[reference] = NarrativeSampleReference(sample=sample.key, step=step)
+        ids.add(reference)
+        hypotheses.append(
+            {
+                'sample': sample.key.model_dump(mode='json'),
+                'refs': [reference],
+                'hypothesis': sample.llm.model_dump(mode='json'),
+            }
+        )
         if len(hypotheses) >= config.max_examples:
             break
     if not ids:
@@ -437,12 +432,11 @@ def summarize(
         'When supplied, describe sample_hypotheses as model proposals awaiting review and cite their refs. '
         'These are selected examples, not exhaustive counts or verified causes; never generalize them. '
         'No rule clues does not mean no model proposal exists. '
-        'Pattern IDs identify navigation groups; their population counts are deliberately not supplied. '
-        'Never assign the diagnosis of a selected example to its whole observation group. '
-        'each item must cite supplied fact/pattern IDs using refs only, without empty citation placeholders in text. '
+        'Cite F- IDs for population statistics and S- IDs for explanations about specific inspected samples. '
+        'A sample citation does not establish a group-level frequency or a confirmed cause. '
+        'Each item must cite supplied fact/sample IDs using refs only, without empty citation placeholders in text. '
         'Prioritize failed tasks; keep unavailable scores and safety signals separate. '
-        'Patterns describe observations in failed or unscored samples, not proven failure types or causes. '
-        'Their counts overlap and must not be added. Unexplained means no rule clues, not a diagnosed cause. '
+        'No rule clues is an absence of a deterministic observation, not a failure cause. '
         'diagnosed_ok counts usable hypotheses, never normal tasks or confirmed causes. '
         'Do not present sampled counts as population counts, '
         'rule clues as proven causes, or model proposals as independently verified explanations. '
@@ -450,7 +444,6 @@ def summarize(
         + json.dumps(
             {
                 'facts': sources,
-                'patterns': patterns,
                 'sample_hypotheses': hypotheses,
                 'coverage': report.coverage.model_dump(
                     mode='json',
@@ -478,6 +471,8 @@ def summarize(
         parsed.findings = [i for i in parsed.findings if i.refs and set(i.refs) <= ids]
         parsed.recommendations = [i for i in parsed.recommendations if i.refs and set(i.refs) <= ids]
         kept = len(parsed.findings) + len(parsed.recommendations)
+        used = {ref for item in parsed.findings + parsed.recommendations for ref in item.refs}
+        report.narrative_samples = {key: value for key, value in report.narrative_samples.items() if key in used}
         if count and not kept:
             report.narrative_status = 'invalid_references'
         else:

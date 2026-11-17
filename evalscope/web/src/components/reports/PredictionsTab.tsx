@@ -23,6 +23,7 @@ interface Props {
   report?: ReportData
   initialSubset?: string
   initialIndex?: number
+  focusStep?: number
   diagnosisFilters?: DiagnosisFilters
   onDiagnosisFiltersChange?: (filters: DiagnosisFilters, sample?: SampleKey) => void
 }
@@ -31,7 +32,7 @@ interface Props {
 const EMPTY_SUBSETS: string[] = []
 const EMPTY_PREDICTIONS: PredictionRow[] = []
 
-export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset, report, initialIndex,
+export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset, report, initialIndex, focusStep,
   diagnosisFilters = {}, onDiagnosisFiltersChange }: Props) {
   const { t } = useLocale()
   const [mode, setMode] = useState('All')
@@ -435,13 +436,14 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                 </p>
               )}
               <ChatView
-                key={rowScope}
+                key={`${rowScope}/${focusStep ?? ''}`}
                 prediction={row}
                 threshold={threshold}
                 highlightMsgId={highlightMsgId}
                 metrics={report?.metrics}
                 diagnosis={diagnosisRow}
-                focusEvidence={diagnosticFilterActive}
+                focusEvidence={diagnosticFilterActive || focusStep !== undefined}
+                focusStep={focusStep}
               />
             </div>
           )}

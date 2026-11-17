@@ -377,8 +377,9 @@ def test_agreeing_on_unknown_never_certifies_model_explanation_accuracy() -> Non
     assert metrics['experimental']
 
 
+@pytest.mark.parametrize('citation_kind', ['sample', 'group', 'foreign_sample'])
 def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
-    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, citation_kind: str,
 ) -> None:
     from evalscope.analysis.llm import summarize
     from evalscope.api.analysis import Fact, FailurePattern
@@ -397,14 +398,17 @@ def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
              SampleDiagnosis(key={'subset': 'main', 'index': 31}, score_status='parse_error', observed_types=['tool_error'])]
     rows[-2].llm = verdict()
     rows[-2].llm_status = 'ok'
+    rows[-2].sources = [DiagnosticSource(id='m:1', text='ANSWER: B', step=7)]
     rows[0].llm = verdict()
     rows[0].llm_status = 'invalid_evidence'
     captured = []
     class Reviewer:
         def generate(self, messages: list) -> ModelOutput:
             captured.extend(messages)
+            payload, _ = json.JSONDecoder().raw_decode(messages[-1].text[messages[-1].text.index('{"facts":'):])
+            refs = payload['sample_hypotheses'][0]['refs'] if citation_kind == 'sample' else ['P-tools' if citation_kind == 'group' else 'S-not-supplied']
             return ModelOutput.from_content(model='reviewer', content=json.dumps({
-                'findings': [{'text': 'One failed task had a tool error.', 'refs': ['P-tools']}],
+                'findings': [{'text': 'One failed task had a tool error.', 'refs': refs}],
                 'recommendations': [], 'limitations': [],
             }))
     monkeypatch.setattr('evalscope.analysis.llm.get_model', lambda *args, **kwargs: Reviewer())
@@ -419,7 +423,22 @@ def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
     assert 'skipped_facts' not in payload['coverage'] and 'diagnosed_ok' not in payload['coverage']
     schema = LLMDiagnosis.model_json_schema()
     assert schema['properties']['secondary_types']['items']['enum'] == schema['properties']['failure_type']['enum']
-    assert payload['patterns'] == [{'id': 'P-tools', 'observation_type': 'tool_error'}]
-    assert payload['sample_hypotheses'] == [{'sample': {'subset': 'main', 'index': 30},
-                                            'refs': ['P-tools'], 'hypothesis': verdict().model_dump(mode='json')}]
+    assert 'patterns' not in payload
+    example = payload['sample_hypotheses'][0]
+    assert len(payload['sample_hypotheses']) == 1
+    assert example['sample'] == {'subset': 'main', 'index': 30}
+    assert example['hypothesis'] == verdict().model_dump(mode='json')
+    ref = example['refs'][0]
+    assert ref.startswith('S-')
+    if citation_kind != 'sample':
+        assert report.narrative_status == 'invalid_references'
+        assert report.narrative_samples == {}
+        return
+    assert report.narrative_samples[ref].sample.index == 30
+    assert report.narrative_samples[ref].step == 7
+    assert report.narrative.findings[0].refs == [ref]
+    from evalscope.analysis.diagnosis import render_markdown
+    markdown = render_markdown(report, 'zh')
+    assert '[main · 样本 30 · 步骤 7]' in markdown
+    assert ref not in markdown
     assert report.narrative_status == 'ok'
