@@ -702,7 +702,7 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
         root = os.path.join(_root_path(), ref.run_id)
         status, report = load_diagnosis(root, ref.model_id, dataset)
         issues = {}
-        risk_samples = passed_observations = 0
+        risk_samples = 0
         seen = set()
         if status == 'ready':
             with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
@@ -717,7 +717,6 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
                     risk_samples += sample.safety_violation is True or any(
                         f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings
                     )
-                    passed_observations += sample.task_success is True and bool(sample.observed_types)
                     failed = sample.task_success is False
                     unscored = sample.score_status not in ('success', 'fallback', 'degraded')
                     if not failed and not unscored:
@@ -742,7 +741,6 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
                     issues.values(), key=lambda issue: (-issue.failed, -issue.unscored, issue.failure_type)
                 ),
                 'risk_samples': risk_samples,
-                'passed_observations': passed_observations,
             },
         )
     except (ValueError, ValidationError):
@@ -764,7 +762,7 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
         if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
             raise ValueError('Invalid dataset_name')
         outcome = request.args.get('outcome')
-        if outcome and outcome not in ('failed', 'unscored', 'risk', 'passed'):
+        if outcome and outcome not in ('failed', 'unscored', 'risk'):
             raise ValueError('Invalid outcome')
         page, size = int(request.args.get('page', 1)), int(request.args.get('page_size', 50))
         if page < 1 or not 1 <= size <= 200:
@@ -818,7 +816,6 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
                         'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
                         'risk': sample.safety_violation is True
                         or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
-                        'passed': sample.task_success is True and bool(sample.observed_types),
                     }
                     if outcome and not matches_outcome[outcome]:
                         continue

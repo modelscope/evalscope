@@ -135,3 +135,5 @@ Labels follow `DiagnosticLabel`; each file covers one run/model/benchmark. `rule
 positive and negative detector labels. An unannotated detector is not assumed negative. The tool reports type
 agreement, attribution confusion, root-step agreement, citation locatability and reviewed evidence support
 separately. Preserve annotator identity: agreement with model-assisted labels is not human-validated accuracy.
+
+In the Web dashboard, **Analysis information** reflects the mode: `facts` shows the complete rule-statistics scope, no model usage, and generation time; `diagnose` adds the actual selection scope, selected samples, citation checks, model, new requests, and cache reuse; `full` also shows summary status. Summaries distinguish population rule statistics from unverified proposals about selected samples. Proposal examples use `max_examples` and do not estimate population causes. Up to three observations and three suggested next checks appear separately; a statistic reference opens its supporting data. A locatable citation does not confirm a cause. There is no separate entry for process observations in passing samples.

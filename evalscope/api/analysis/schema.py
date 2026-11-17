@@ -1,7 +1,7 @@
 """Persisted, benchmark-independent facts and sample diagnostics."""
 
 import re
-from typing import Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
@@ -105,7 +105,9 @@ class LLMDiagnosis(DiagnosticData):
     """A model hypothesis; valid citations do not establish semantic correctness."""
 
     failure_type: str = Field(json_schema_extra={'enum': list(ISSUE_NAMES)})
-    secondary_types: List[str] = Field(default_factory=list, max_length=3)
+    secondary_types: List[Annotated[str, Field(json_schema_extra={'enum': list(ISSUE_NAMES)})]] = Field(
+        default_factory=list, max_length=3
+    )
     attribution: Attribution
     root_cause_step: Optional[int] = Field(default=None, ge=0, strict=True)
     explanation: str = Field(min_length=1, max_length=1200)
@@ -134,14 +136,14 @@ class NarrativeItem(DiagnosticData):
     def separate_references(cls, text: str) -> str:
         """Render references once through the validated ref list, without leaking internal IDs in prose."""
         text = re.sub(r'(?:,\s*)?\b[FP]-[\w-]+\b', '', text)
-        return re.sub(r'\s*(?:\[\s*\]|\(\s*\))', '', text).strip()
+        return re.sub(r'\s*(?:\[\s*\]|\(\s*\)|（\s*）|【\s*】)', '', text).strip()
 
 
 class Narrative(DiagnosticData):
     """Grounded summary and suggestions, without an unreferenced free-form summary field."""
 
-    findings: List[NarrativeItem] = Field(default_factory=list, max_length=8)
-    recommendations: List[NarrativeItem] = Field(default_factory=list, max_length=5)
+    findings: List[NarrativeItem] = Field(default_factory=list, max_length=3)
+    recommendations: List[NarrativeItem] = Field(default_factory=list, max_length=3)
     limitations: List[str] = Field(default_factory=list, max_length=5)
 
 
@@ -200,6 +202,7 @@ class DiagnosisCoverage(DiagnosticData):
     unexplained_failures: int = 0
     skipped_facts: Dict[str, str] = Field(default_factory=dict)
     analysis_errors: Dict[str, int] = Field(default_factory=dict)
+    selection_scope: Optional[Literal['failed', 'unscored', 'risk', 'process', 'all', 'specified']] = None
     diagnosis_population: int = 0
     selected: int = 0
     diagnosed_ok: int = 0

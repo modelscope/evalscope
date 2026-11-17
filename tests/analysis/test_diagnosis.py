@@ -621,7 +621,8 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'judge_failure')['unscored'] == 1
     assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'bad_arguments')['failed'] == 1
     assert summary['risk_samples'] == 1
-    assert summary['passed_observations'] == 1
+    assert 'passed_observations' not in summary
+    assert client.get(base + '/diagnosis/samples', query_string={'dataset_name': 'demo', 'outcome': 'passed'}).status_code == 400
     params = {'dataset_name': 'demo', 'failure_type': 'tool_error', 'outcome': 'failed', 'page_size': 1}
     first = client.get(base + '/diagnosis/samples', query_string=params).get_json()
     second = client.get(base + '/diagnosis/samples', query_string={**params, 'page': 2}).get_json()

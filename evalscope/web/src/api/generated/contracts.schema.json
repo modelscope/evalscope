@@ -899,6 +899,25 @@
           "default": 0,
           "type": "integer"
         },
+        "selection_scope": {
+          "anyOf": [
+            {
+              "enum": [
+                "failed",
+                "unscored",
+                "risk",
+                "process",
+                "all",
+                "specified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "skipped_facts": {
           "additionalProperties": {
             "type": "string"
@@ -934,6 +953,7 @@
         "unexplained_failures",
         "skipped_facts",
         "analysis_errors",
+        "selection_scope",
         "diagnosis_population",
         "selected",
         "diagnosed_ok",
@@ -1104,10 +1124,6 @@
             "$ref": "#/$defs/DiagnosisIssue"
           },
           "type": "array"
-        },
-        "passed_observations": {
-          "default": 0,
-          "type": "integer"
         },
         "report": {
           "anyOf": [
@@ -1832,6 +1848,36 @@
         },
         "secondary_types": {
           "items": {
+            "enum": [
+              "knowledge_error",
+              "reasoning_error",
+              "instruction_violation",
+              "incomplete_answer",
+              "hallucination",
+              "missing_step",
+              "ignored_tool_error",
+              "followed_injection",
+              "unrequested_action",
+              "harmful_compliance",
+              "benchmark_issue",
+              "tool_error",
+              "wrong_tool",
+              "bad_arguments",
+              "environment_failure",
+              "guard_block",
+              "truncated",
+              "empty_output",
+              "extraction_failure",
+              "premature_stop",
+              "loop_or_budget",
+              "attack_goal_action",
+              "safety_violation",
+              "unsafe_command",
+              "refusal",
+              "judge_failure",
+              "unexplained",
+              "other"
+            ],
             "type": "string"
           },
           "maxItems": 3,
@@ -2163,7 +2209,7 @@
           "items": {
             "$ref": "#/$defs/NarrativeItem"
           },
-          "maxItems": 8,
+          "maxItems": 3,
           "type": "array"
         },
         "limitations": {
@@ -2177,7 +2223,7 @@
           "items": {
             "$ref": "#/$defs/NarrativeItem"
           },
-          "maxItems": 5,
+          "maxItems": 3,
           "type": "array"
         }
       },

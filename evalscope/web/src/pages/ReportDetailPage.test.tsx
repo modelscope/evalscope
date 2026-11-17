@@ -44,6 +44,7 @@ const DIAGNOSIS: DiagnosisReport = {
     unexplained_failures: 0,
     skipped_facts: {},
     analysis_errors: {},
+    selection_scope: null,
     diagnosis_population: 1,
     selected: 0,
     diagnosed_ok: 0,

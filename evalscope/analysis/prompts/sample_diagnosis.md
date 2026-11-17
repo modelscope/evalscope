@@ -7,6 +7,9 @@ or reasoning error. Do not invent missing tool definitions, hidden steps, extern
 Use unexplained / unknown when the visible evidence cannot support a more specific explanation.
 A suspected gold problem must be marked gold_suspect and attributed to benchmark, not asserted as proven.
 
+gold_suspect is a boolean field, never a failure_type or secondary type. JSON-escape double quotes,
+backslashes and control characters in every string, including verbatim evidence quotes.
+
 Return a concise explanation (at most 300 words), one primary failure_type and at most 3 secondary types.
 Evidence: at most 3 objects {"source_id": "m:3", "quote": "exact visible text"}.
 Prefer a short, unique, verbatim quote from the supplied source. Optional start/end are zero-based Unicode

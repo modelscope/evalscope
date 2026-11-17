@@ -153,7 +153,7 @@ export async function getDiagnosis(rootPath: string, ref: string, dataset: strin
 }
 
 export interface DiagnosisFilters {
-  outcome?: 'failed' | 'unscored' | 'risk' | 'passed'
+  outcome?: 'failed' | 'unscored' | 'risk'
   subset_name?: string
   pattern_id?: string
   failure_type?: string

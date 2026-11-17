@@ -248,7 +248,6 @@ export interface DeleteReportResponse {
  */
 export interface DiagnosisResponse {
   issues?: DiagnosisIssue[];
-  passed_observations?: number;
   report?: DiagnosisReport | null;
   risk_samples?: number;
   status: "ready" | "missing" | "stale" | "error";
@@ -321,6 +320,7 @@ export interface DiagnosisCoverage {
   outcome_unknown: number;
   samples: number;
   selected: number;
+  selection_scope: ("failed" | "unscored" | "risk" | "process" | "all" | "specified") | null;
   skipped_facts: {
     [k: string]: string;
   };
@@ -359,27 +359,9 @@ export interface SampleKey {
  */
 export interface Narrative {
   /**
-   * @maxItems 8
+   * @maxItems 3
    */
-  findings:
-    | []
-    | [NarrativeItem]
-    | [NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
-    | [
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem,
-        NarrativeItem
-      ];
+  findings: [] | [NarrativeItem] | [NarrativeItem, NarrativeItem] | [NarrativeItem, NarrativeItem, NarrativeItem];
   /**
    * @maxItems 5
    */
@@ -391,15 +373,10 @@ export interface Narrative {
     | [string, string, string, string]
     | [string, string, string, string, string];
   /**
-   * @maxItems 5
+   * @maxItems 3
    */
   recommendations:
-    | []
-    | [NarrativeItem]
-    | [NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem]
-    | [NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem, NarrativeItem];
+    [] | [NarrativeItem] | [NarrativeItem, NarrativeItem] | [NarrativeItem, NarrativeItem, NarrativeItem];
 }
 /**
  * Every sentence has resolvable fact/pattern references; it remains model-generated text.
@@ -991,7 +968,192 @@ export interface LLMDiagnosis {
   /**
    * @maxItems 3
    */
-  secondary_types: [] | [string] | [string, string] | [string, string, string];
+  secondary_types:
+    | []
+    | [
+        | "knowledge_error"
+        | "reasoning_error"
+        | "instruction_violation"
+        | "incomplete_answer"
+        | "hallucination"
+        | "missing_step"
+        | "ignored_tool_error"
+        | "followed_injection"
+        | "unrequested_action"
+        | "harmful_compliance"
+        | "benchmark_issue"
+        | "tool_error"
+        | "wrong_tool"
+        | "bad_arguments"
+        | "environment_failure"
+        | "guard_block"
+        | "truncated"
+        | "empty_output"
+        | "extraction_failure"
+        | "premature_stop"
+        | "loop_or_budget"
+        | "attack_goal_action"
+        | "safety_violation"
+        | "unsafe_command"
+        | "refusal"
+        | "judge_failure"
+        | "unexplained"
+        | "other"
+      ]
+    | [
+        (
+          | "knowledge_error"
+          | "reasoning_error"
+          | "instruction_violation"
+          | "incomplete_answer"
+          | "hallucination"
+          | "missing_step"
+          | "ignored_tool_error"
+          | "followed_injection"
+          | "unrequested_action"
+          | "harmful_compliance"
+          | "benchmark_issue"
+          | "tool_error"
+          | "wrong_tool"
+          | "bad_arguments"
+          | "environment_failure"
+          | "guard_block"
+          | "truncated"
+          | "empty_output"
+          | "extraction_failure"
+          | "premature_stop"
+          | "loop_or_budget"
+          | "attack_goal_action"
+          | "safety_violation"
+          | "unsafe_command"
+          | "refusal"
+          | "judge_failure"
+          | "unexplained"
+          | "other"
+        ),
+        (
+          | "knowledge_error"
+          | "reasoning_error"
+          | "instruction_violation"
+          | "incomplete_answer"
+          | "hallucination"
+          | "missing_step"
+          | "ignored_tool_error"
+          | "followed_injection"
+          | "unrequested_action"
+          | "harmful_compliance"
+          | "benchmark_issue"
+          | "tool_error"
+          | "wrong_tool"
+          | "bad_arguments"
+          | "environment_failure"
+          | "guard_block"
+          | "truncated"
+          | "empty_output"
+          | "extraction_failure"
+          | "premature_stop"
+          | "loop_or_budget"
+          | "attack_goal_action"
+          | "safety_violation"
+          | "unsafe_command"
+          | "refusal"
+          | "judge_failure"
+          | "unexplained"
+          | "other"
+        )
+      ]
+    | [
+        (
+          | "knowledge_error"
+          | "reasoning_error"
+          | "instruction_violation"
+          | "incomplete_answer"
+          | "hallucination"
+          | "missing_step"
+          | "ignored_tool_error"
+          | "followed_injection"
+          | "unrequested_action"
+          | "harmful_compliance"
+          | "benchmark_issue"
+          | "tool_error"
+          | "wrong_tool"
+          | "bad_arguments"
+          | "environment_failure"
+          | "guard_block"
+          | "truncated"
+          | "empty_output"
+          | "extraction_failure"
+          | "premature_stop"
+          | "loop_or_budget"
+          | "attack_goal_action"
+          | "safety_violation"
+          | "unsafe_command"
+          | "refusal"
+          | "judge_failure"
+          | "unexplained"
+          | "other"
+        ),
+        (
+          | "knowledge_error"
+          | "reasoning_error"
+          | "instruction_violation"
+          | "incomplete_answer"
+          | "hallucination"
+          | "missing_step"
+          | "ignored_tool_error"
+          | "followed_injection"
+          | "unrequested_action"
+          | "harmful_compliance"
+          | "benchmark_issue"
+          | "tool_error"
+          | "wrong_tool"
+          | "bad_arguments"
+          | "environment_failure"
+          | "guard_block"
+          | "truncated"
+          | "empty_output"
+          | "extraction_failure"
+          | "premature_stop"
+          | "loop_or_budget"
+          | "attack_goal_action"
+          | "safety_violation"
+          | "unsafe_command"
+          | "refusal"
+          | "judge_failure"
+          | "unexplained"
+          | "other"
+        ),
+        (
+          | "knowledge_error"
+          | "reasoning_error"
+          | "instruction_violation"
+          | "incomplete_answer"
+          | "hallucination"
+          | "missing_step"
+          | "ignored_tool_error"
+          | "followed_injection"
+          | "unrequested_action"
+          | "harmful_compliance"
+          | "benchmark_issue"
+          | "tool_error"
+          | "wrong_tool"
+          | "bad_arguments"
+          | "environment_failure"
+          | "guard_block"
+          | "truncated"
+          | "empty_output"
+          | "extraction_failure"
+          | "premature_stop"
+          | "loop_or_budget"
+          | "attack_goal_action"
+          | "safety_violation"
+          | "unsafe_command"
+          | "refusal"
+          | "judge_failure"
+          | "unexplained"
+          | "other"
+        )
+      ];
 }
 /**
  * Offsets are zero-based Python Unicode character offsets, end-exclusive, in the supplied source.

@@ -1,14 +1,15 @@
-import { useState } from 'react'
-import { AlertTriangle, ArrowRight, FileText } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { AlertTriangle, ArrowRight, ChevronDown, FileText } from 'lucide-react'
 import DiagnosisSamplePanel from './DiagnosisSamplePanel'
 import type { ReportMetric } from '@/domain/report/primaryMetrics'
 import { formatMetric, formatProportion } from '@/domain/metric'
 import { getDiagnosis, type DiagnosisFilters } from '@/api/reports'
-import type { Fact, SampleKey } from '@/api/types'
+import type { DiagnosisReport, Fact, SampleKey } from '@/api/types'
 import { parseReportRef } from '@/domain/report/reportRef'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
+import Badge from '@/components/ui/Badge'
 import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
@@ -203,6 +204,62 @@ function FactData({ fact }: { fact: Fact }) {
   return null
 }
 
+function AnalysisInformation({ report }: { report: DiagnosisReport }) {
+  const { t } = useLocale()
+  const { coverage, cost } = report
+  const modelAnalysis = report.level !== 'facts'
+  const mode = t(`diagnosis.analysisMode.${report.level}`)
+  const tokenFormat = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 })
+  const narrativeItems = (report.narrative?.findings.length ?? 0) + (report.narrative?.recommendations.length ?? 0)
+  const summaryStatus = report.narrative_status === 'ok' && !narrativeItems ? 'no_findings' : report.narrative_status
+  const summaryFailed = ['parse_error', 'transport_error', 'invalid_references'].includes(summaryStatus)
+  const tokenUsage = cost.calls > 0
+    ? cost.usage_missing_calls > 0 ? t('diagnosis.usageIncomplete')
+      : t('diagnosis.tokenBreakdown', { input: tokenFormat.format(cost.input_tokens), output: tokenFormat.format(cost.output_tokens) })
+    : t('diagnosis.noNewTokenUsage')
+  const fields: { label: string; value: ReactNode; title?: string }[] = [
+    { label: t('diagnosis.statisticsScope'), value: t('diagnosis.sampleCount', { count: coverage.samples }) },
+    ...(modelAnalysis ? [
+      { label: t('diagnosis.selectedScope'), value: t(`diagnosis.reviewScope.${coverage.selection_scope ?? 'unknown'}`) },
+      { label: t('diagnosis.analysisModel'), value: report.diagnosis_model ?? '—' },
+      { label: t('diagnosis.samplesReviewed'), value: coverage.diagnosis_population > 0
+        ? `${coverage.selected} / ${coverage.diagnosis_population}` : t('diagnosis.noEligibleSamples') },
+      { label: t('diagnosis.citationCheck'), value: coverage.citations_total > 0
+        ? `${coverage.citations_valid} / ${coverage.citations_total}` : t('diagnosis.noCitations') },
+      { label: t('diagnosis.hypotheses'), value: t('diagnosis.sampleCount', { count: coverage.diagnosed_ok }) },
+      { label: t('diagnosis.newRequests'), value: String(cost.calls) },
+      { label: t('diagnosis.cacheReuse'), value: String(cost.cached_calls) },
+      { label: t('diagnosis.tokenUsage'), value: tokenUsage,
+        title: cost.usage_missing_calls ? undefined : `${t('diagnosis.inputTokens')}: ${cost.input_tokens.toLocaleString()} · ${t('diagnosis.outputTokens')}: ${cost.output_tokens.toLocaleString()}` },
+    ] : [{ label: t('diagnosis.modelCalls'), value: t('diagnosis.noModelCalls') }]),
+    ...(report.level === 'full' ? [{ label: t('diagnosis.summaryStatus'), value:
+      <Badge variant={summaryFailed || summaryStatus === 'partial_references' ? 'warning' : 'default'}>
+        {t(`diagnosis.summaryState.${summaryStatus}`)}
+      </Badge> }] : []),
+    { label: t('diagnosis.generated'), value: new Date(report.generated_at).toLocaleString() },
+  ]
+  const statuses = Object.entries(coverage.diagnosis_statuses).filter(([status, count]) => status !== 'ok' && count > 0)
+  return (
+    <details id="diagnosis-analysis-info" className="group rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2 font-medium"><FileText size={15} />{t('diagnosis.analysisInformation')}</span>
+        <span className="flex items-center gap-3"><Badge>{mode}</Badge>{report.level === 'full' && <span className={summaryFailed ? 'text-[var(--warning-text)]' : 'text-[var(--text-muted)]'}>{t(`diagnosis.summaryState.${summaryStatus}`)}</span>}<ChevronDown size={15} className="transition-transform group-open:rotate-180" /></span>
+      </summary>
+      <div className="space-y-4 border-t border-[var(--border)] p-4">
+        <dl className="grid grid-cols-3 gap-x-8 gap-y-4">
+          {fields.map(field => <div key={field.label} className="min-w-0">
+            <dt className="text-xs text-[var(--text-muted)]">{field.label}</dt>
+            <dd title={field.title} className="mt-1 break-words text-sm font-medium tabular-nums">{field.value}</dd>
+          </div>)}
+        </dl>
+        {modelAnalysis && <p className="text-xs leading-relaxed text-[var(--text-muted)]">{t('diagnosis.reviewScopeNotice')}</p>}
+        {statuses.length > 0 && modelAnalysis && <p className="text-xs text-[var(--text-muted)]">{statuses.map(([status, count]) => `${t(`diagnosis.llmStatus.${status}`)} ${count}`).join(' · ')}</p>}
+        {report.self_evaluation && modelAnalysis && <p className="text-xs text-[var(--warning-text)]">{t('diagnosis.selfEvaluation')}</p>}
+      </div>
+    </details>
+  )
+}
+
 interface IssueSelection {
   id: string
   title: string
@@ -215,6 +272,7 @@ interface IssueSelection {
 export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis, metrics }: Props) {
   const { t } = useLocale()
   const [selection, setSelection] = useState<IssueSelection | null>(null)
+  const [factReference, setFactReference] = useState<string | null>(null)
   const resource = useAsyncResource(
     (signal) => getDiagnosis(rootPath, reportName, datasetName, signal),
     [rootPath, reportName, datasetName],
@@ -262,17 +320,23 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     ? makeEntry('unscored', t('diagnosis.unscored'), c.excluded, { outcome: 'unscored' }) : null
   const risk = state.risk_samples
     ? makeEntry('risk', t('diagnosis.riskTitle'), state.risk_samples, { outcome: 'risk' }) : null
-  const passed = state.passed_observations
-    ? makeEntry('passed', t('diagnosis.passedObservations'), state.passed_observations, { outcome: 'passed' }) : null
-  const selected = selection ?? issues[0] ?? pending ?? unscored ?? risk ?? passed
+  const selected = selection ?? issues[0] ?? pending ?? unscored ?? risk
   const tools = selected?.filters.failure_type
     ? Object.keys(state.issues?.find(issue => issue.failure_type === selected.filters.failure_type)?.tools ?? {}) : []
+  const referencedFact = report.facts.find(fact => fact.id === factReference)
+  const narrativeGroups = report.narrative ? [
+    { key: 'summaryFindings', items: report.narrative.findings },
+    { key: 'summaryRecommendations', items: report.narrative.recommendations },
+  ].filter(group => group.items.length) : []
+  const hasNarrative = report.level === 'full' && ['ok', 'partial_references'].includes(report.narrative_status)
+    && Boolean(report.narrative && (report.narrative.findings.length || report.narrative.recommendations.length))
   const factTitle = (fact: Fact) => {
     const key = `diagnosis.fact.${fact.id}`
     return t(key) === key ? fact.title : t(key)
   }
   const openSamples = (filters: DiagnosisFilters, sample?: SampleKey, title = t('diagnosis.samplePanel')) => {
     setSelection(makeEntry('other', title, 0, sample ? { ...filters, subset_name: sample.subset, index: sample.index } : filters))
+    document.getElementById('diagnosis-issues')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
   }
   const issueButton = (entry: IssueSelection) => (
     <button
@@ -312,7 +376,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         ].filter(([, count]) => Number(count) > 0).map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`).join(' · ')}</p>}
       </div>
       {issues.length > 1 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.overlappingIssues')}</p>}
-      <div className="grid grid-cols-[250px_minmax(0,1fr)] items-start gap-5">
+      <div id="diagnosis-issues" className="grid scroll-mt-20 grid-cols-[250px_minmax(0,1fr)] items-start gap-5">
         <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
           <h3 className="border-b border-[var(--border)] pb-3 text-base font-semibold">{t('diagnosis.majorIssues')}</h3>
           {issues.map(issueButton)}
@@ -321,13 +385,9 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
             {t(c.task_failed ? 'diagnosis.noIdentifiedIssues' : c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}
           </p>}
           {unscored && issueButton(unscored)}
-          {passed && <button type="button" className="diagnosis-link mt-3 block text-left text-xs leading-relaxed"
-            aria-pressed={selected?.id === 'passed'} onClick={() => setSelection(passed)}>
-            {t('diagnosis.passedCount', { count: passed.count })}
-          </button>}
-          <a href="#diagnosis-analysis-record" className="diagnosis-link mt-6 flex items-center gap-2 border-t border-[var(--border)] pt-4 text-xs"
-            onClick={() => { const record = document.getElementById('diagnosis-analysis-record'); if (record instanceof HTMLDetailsElement) record.open = true }}>
-            <FileText size={14} />{t('diagnosis.analysisRecord')}
+          <a href="#diagnosis-analysis-info" className="diagnosis-link mt-6 flex items-center gap-2 border-t border-[var(--border)] pt-4 text-xs"
+            onClick={() => { const record = document.getElementById('diagnosis-analysis-info'); if (record instanceof HTMLDetailsElement) record.open = true }}>
+            <FileText size={14} />{t('diagnosis.analysisInformation')}
           </a>
         </section>
         <div className="min-w-0 space-y-4">
@@ -336,6 +396,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
               <h3 className="text-lg font-semibold">{selected.title}</h3>
               <p className="text-xs text-[var(--text-muted)]">{selected.count > 0 && `${t(selected.filters.outcome === 'failed' ? 'diagnosis.failedCount' : 'diagnosis.sampleCount', { count: selected.count })} · `}
                 {t('diagnosis.ruleObservation')}</p>
+              {tools.length > 0 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.relatedTools')}: <span className="font-mono">{tools.join(' / ')}</span></p>}
               <p className="text-sm leading-relaxed">{selected.description}</p>
               <p className="border-l-2 border-[var(--accent)] pl-3 text-sm leading-relaxed">{selected.suggestion}</p>
             </header>
@@ -344,52 +405,32 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           </> : <p className="py-6 text-sm text-[var(--text-muted)]">{t(c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}</p>}
         </div>
       </div>
-      {report.narrative && <section aria-label={t('diagnosis.modelSummary')} className="space-y-3 border-t border-[var(--border)] pt-4">
+      {hasNarrative && report.narrative && <section aria-label={t('diagnosis.modelSummary')} className="space-y-3 border-t border-[var(--border)] pt-4">
         <h3 className="text-base font-semibold">{t('diagnosis.modelSummary')}</h3>
         <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.proposalNotice')}</p>
-        <ul className="space-y-3 text-sm">{[...report.narrative.findings, ...report.narrative.recommendations].map((item, index) => <li key={index}>
+        <div className={narrativeGroups.length > 1 ? 'grid grid-cols-2 gap-6' : 'space-y-3'}>{narrativeGroups.map(group => <section key={group.key} className="space-y-2"><h4 className="text-sm font-medium">{t(`diagnosis.${group.key}`)}</h4><ul className="space-y-3 text-sm">{group.items.map((item, index) => <li key={index}>
           {item.text} {item.refs.map(reference => {
             const pattern = report.patterns.find(p => p.id === reference)
             const fact = report.facts.find(f => f.id === reference)
             return <button type="button" key={reference} className="diagnosis-link ml-1" onClick={() => {
-              if (pattern) openSamples({ pattern_id: pattern.id }, undefined, issueTitle(pattern.failure_type))
-              else if (fact?.samples[0]) openSamples({}, fact.samples[0], factTitle(fact))
-              else {
-                const element = document.getElementById(`detail-${reference}`)
-                const record = document.getElementById('diagnosis-analysis-record')
-                if (record instanceof HTMLDetailsElement) record.open = true
-                element?.scrollIntoView({ block: 'center' })
-              }
-            }}>[{pattern ? `P${report.patterns.indexOf(pattern) + 1}` : fact ? factTitle(fact) : reference}]</button>
+              if (pattern) {
+                setFactReference(null)
+                const issue = state.issues?.find(item => item.failure_type === pattern.failure_type)
+                const outcome = issue?.failed ? 'failed' : issue?.unscored ? 'unscored' : undefined
+                openSamples({ pattern_id: pattern.id, ...(outcome ? { outcome } : {}) }, undefined, issueTitle(pattern.failure_type))
+              } else if (fact) setFactReference(fact.id)
+            }}>[{pattern ? issueTitle(pattern.failure_type) : fact ? factTitle(fact) : reference}]</button>
           })}
-        </li>)}</ul>
+        </li>)}</ul></section>)}</div>
+        {referencedFact && <aside aria-label={t('diagnosis.referenceBasis')} className="space-y-2 rounded-md border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="text-sm font-medium">{factTitle(referencedFact)}{referencedFact.value !== null && ` · ${referencedFact.unit === 'fraction' ? formatProportion(referencedFact.value).primary : formatMetric(referencedFact.value, null).primary}`}</h4>
+          <p className="text-xs text-[var(--text-muted)]">{t(`diagnosis.description.${referencedFact.id}`) === `diagnosis.description.${referencedFact.id}` ? referencedFact.definition : t(`diagnosis.description.${referencedFact.id}`)}</p>
+          {referencedFact.denominator !== null && <p className="text-xs">{referencedFact.numerator} / {referencedFact.denominator}</p>}
+          <FactData fact={referencedFact} />
+          {referencedFact.samples.length > 0 && <div className="flex flex-wrap gap-3">{referencedFact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs" onClick={() => openSamples({}, sample, factTitle(referencedFact))}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
+        </aside>}
       </section>}
-      <details id="diagnosis-analysis-record" className="border-t border-[var(--border)] pt-3">
-        <summary className="cursor-pointer text-sm text-[var(--text-muted)]">{t('diagnosis.analysisRecord')}</summary>
-        <div className="mt-4 space-y-4 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">{t(report.level === 'facts' ? 'diagnosis.ruleAnalysis' : 'diagnosis.modelAnalysis')} · {t('diagnosis.generated')} {new Date(report.generated_at).toLocaleString()}</p>
-          {report.level !== 'facts' && <div className="space-y-2">
-            <p>{t('diagnosis.proposalCoverage', { ok: c.diagnosed_ok, selected: c.selected, total: c.diagnosis_population })}</p>
-            {report.self_evaluation && <p>{t('diagnosis.selfEvaluation')}</p>}
-          </div>}
-          <p>{t('diagnosis.callCount', { count: report.cost.calls })}{report.cost.cached_calls > 0 && ` · ${t('diagnosis.cachedCalls', { count: report.cost.cached_calls })}`}
-            {report.cost.calls > 0 && ` · ${t('diagnosis.tokenCount', { count: report.cost.input_tokens + report.cost.output_tokens })}`}
-          </p>
-          <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.recordScope')}</p>
-              {tools.length > 0 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.relatedTools')}: <span className="font-mono">{tools.join(' / ')}</span></p>}
-
-          <ul className="divide-y divide-[var(--border)]">{report.facts.map(fact => <li id={`detail-${fact.id}`} key={fact.id} className="space-y-2 py-3">
-            <h4 className="font-medium">{factTitle(fact)}{fact.value !== null && ` · ${fact.unit === 'fraction' ? formatProportion(fact.value).primary : formatMetric(fact.value, null).primary}`}</h4>
-            <FactData fact={fact} />
-            {fact.samples.length > 0 && <div className="flex flex-wrap gap-x-3">{fact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs"
-              onClick={() => onSamples({}, sample)}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
-          </li>)}</ul>
-          {Object.keys(c.skipped_facts).length > 0 && <details>
-            <summary className="cursor-pointer text-xs text-[var(--text-muted)]">{t('diagnosis.skipped')} ({Object.keys(c.skipped_facts).length})</summary>
-            <ul className="mt-2 space-y-1 text-xs text-[var(--text-muted)]">{Object.keys(c.skipped_facts).map(key => <li key={key}>{translated('unavailable', key, 'predictions')}</li>)}</ul>
-          </details>}
-        </div>
-      </details>
+      <AnalysisInformation report={report} />
     </div>
   )
 }

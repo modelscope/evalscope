@@ -115,6 +115,7 @@ def test_full_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run:
     assert report.cost.calls==2 and report.cost.input_tokens==40
     assert len(report.narrative.findings)==1 and len(calls)==2
     assert report.coverage.diagnosis_population == 1
+    assert report.coverage.selection_scope == 'failed'
     assert (root/'reviews/m/demo_default.jsonl').read_bytes()==original
     rows=[json.loads(line) for line in (root/'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
     assert rows[0]['llm']['evidence'][0]['quote']=='ANSWER: B'
@@ -210,6 +211,8 @@ def test_narrative_references_are_rendered_once_and_labels_require_taxonomy_ids(
     assert item.text == 'Check the output.'
     item=NarrativeItem(text='Check the output (F-truncation, P-abcd).',refs=['F-truncation'])
     assert item.text == 'Check the output.'
+    item=NarrativeItem(text='请核对（P-abcd）及【F-truncation】。',refs=['P-abcd'])
+    assert item.text == '请核对及。'
     item=NarrativeItem(text='Errors (5/44, P-abcd).',refs=['P-abcd'])
     assert item.text == 'Errors (5/44).'
     with pytest.raises(ValueError,match='taxonomy IDs'):
@@ -342,6 +345,7 @@ def test_explicit_passing_sample_is_retained_without_becoming_a_failure(make_run
     result = diagnose_benchmark(str(root), 'm', 'demo', options(samples=[SampleKey(subset='default', index=0)]))
     rows = [json.loads(line) for line in (root / 'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
     assert result.coverage.task_failed == 0 and len(rows) == 1
+    assert result.coverage.selection_scope == 'specified'
     assert rows[0]['task_success'] is True and rows[0]['failure_type'] is None
     assert rows[0]['llm']['failure_type'] == 'reasoning_error'
 
@@ -371,3 +375,51 @@ def test_agreeing_on_unknown_never_certifies_model_explanation_accuracy() -> Non
     assert metrics['type_accuracy'] == 1
     assert metrics['proposal_type_accuracy'] is None and metrics['proposal_coverage'] == 0
     assert metrics['experimental']
+
+
+def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evalscope.analysis.llm import summarize
+    from evalscope.api.analysis import Fact, FailurePattern
+
+    root = make_run()
+    report = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace={'use_providers': False}))
+    report.facts.append(Fact(id='F-safety', kind='agent', title='Safety signals', definition='Benchmark signal',
+                             numerator=1, denominator=32))
+    report.patterns = [FailurePattern(id='P-tools', failure_type='tool_error', attribution='unknown',
+                                    count=30, denominator=31, share=30 / 31),
+                       FailurePattern(id='P-passing', failure_type='loop_or_budget', attribution='unknown',
+                                    count=1, denominator=31, share=1 / 31)]
+    rows = [SampleDiagnosis(key={'subset': 'main', 'index': i}, task_success=True, score_status='success',
+                            observed_types=['tool_error' if i < 29 else 'loop_or_budget']) for i in range(30)]
+    rows += [SampleDiagnosis(key={'subset': 'main', 'index': 30}, task_success=False, score_status='success', observed_types=['tool_error']),
+             SampleDiagnosis(key={'subset': 'main', 'index': 31}, score_status='parse_error', observed_types=['tool_error'])]
+    rows[-2].llm = verdict()
+    rows[-2].llm_status = 'ok'
+    rows[0].llm = verdict()
+    rows[0].llm_status = 'invalid_evidence'
+    captured = []
+    class Reviewer:
+        def generate(self, messages: list) -> ModelOutput:
+            captured.extend(messages)
+            return ModelOutput.from_content(model='reviewer', content=json.dumps({
+                'findings': [{'text': 'One failed task had a tool error.', 'refs': ['P-tools']}],
+                'recommendations': [], 'limitations': [],
+            }))
+    monkeypatch.setattr('evalscope.analysis.llm.get_model', lambda *args, **kwargs: Reviewer())
+    def write(path: Path, text: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    summarize(report, rows, options(language='zh'), root / 'summary-test', False, write)
+    assert 'Write explanations, narrative text and limitations in Chinese' in captured[0].text
+    prompt = captured[-1].text
+    payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
+    assert 'F-safety' in {fact['id'] for fact in payload['facts']}
+    assert 'skipped_facts' not in payload['coverage'] and 'diagnosed_ok' not in payload['coverage']
+    schema = LLMDiagnosis.model_json_schema()
+    assert schema['properties']['secondary_types']['items']['enum'] == schema['properties']['failure_type']['enum']
+    assert payload['patterns'] == [{'id': 'P-tools', 'observation_type': 'tool_error'}]
+    assert payload['sample_hypotheses'] == [{'sample': {'subset': 'main', 'index': 30},
+                                            'refs': ['P-tools'], 'hypothesis': verdict().model_dump(mode='json')}]
+    assert report.narrative_status == 'ok'

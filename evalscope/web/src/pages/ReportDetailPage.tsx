@@ -44,7 +44,7 @@ export default function ReportDetailPage() {
   })
   const outcome = searchParams.get('outcome')
   const diagnosisFilters: DiagnosisFilters = {
-    outcome: outcome === 'failed' || outcome === 'unscored' || outcome === 'risk' || outcome === 'passed' ? outcome : undefined,
+    outcome: outcome === 'failed' || outcome === 'unscored' || outcome === 'risk' ? outcome : undefined,
     pattern_id: searchParams.get('pattern') || undefined,
     failure_type: searchParams.get('failure_type') || undefined,
     attribution: searchParams.get('attribution') || undefined,

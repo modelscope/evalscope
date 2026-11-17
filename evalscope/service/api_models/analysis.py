@@ -25,7 +25,6 @@ class DiagnosisResponse(ApiResponseModel):
     report: Optional[DiagnosisReport] = None
     issues: List[DiagnosisIssue] = Field(default_factory=list)
     risk_samples: int = 0
-    passed_observations: int = 0
 
 
 class SampleDiagnosesResponse(ApiResponseModel):
