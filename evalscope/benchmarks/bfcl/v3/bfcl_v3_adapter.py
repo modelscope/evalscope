@@ -80,7 +80,7 @@ BFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and e
         dataset_id='AI-ModelScope/bfcl_v3',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         eval_split='train',
         extra_params={
             'underscore_to_dot': {

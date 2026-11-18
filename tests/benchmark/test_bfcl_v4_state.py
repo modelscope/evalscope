@@ -5,10 +5,12 @@ import importlib
 import json
 import logging
 import re
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Iterator
 
 import pytest
@@ -19,12 +21,16 @@ from bfcl_eval.eval_checker.multi_turn_eval import multi_turn_utils
 from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
 from bfcl_eval.utils import load_dataset_entry, load_ground_truth_entry
 
+from evalscope import TaskConfig
+from evalscope.api.evaluator import TaskState
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.bfcl.v4 import utils as bfcl_utils
 from evalscope.benchmarks.bfcl.v4.utils import (
     DUMMY_MODEL_NO_UNDERSCORE_TO_DOT,
     DUMMY_MODEL_UNDERSCORE_TO_DOT,
     compute_entry_result,
 )
+from evalscope.constants import ScoreStatus
 
 
 @pytest.fixture
@@ -260,7 +266,9 @@ class _MemorySnapshotHandler(_ExecutableHandler):
         return [], {}
 
 
-def test_prerequisite_cleanup_preserves_ordered_memory_snapshots(tmp_path: Path) -> None:
+def test_prerequisite_resume_preserves_ordered_memory_snapshots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     handler = _MemorySnapshotHandler()
     entries = []
     for index in range(2):
@@ -273,7 +281,8 @@ def test_prerequisite_cleanup_preserves_ordered_memory_snapshots(tmp_path: Path)
             },
         })
     before = set(vars(multi_turn_utils))
-    bfcl_utils.run_prereq_inference(handler, entries, tmp_path, 2, logging.getLogger(__name__))
+    logger = logging.getLogger(__name__)
+    assert not bfcl_utils.run_prereq_inference(handler, entries[::-1], tmp_path, 2, logger)
     checkpoints = {path.name: json.loads(path.read_text()) for path in tmp_path.rglob('*.json')}
     for entry in entries:
         assert entry['id'] + '.json' in checkpoints
@@ -284,3 +293,104 @@ def test_prerequisite_cleanup_preserves_ordered_memory_snapshots(tmp_path: Path)
     assert 'student_final.json' in checkpoints
     assert set(vars(multi_turn_utils)) == before
     assert handler.model_name_underline_replaced == 'real_model_name'
+
+    run_inference = bfcl_utils.run_isolated_inference
+    calls = []
+
+    def track_inference(handler: Any, entry: dict[str, Any], **kwargs: Any) -> Any:
+        calls.append(entry['id'])
+        return run_inference(handler, entry, **kwargs)
+
+    monkeypatch.setattr(bfcl_utils, 'run_isolated_inference', track_inference)
+    assert not bfcl_utils.run_prereq_inference(handler, entries, tmp_path, 2, logger)
+    assert calls == []
+
+    final_snapshot = next(tmp_path.rglob('student_final.json'))
+    final_snapshot.write_text('[]')
+    assert not bfcl_utils.run_prereq_inference(handler, entries, tmp_path, 2, logger)
+    assert calls == [entry['id'] for entry in entries]
+    assert json.loads(final_snapshot.read_text()) == checkpoints['student_final.json']
+
+
+@pytest.mark.parametrize(
+    ('backend', 'empty', 'populated'),
+    [
+        ('kv', {'core_memory': {}, 'archival_memory': {}}, {'core_memory': {'pet': 'cat'}, 'archival_memory': {}}),
+        ('rec_sum', {'memory': ''}, {'memory': 'The pet is a cat.'}),
+        (
+            'vector',
+            {'core_memory': {'next_id': 1, 'store': {}}, 'archival_memory': {'next_id': 0, 'store': {}}},
+            {'core_memory': {'next_id': 1, 'store': {'0': 'cat'}}, 'archival_memory': {'next_id': 0, 'store': {}}},
+        ),
+    ],
+)
+def test_memory_snapshot_content_uses_backend_schema(
+    backend: str, empty: dict[str, Any], populated: dict[str, Any]
+) -> None:
+    assert not bfcl_utils._memory_snapshot_has_content(json.dumps(empty).encode(), backend)
+    assert bfcl_utils._memory_snapshot_has_content(json.dumps(populated).encode(), backend)
+    with pytest.raises(ValueError, match='JSON object'):
+        bfcl_utils._memory_snapshot_has_content(b'[]', backend)
+
+
+def test_vector_faiss_threads_restored_when_inference_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    threads = [8]
+
+    def set_threads(count: int) -> None:
+        threads[0] = count
+
+    def fail_inference(self: Any, entry: dict[str, Any], **kwargs: Any) -> Any:
+        assert threads == [1]
+        raise RuntimeError('scripted API failure')
+
+    faiss = SimpleNamespace(omp_get_max_threads=lambda: threads[0], omp_set_num_threads=set_threads)
+    monkeypatch.setitem(
+        sys.modules, 'bfcl_eval.eval_checker.multi_turn_eval.func_source_code.memory_vector', SimpleNamespace(faiss=faiss)
+    )
+    monkeypatch.setattr(bfcl_utils, 'platform', 'darwin')
+    monkeypatch.setattr(_ExecutableHandler, 'inference', fail_inference)
+    with pytest.raises(RuntimeError, match='scripted API failure'):
+        bfcl_utils.run_isolated_inference(
+            _ExecutableHandler(), {'id': 'memory_vector_0-notetaker-0'}, include_input_log=False, exclude_state_log=True
+        )
+    assert threads == [8]
+
+
+def test_limited_memory_load_keeps_only_selected_sample_dependencies() -> None:
+    subset = 'memory_kv'
+    config = TaskConfig(datasets=['bfcl_v4'], limit=1, repeats=2, dataset_args={'bfcl_v4': {'subset_list': [subset]}})
+    adapter = get_benchmark('bfcl_v4', config=config)
+    datasets, _ = adapter.load()
+    assert len(datasets[subset]) == 2
+    sample = datasets[subset][0]
+    assert sample.metadata['ground_truth']
+    assert len(adapter.prereq_entries) == 10
+    assert {entry['id'] for entry in adapter.prereq_entries} == set(sample.metadata['depends_on'])
+
+
+def test_failed_memory_prerequisite_blocks_later_steps(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    entries = [{'id': f'memory_kv_prereq_{idx}-student-{idx}'} for idx in range(2)]
+    calls = []
+
+    def fail_inference(handler: Any, entry: dict[str, Any], **kwargs: Any) -> Any:
+        calls.append(entry['id'])
+        raise RuntimeError('scripted prerequisite failure')
+
+    monkeypatch.setattr(bfcl_utils, 'run_isolated_inference', fail_inference)
+    failures = bfcl_utils.run_prereq_inference(None, entries, tmp_path, 1, logging.getLogger(__name__))
+    assert failures == {('kv', 'student')}
+    assert calls == [entries[0]['id']]
+
+
+def test_recorded_inference_error_is_excluded_from_accuracy() -> None:
+    subset = 'memory_kv'
+    config = TaskConfig(datasets=['bfcl_v4'], limit=1, dataset_args={'bfcl_v4': {'subset_list': [subset]}})
+    adapter = get_benchmark('bfcl_v4', config=config)
+    datasets, _ = adapter.load()
+    sample = datasets[subset][0]
+    state = TaskState(model='scripted', sample=sample)
+    result = json.dumps({'error': 'BFCL memory prerequisites did not complete'})
+    score = adapter.match_score(result, result, sample.target, state)
+    assert score.status == ScoreStatus.INVALID_SESSION
+    assert score.value == {}
+    assert adapter.handler is None
