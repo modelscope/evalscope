@@ -891,6 +891,14 @@
           "default": 0,
           "type": "integer"
         },
+        "proposals_without_rule_clues": {
+          "default": 0,
+          "type": "integer"
+        },
+        "risk_samples": {
+          "default": 0,
+          "type": "integer"
+        },
         "samples": {
           "default": 0,
           "type": "integer"
@@ -951,6 +959,8 @@
         "unreadable",
         "needs_attention",
         "unexplained_failures",
+        "risk_samples",
+        "proposals_without_rule_clues",
         "skipped_facts",
         "analysis_errors",
         "selection_scope",
@@ -960,33 +970,6 @@
         "diagnosis_statuses",
         "citations_total",
         "citations_valid"
-      ],
-      "type": "object"
-    },
-    "DiagnosisIssue": {
-      "additionalProperties": false,
-      "description": "Observed issue groups; identities are unique within each group and groups may overlap.",
-      "properties": {
-        "failed": {
-          "default": 0,
-          "type": "integer"
-        },
-        "failure_type": {
-          "type": "string"
-        },
-        "tools": {
-          "additionalProperties": {
-            "type": "integer"
-          },
-          "type": "object"
-        },
-        "unscored": {
-          "default": 0,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "failure_type"
       ],
       "type": "object"
     },
@@ -1084,7 +1067,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": 4,
+          "default": 5,
           "type": "integer"
         },
         "self_evaluation": {
@@ -1125,12 +1108,6 @@
       "additionalProperties": false,
       "description": "Read-only diagnostic artifact and freshness state.",
       "properties": {
-        "issues": {
-          "items": {
-            "$ref": "#/$defs/DiagnosisIssue"
-          },
-          "type": "array"
-        },
         "report": {
           "anyOf": [
             {
@@ -1141,10 +1118,6 @@
             }
           ],
           "default": null
-        },
-        "risk_samples": {
-          "default": 0,
-          "type": "integer"
         },
         "status": {
           "enum": [
@@ -1499,64 +1472,38 @@
     },
     "FailurePattern": {
       "additionalProperties": false,
-      "description": "Observed issue types, counted once per sample, including the unexplained group.",
+      "description": "Observed issue types among failed or unscored samples; groups may overlap.",
       "properties": {
-        "attribution": {
-          "$ref": "#/$defs/Attribution"
-        },
-        "by_subset": {
-          "additionalProperties": {
-            "type": "integer"
-          },
-          "type": "object"
-        },
-        "count": {
-          "type": "integer"
-        },
-        "denominator": {
-          "type": "integer"
-        },
-        "detail": {
-          "default": "",
-          "type": "string"
-        },
         "examples": {
           "items": {
             "$ref": "#/$defs/SampleKey"
           },
           "type": "array"
         },
+        "failed": {
+          "default": 0,
+          "type": "integer"
+        },
         "failure_type": {
           "type": "string"
         },
-        "id": {
-          "type": "string"
+        "tools": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
         },
-        "share": {
-          "type": "number"
-        },
-        "source": {
-          "default": "rule",
-          "enum": [
-            "rule",
-            "llm",
-            "rule+llm",
-            "none"
-          ],
-          "type": "string"
+        "unscored": {
+          "default": 0,
+          "type": "integer"
         }
       },
       "required": [
-        "id",
         "failure_type",
-        "attribution",
-        "detail",
-        "count",
-        "denominator",
-        "share",
-        "by_subset",
-        "examples",
-        "source"
+        "failed",
+        "unscored",
+        "tools",
+        "examples"
       ],
       "type": "object"
     },
@@ -3615,10 +3562,6 @@
       "additionalProperties": false,
       "description": "Official outcome and observed findings; a finding is not a proved root cause.",
       "properties": {
-        "attribution": {
-          "$ref": "#/$defs/Attribution",
-          "default": "unknown"
-        },
         "context_omitted": {
           "default": false,
           "type": "boolean"
@@ -3686,17 +3629,6 @@
           },
           "type": "array"
         },
-        "pattern_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "safety_violation": {
           "anyOf": [
             {
@@ -3716,16 +3648,6 @@
             "type": "number"
           },
           "type": "object"
-        },
-        "source": {
-          "default": "none",
-          "enum": [
-            "rule",
-            "llm",
-            "rule+llm",
-            "none"
-          ],
-          "type": "string"
         },
         "sources": {
           "items": {
@@ -3765,17 +3687,14 @@
         "score_value",
         "needs_attention",
         "failure_type",
-        "attribution",
         "findings",
-        "pattern_id",
         "observed_types",
         "llm",
         "llm_status",
         "sources",
         "context_omitted",
         "invalid_evidence",
-        "evidence_errors",
-        "source"
+        "evidence_errors"
       ],
       "type": "object"
     },

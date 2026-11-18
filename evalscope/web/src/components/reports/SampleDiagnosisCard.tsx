@@ -7,6 +7,7 @@ export default function SampleDiagnosisCard({ diagnosis, showFindings = true }: 
   if (!showFindings && !hasModelAnalysis) return null
   return (
     <details
+      data-model-proposal={diagnosis.llm_status === 'ok' || undefined}
       className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]"
     >
       <summary className="cursor-pointer p-4 text-sm font-medium">

@@ -9,7 +9,7 @@ from evalscope.api.model.generate_config import GenerateConfig
 
 from .config import TraceAnalysisConfig
 from .taxonomy import ISSUE_NAMES, TAXONOMY_VERSION
-from .trace import Attribution, Finding
+from .trace import Attribution, Finding, FindingCategory
 
 
 class DiagnosticData(BaseModel):
@@ -165,9 +165,7 @@ class SampleDiagnosis(DiagnosticData):
     score_value: Dict[str, float] = Field(default_factory=dict)
     needs_attention: bool = False
     failure_type: Optional[str] = None
-    attribution: Attribution = Attribution.UNKNOWN
     findings: List[Finding] = Field(default_factory=list)
-    pattern_id: Optional[str] = None
     observed_types: List[str] = Field(default_factory=list)
     llm: Optional[LLMDiagnosis] = None
     llm_status: Literal['not_selected', 'ok', 'parse_error', 'transport_error', 'invalid_evidence', 'unexplained'] = (
@@ -177,22 +175,35 @@ class SampleDiagnosis(DiagnosticData):
     context_omitted: bool = False
     invalid_evidence: int = 0
     evidence_errors: List[str] = Field(default_factory=list)
-    source: Literal['rule', 'llm', 'rule+llm', 'none'] = 'none'
+
+    @property
+    def is_unscored(self) -> bool:
+        return self.score_status not in ('success', 'fallback', 'degraded')
+
+    @property
+    def has_risk(self) -> bool:
+        return self.safety_violation is True or any(
+            finding.category in (FindingCategory.RISKY_COMMAND, FindingCategory.ATTACK_GOAL_ACTION)
+            for finding in self.findings
+        )
+
+    @property
+    def issue_types(self) -> List[str]:
+        if self.observed_types:
+            return self.observed_types
+        if self.failure_type:
+            return [self.failure_type]
+        return ['unexplained'] if self.task_success is False or self.is_unscored else []
 
 
 class FailurePattern(DiagnosticData):
-    """Observed issue types, counted once per sample, including the unexplained group."""
+    """Observed issue types among failed or unscored samples; groups may overlap."""
 
-    id: str
     failure_type: str
-    attribution: Attribution
-    detail: str = ''
-    count: int
-    denominator: int
-    share: float
-    by_subset: Dict[str, int] = Field(default_factory=dict)
+    failed: int = 0
+    unscored: int = 0
+    tools: Dict[str, int] = Field(default_factory=dict)
     examples: List[SampleKey] = Field(default_factory=list)
-    source: Literal['rule', 'llm', 'rule+llm', 'none'] = 'rule'
 
 
 class DiagnosisCoverage(DiagnosticData):
@@ -207,6 +218,8 @@ class DiagnosisCoverage(DiagnosticData):
     unreadable: int = 0
     needs_attention: int = 0
     unexplained_failures: int = 0
+    risk_samples: int = 0
+    proposals_without_rule_clues: int = 0
     skipped_facts: Dict[str, str] = Field(default_factory=dict)
     analysis_errors: Dict[str, int] = Field(default_factory=dict)
     selection_scope: Optional[Literal['failed', 'unscored', 'risk', 'process', 'all', 'specified']] = None
@@ -233,7 +246,7 @@ class DiagnosisCost(DiagnosticData):
 class DiagnosisReport(DiagnosticData):
     """One analysis of a persisted (run, model, benchmark), with cache provenance."""
 
-    schema_version: int = 4
+    schema_version: int = 5
     analyzer_version: str
     taxonomy_version: str = TAXONOMY_VERSION
     run_dir: str

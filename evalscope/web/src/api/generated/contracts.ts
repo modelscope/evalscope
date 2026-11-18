@@ -2,10 +2,6 @@
 /** Generated from Pydantic Web API response models. Do not edit. */
 
 /**
- * Who is responsible for a finding.
- */
-export type Attribution = "model" | "guard" | "environment" | "benchmark" | "unknown";
-/**
  * Whether a score is usable, and why it is not.
  *
  * A failed judge is not a zero: only ``SUCCESS`` and ``FALLBACK`` carry a score that may
@@ -57,6 +53,10 @@ export type FindingCategory =
  * How much a finding can be trusted.
  */
 export type Confidence = "high" | "medium" | "low";
+/**
+ * Who is responsible for a finding.
+ */
+export type Attribution = "model" | "guard" | "environment" | "benchmark" | "unknown";
 
 /**
  * Schema-only root that keeps every public Web API type reachable for code generation.
@@ -247,21 +247,8 @@ export interface DeleteReportResponse {
  * Read-only diagnostic artifact and freshness state.
  */
 export interface DiagnosisResponse {
-  issues?: DiagnosisIssue[];
   report?: DiagnosisReport | null;
-  risk_samples?: number;
   status: "ready" | "missing" | "stale" | "error";
-}
-/**
- * Observed issue groups; identities are unique within each group and groups may overlap.
- */
-export interface DiagnosisIssue {
-  failed?: number;
-  failure_type: string;
-  tools?: {
-    [k: string]: number;
-  };
-  unscored?: number;
 }
 /**
  * One analysis of a persisted (run, model, benchmark), with cache provenance.
@@ -321,6 +308,8 @@ export interface DiagnosisCoverage {
   excluded: number;
   needs_attention: number;
   outcome_unknown: number;
+  proposals_without_rule_clues: number;
+  risk_samples: number;
   samples: number;
   selected: number;
   selection_scope: ("failed" | "unscored" | "risk" | "process" | "all" | "specified") | null;
@@ -408,21 +397,16 @@ export interface NarrativeSampleReference {
   step: number | null;
 }
 /**
- * Observed issue types, counted once per sample, including the unexplained group.
+ * Observed issue types among failed or unscored samples; groups may overlap.
  */
 export interface FailurePattern {
-  attribution: Attribution;
-  by_subset: {
+  examples: SampleKey[];
+  failed: number;
+  failure_type: string;
+  tools: {
     [k: string]: number;
   };
-  count: number;
-  denominator: number;
-  detail: string;
-  examples: SampleKey[];
-  failure_type: string;
-  id: string;
-  share: number;
-  source: "rule" | "llm" | "rule+llm" | "none";
+  unscored: number;
 }
 export interface EvalInvokeResponse {
   error?: string | null;
@@ -872,10 +856,6 @@ export interface SampleDiagnosesResponse {
  * Official outcome and observed findings; a finding is not a proved root cause.
  */
 export interface SampleDiagnosis {
-  /**
-   * Who is responsible for a finding.
-   */
-  attribution: "model" | "guard" | "environment" | "benchmark" | "unknown";
   context_omitted: boolean;
   evidence_errors: string[];
   failure_type: string | null;
@@ -886,13 +866,11 @@ export interface SampleDiagnosis {
   llm_status: "not_selected" | "ok" | "parse_error" | "transport_error" | "invalid_evidence" | "unexplained";
   needs_attention: boolean;
   observed_types: string[];
-  pattern_id: string | null;
   safety_violation: boolean | null;
   score_status: string;
   score_value: {
     [k: string]: number;
   };
-  source: "rule" | "llm" | "rule+llm" | "none";
   sources: DiagnosticSource[];
   stop_reason: string | null;
   task_success: boolean | null;

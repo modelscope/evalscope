@@ -1,21 +1,10 @@
 """Web envelopes reuse the persisted diagnostic contracts."""
 
-from typing import Dict, List, Literal, Optional
-
-from pydantic import Field
+from typing import List, Literal, Optional
 
 from evalscope.api.analysis import DiagnosisReport, SampleDiagnosis
 
 from .common import ApiResponseModel
-
-
-class DiagnosisIssue(ApiResponseModel):
-    """Observed issue groups; identities are unique within each group and groups may overlap."""
-
-    failure_type: str
-    failed: int = 0
-    unscored: int = 0
-    tools: Dict[str, int] = Field(default_factory=dict)
 
 
 class DiagnosisResponse(ApiResponseModel):
@@ -23,8 +12,6 @@ class DiagnosisResponse(ApiResponseModel):
 
     status: Literal['ready', 'missing', 'stale', 'error']
     report: Optional[DiagnosisReport] = None
-    issues: List[DiagnosisIssue] = Field(default_factory=list)
-    risk_samples: int = 0
 
 
 class SampleDiagnosesResponse(ApiResponseModel):

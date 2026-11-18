@@ -219,13 +219,13 @@ def test_service_filters_before_paging_and_refuses_stale_joins(make_run: Callabl
     from evalscope.service.app import create_app
 
     root = make_run(rows=[review(i) for i in range(4)])
-    [report] = diagnose_run(str(root), config())
+    diagnose_run(str(root), config())
     client = create_app(outputs=str(root.parent)).test_client()
     path = '/api/v1/reports/runs/run/models/m/diagnosis'
     response = client.get(path, query_string={'dataset_name': 'demo'})
     parsed = DiagnosisResponse.model_validate(response.get_json())
     assert parsed.status == 'ready' and parsed.report.coverage.samples == 4
-    params = {'dataset_name': 'demo', 'pattern_id': report.patterns[0].id, 'page': 2, 'page_size': 2}
+    params = {'dataset_name': 'demo', 'failure_type': 'unexplained', 'outcome': 'failed', 'page': 2, 'page_size': 2}
     response = client.get(path + '/samples', query_string=params)
     parsed = SampleDiagnosesResponse.model_validate(response.get_json())
     assert parsed.total == 4 and [s.key.index for s in parsed.items] == [2, 3]
@@ -243,7 +243,6 @@ def test_generation_facts_do_not_claim_extraction_proves_a_correct_answer(make_r
     extraction = next(f for f in report.facts if f.id == 'F-extraction')
     assert extraction.numerator == 1
     assert report.patterns[0].failure_type == 'extraction_failure'
-    assert report.patterns[0].attribution.value == 'unknown'
 
 
 def test_html_supports_fresh_diagnosis_and_legacy_fallback(make_run: Callable) -> None:
@@ -407,8 +406,9 @@ def test_correct_answer_can_keep_tool_findings_without_becoming_a_task_failure(
     root = make_run(rows=[row])
     result = diagnose_benchmark(str(root), 'm', 'demo', config())
     assert result.coverage.task_failed == 0 and result.coverage.needs_attention == 1
-    assert result.patterns[0].failure_type == issue
+    assert not result.patterns
     sample = json.loads((root / 'analysis/m/demo/samples.jsonl').read_text())
+    assert issue in sample['observed_types']
     assert sample['task_success'] is True and sample['findings'][0]['call_ids'] == ['call-7']
 
 
@@ -467,7 +467,7 @@ def test_patterns_preserve_multiple_observations_without_assigning_a_cause(make_
     report = diagnose_benchmark(str(make_run(rows=rows)), 'm', 'demo', config())
     assert len(report.patterns) == 2
     assert {p.failure_type for p in report.patterns} == {'bad_arguments', 'environment_failure'}
-    assert all(p.count == 2 and p.attribution.value == 'unknown' for p in report.patterns)
+    assert all(p.failed == 2 for p in report.patterns)
     assert report.coverage.task_failed == 2
     samples = [json.loads(line) for line in (Path(report.run_dir) / 'analysis/m/demo/samples.jsonl').read_text().splitlines()]
     assert all(row['observed_types'] == ['bad_arguments', 'environment_failure'] for row in samples)
@@ -499,7 +499,12 @@ def test_invalid_choice_extraction_is_observed_without_claiming_the_answer_was_c
     fact = next(f for f in result.facts if f.id == 'F-extraction')
     assert fact.numerator == int(invalid)
     assert result.coverage.task_failed == 0
-    assert any(p.failure_type == 'extraction_failure' for p in result.patterns) == invalid
+    assert not result.patterns
+    rows = (root / 'analysis/m/demo/samples.jsonl').read_text()
+    if invalid:
+        assert 'extraction_failure' in json.loads(rows)['observed_types']
+    else:
+        assert not rows
 
 
 @pytest.mark.parametrize('lower_is_better', [False, True])
@@ -589,7 +594,7 @@ def test_pattern_examples_follow_configured_limit_without_treating_confidence_as
     assert [key.index for key in result.patterns[0].examples] == [0, 1, 2, 3, 4, 5]
 
 
-def test_html_distinguishes_unknown_outcomes_and_escapes_tool_details(make_run: Callable) -> None:
+def test_html_distinguishes_unknown_outcomes_and_escapes_subset_names(make_run: Callable) -> None:
     from evalscope.report.renderer import _render_diagnostic_facts
 
     root = make_run(rows=[review(0, 0.4)])
@@ -599,15 +604,16 @@ def test_html_distinguishes_unknown_outcomes_and_escapes_tool_details(make_run: 
     assert '0/0' not in html
     root = make_run(name='failed', rows=[review(0)])
     [result] = diagnose_run(str(root), config())
-    result.patterns[0].detail = 'runtime_error @ <script>alert(1)</script>'
+    result.patterns[0].examples[0].subset = '<script>alert(1)</script>'
     html = _render_diagnostic_facts(result)
     assert '&lt;script&gt;' in html and '<script>' not in html
-    assert 'Share of 1 reviewed samples' in html and '<td>P1</td>' in html
+    assert 'Failed samples' in html and 'Unscored samples' in html
 
 
 def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     make_run: Callable, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from evalscope.analysis.diagnosis import _review_issues
     from evalscope.api.analysis import SampleDiagnosis
     from evalscope.service.app import create_app
 
@@ -635,18 +641,21 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     rows.extend(SampleDiagnosis(key={'subset': 'b', 'index': i}, task_success=True, score_status=status)
                 for i, status in enumerate(('fallback', 'degraded'), 8))
     path = root / 'analysis/m/demo/samples.jsonl'
-    path.write_text('\n'.join(row.model_dump_json() for row in [*rows, rows[0]]) + '\n')
+    report.patterns = _review_issues(rows, 5)
+    report.coverage.risk_samples = sum(row.has_risk for row in rows)
+    path.write_text('\n'.join(row.model_dump_json() for row in rows) + '\n')
     monkeypatch.setattr('evalscope.report.diagnosis.load_diagnosis', lambda *args: ('ready', report))
     client = create_app(outputs=str(root.parent)).test_client()
     base = '/api/v1/reports/runs/run/models/m'
     response = client.get(base + '/diagnosis', query_string={'dataset_name': 'demo'})
     summary = response.get_json()
     assert response.status_code == 200
-    assert summary['issues'][0]['failed'] == 2
-    assert summary['issues'][0]['tools'] == {'search': 2}
-    assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'judge_failure')['unscored'] == 1
-    assert next(issue for issue in summary['issues'] if issue['failure_type'] == 'bad_arguments')['failed'] == 1
-    assert summary['risk_samples'] == 1
+    issues = summary['report']['patterns']
+    assert issues[0]['failed'] == 2
+    assert issues[0]['tools'] == {'search': 2}
+    assert next(issue for issue in issues if issue['failure_type'] == 'judge_failure')['unscored'] == 1
+    assert next(issue for issue in issues if issue['failure_type'] == 'bad_arguments')['failed'] == 1
+    assert summary['report']['coverage']['risk_samples'] == 1
     assert 'passed_observations' not in summary
     assert client.get(base + '/diagnosis/samples', query_string={'dataset_name': 'demo', 'outcome': 'passed'}).status_code == 400
     params = {'dataset_name': 'demo', 'failure_type': 'tool_error', 'outcome': 'failed', 'page_size': 1}
@@ -677,7 +686,7 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert single == full[:1]
 
 
-@pytest.mark.parametrize('version', [1, 2, 3])
+@pytest.mark.parametrize('version', [1, 2, 3, 4])
 def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable, version: int) -> None:
     from evalscope.report.diagnosis import load_diagnosis
 

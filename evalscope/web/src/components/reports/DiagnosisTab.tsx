@@ -311,7 +311,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     description: translated('issueDescription', id, 'other'),
     suggestion: translated('issueSuggestion', id, 'other'),
   })
-  const issues = (state.issues ?? []).filter(issue => (issue.failed ?? 0) > 0 && issue.failure_type !== 'unexplained')
+  const issues = report.patterns.filter(issue => (issue.failed ?? 0) > 0 && issue.failure_type !== 'unexplained')
     .sort((a, b) => (b.failed ?? 0) - (a.failed ?? 0) || a.failure_type.localeCompare(b.failure_type))
     .map(issue => makeEntry(issue.failure_type, issueTitle(issue.failure_type), issue.failed ?? 0,
       { failure_type: issue.failure_type, outcome: 'failed' }))
@@ -320,11 +320,11 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
       { failure_type: 'unexplained', outcome: 'failed' }) : null
   const unscored = c.excluded > 0
     ? makeEntry('unscored', t('diagnosis.unscored'), c.excluded, { outcome: 'unscored' }) : null
-  const risk = state.risk_samples
-    ? makeEntry('risk', t('diagnosis.riskTitle'), state.risk_samples, { outcome: 'risk' }) : null
+  const risk = c.risk_samples
+    ? makeEntry('risk', t('diagnosis.riskTitle'), c.risk_samples, { outcome: 'risk' }) : null
   const selected = selection ?? issues[0] ?? pending ?? unscored ?? risk
   const tools = selected?.filters.failure_type
-    ? Object.keys(state.issues?.find(issue => issue.failure_type === selected.filters.failure_type)?.tools ?? {}) : []
+    ? Object.keys(report.patterns.find(issue => issue.failure_type === selected.filters.failure_type)?.tools ?? {}) : []
   const referencedFact = report.facts.find(fact => fact.id === factReference)
   const narrativeGroups = report.narrative ? [
     { key: 'summaryFindings', items: report.narrative.findings },
@@ -382,7 +382,12 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
         <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
           <h3 className="border-b border-[var(--border)] pb-3 text-base font-semibold">{t('diagnosis.majorIssues')}</h3>
           {issues.map(issueButton)}
-          {pending && <div className="border-t border-[var(--border)] pt-2">{issueButton(pending)}</div>}
+          {pending && <div className="border-t border-[var(--border)] pt-2">
+            {issueButton(pending)}
+            {c.proposals_without_rule_clues > 0 && <p className="px-3 pt-1 text-xs text-[var(--text-muted)]">
+              {t('diagnosis.proposalsWithoutRuleClues', { count: c.proposals_without_rule_clues })}
+            </p>}
+          </div>}
           {!issues.length && !pending && <p className="py-3 text-sm text-[var(--text-muted)]">
             {t(c.task_failed ? 'diagnosis.noIdentifiedIssues' : c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}
           </p>}

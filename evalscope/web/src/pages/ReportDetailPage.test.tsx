@@ -17,7 +17,7 @@ import ReportDetailPage from './ReportDetailPage'
 const REPORT = loadFixture<LoadReportResponse>('report-multi-dataset')
 const PREDICTIONS = loadFixture<PredictionsResponse>('predictions-tool-trace')
 const DIAGNOSIS: DiagnosisReport = {
-  schema_version: 4,
+  schema_version: 5,
   analyzer_version: '1',
   taxonomy_version: '1',
   run_dir: '/outputs/run',
@@ -42,6 +42,8 @@ const DIAGNOSIS: DiagnosisReport = {
     unreadable: 0,
     needs_attention: 1,
     unexplained_failures: 0,
+    risk_samples: 0,
+    proposals_without_rule_clues: 0,
     skipped_facts: {},
     analysis_errors: {},
     selection_scope: null,
@@ -49,10 +51,6 @@ const DIAGNOSIS: DiagnosisReport = {
     selected: 0,
     diagnosed_ok: 0,
     diagnosis_statuses: {},
-
-
-
-
     citations_total: 0,
     citations_valid: 0,
   },
@@ -69,17 +67,11 @@ const DIAGNOSIS: DiagnosisReport = {
   limitations: [],
   patterns: [
     {
-      id: 'P-a',
       failure_type: 'tool_error',
-      attribution: 'unknown',
-      detail: '',
-      count: 1,
-      denominator: 1,
-      share: 1,
-      by_subset: { example: 1 },
+      failed: 1,
+      unscored: 0,
+      tools: {},
       examples: [{ subset: 'example', index: 7 }],
-      source: 'rule',
-
     },
   ],
 }
@@ -140,7 +132,7 @@ beforeEach(() => {
       ? { status: 'missing', items: [], total: 0, page: 1, page_size: 200 }
       : ({
           status: 'ready',
-          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [], source: 'rule' }],
+          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [] }],
           total: 1,
           page: 1,
           page_size: 200,
@@ -201,7 +193,7 @@ describe('report workspace', () => {
     )
   })
   it('opens a pattern collection and restores diagnosis with browser back', async () => {
-    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS, issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }] })
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS })
     await renderDetail('?tab=diagnosis&dataset=gsm8k')
     await settle()
     fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
@@ -216,7 +208,7 @@ describe('report workspace', () => {
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
   })
   it('opens representative samples and preserves direct links', async () => {
-    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS, issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }] })
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS })
     await renderDetail('?tab=diagnosis&dataset=gsm8k')
     await settle()
     fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
@@ -233,7 +225,7 @@ describe('report workspace', () => {
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
   })
   it('opens the exact cited sample and step, preserves it in Samples, and restores Diagnosis', async () => {
-    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', attribution: 'unknown', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, pattern_id: null, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [], source: 'rule' } as SampleDiagnosesResponse['items'][number]
+    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [] } as SampleDiagnosesResponse['items'][number]
     vi.mocked(api.getSampleDiagnoses).mockResolvedValue({ status: 'ready', items: [item], total: 1, page: 1, page_size: 200 })
     vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'diagnose',
       narrative_status: 'ok', narrative_samples: { 'S-exact': { sample: item.key, step: 0 } },

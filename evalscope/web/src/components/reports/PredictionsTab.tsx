@@ -67,11 +67,9 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
   const diagnosis = useAsyncResource(signal => getDiagnosis(rootPath,reportName,datasetName,signal),
     [rootPath,reportName,datasetName], {enabled:Boolean(datasetName && onDiagnosisFiltersChange)})
-  const selectedPattern = diagnosis.data?.report?.patterns.find(p => p.id === diagnosisFilters.pattern_id)
   // Follow the requested subset when it exists, otherwise open on the first one.
   const subsetScope = `${rootPath}\0${reportName}\0${datasetName}\0${initialSubset}`
-  const patternSubset = subsets.find(subset => (selectedPattern?.by_subset[subset] ?? 0) > 0)
-  const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (patternSubset ?? subsets[0] ?? '')
+  const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (subsets[0] ?? '')
   // A pick only holds while it is still one of the subsets on offer: the list can
   // come back without it after a rescan.
   const [pickedSubset, setSelectedSubset] = useScopedState<string | null>(subsetScope, null)
@@ -89,8 +87,8 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   )
   const predictions = predictionsResource.data?.predictions ?? EMPTY_PREDICTIONS
   const filterKey = JSON.stringify([rootPath,reportName,datasetName,selectedSubset,diagnosisFilters])
-  const diagnosticFilterActive = Boolean(diagnosisFilters.outcome || diagnosisFilters.pattern_id || diagnosisFilters.failure_type ||
-    diagnosisFilters.attribution || diagnosisFilters.finding_category || diagnosisFilters.only_diagnosed)
+  const diagnosticFilterActive = Boolean(diagnosisFilters.outcome || diagnosisFilters.failure_type ||
+    diagnosisFilters.attribution || diagnosisFilters.finding_category)
   const matches = useAsyncResource(async signal => {
     const ids = new Set<string>()
     let page = 1
@@ -314,7 +312,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
               <>
                 <Select
                   label={t('diagnosis.type')}
-                  value={diagnosisFilters.failure_type ?? selectedPattern?.failure_type ?? ''}
+                  value={diagnosisFilters.failure_type ?? ''}
                   options={[
                     { value: '', label: t('diagnosis.all') },
                     ...[...new Set(diagnosis.data?.report?.patterns.map((p) => p.failure_type) ?? [])].map((value) => ({
@@ -325,7 +323,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   onChange={(failure_type) =>
                     onDiagnosisFiltersChange({
                       ...diagnosisFilters,
-                      pattern_id: undefined,
                       failure_type,
                       subset_name: selectedSubset,
                     })
@@ -344,7 +341,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   onChange={(attribution) =>
                     onDiagnosisFiltersChange({
                       ...diagnosisFilters,
-                      pattern_id: undefined,
                       attribution,
                       subset_name: selectedSubset,
                     })
@@ -370,26 +366,11 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                   onChange={(finding_category) =>
                     onDiagnosisFiltersChange({
                       ...diagnosisFilters,
-                      pattern_id: undefined,
                       finding_category,
                       subset_name: selectedSubset,
                     })
                   }
                 />
-                <label className="flex min-h-11 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(diagnosisFilters.only_diagnosed)}
-                    onChange={(e) =>
-                      onDiagnosisFiltersChange({
-                        ...diagnosisFilters,
-                        only_diagnosed: e.target.checked,
-                        subset_name: selectedSubset,
-                      })
-                    }
-                  />
-                  {t('diagnosis.recorded')}
-                </label>
                 {diagnosticFilterActive && (
                   <button
                     type="button"

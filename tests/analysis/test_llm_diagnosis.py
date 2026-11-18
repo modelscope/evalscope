@@ -121,7 +121,7 @@ def test_model_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run
     assert rows[0]['llm']['evidence'][0]['quote']=='ANSWER: B'
     assert rows[0]['failure_type'] == 'unexplained' and rows[0]['observed_types'] == []
     assert rows[0]['llm']['failure_type'] == 'reasoning_error'
-    assert report.patterns[0].failure_type == 'unexplained' and report.patterns[0].source == 'none'
+    assert report.patterns[0].failure_type == 'unexplained'
     (root/'analysis/m/demo/diagnosis.json').unlink()
     resumed=diagnose_benchmark(str(root),'m','demo',options())
     assert resumed.cost.calls==0 and resumed.cost.cached_calls==2 and len(calls)==2
@@ -389,16 +389,12 @@ def test_summary_excludes_passing_observations_and_keeps_outcomes_separate(
     make_run: Callable, monkeypatch: pytest.MonkeyPatch, citation_kind: str,
 ) -> None:
     from evalscope.analysis.llm import summarize
-    from evalscope.api.analysis import Fact, FailurePattern
+    from evalscope.api.analysis import Fact
 
     root = make_run()
     report = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace={'use_providers': False}))
     report.facts.append(Fact(id='F-safety', kind='agent', title='Safety signals', definition='Benchmark signal',
                              numerator=1, denominator=32))
-    report.patterns = [FailurePattern(id='P-tools', failure_type='tool_error', attribution='unknown',
-                                    count=30, denominator=31, share=30 / 31),
-                       FailurePattern(id='P-passing', failure_type='loop_or_budget', attribution='unknown',
-                                    count=1, denominator=31, share=1 / 31)]
     rows = [SampleDiagnosis(key={'subset': 'main', 'index': i}, task_success=True, score_status='success',
                             observed_types=['tool_error' if i < 29 else 'loop_or_budget']) for i in range(30)]
     rows += [SampleDiagnosis(key={'subset': 'main', 'index': 30}, task_success=False, score_status='success', observed_types=['tool_error']),

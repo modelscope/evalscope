@@ -47,9 +47,8 @@ def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig)
         eligible = {
             'all': True,
             'failed': sample.task_success is False,
-            'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
-            'risk': sample.safety_violation is True
-            or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
+            'unscored': sample.is_unscored,
+            'risk': sample.has_risk,
             'process': sample.task_success is True and sample.needs_attention,
         }
         matches = (

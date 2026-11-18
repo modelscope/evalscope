@@ -310,8 +310,10 @@ def test_threshold_outcome():
 @pytest.mark.parametrize('values,main,direction,thresholds,status,expected', [
     ({'acc': 1, 'aux': 0.6}, 'acc', 'higher_is_better', {}, 'success', True),
     ({'aux': 0.6, 'acc': 0}, 'acc', 'higher_is_better', {}, 'success', False),
-    ({'error': 0, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', True),
-    ({'error': 1, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', False),
+    ({'error': 0, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', None),
+    ({'error': 1, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', None),
+    ({'mae': 0.25}, 'mae', 'lower_is_better', {}, 'success', None),
+    ({'quality': 1}, 'quality', 'higher_is_better', {}, 'success', None),
     ({'quality': 0.7, 'aux': 1}, 'quality', 'higher_is_better', {}, 'success', None),
     ({'quality': 0.7}, 'quality', 'higher_is_better', {'quality': 0.7}, 'success', True),
     ({'error': 0.7}, 'error', 'lower_is_better', {'error': 0.5}, 'success', False),
@@ -328,6 +330,11 @@ def test_outcomes_use_the_main_score_and_explicit_threshold_before_binary_fallba
     case = _analyze(record, outcome_directions={'demo': direction}, outcome_thresholds={'demo': thresholds})
     assert case.outcome.task_success is expected
 
+def test_explicit_threshold_uses_the_direction_of_the_threshold_metric() -> None:
+    record = _record([], value={'acc': 0, 'mae': 0.25})
+    record.sample_score.score.main_score_name = 'acc'
+    options = TraceAnalysisConfig(use_providers=False, outcome_thresholds={'demo': {'mae': 0.5}})
+    assert analyze_records([(_ref(), record)], options, {'acc': 'higher_is_better', 'mae': 'lower_is_better'})[0].outcome.task_success is True
 
 
 # ---------------------------------------------------------------------------

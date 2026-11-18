@@ -174,7 +174,7 @@ export function MessageRow({
       className="flex w-full px-4 py-3"
       style={{ animation: 'fadeInUp 240ms ease-out both' }}
     >
-      <div ref={ref} data-message-role={role} className="flex-1 min-w-0">
+      <div ref={ref} data-message-role={role} data-evidence-source={quotes.length > 0 || undefined} className="flex-1 min-w-0">
         {/* Header row */}
         {!compact && (
           <div className="flex items-center gap-2 mb-[0.4rem] flex-wrap">

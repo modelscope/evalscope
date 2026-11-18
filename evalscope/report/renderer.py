@@ -63,24 +63,26 @@ def _render_diagnostic_facts(report: DiagnosisReport) -> str:
         )
     prefix = f'diagnosis-{report.benchmark}-'
     reference_names = {fact.id: fact.title for fact in report.facts}
-    reference_names.update({pattern.id: f'P{i}' for i, pattern in enumerate(report.patterns, 1)})
     if report.narrative:
         parts.append(f'<h4>{label("Model summary and suggestions", "模型总结与建议")}</h4><ul>')
         for item in report.narrative.findings + report.narrative.recommendations:
-            if not item.refs or any(ref not in reference_names for ref in item.refs):
+            if not item.refs or any(
+                ref not in reference_names and ref not in report.narrative_samples for ref in item.refs
+            ):
                 continue
             links = ' '.join(
-                f'<a href="#{escape(prefix + ref, quote=True)}">[{escape(reference_names[ref])}]</a>'
+                escape(f'[{report.narrative_samples[ref].sample.subset}:{report.narrative_samples[ref].sample.index}]')
+                if ref in report.narrative_samples
+                else f'<a href="#{escape(prefix + ref, quote=True)}">[{escape(reference_names[ref])}]</a>'
                 for ref in item.refs
             )
             parts.append(f'<li>{escape(item.text)} {links}</li>')
         parts.append('</ul>')
     if report.patterns:
         columns = [
-            ('ID', '编号'),
             ('Issue type', '问题类型'),
-            ('Count', '样本数'),
-            (f'Share of {c.needs_attention} reviewed samples', f'占 {c.needs_attention} 条待排查样本'),
+            ('Failed samples', '未通过样本'),
+            ('Unscored samples', '无法评分样本'),
             ('Examples', '代表样本'),
         ]
         parts.append(
@@ -88,17 +90,23 @@ def _render_diagnostic_facts(report: DiagnosisReport) -> str:
             + ''.join(f'<th>{label(en, zh)}</th>' for en, zh in columns)
             + '</tr></thead><tbody>'
         )
-        for index, pattern in enumerate(report.patterns[:10], 1):
+        for pattern in report.patterns[:10]:
             name = label(*ISSUE_NAMES.get(pattern.failure_type, ISSUE_NAMES['other']))
             examples = escape(', '.join(f'{sample.subset}:{sample.index}' for sample in pattern.examples))
-            tool = pattern.detail.split(' @ ', 1)[1] if ' @ ' in pattern.detail else ''
-            detail = f'<br><small>{escape(tool)}</small>' if tool else ''
             parts.append(
-                f'<tr id="{escape(prefix + pattern.id, quote=True)}"><td>P{index}</td><td>{name}{detail}</td>'
-                f'<td>{pattern.count}</td><td>{pattern.share:.1%}</td><td>{examples}</td></tr>'
+                f'<tr><td>{name}</td><td>{pattern.failed}</td><td>{pattern.unscored}</td><td>{examples}</td></tr>'
             )
         parts.append('</tbody></table></div>')
-    warnings = [fact for fact in report.facts if fact.severity in ('warn', 'critical')]
+        if len(report.patterns) > 1:
+            parts.append(
+                f'<p>{label("A sample may appear in more than one group.", "同一样本可能出现在多个问题组。")}</p>'
+            )
+    cited_facts = (
+        {ref for item in report.narrative.findings + report.narrative.recommendations for ref in item.refs}
+        if report.narrative
+        else set()
+    )
+    warnings = [fact for fact in report.facts if fact.severity in ('warn', 'critical') or fact.id in cited_facts]
     if warnings:
         parts.append('<ul>')
         for fact in warnings:

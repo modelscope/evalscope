@@ -40,6 +40,8 @@ const report: DiagnosisReport = {
     unreadable: 0,
     needs_attention: 2,
     unexplained_failures: 1,
+    risk_samples: 0,
+    proposals_without_rule_clues: 0,
     skipped_facts: {},
     analysis_errors: {},
   },
@@ -48,16 +50,11 @@ const report: DiagnosisReport = {
   limitations: [],
   patterns: [
     {
-      id: 'P-a',
       failure_type: 'tool_error',
-      attribution: 'unknown',
-      detail: '',
-      count: 1,
-      denominator: 2,
-      share: 0.5,
-      by_subset: { default: 1 },
+      failed: 1,
+      unscored: 0,
+      tools: {},
       examples: [{ subset: 'default', index: 7 }],
-      source: 'rule',
     },
   ],
 }
@@ -88,10 +85,10 @@ async function settle() {
 }
 
 it('selects the largest failed issue immediately and reuses the persistent sample panel', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report, issues: [
-    { failure_type: 'tool_error', failed: 1, unscored: 0, tools: { search: 1 } },
-    { failure_type: 'truncated', failed: 2, unscored: 0, tools: {} },
-  ] })
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [
+    { failure_type: 'tool_error', failed: 1, unscored: 0, tools: { search: 1 }, examples: [] },
+    { failure_type: 'truncated', failed: 2, unscored: 0, tools: {}, examples: [] },
+  ] } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
   const issues = screen.getByRole('region', { name: 'Problem list' })
@@ -148,22 +145,19 @@ it.each([true, false])('distinguishes all-pass and unavailable outcomes without 
 
 it('provides an immediate unexplained-case entry instead of inventing an ordinary QA cause', async () => {
   getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, patterns: [], coverage: {
-    ...report.coverage, task_success_known: 3, outcome_unknown: 0, excluded: 0,
-  } }, issues: [{ failure_type: 'unexplained', failed: 1 }] })
+    ...report.coverage, task_success_known: 3, outcome_unknown: 0, excluded: 0, proposals_without_rule_clues: 1,
+  } } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
   expect(screen.getByRole('button', { name: /Other failed samples/ })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('0 have record anomalies; 1 are other failed samples.')).toBeInTheDocument()
   expect(getSampleDiagnoses).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', { failure_type: 'unexplained', outcome: 'failed' }, 1, expect.any(AbortSignal))
+  expect(screen.getByText('Model proposals are available for 1 of these samples.')).toBeInTheDocument()
   expect(screen.queryByText('Reasoning or calculation error')).not.toBeInTheDocument()
 })
 
 it('keeps risk and unscored cases separate and removes the passed-observation feature', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', report, risk_samples: 2, passed_observations: 3, issues: [
-    { failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} },
-    { failure_type: 'unexplained', failed: 22, unscored: 0, tools: {} },
-    { failure_type: 'judge_failure', failed: 0, unscored: 1, tools: {} },
-  ] })
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, coverage: { ...report.coverage, risk_samples: 2 } } })
   render(<LocaleProvider><DiagnosisTab rootPath="/outputs" reportName="run/m" datasetName="demo" onSamples={vi.fn()} /></LocaleProvider>)
   await settle()
   const main = screen.getByRole('region', { name: 'Problem list' })
@@ -179,7 +173,7 @@ it('keeps risk and unscored cases separate and removes the passed-observation fe
 })
 
 it('keeps model analysis, references and cached usage accessible', async () => {
-  getDiagnosis.mockResolvedValue({ status: 'ready', issues: [{ failure_type: 'tool_error', failed: 1, unscored: 0, tools: {} }], report: { ...report, level: 'diagnose', narrative_status: 'ok', cost: { ...report.cost, cached_calls: 16 },
+  getDiagnosis.mockResolvedValue({ status: 'ready', report: { ...report, level: 'diagnose', narrative_status: 'ok', cost: { ...report.cost, cached_calls: 16 },
     narrative_samples: { 'S-a': { sample: { subset: '跨子集', index: 42 }, step: 3 } },
     narrative: { findings: [{ text: 'Inspect the tool reply.', refs: ['S-a'] }], recommendations: [] },
   } })

@@ -47,11 +47,9 @@ export default function ReportDetailPage() {
   const outcome = searchParams.get('outcome')
   const diagnosisFilters: DiagnosisFilters = {
     outcome: outcome === 'failed' || outcome === 'unscored' || outcome === 'risk' ? outcome : undefined,
-    pattern_id: searchParams.get('pattern') || undefined,
     failure_type: searchParams.get('failure_type') || undefined,
     attribution: searchParams.get('attribution') || undefined,
     finding_category: searchParams.get('finding_category') || undefined,
-    only_diagnosed: searchParams.get('diagnosed') === '1',
   }
 
   // A change of inputs aborts the previous request and drops its late response,
@@ -127,7 +125,7 @@ export default function ReportDetailPage() {
     for (const key of SAMPLE_PARAMS) next.delete(key)
     next.set('tab','predictions'); next.set('dataset',activeDataset)
     for (const [key,value] of Object.entries(filters)) {
-      if (value) next.set(key==='index' ? 'sample' : key==='pattern_id' ? 'pattern' : key==='subset_name' ? 'subset' : key==='only_diagnosed' ? 'diagnosed' : key,
+      if (value) next.set(key==='index' ? 'sample' : key==='subset_name' ? 'subset' : key,
         value===true ? '1' : String(value))
     }
     if (sample) { next.set('subset',sample.subset); next.set('sample',String(sample.index)) }

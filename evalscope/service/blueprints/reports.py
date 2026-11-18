@@ -688,11 +688,8 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
 @bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis', methods=['GET'])
 def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Read diagnostic facts without starting analysis or a paid request."""
-    from evalscope.api.analysis import SampleDiagnosis
-    from evalscope.api.analysis.taxonomy import finding_type
-    from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
+    from evalscope.report.diagnosis import load_diagnosis
     from evalscope.service.api_models import DiagnosisResponse
-    from evalscope.service.api_models.analysis import DiagnosisIssue
 
     dataset = request.args.get('dataset_name', '')
     try:
@@ -701,46 +698,11 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
             raise ValueError('Invalid dataset_name')
         root = os.path.join(_root_path(), ref.run_id)
         status, report = load_diagnosis(root, ref.model_id, dataset)
-        issues = {}
-        risk_samples = 0
-        seen = set()
-        if status == 'ready':
-            with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
-                for line in stream:
-                    if not line.strip():
-                        continue
-                    sample = SampleDiagnosis.model_validate_json(line)
-                    identity = (sample.key.subset, sample.key.index)
-                    if identity in seen:
-                        continue
-                    seen.add(identity)
-                    risk_samples += sample.safety_violation is True or any(
-                        f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings
-                    )
-                    failed = sample.task_success is False
-                    unscored = sample.score_status not in ('success', 'fallback', 'degraded')
-                    if not failed and not unscored:
-                        continue
-                    for kind in sample.observed_types or [sample.failure_type or 'unexplained']:
-                        issue = issues.setdefault(kind, DiagnosisIssue(failure_type=kind))
-                        issue.failed += failed
-                        issue.unscored += unscored
-                        tools = {
-                            str(f.data['tool'])
-                            for f in sample.findings
-                            if failed and finding_type(f) == kind and f.data.get('tool')
-                        }
-                        for tool in tools:
-                            issue.tools = {**issue.tools, tool: issue.tools.get(tool, 0) + 1}
         return json_response(
             DiagnosisResponse,
             {
                 'status': status,
                 'report': report.model_dump(mode='json') if report else None,
-                'issues': sorted(
-                    issues.values(), key=lambda issue: (-issue.failed, -issue.unscored, issue.failure_type)
-                ),
-                'risk_samples': risk_samples,
             },
         )
     except (ValueError, ValidationError):
@@ -794,28 +756,13 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
                     } or {'unknown'}
                     if component and component not in observed_components:
                         continue
-                    kinds = sample.observed_types or [
-                        sample.failure_type
-                        or (
-                            'unexplained'
-                            if sample.task_success is False
-                            or sample.score_status not in ('success', 'fallback', 'degraded')
-                            else None
-                        )
-                    ]
                     kind = request.args.get('failure_type')
-                    if kind and kind not in kinds:
+                    if kind and kind not in sample.issue_types:
                         continue
-                    pattern_id = request.args.get('pattern_id')
-                    if pattern_id:
-                        pattern = next((p for p in report.patterns if p.id == pattern_id), None)
-                        if pattern is None or pattern.failure_type not in kinds:
-                            continue
                     matches_outcome = {
                         'failed': sample.task_success is False,
-                        'unscored': sample.score_status not in ('success', 'fallback', 'degraded'),
-                        'risk': sample.safety_violation is True
-                        or any(f.category.value in ('risky_command', 'attack_goal_action') for f in sample.findings),
+                        'unscored': sample.is_unscored,
+                        'risk': sample.has_risk,
                     }
                     if outcome and not matches_outcome[outcome]:
                         continue

@@ -49,7 +49,10 @@ class AnalyzeCMD(CLICommand):
             raise ValueError('No matching evaluation runs found; check --run-dir, --model and --benchmark.')
         for report in reports:
             c = report.coverage
-            patterns = ', '.join(f'{p.failure_type}={p.count}' for p in report.patterns[:3]) or 'none'
+            patterns = (
+                ', '.join(f'{p.failure_type}={p.failed} failed/{p.unscored} unscored' for p in report.patterns[:3])
+                or 'none'
+            )
             failure_rate = f'{c.task_failed / c.task_success_known:.1%}' if c.task_success_known else 'unknown'
             print(
                 f'{report.run_dir} / {report.model}/{report.benchmark}: '

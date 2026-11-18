@@ -20,16 +20,14 @@ const sample = (subset: string, index: number): SampleDiagnosis => ({
   score_value: {},
   needs_attention: true,
   failure_type: 'tool_error',
-  attribution: 'unknown',
   findings: [],
-  pattern_id: null,
   observed_types: [],
   llm: null,
   llm_status: 'not_selected',
   sources: [], context_omitted: false,
   invalid_evidence: 0,
   evidence_errors: [],
-  source: 'rule',
+
 })
 async function settle() {
   for (let i = 0; i < 8; i++)

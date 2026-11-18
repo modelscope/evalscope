@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import tempfile
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Sequence
@@ -13,7 +13,6 @@ from filelock import FileLock
 
 from evalscope.api.analysis import (
     AnalysisReportConfig,
-    Attribution,
     DiagnosisCoverage,
     DiagnosisReport,
     FailurePattern,
@@ -29,7 +28,7 @@ from .inputs import has_nontext_output, is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.3.1'
+ANALYZER_VERSION = '3.4.0'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -121,11 +120,15 @@ def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
         value = '' if fact.value is None else f' {fact.value:.1%}' if fact.unit == 'fraction' else f' {fact.value:g}'
         lines.append(f'- [{fact.id}] {fact.title}:{value} — {fact.definition}')
     if report.patterns:
-        lines += ['', '| ID | 类型 / Type | 数量 / Count | 代表样本 / Examples |', '|---|---|---:|---|']
+        lines += [
+            '',
+            '| 类型 / Type | 未通过 / Failed | 无法评分 / Unscored | 代表样本 / Examples |',
+            '|---|---:|---:|---|',
+        ]
         for pattern in report.patterns[:10]:
             name = ISSUE_NAMES.get(pattern.failure_type, ISSUE_NAMES['other'])[1 if zh else 0]
             examples = ', '.join(f'{s.subset}:{s.index}' for s in pattern.examples)
-            lines.append(f'| {pattern.id} | {name} | {pattern.count} | {examples} |')
+            lines.append(f'| {name} | {pattern.failed} | {pattern.unscored} | {examples} |')
     lines += ['', f'- Analysis calls: {report.cost.calls}; skipped facts: {len(c.skipped_facts)}.', '']
     return '\n'.join(lines)
 
@@ -171,6 +174,26 @@ def diagnose_benchmark(
             raise
 
 
+def _review_issues(samples: list[SampleDiagnosis], max_examples: int) -> list[FailurePattern]:
+    issues = {}
+    for sample in sorted(samples, key=lambda row: (row.key.subset, row.key.index)):
+        failed = sample.task_success is False
+        if not failed and not sample.is_unscored:
+            continue
+        for kind in sample.issue_types:
+            issue = issues.setdefault(kind, FailurePattern(failure_type=kind))
+            issue.failed += failed
+            issue.unscored += sample.is_unscored
+            if len(issue.examples) < max_examples:
+                issue.examples.append(sample.key)
+            if failed:
+                for tool in {
+                    str(f.data['tool']) for f in sample.findings if f.data.get('tool') and finding_type(f) == kind
+                }:
+                    issue.tools[tool] = issue.tools.get(tool, 0) + 1
+    return sorted(issues.values(), key=lambda issue: (-issue.failed, -issue.unscored, issue.failure_type))
+
+
 def _diagnose_benchmark(
     run_dir: str, model: str, benchmark: str, config: AnalysisReportConfig, force: bool, target: Path
 ) -> DiagnosisReport:
@@ -188,6 +211,7 @@ def _diagnose_benchmark(
             and not cached.coverage.analysis_errors
             and not any(cached.coverage.diagnosis_statuses.get(k) for k in ('parse_error', 'transport_error'))
             and cached.narrative_status not in ('parse_error', 'transport_error')
+            and cached.schema_version == DiagnosisReport.model_fields['schema_version'].default
             and cached.taxonomy_version == TAXONOMY_VERSION
             and cached.config_fingerprint == config_hash
             and cached.data_fingerprint == fingerprint
@@ -257,8 +281,6 @@ def _diagnose_benchmark(
                 needs_attention=attention,
                 failure_type=issue,
                 observed_types=sorted(observed),
-                source='none' if issue in (None, 'unexplained') else 'rule',
-                attribution=Attribution.UNKNOWN,
                 findings=export_findings(case.findings, config.trace),
             )
         )
@@ -281,7 +303,7 @@ def _diagnose_benchmark(
         facts=facts,
         limitations=[
             'Rule findings are observations, not proved causes. Outcome unknown is not a pass.',
-            'Observed issue groups may overlap; their counts and shares must not be added.',
+            'Observed issue groups may overlap; their counts must not be added.',
             'Provenance and state changes alone do not establish policy violations.',
         ],
     )
@@ -289,38 +311,12 @@ def _diagnose_benchmark(
         from .llm import enrich, summarize
 
         enrich(report, samples, inputs, config, target, force, _atomic_write)
-    grouped = defaultdict(list)
-    for sample in samples:
-        kinds = sample.observed_types or (
-            [sample.failure_type] if sample.needs_attention and sample.failure_type else []
-        )
-        for kind in kinds:
-            grouped[kind].append(sample)
-    patterns = []
-    for issue, members in sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])):
-        identity = 'P-' + hashlib.sha256(issue.encode()).hexdigest()[:8]
-        for sample in members:
-            if sample.failure_type == issue:
-                sample.pattern_id = identity
-        patterns.append(
-            FailurePattern(
-                id=identity,
-                failure_type=issue,
-                attribution=Attribution.UNKNOWN,
-                count=len(members),
-                denominator=coverage.needs_attention,
-                share=len(members) / coverage.needs_attention,
-                by_subset=dict(Counter(sample.key.subset for sample in members)),
-                examples=[
-                    sample.key
-                    for sample in sorted(members, key=lambda sample: (sample.key.subset, sample.key.index))[
-                        : config.max_examples
-                    ]
-                ],
-                source='none' if issue == 'unexplained' else 'rule',
-            )
-        )
-    report.patterns = patterns
+    report.patterns = _review_issues(samples, config.max_examples)
+    coverage.risk_samples = sum(sample.has_risk for sample in samples)
+    coverage.proposals_without_rule_clues = sum(
+        sample.task_success is False and sample.issue_types == ['unexplained'] and sample.llm_status == 'ok'
+        for sample in samples
+    )
     if config.level == 'diagnose':
         summarize(report, samples, config, target, force, _atomic_write)
         report.limitations += [
@@ -333,7 +329,12 @@ def _diagnose_benchmark(
     sample_text = ''.join(
         json.dumps(_redact(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
         for s in samples
-        if s.task_success is False or s.findings or s.needs_attention or s.llm_status != 'not_selected'
+        if s.task_success is False
+        or s.is_unscored
+        or s.has_risk
+        or s.findings
+        or s.needs_attention
+        or s.llm_status != 'not_selected'
     )
     report.samples_sha256 = hashlib.sha256(sample_text.encode()).hexdigest()
     _atomic_write(samples_path, sample_text)

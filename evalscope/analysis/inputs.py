@@ -83,18 +83,14 @@ def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisC
         result.max_tokens = (task.get('generation_config') or {}).get('max_tokens')
         result.repeats = task.get('repeats') or 1
     report = root / 'reports' / model / f'{benchmark}.json'
+    directions = {}
     if report.is_file():
         result.report = Report.model_validate_json(report.read_text())
-        metric = next((m for m in result.report.metrics if m.identity == result.report.primary_metric_identity), None)
-        if metric and metric.semantics:
-            config = config.model_copy(
-                update={
-                    'outcome_directions': {
-                        **config.outcome_directions,
-                        benchmark: metric.semantics.direction.value,
-                    }
-                }
-            )
+        for name in {metric.identity.name for metric in result.report.metrics}:
+            declared = {
+                metric.semantics.direction.value for metric in result.report.metrics if metric.identity.name == name
+            }
+            directions[name] = next(iter(declared)) if len(declared) == 1 else 'none'
     seen = set()
     for file in iter_review_files(run_dir):
         if file.model != model or file.benchmark != benchmark:
@@ -126,7 +122,7 @@ def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisC
                         )
                     except (ValueError, KeyError, TypeError, AttributeError):
                         result.unreadable_predictions += 1
-        for ref, record, case in zip(refs, records, analyze_records(zip(refs, records), config)):
+        for ref, record, case in zip(refs, records, analyze_records(zip(refs, records), config, directions)):
             identity = (ref.subset, ref.index)
             if identity in seen:
                 raise ValueError(f'Duplicate review identity: {identity}')

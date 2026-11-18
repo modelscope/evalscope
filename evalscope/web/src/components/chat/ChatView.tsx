@@ -82,17 +82,26 @@ export default function ChatView({
   const presentation = selectChatPresentation(prediction)
   const readerRef = useRef<HTMLDivElement>(null)
   const prefix = useId()
+  const hasProposal = diagnosis?.llm_status === 'ok' && Boolean(diagnosis.llm)
+  const openProposal = () => {
+    const details = readerRef.current?.querySelector<HTMLDetailsElement>('[data-model-proposal]')
+    if (!details) return
+    details.open = true
+    const firstEvidence = details.querySelector('details')
+    if (firstEvidence) firstEvidence.open = true
+    scrollToContent(details)
+  }
   const findingStep =
     agentTrace?.events.find(
       (e) => e.type === 'tool_call' && diagnosis?.findings?.some((f) => f.call_ids?.includes(String(e.payload.id))),
     )?.step ?? null
   const rootStep = focusStep ?? (
-    diagnosis?.llm_status === 'ok' ? (diagnosis.llm?.root_cause_step ?? null) : focusEvidence ? findingStep : null
+    diagnosis?.llm_status === 'ok' ? (diagnosis.llm?.root_cause_step ?? (focusEvidence ? findingStep : null)) : focusEvidence ? findingStep : null
   )
   useEffect(() => {
     if (!focusEvidence || presentation === 'traced') return
-    const answers = readerRef.current?.querySelectorAll<HTMLElement>('[data-message-role="assistant"]')
-    scrollToContent(diagnosis?.llm_status === 'ok' ? answers?.[answers.length - 1] : document.getElementById(`${prefix}-scoring`))
+    const evidence = readerRef.current?.querySelector<HTMLElement>('[data-evidence-source]')
+    scrollToContent(evidence ?? document.getElementById(`${prefix}-scoring`))
   }, [focusEvidence, presentation, diagnosis?.llm_status, prefix])
   const [pickedStep, setHighlightedStep] = useState<number | null | undefined>(undefined)
   const highlightedStep = pickedStep === undefined ? rootStep : pickedStep
@@ -245,6 +254,11 @@ export default function ChatView({
             <Star size={14} />
             {t('trace.scoring')}
           </button>
+          {toolbar && hasProposal && (
+            <button onClick={openProposal} className={`${navButtonClass} diagnosis-link`}>
+              {t('diagnosis.reviewModelProposal')}
+            </button>
+          )}
         </nav>
         <div className="min-w-0 space-y-4">
           {presentation === 'traced' && stepGroups && messages && agentTrace ? (

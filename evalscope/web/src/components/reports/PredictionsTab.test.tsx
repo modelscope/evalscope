@@ -163,12 +163,12 @@ it('keeps the sample link aligned after manual navigation', async () => {
   expect(navigate).toHaveBeenLastCalledWith({ subset_name: 'example' }, { subset: 'example', index: 42 })
 })
 
-it('opens the subset containing the linked pattern when the first subset has no matches', async () => {
+it('opens the exact subset from a diagnosis link', async () => {
   getDataFrameMock.mockResolvedValue({ columns: ['Subset'], data: [{ Subset: 'empty' }, { Subset: 'example' }] })
   getPredictionsMock.mockResolvedValue(loadFixture<PredictionsResponse>('predictions-tool-trace'))
   getDiagnosisMock.mockResolvedValue({
     status: 'ready',
-    report: { patterns: [{ id: 'P-linked', by_subset: { example: 1 }, failure_type: 'tool_error' }] },
+    report: { patterns: [{ failure_type: 'tool_error' }] },
   })
   getSampleDiagnosesMock.mockResolvedValue({ status: 'ready', items: [], total: 0 })
   render(
@@ -178,7 +178,8 @@ it('opens the subset containing the linked pattern when the first subset has no 
           reportName="run/m"
           datasetName="demo"
           rootPath="/outputs"
-          diagnosisFilters={{ pattern_id: 'P-linked' }}
+          initialSubset="example"
+          diagnosisFilters={{ failure_type: 'tool_error', outcome: 'failed' }}
           onDiagnosisFiltersChange={vi.fn()}
         />
       </LocaleProvider>

@@ -1,4 +1,4 @@
-"""Judgements on top of the findings: per-finding attribution, sample outcome and primary attribution."""
+"""Per-finding attribution and sample outcomes."""
 
 import re
 from typing import Dict, List, Optional, Pattern, Tuple
@@ -113,7 +113,11 @@ def apply_attribution(findings: List[Finding], rules: CompiledRules) -> None:
 
 
 def resolve_outcome(
-    view: TraceView, signals: ProviderSignals, config: TraceAnalysisConfig, findings: List[Finding]
+    view: TraceView,
+    signals: ProviderSignals,
+    config: TraceAnalysisConfig,
+    findings: List[Finding],
+    metric_directions: Optional[Dict[str, str]] = None,
 ) -> Outcome:
     """Use provider outcomes, explicit thresholds, then the main score's binary fallback."""
     refused = any(f.category == FindingCategory.REFUSAL for f in findings)
@@ -125,24 +129,27 @@ def resolve_outcome(
     outcome = Outcome(refused=True if refused else None)
     if (view.score_status or 'success').lower() not in _USABLE_STATUSES or not view.score_value:
         return outcome
-    if view.main_score_name in view.score_value:
-        main = view.score_value[view.main_score_name]
-    else:
-        main = next(iter(view.score_value.values()))
-    direction = config.outcome_directions.get(view.ref.benchmark, 'higher_is_better')
+    main = view.main_score_name or next(iter(view.score_value))
+    directions = metric_directions or {}
+    explicit_direction = config.outcome_directions.get(view.ref.benchmark)
+    thresholds = {
+        name: limit
+        for name, limit in (config.outcome_thresholds.get(view.ref.benchmark) or {}).items()
+        if name in view.score_value
+    }
+    metric = main if main in thresholds else next(iter(thresholds)) if len(thresholds) == 1 else main
+    direction = explicit_direction or directions.get(metric, 'higher_is_better')
     if direction == 'none':
         return outcome
-    for metric, threshold in (config.outcome_thresholds.get(view.ref.benchmark) or {}).items():
-        if metric in view.score_value:
-            outcome.task_success = (
-                view.score_value[metric] <= threshold
-                if direction == 'lower_is_better'
-                else view.score_value[metric] >= threshold
-            )
-            outcome.source = 'threshold'
-            return outcome
-    if main in (0.0, 1.0):
-        outcome.task_success, outcome.source = main == (0.0 if direction == 'lower_is_better' else 1.0), 'binary_score'
+    if metric in thresholds:
+        value, threshold = view.score_value[metric], thresholds[metric]
+        outcome.task_success = value <= threshold if direction == 'lower_is_better' else value >= threshold
+        outcome.source = 'threshold'
+    elif not thresholds and main in {'accuracy', 'acc', 'exact_match', 'em'}:
+        value = view.score_value.get(main)
+        if value in (0.0, 1.0):
+            outcome.task_success = value == (0.0 if direction == 'lower_is_better' else 1.0)
+            outcome.source = 'binary_score'
     return outcome
 
 
