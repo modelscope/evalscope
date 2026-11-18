@@ -33,7 +33,7 @@ Tweebank-NER is an English Twitter corpus created by annotating the syntacticall
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='tweebank_ner',
         pretty_name='TweeBankNER',
         dataset_id='extraordinarylab/tweebank-ner',

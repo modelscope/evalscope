@@ -63,6 +63,10 @@ DEFAULT_TAG_FIX_PATTERNS = [
     (r'<(\w+)>(.*?)</\w+>', r'<\1>\2</\1>'),
 ]
 
+# An entity tag is `<name>` or `</name>`, the form `extract_entities_from_text` reads. A bare `<` in the source
+# text (for example `p < 0.05`) must not pair with a later `>` and be dropped together with the text between them.
+_TAG_PATTERN = re.compile(r'</?\w+>')
+
 
 def create_target_text(tokens: List[str], ner_tags: List[str], entity_type_map: Dict[str, str]) -> str:
     """
@@ -229,7 +233,7 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
     # Reconstruct the original text to find character positions for each token
     original_text = ' '.join(original_tokens)
-    preserves_text = re.sub(r'<[^>]+>', '', xml_text) == original_text
+    preserves_text = _TAG_PATTERN.sub('', xml_text) == original_text
 
     # Track token start positions in the original text
     token_positions = []
@@ -249,8 +253,8 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
     # Map entities to tokens based on character positions
     for entity_type, entity_text, start_pos, end_pos in entities:
         # Text-preserving annotations give an exact offset, even for repeated names.
-        if preserves_text and not re.search(r'<[^>]+>', entity_text):
-            entity_start = len(re.sub(r'<[^>]+>', '', xml_text[:start_pos]))
+        if preserves_text and not _TAG_PATTERN.search(entity_text):
+            entity_start = len(_TAG_PATTERN.sub('', xml_text[:start_pos]))
         else:
             entity_start = -1
 
@@ -260,8 +264,8 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
         context_end = min(len(xml_text), end_pos + 20)
 
         # Extract context without XML tags
-        context_before = re.sub(r'<[^>]+>', '', xml_text[context_start:start_pos])
-        context_after = re.sub(r'<[^>]+>', '', xml_text[end_pos:context_end])
+        context_before = _TAG_PATTERN.sub('', xml_text[context_start:start_pos])
+        context_after = _TAG_PATTERN.sub('', xml_text[end_pos:context_end])
 
         # Use context to find the correct entity position in original text
         search_pos = 0
