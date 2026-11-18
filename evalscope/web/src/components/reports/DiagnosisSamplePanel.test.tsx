@@ -26,7 +26,7 @@ const sample = (subset: string, index: number): SampleDiagnosis => ({
   llm_status: 'not_selected',
   sources: [], context_omitted: false,
   invalid_evidence: 0,
-  evidence_errors: [],
+  recorded_error: null, evidence_errors: [],
 
 })
 async function settle() {

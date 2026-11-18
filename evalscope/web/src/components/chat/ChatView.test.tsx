@@ -180,7 +180,7 @@ it('keeps the question and answer ahead of the result and collapsed diagnostic d
   render(<LocaleProvider><ChatView
     prediction={{ ...tracedPrediction, Input: 'Question first', Generated: 'Answer second', Messages: null, AgentTrace: null }}
     diagnosis={{
-      llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, evidence_errors: [],
+      llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
       key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
       score_status: 'success', stop_reason: 'stop', score_value: {}, needs_attention: true,
       failure_type: 'unexplained', findings: [],
@@ -197,7 +197,7 @@ it('opens the proposal from the embedded toolbar and marks only its referenced m
   const diagnosis = {
     key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
     score_status: 'success', stop_reason: null, score_value: {}, needs_attention: true,
-    failure_type: 'reasoning_error', findings: [], observed_types: [], invalid_evidence: 0, evidence_errors: [], llm_status: 'ok',
+    failure_type: 'reasoning_error', findings: [], observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [], llm_status: 'ok',
     context_omitted: false, sources: [{ id: 'm:1', text: 'Shared quotation', message_index: 1, step: null, excerpted: false, original_start: 0 }],
     llm: { failure_type: 'reasoning_error', secondary_types: [], attribution: 'model', root_cause_step: null,
       explanation: 'A candidate explanation.', confidence: 'medium', gold_suspect: false,
@@ -215,7 +215,7 @@ it('opens the proposal from the embedded toolbar and marks only its referenced m
 
 it.each(['fallback', 'degraded'])('preserves usable %s scoring in the shared reader', (status) => {
   render(<LocaleProvider><ChatView prediction={tracedPrediction} diagnosis={{
-    llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, evidence_errors: [],
+    llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
     key: { subset: 'default', index: 0 }, task_success: true, safety_violation: null,
     score_status: status, stop_reason: 'stop', score_value: {}, needs_attention: false,
     failure_type: null, findings: [], }} /></LocaleProvider>)

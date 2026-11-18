@@ -167,6 +167,7 @@ class SampleDiagnosis(DiagnosticData):
     failure_type: Optional[str] = None
     findings: List[Finding] = Field(default_factory=list)
     observed_types: List[str] = Field(default_factory=list)
+    recorded_error: Optional[str] = None
     llm: Optional[LLMDiagnosis] = None
     llm_status: Literal['not_selected', 'ok', 'parse_error', 'transport_error', 'invalid_evidence', 'unexplained'] = (
         'not_selected'

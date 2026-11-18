@@ -74,6 +74,7 @@ export interface EvalResultPanelProps {
   showPred: boolean
   metrics?: ReportMetric[]
   compact?: boolean
+  recordedError?: string | null
 }
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
@@ -96,6 +97,7 @@ export function EvalResultPanel({
   showPred,
   metrics,
   compact = false,
+  recordedError,
 }: EvalResultPanelProps) {
   const { t } = useLocale()
   const decision = decisionObservation(score.metadata)
@@ -253,8 +255,7 @@ export function EvalResultPanel({
       )}
     </section>
   )
-  if (!compact) return panel
-  return <details className="group rounded-lg border border-[var(--border)]">
+  const result = compact ? <details className="group rounded-lg border border-[var(--border)]">
     <summary className="flex cursor-pointer list-none items-center gap-4 px-3 py-3 text-sm [&::-webkit-details-marker]:hidden">
       <span className="flex shrink-0 items-center gap-2 font-medium"><ChevronRight size={14} className="group-open:rotate-90" />{t('prediction.evalResult')}</span>
       <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -270,5 +271,13 @@ export function EvalResultPanel({
       </span>
     </summary>
     {panel}
-  </details>
+  </details> : panel
+  if (!recordedError) return result
+  return <div className="space-y-2">
+    <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2">
+      <p className="text-xs font-medium text-[var(--warning-text)]">{t('diagnosis.recordedError')}</p>
+      <p className="whitespace-pre-wrap break-words text-sm">{recordedError}</p>
+    </div>
+    {result}
+  </div>
 }

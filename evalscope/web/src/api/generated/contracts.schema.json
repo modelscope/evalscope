@@ -3629,6 +3629,17 @@
           },
           "type": "array"
         },
+        "recorded_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "safety_violation": {
           "anyOf": [
             {
@@ -3689,6 +3700,7 @@
         "failure_type",
         "findings",
         "observed_types",
+        "recorded_error",
         "llm",
         "llm_status",
         "sources",

@@ -107,10 +107,8 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
     for sample in samples:
         if sample.case.score_status in USABLE:
             continue
-        score = sample.record.sample_score.score
-        reason = (score.judge_summary.error if score.judge_summary else None) or (score.metadata or {}).get('error')
-        if isinstance(reason, str) and reason.strip():
-            excluded_reasons[reason] += 1
+        if recorded := sample.recorded_error:
+            excluded_reasons[recorded[1]] += 1
         else:
             missing_reasons += 1
     if missing_reasons:

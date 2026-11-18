@@ -3,6 +3,7 @@ import type { Dict } from './types'
 export const en: Dict = {
   failedSampleReference: '${count} failed samples',
   relatedEvidence: 'Related evidence',
+  recordedError: 'Error in the evaluation record',
   analysisInformation: 'Analysis information',
   analysisMode: { facts: 'Basic analysis', diagnose: 'Model analysis' },
   statisticsScope: 'Rule statistics cover',
@@ -291,6 +292,7 @@ export const en: Dict = {
 export const zh: Dict = {
   failedSampleReference: '${count} 条未通过样本',
   relatedEvidence: '相关证据',
+  recordedError: '评测记录中的错误',
   analysisInformation: '分析信息',
   analysisMode: { facts: '基础分析', diagnose: '模型分析' },
   statisticsScope: '规则统计范围',

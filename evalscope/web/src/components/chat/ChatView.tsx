@@ -297,6 +297,7 @@ export default function ChatView({
             showPred={!!showPred}
             metrics={metrics}
             compact={toolbar}
+            recordedError={diagnosis?.recorded_error}
           />
 
           {diagnosis && <SampleDiagnosisCard diagnosis={diagnosis} showFindings={!toolbar || presentation !== 'traced'} />}

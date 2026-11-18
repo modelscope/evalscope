@@ -26,6 +26,25 @@ class SampleInput(BaseModel):
     stop_reason: Optional[str] = None
     output_tokens: Optional[int] = None
 
+    @property
+    def recorded_error(self) -> Optional[tuple[str, str]]:
+        """Return a recorded scoring or execution problem, without judging the answer."""
+        score = self.record.sample_score.score
+        metadata = score.metadata or {}
+        if self.case.score_status not in ('success', 'fallback', 'degraded'):
+            kind = 'judge_failure'
+            reason = (
+                (score.judge_summary.error if score.judge_summary else None)
+                or score.explanation
+                or metadata.get('error')
+            )
+        else:
+            execution = metadata.get('execution_result')
+            if not isinstance(execution, dict) or execution.get('status') != 'error':
+                return None
+            kind, reason = 'environment_failure', execution.get('error')
+        return (kind, reason) if isinstance(reason, str) and reason.strip() else None
+
 
 class BenchmarkInput(BaseModel):
     """Only consumed settings are retained; credentials never enter diagnostic outputs."""

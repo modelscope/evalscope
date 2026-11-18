@@ -28,7 +28,7 @@ from .inputs import has_nontext_output, is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.4.2'
+ANALYZER_VERSION = '3.4.3'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -261,6 +261,9 @@ def _diagnose_benchmark(
                         not prediction.strip() or (choice_task and not is_choice_letter(prediction))
                     ):
                         issue = 'extraction_failure'
+        recorded = item.recorded_error
+        if recorded:
+            issue = recorded[0]
         if issue not in (None, 'unexplained'):
             observed.add(issue)
         coverage.task_success_known += case.outcome.task_success is not None
@@ -281,6 +284,7 @@ def _diagnose_benchmark(
                 needs_attention=attention,
                 failure_type=issue,
                 observed_types=sorted(observed),
+                recorded_error=recorded[1] if recorded else None,
                 findings=export_findings(case.findings, config.trace),
             )
         )
@@ -318,7 +322,10 @@ def _diagnose_benchmark(
         for sample in samples
     )
     if config.level == 'diagnose':
-        summarize(report, samples, config, target, force, _atomic_write)
+        if coverage.selected:
+            summarize(report, samples, config, target, force, _atomic_write)
+        else:
+            report.narrative_status = 'no_findings'
         report.limitations += [
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
             'Model hypotheses describe only the selected samples; no population cause estimates are made.',

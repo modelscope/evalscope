@@ -866,6 +866,7 @@ export interface SampleDiagnosis {
   llm_status: "not_selected" | "ok" | "parse_error" | "transport_error" | "invalid_evidence" | "unexplained";
   needs_attention: boolean;
   observed_types: string[];
+  recorded_error: string | null;
   safety_violation: boolean | null;
   score_status: string;
   score_value: {

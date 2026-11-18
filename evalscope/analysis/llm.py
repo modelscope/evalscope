@@ -54,7 +54,7 @@ def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig)
         matches = (
             (sample.key.subset, sample.key.index) in requested if requested is not None else eligible[config.scope]
         )
-        if matches:
+        if matches and not sample.recorded_error:
             groups[sample.key.subset].append(sample)
     population = sum(map(len, groups.values()))
     budget = population if config.max_diagnosed_samples is None else min(config.max_diagnosed_samples, population)
@@ -235,23 +235,6 @@ def validate_evidence(diagnosis: LLMDiagnosis, sources: List[DiagnosticSource]) 
     return diagnosis.model_copy(update={'evidence': valid}), errors
 
 
-def _scoring_error(item: SampleInput, sample: SampleDiagnosis) -> Optional[Tuple[str, str]]:
-    """Use stored evaluation errors without speculating about the submitted answer."""
-    score = item.record.sample_score.score
-    metadata = score.metadata or {}
-    if sample.is_unscored:
-        kind = 'judge_failure'
-        reason = score.explanation or metadata.get('error')
-    else:
-        execution = metadata.get('execution_result')
-        if not isinstance(execution, dict) or execution.get('status') != 'error':
-            return None
-        kind, reason = 'environment_failure', execution.get('error')
-    if isinstance(reason, str) and reason.strip():
-        return kind, redact(reason, _env_secrets())
-    return None
-
-
 def _request(
     prompt: str,
     schema: Type[BaseModel],
@@ -349,7 +332,6 @@ def enrich(
         logger.warning('Diagnostic and evaluated model identities match; this is self-evaluation.')
     items = {(s.key.subset, s.key.index): s for s in inputs.samples}
     prompts = []
-    scoring_errors = {}
     for s in selected:
         key = (s.key.subset, s.key.index)
         item = items[key]
@@ -390,19 +372,8 @@ def enrich(
             'types': ISSUE_DEFINITIONS,
             'language': config.language if config.language != 'auto' else DEFAULT_LANGUAGE,
         }
-        instruction = PROMPT.read_text()
-        if recorded := _scoring_error(item, s):
-            scoring_errors[key] = recorded
-            kind, reason = recorded
-            payload['recorded_scoring_error'] = {'failure_type': kind, 'reason': reason}
-            instruction += (
-                '\nIf recorded_scoring_error is present, report only that observation. Copy its reason exactly into '
-                'explanation (do not translate) and cite that exact reason from score. Use its failure_type, '
-                'attribution unknown, secondary_types [], root_cause_step null and gold_suspect false. '
-                'If the reason cannot be cited, return unexplained.\n'
-            )
-        prompts.append(instruction + '\n' + json.dumps(payload, ensure_ascii=False))
-    report.cost.estimated_calls = len(prompts) + 1
+        prompts.append(PROMPT.read_text() + '\n' + json.dumps(payload, ensure_ascii=False))
+    report.cost.estimated_calls = len(prompts) + bool(prompts)
     report.cost.estimated_input_tokens = sum(len(p) // 3 for p in prompts)
     logger.info(
         f'Diagnostic budget: at most {report.cost.estimated_calls} calls, approximately '
@@ -419,27 +390,12 @@ def enrich(
         sample.invalid_evidence = len(parsed.evidence) - len(sample.llm.evidence)
         sample.evidence_errors = errors
         key = (sample.key.subset, sample.key.index)
-        recorded = scoring_errors.get(key)
         if (
             errors
             or not sample.llm.evidence
             or all(e.source_id in ('gold', 'benchmark', 'omitted-content') for e in sample.llm.evidence)
         ):
             sample.llm_status = 'invalid_evidence'
-        elif (
-            recorded
-            and parsed.failure_type != 'unexplained'
-            and (
-                (parsed.failure_type, parsed.explanation) != recorded
-                or parsed.attribution != 'unknown'
-                or parsed.secondary_types
-                or parsed.root_cause_step is not None
-                or parsed.gold_suspect
-                or not any(e.source_id == 'score' and e.quote == recorded[1] for e in sample.llm.evidence)
-            )
-        ):
-            sample.llm_status = 'unexplained'
-            sample.evidence_errors.append('exceeds_recorded_scoring_error')
         elif parsed.failure_type == 'truncated' and items[key].stop_reason not in (
             None,
             'length',

@@ -104,8 +104,9 @@ Evidence has two separate checks:
   reference on that exact supplied step.
 - **Semantic support:** a locatable quotation does not establish that it supports a diagnosis. Independent
   annotation and review are still required. If any submitted citation fails, the sample proposal is
-  withheld as a whole. When the scoring record contains an explicit exclusion reason or execution error,
-  the proposal may only report that reason; it cannot judge the submitted answer or assign blame.
+  withheld as a whole. Explicit scoring exclusion reasons and execution errors are shown directly
+  from the record (with secrets redacted) in either mode. These samples do not use the model or take
+  a sample budget slot. If there are no eligible samples, no model summary is requested.
   Failed requests, invalid formats and low confidence also prevent proposals from being used. Official scores and reference answers remain unchanged;
   suspected reference errors are only marked for review.
 

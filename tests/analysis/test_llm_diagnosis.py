@@ -182,44 +182,51 @@ def test_partial_sample_references_do_not_promote_an_explanation(
 
 
 @pytest.mark.parametrize('unscored', [True, False])
-@pytest.mark.parametrize('overclaims', [True, False])
-def test_known_scoring_error_does_not_prove_answer_correctness(
-    make_run: Callable, monkeypatch: pytest.MonkeyPatch, unscored: bool, overclaims: bool,
+@pytest.mark.parametrize('has_other_sample', [True, False])
+def test_recorded_error_is_shown_without_spending_model_budget(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, unscored: bool, has_other_sample: bool,
 ) -> None:
     from evalscope.constants import ScoreStatus
 
     row = review(0)
     score = row.sample_score.score
+    secret = 'diagnostic-test-secret-982613'
+    monkeypatch.setenv('DIAGNOSIS_API_KEY', secret)
     reason = 'Distribution exceeds the probability sum tolerance.' if unscored else 'Sandbox pool is empty.'
+    raw_reason = f'{reason} {secret}'
     kind = 'judge_failure' if unscored else 'environment_failure'
     if unscored:
         score.status = ScoreStatus.EXCLUDED
         score.value = {}
-        score.explanation = reason
+        score.explanation = raw_reason
     else:
-        score.metadata = {'execution_result': {'status': 'error', 'error': reason}}
+        score.metadata = {'execution_result': {'status': 'error', 'error': raw_reason}}
     calls = []
 
     def reply(prompt: str, count: int) -> str:
-        if 'Summarize evaluation' in prompt:
-            payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
-            assert bool(payload['sample_hypotheses']) is not overclaims
-            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
-        proposal = LLMDiagnosis(
-            failure_type=kind, attribution='unknown', confidence='high',
-            explanation=f'{reason} The submitted answer was correct.' if overclaims else reason,
-            evidence=[EvidenceReference(source_id='score', quote=reason)],
-        )
-        return proposal.model_dump_json()
+        assert has_other_sample and reason not in prompt
+        if 'Summarize evaluation' not in prompt:
+            return verdict().model_dump_json()
+        payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
+        assert [item['sample']['index'] for item in payload['sample_hypotheses']] == [1]
+        return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
 
     fake_model(monkeypatch, reply, calls)
-    root = make_run(rows=[row])
-    report = diagnose_benchmark(str(root), 'm', 'demo', options(scope='unscored' if unscored else 'failed'))
-    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
-    assert (report.coverage.citations_valid, report.coverage.citations_total) == (1, 1)
-    assert persisted.llm_status == ('unexplained' if overclaims else 'ok')
-    assert persisted.evidence_errors == (['exceeds_recorded_scoring_error'] if overclaims else [])
-    assert report.coverage.diagnosed_ok == int(not overclaims)
+    root = make_run(rows=[row, review(1)] if has_other_sample else [row])
+    keys = [SampleKey(subset='default', index=i) for i in range(2 if has_other_sample else 1)]
+    report = diagnose_benchmark(str(root), 'm', 'demo', options(samples=keys, max_diagnosed_samples=1))
+    artifacts = (root / 'analysis/m/demo/samples.jsonl').read_text()
+    persisted = next(
+        sample for line in artifacts.split('\n') if line
+        if (sample := SampleDiagnosis.model_validate_json(line)).key.index == 0
+    )
+    assert reason in persisted.recorded_error and secret not in artifacts
+    assert persisted.llm_status == 'not_selected' and persisted.llm is None and not persisted.sources
+    assert kind in persisted.observed_types
+    assert report.coverage.diagnosis_population == report.coverage.selected == int(has_other_sample)
+    assert report.cost.calls == len(calls) == 2 * has_other_sample
+    if not has_other_sample:
+        assert report.cost.estimated_calls == 0 and report.narrative_status == 'no_findings'
 
 
 def test_score_reason_is_citable_once_without_changing_saved_metadata(make_run: Callable) -> None:

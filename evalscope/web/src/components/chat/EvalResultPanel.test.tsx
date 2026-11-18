@@ -117,6 +117,17 @@ it('keeps embedded scores compact and hides an absent reference answer', () => {
   expect(screen.queryByText('Expected Answer')).not.toBeInTheDocument()
 })
 
+it('shows the recorded scoring error as plain text outside collapsed details', () => {
+  render(<LocaleProvider><EvalResultPanel
+    compact pred="" gold="" nScore={null} status="excluded" score={{}} metadata={{}}
+    threshold={0.99} showPred={false} recordedError="Distribution exceeds the probability sum tolerance."
+  /></LocaleProvider>)
+  expect(screen.getByText('Error in the evaluation record')).toBeVisible()
+  expect(screen.getByText('Distribution exceeds the probability sum tolerance.')).toBeVisible()
+  expect(screen.getByText('Error in the evaluation record').closest('div')?.nextElementSibling?.querySelector('summary'))
+    .toHaveTextContent('Unavailable')
+})
+
 it('keeps the extracted and reference answers visible in the compact QA score', () => {
   const { container } = render(<LocaleProvider><EvalResultPanel compact pred="12" gold="13" nScore={0}
     score={{ value: { accuracy: 0 }, main_score_name: 'accuracy' }} metadata={{}} threshold={0.99} showPred /></LocaleProvider>)

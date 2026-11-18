@@ -132,7 +132,7 @@ beforeEach(() => {
       ? { status: 'missing', items: [], total: 0, page: 1, page_size: 200 }
       : ({
           status: 'ready',
-          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [] }],
+          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] }],
           total: 1,
           page: 1,
           page_size: 200,
@@ -225,7 +225,7 @@ describe('report workspace', () => {
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
   })
   it('opens the exact cited sample and step, preserves it in Samples, and restores Diagnosis', async () => {
-    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, evidence_errors: [] } as SampleDiagnosesResponse['items'][number]
+    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] } as SampleDiagnosesResponse['items'][number]
     vi.mocked(api.getSampleDiagnoses).mockResolvedValue({ status: 'ready', items: [item], total: 1, page: 1, page_size: 200 })
     vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'diagnose',
       narrative_status: 'ok', narrative_samples: { 'S-exact': { sample: item.key, step: 0 } },
