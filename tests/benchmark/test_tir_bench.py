@@ -52,6 +52,7 @@ def test_explicit_single_choice_is_scored(prediction: str, target: str) -> None:
         ('The needle points at 30, so C.', 'C'),
         ('I do not think the answer is B.', 'B'),
         ('I would not answer: B', 'B'),
+        ('Answer: B\nAfter checking, I rule out B.', 'B'),
         ('I ruled out option B. My final choice is H.', 'B'),
         ('Answer: C or B', 'C'),
         ('Answer: I think it might be C.', 'C'),

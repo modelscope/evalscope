@@ -62,10 +62,10 @@ def is_single_choice_answer(reference: str) -> bool:
 
 def _extract_single_choice(prediction: str) -> str:
     """Read a structured answer or retain the text for exact option matching."""
-    answer_lines = '\n'.join(
-        line for line in prediction.splitlines() if line.partition(':')[0].strip(' \t*').casefold() == 'answer'
-    )
-    answer = extract_answer_line(answer_lines) or prediction.strip()
+    answer = prediction.strip()
+    last_line = answer.rsplit('\n', 1)[-1]
+    if last_line.partition(':')[0].strip(' \t*').casefold() == 'answer':
+        answer = extract_answer_line(last_line) or answer
     if _SINGLE_CHOICE_RE.fullmatch(answer):
         return answer.removeprefix(r'\boxed{').strip('()[]{}$.。')
     return answer
