@@ -31,7 +31,7 @@ def _vqa_score(prediction: str, answers: list) -> float:
     [(0, 0.0), (1, 0.3), (2, 0.6), (3, 0.9)] + [(matches, 1.0) for matches in range(4, 11)],
 )
 def test_vqa_score_averages_over_leave_one_out_annotator_sets(matches: int, expected: float) -> None:
-    answers = ['two'] * matches + ['three'] * (10 - matches)
+    answers = ['2'] * matches + ['three'] * (10 - matches)
     assert _vqa_score('2', answers) == pytest.approx(expected)
 
 
@@ -73,4 +73,18 @@ def test_missing_answers_or_empty_normalized_prediction_score_zero(prediction: s
 
 
 def test_evaluation_version_bumped_for_scoring_change() -> None:
-    assert _adapter()._benchmark_meta.evaluation_version == 'v1.1'
+    assert _adapter()._benchmark_meta.evaluation_version == 'v1.2'
+
+
+@pytest.mark.parametrize(('prediction', 'answers', 'expected'), [
+    ('red & white', ['white and red'] + ['red and white'] * 6 + ['red & white'] * 2 + ['red white'], 0.6),
+    ('dont know', ["don't know"] * 4 + ['unknown'] * 6, 1.0),
+    ('3 14', ['3.14'] * 4 + ['other'] * 6, 0.0),
+    ('3.14.', ['3.14'] * 4 + ['other'] * 6, 1.0),
+    ('1000', ['1,000'] * 3 + ['other'] * 7, 0.9),
+    ('the two cats', ['2 cats'] * 3 + ['other'] * 7, 0.9),
+    ('2', ['two'] * 10, 0.0),
+    ('two', ['two '] * 5 + ['two'] * 5, 1.0),
+])
+def test_official_answer_comparison(prediction: str, answers: list[str], expected: float) -> None:
+    assert _vqa_score(prediction, answers) == pytest.approx(expected)
