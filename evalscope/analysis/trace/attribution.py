@@ -145,7 +145,7 @@ def resolve_outcome(
         value, threshold = view.score_value[metric], thresholds[metric]
         outcome.task_success = value <= threshold if direction == 'lower_is_better' else value >= threshold
         outcome.source = 'threshold'
-    elif not thresholds and main in {'accuracy', 'acc', 'exact_match', 'em'}:
+    elif not thresholds and main in {'accuracy', 'acc', 'exact_match', 'em', 'is_correct'}:
         value = view.score_value.get(main)
         if value in (0.0, 1.0):
             outcome.task_success = value == (0.0 if direction == 'lower_is_better' else 1.0)

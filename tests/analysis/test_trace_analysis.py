@@ -310,6 +310,11 @@ def test_threshold_outcome():
 @pytest.mark.parametrize('values,main,direction,thresholds,status,expected', [
     ({'acc': 1, 'aux': 0.6}, 'acc', 'higher_is_better', {}, 'success', True),
     ({'aux': 0.6, 'acc': 0}, 'acc', 'higher_is_better', {}, 'success', False),
+    ({'is_correct': 1, 'is_incorrect': 0, 'is_not_attempted': 0}, 'is_correct', 'higher_is_better', {}, 'success', True),
+    ({'is_correct': 0, 'is_incorrect': 1, 'is_not_attempted': 0}, 'is_correct', 'higher_is_better', {}, 'success', False),
+    ({'is_correct': 0, 'is_incorrect': 0, 'is_not_attempted': 1}, 'is_correct', 'higher_is_better', {}, 'success', False),
+    ({'is_correct': 0.5}, 'is_correct', 'higher_is_better', {}, 'success', None),
+    ({'is_correct': 0}, 'is_correct', 'higher_is_better', {}, 'excluded', None),
     ({'error': 0, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', None),
     ({'error': 1, 'aux': 0.6}, 'error', 'lower_is_better', {}, 'success', None),
     ({'mae': 0.25}, 'mae', 'lower_is_better', {}, 'success', None),
