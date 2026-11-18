@@ -13,6 +13,8 @@ from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
+from .utils import is_single_choice_answer
+
 logger = get_logger()
 
 DESCRIPTION = """
@@ -131,8 +133,8 @@ class TIRBenchAdapter(VisionLanguageAdapter):
         """Convert a raw TIR-Bench record into a multimodal Sample.
 
         Images (image_1 and optionally image_2) are loaded from the extracted
-        data directory and encoded as base64 data URIs. The model prompt is
-        already fully formatted in the dataset (includes choices for MCQ tasks).
+        data directory and encoded as base64 data URIs. The model prompt
+        comes from the dataset, with an answer format instruction for single-choice items.
         """
         content_list: List[Content] = []
 
@@ -151,14 +153,19 @@ class TIRBenchAdapter(VisionLanguageAdapter):
                 image_b64 = bytes_to_base64(fh.read(), format=ext, add_header=True)
             content_list.append(ContentImage(image=image_b64))
 
-        content_list.append(ContentText(text=record['prompt']))
+        target = str(record['answer'])
+        task = record.get('task', '')
+        prompt = record['prompt']
+        if task != 'ocr' and is_single_choice_answer(target):
+            prompt += '\n\nEnd your response with ANSWER: [LETTER], replacing [LETTER] with the chosen option letter.'
+        content_list.append(ContentText(text=prompt))
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],
-            target=str(record['answer']),
-            subset_key=record.get('task', ''),
+            target=target,
+            subset_key=task,
             metadata={
-                'task': record.get('task', ''),
+                'task': task,
                 'meta_data': record.get('meta_data') or {},
                 'id': record.get('id'),
             },

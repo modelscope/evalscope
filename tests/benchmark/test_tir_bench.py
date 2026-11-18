@@ -2,9 +2,7 @@
 
 import pytest
 
-from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
@@ -17,7 +15,7 @@ def _score(prediction: str, target: str, prompt: str = PROMPT, task: str = 'inst
     adapter = get_benchmark('tir_bench', config=TaskConfig(datasets=['tir_bench'], judge={'strategy': 'rule'}))
     state = TaskState(
         model='offline',
-        sample=Sample(input=[ChatMessageUser(content=[ContentText(text=prompt)])], target=target, metadata={'task': task}),
+        sample=adapter.record_to_sample({'prompt': prompt, 'answer': target, 'task': task}),
         output=ModelOutput.from_content('offline', prediction),
         completed=True,
     )
@@ -27,18 +25,13 @@ def _score(prediction: str, target: str, prompt: str = PROMPT, task: str = 'inst
 @pytest.mark.parametrize(
     ('prediction', 'target'),
     [
-        ('The correct option is C. I double-checked the dial markings.', 'C'),
-        ('Option B matches the needle position. I am fairly confident.', 'B'),
+        ('I double-checked the dial markings.\nANSWER: C', 'C'),
         ('Answer: A looks close, but the needle is past 25.\nAnswer: C', 'C'),
-        ('Answer: A at first. On reflection the answer is C.', 'C'),
         ('**Answer:** C.', 'C'),
-        ('Answer - C', 'C'),
-        ('答案是C。', 'C'),
         ('Answer: $C$', 'C'),
         ('C', 'C'),
-        ('After comparing the readings:\n(C)', 'C'),
-        (r'The reading is 30, so \boxed{C}.', 'C'),
-        ('The needle points at 30, so C.', 'C'),
+        ('(C)', 'C'),
+        (r'Answer: \boxed{C}.', 'C'),
     ],
 )
 def test_explicit_single_choice_is_scored(prediction: str, target: str) -> None:
@@ -54,9 +47,11 @@ def test_explicit_single_choice_is_scored(prediction: str, target: str) -> None:
         ('I ruled out option B.', 'B'),
         ('I ruled out option B. I cannot determine the reading.', 'B'),
         ('Option B is wrong.', 'B'),
-        ('Option B matches none of the readings. I cannot tell.', 'B'),
-        ('Option B matches the wrong scale. I cannot tell.', 'B'),
+        ('The correct option is C. I double-checked the dial markings.', 'C'),
+        ('Option B matches the needle position. I am fairly confident.', 'B'),
+        ('The needle points at 30, so C.', 'C'),
         ('I do not think the answer is B.', 'B'),
+        ('I would not answer: B', 'B'),
         ('I ruled out option B. My final choice is H.', 'B'),
         ('Answer: C or B', 'C'),
         ('Answer: I think it might be C.', 'C'),
@@ -94,3 +89,19 @@ def test_single_choice_matches_only_unique_complete_option_text(
 )
 def test_other_answer_types_keep_their_scoring(task: str, prediction: str, target: str) -> None:
     assert _score(prediction, target, task=task).main_value == 1
+
+
+@pytest.mark.parametrize(
+    ('task', 'target', 'expects_answer_line'),
+    [('instrument', 'C', True), ('instrument', 'AB', False), ('instrument', '20', False), ('ocr', 'A', False)],
+)
+def test_only_single_choice_prompt_requests_an_answer_line(task: str, target: str, expects_answer_line: bool) -> None:
+    adapter = get_benchmark('tir_bench', config=TaskConfig(datasets=['tir_bench']))
+    sample = adapter.record_to_sample({'prompt': PROMPT, 'answer': target, 'task': task})
+    text = sample.input[0].content[0].text
+
+    if expects_answer_line:
+        assert text.startswith(PROMPT)
+        assert 'End your response with ANSWER: [LETTER]' in text
+    else:
+        assert text == PROMPT

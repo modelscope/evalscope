@@ -18,16 +18,7 @@ _CHOICES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 _OPTION_LINE_RE = re.compile(r'^[ \t]*([A-J])(?:[.:)]|[ \t]+)[ \t]*(\S[^\n]*)$', re.MULTILINE)
 _OPTION_INLINE_RE = re.compile(r'\(([A-J])\)[ \t]*(.*?)(?=\([A-J]\)|$)', re.MULTILINE)
 
-_SINGLE_CHOICE_TOKEN = r'[A-J]|\([A-J]\)|\[[A-J]\]|\\boxed\{[A-J]\}|\$[A-J]\$'
-_FINAL_CHOICE_RE = re.compile(rf'(?:^|\bso[ \t]+)({_SINGLE_CHOICE_TOKEN})[.!。]?$')
-_MARKED_CHOICE_RE = re.compile(rf'({_SINGLE_CHOICE_TOKEN})(?=[ \t]*(?:[.!。](?:[ \t]|$)|$))')
-_DECLARATION_RE = re.compile(
-    r'(?:^|(?<=[.!?])[ \t]+)[ \t]*(?:(?:on reflection|therefore|so)[, \t]+)?'
-    r'(?:(?:(?:the|my) )?(?:(?:correct|final) )?(?:answer|option|choice) is[ \t]+'
-    r'|answer[ \t]*-[ \t]*|答案[ \t]*[是为：:][ \t]*'
-    r'|option[ \t]+([A-J])(?=[ \t]+matches the (?:needle position|reading)[ \t]*(?:[.!。](?:[ \t]|$)|$)))',
-    re.IGNORECASE | re.MULTILINE,
-)
+_SINGLE_CHOICE_RE = re.compile(r'(?:[A-J]|\([A-J]\)|\[[A-J]\]|\\boxed\{[A-J]\}|\$[A-J]\$)[.。]?')
 
 # ---------------------------------------------------------------------------
 # Answer-type classification
@@ -64,24 +55,19 @@ def classify_string(s: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _extract_single_choice(prediction: str) -> str:
-    """Read an explicit answer or retain the text for exact option matching."""
-    text = prediction.strip()
-    final_choice = _FINAL_CHOICE_RE.search(text.rsplit('\n', 1)[-1].strip())
-    if final_choice:
-        answer = final_choice[1]
-    else:
-        normalized = _DECLARATION_RE.sub(
-            lambda match: f' Answer: {match[1].upper()}. ' if match[1] else ' Answer: ',
-            text,
-        )
-        answer = extract_answer_line(normalized)
-    if answer is None:
-        return text
+def is_single_choice_answer(reference: str) -> bool:
+    """Return whether the reference is a single choice label."""
+    return reference in _CHOICES
 
-    marked_choice = _MARKED_CHOICE_RE.match(answer)
-    if marked_choice:
-        return marked_choice[1].removeprefix(r'\boxed{').strip('()[]{}$')
+
+def _extract_single_choice(prediction: str) -> str:
+    """Read a structured answer or retain the text for exact option matching."""
+    answer_lines = '\n'.join(
+        line for line in prediction.splitlines() if line.partition(':')[0].strip(' \t*').casefold() == 'answer'
+    )
+    answer = extract_answer_line(answer_lines) or prediction.strip()
+    if _SINGLE_CHOICE_RE.fullmatch(answer):
+        return answer.removeprefix(r'\boxed{').strip('()[]{}$.。')
     return answer
 
 
@@ -140,7 +126,7 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
     Returns:
         Extracted or raw prediction string.
     """
-    if reference in _CHOICES:
+    if is_single_choice_answer(reference):
         return _extract_single_choice(prediction)
     if classify_string(reference) == 1:
         return extract_mcq_answer(prediction)
@@ -154,7 +140,7 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
 
 def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
     """Score a single label or exact option text, or compare a multi-choice answer."""
-    if answer not in _CHOICES:
+    if not is_single_choice_answer(answer):
         return float(sorted(answer) == sorted(extracted_answer))
 
     extraction = extracted_answer.removeprefix('Extracted answer:').strip()
