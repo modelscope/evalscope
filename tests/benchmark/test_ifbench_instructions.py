@@ -15,9 +15,11 @@ from evalscope.benchmarks.ifbench.instructions import (
     PersonNameCountChecker,
     PronounCountChecker,
     QuoteExplanationChecker,
+    RepeatChangeChecker,
     RepeatSpanChecker,
     SentenceAlphabetChecker,
     SentTypeRatioChecker,
+    SpecialBulletPointsChecker,
     StopWordPercentageChecker,
     TitleCaseChecker,
     WordsPositionChecker,
@@ -29,7 +31,7 @@ def test_ifbench_evaluation_version_reflects_scoring_change() -> None:
     metadata = BENCHMARK_REGISTRY['ifbench']
 
     assert metadata.data_adapter is IFBenchAdapter
-    assert metadata.evaluation_version == 'v1.4'
+    assert metadata.evaluation_version == 'v1.5'
 
 
 @pytest.mark.parametrize(
@@ -428,12 +430,54 @@ def test_title_case_skips_tokens_starting_with_digits() -> None:
     assert checker.check_following('123 a Cat.') is False
 
 
-def test_known_curly_quote_normalization_is_intentionally_preserved() -> None:
-    # Known compatibility exception: upstream accepts this response without normalizing curly quotes.
+def test_quote_explanation_normalizes_curly_quotes_like_upstream() -> None:
+    # Upstream normalizes curly quotes as well since allenai/IFBench#41, so this is no longer an exception.
     checker = QuoteExplanationChecker('format:quote_unquote')
     checker.build_description()
     assert checker.check_following('“hello”') is False
     assert checker.check_following('“hello” means a greeting.') is True
+
+
+@pytest.mark.parametrize(
+    ('sep', 'response', 'expected'),
+    [
+        ('SEPARATOR', 'SEPARATOR Apples\nSEPARATOR Pears', True),
+        ('SEPARATOR', '  SEPARATOR Apples\n  SEPARATOR Pears', True),
+        # Every item on one line: only the first marker starts a line.
+        ('SEPARATOR', 'SEPARATOR Apples SEPARATOR Pears SEPARATOR Plums', False),
+        # Markers inside lines are not list items.
+        ('SEPARATOR', 'save SEPARATOR consume\n\nsave SEPARATOR consume', False),
+        ('-', '- Apples\n- Pears', True),
+        ('-', 'A well-known, state-of-the-art answer.', False),
+        ('!?!?', 'Really!?!? Yes!?!?', False),
+    ],
+)
+def test_special_bullet_points_count_only_markers_that_start_a_line(sep: str, response: str, expected: bool) -> None:
+    # Upstream counts a marker only when it starts a line (allenai/IFBench#45).
+    checker = SpecialBulletPointsChecker('format:list')
+    checker.build_description(sep=sep)
+    assert checker.check_following(response) is expected
+
+
+@pytest.mark.parametrize(
+    ('response', 'expected'),
+    [
+        ('Compose a poem about cats.', True),
+        ('Compose  a poem about cats.\n', True),
+        ('Write a poem about cats.', False),
+        # The first word is unchanged; only whitespace differs from the request.
+        ('Write a poem about cats.\n', False),
+        (' Write a poem about cats.', False),
+        ('Write  a poem about cats.', False),
+        ('Compose a poem about dogs.', False),
+        ('Compose a poem', False),
+    ],
+)
+def test_repeat_change_requires_a_different_first_word(response: str, expected: bool) -> None:
+    # Upstream compares whitespace-split words and requires the first one to differ (allenai/IFBench#41).
+    checker = RepeatChangeChecker('repeat:repeat_change')
+    checker.build_description(prompt_to_repeat='Write a poem about cats.')
+    assert checker.check_following(response) is expected
 
 
 def test_known_empty_word_guard_is_preserved_with_nltk_sentences() -> None:
