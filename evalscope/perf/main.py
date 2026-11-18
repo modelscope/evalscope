@@ -172,9 +172,9 @@ def run_perf_benchmark(args):
     args.outputs_dir = output_path
 
     if args.scenario is not None:
-        from .scenarios import run_agentx_benchmark
+        from .scenarios import run_scenario_benchmark
 
-        return run_agentx_benchmark(args, output_path)
+        return run_scenario_benchmark(args, output_path)
 
     if args.sla_auto_tune:
         results = run_sla_auto_tune(args, run_one_benchmark)

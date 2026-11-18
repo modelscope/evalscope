@@ -257,6 +257,11 @@ def _require_aiperf() -> None:
         raise RuntimeError('AIPerf is required. Install with `pip install "evalscope[agentx]"`.') from e
     if version != _AIPERF_VERSION:
         raise RuntimeError(f'AgentX requires aiperf=={_AIPERF_VERSION}, found {version}.')
+    try:
+        importlib.metadata.version('agentx-harness')
+    except importlib.metadata.PackageNotFoundError:
+        return
+    raise RuntimeError('Conflicting agentx-harness distribution installed; rebuild with only `evalscope[agentx]`.')
 
 
 def _resolve_dataset(args: 'Arguments', scenario: AgentXScenario) -> AgentXDatasetProvenance:
