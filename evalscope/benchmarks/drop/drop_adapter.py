@@ -1,4 +1,5 @@
 import ast
+import json
 import re
 from typing import Any, Dict, List
 
@@ -33,6 +34,7 @@ Answer:  43
 @register_benchmark(
     BenchmarkMeta(
         name='drop',
+        evaluation_version='v1.1',
         pretty_name='DROP',
         tags=[Tags.REASONING],
         description="""
@@ -71,7 +73,11 @@ DROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension
         allowed_few_shot_nums=(0, 3),
         train_split=None,
         eval_split='validation',
-        prompt_template='You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.',  # noqa: E501
+        prompt_template=(
+            'You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\n'
+            'Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response. '
+            'For multiple spans, write a JSON array of strings on that line, e.g. Answer: ["first span", "second span"].'
+        ),
     )
 )
 class DROPAdapter(DefaultDataAdapter):
@@ -151,9 +157,18 @@ class DROPAdapter(DefaultDataAdapter):
         max_em = 0
         max_f1 = 0
         reference = ast.literal_eval(reference) if isinstance(reference, str) else reference
+        prediction = filtered_prediction
+        if filtered_prediction.lstrip().startswith('['):
+            try:
+                spans = json.loads(filtered_prediction)
+            except (ValueError, RecursionError):
+                pass
+            else:
+                if isinstance(spans, list) and all(isinstance(span, str) for span in spans):
+                    prediction = spans
+
+        predicted_bags = _answer_to_bags(prediction)
         for gold_answer in reference:
-            # Convert the answers to bags of answers
-            predicted_bags = _answer_to_bags(filtered_prediction)
             gold_bags = _answer_to_bags(gold_answer)
 
             if set(predicted_bags[0]) == set(gold_bags[0]) and len(predicted_bags[0]) == len(gold_bags[0]):

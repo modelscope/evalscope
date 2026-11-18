@@ -130,7 +130,7 @@ You will be asked to read a passage and answer a question. {drop_examples}
 ---
 {query}
 
-Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.
+Think step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response. For multiple spans, write a JSON array of strings on that line, e.g. Answer: ["first span", "second span"].
 ```
 
 ## Usage
