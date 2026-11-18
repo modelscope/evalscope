@@ -315,6 +315,53 @@ def test_longtext_report_averages_languages_after_corpus_aggregation():
     assert reloaded.model_dump(mode='json') == report.model_dump(mode='json')
 
 
+@pytest.mark.parametrize('subsets', [['en', 'zh'], ['en']])
+def test_longtext_incomplete_language_is_not_a_bilingual_result(tmp_path, monkeypatch, subsets):
+    from evalscope.metrics.vision.metrics import LongTextScore
+    from evalscope.report import Report
+
+    dataset_dir = tmp_path / 'dataset'
+    dataset_dir.mkdir()
+    for line in (FIXTURES / 'longtext.jsonl').read_text().splitlines():
+        row = json.loads(line)
+        (dataset_dir / f"{row['language']}_test.jsonl").write_text(line + '\n')
+
+    def score_counts(self: LongTextScore, image: str, text: str) -> tuple[float, int, int]:
+        if text_render.detect_language(text) == 'zh':
+            raise RuntimeError('Vision service failed')
+        return text_render.text_score_counts(text, 'SOUND OF FREEDOM AUGUST 16 2026')
+
+    monkeypatch.setattr(LongTextScore, '_score_counts', score_counts)
+    with _api_service() as api_url:
+        run_task(TaskConfig(
+            model='test-image-model',
+            model_task=ModelTask.IMAGE_GENERATION,
+            eval_type=EvalType.TEXT2IMAGE,
+            api_url=api_url,
+            api_key='test-key',
+            work_dir=str(tmp_path / 'outputs'),
+            datasets=['longtext_bench'],
+            dataset_args={'longtext_bench': {'dataset_id': str(dataset_dir), 'subset_list': subsets}},
+        ))
+
+    report = Report.from_json(str(next((tmp_path / 'outputs').rglob('reports/*/longtext_bench.json'))))
+    assert report.execution_summary.requested == len(subsets)
+    assert report.execution_summary.succeeded == 1
+    if subsets == ['en']:
+        assert report.score == 1.0
+        assert not report.execution_summary.incomplete
+        return
+
+    assert report.score is None
+    assert report.primary_metric_unavailable_reason == 'No usable Text Score for: zh.'
+    assert report.execution_summary.incomplete
+    assert report.execution_summary.errored == 1
+    assert report.execution_summary.subsets['zh'].succeeded == 0
+    assert report.execution_summary.subsets['zh'].errored == 1
+    english = next(metric for metric in report.metrics if metric.identity.dimensions == {'subset': 'en'})
+    assert english.score == 1.0 and english.num == 1
+
+
 def test_hf_archive_loading_preserves_standard_sampling(tmp_path, monkeypatch):
     from zipfile import ZipFile
 
@@ -384,13 +431,17 @@ def test_default_transcription_key_is_independent_of_image_service(tmp_path, mon
     assert calls[0]['api_key'] == 'transcription-key'
 
 
-@pytest.mark.parametrize('status, finish_reason, transcript, expected', [
-    (200, 'stop', 'hello world', 1.0),
-    (200, 'stop', 'No text recognized.', 0.0),
-    (200, 'length', 'hello world', None),
-    (503, 'stop', '', None),
+@pytest.mark.parametrize('status, finish_reason, transcript, target, expected', [
+    (200, 'stop', 'hello world', 'hello world', 1.0),
+    (200, 'stop', 'No text recognized.', 'no text', 0.0),
+    (200, 'stop', 'No text recognized', 'no text', 0.0),
+    (200, 'stop', '  NO TEXT RECOGNIZED.\n', 'no text', 0.0),
+    (200, 'stop', '', 'no text', 0.0),
+    (200, 'stop', 'READ\nNo text recognized.', 'read no', 1.0),
+    (200, 'length', 'hello world', 'hello world', None),
+    (503, 'stop', '', 'hello world', None),
 ])
-def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, finish_reason, transcript, expected):
+def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, finish_reason, transcript, target, expected):
     import sys
 
     from PIL import Image
@@ -426,7 +477,7 @@ def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, fi
     with _api_service(Handler) as api_url:
         metric = LongTextScore(model='vision', api_url=api_url,
                                api_key='test-key', generation_config={'retries': 1, 'max_tokens': 128})
-        result = metric(str(image_path), 'hello world')
+        result = metric(str(image_path), target)
         assert result.status.is_usable is (expected is not None)
         assert len(calls) == 1
         if expected is not None:

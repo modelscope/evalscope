@@ -57,11 +57,13 @@ mirrors [evalscope/CVTG-2K](https://modelscope.cn/datasets/evalscope/CVTG-2K) an
 [evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench) by default.
 CVTG and CVTG-Style contain 1,002 and 998 prompts; LongText-Bench contains 160 prompts per language.
 
-Install the scorer dependencies in addition to EvalScope. CVTG uses the PaddleOCR 2.x API:
+Install the CVTG-2K scorer on Python 3.11 or 3.12 with a supported PaddlePaddle wheel:
 
 ```bash
-pip install 'paddlepaddle==2.6.2' 'paddleocr==2.10.0' 'numpy<2'
+pip install 'evalscope[cvtg_2k]'
 ```
+
+For local image generation, install `evalscope[aigc,cvtg_2k]`.
 
 LongText-Bench transcribes images through a vision API and does not require local VLM weights or
 an accelerator. Its default is `qwen3.8-flash` on DashScope with thinking disabled. Set
@@ -107,10 +109,11 @@ run_task(TaskConfig(
 
 CVTG scores combine all ground-truth words across both subsets. LongText-Bench aggregates words
 within English and characters within Chinese, then averages the two language scores for its overall
-result. For the official LongText repeated-image protocol, evaluate `longtext_bench` with `repeats=4`.
-Scoring failures are excluded from the affected metric, so check its sample count and review errors;
-an image with a valid but empty transcription is scored as missing text. When resuming reviews made
-with an older version that did not save corpus counts, use `rerun_review=True` to recompute them.
+result. When both languages are requested and one has no usable scores, the report shows the available
+language scores without an overall score. Use `repeats=4` for the official LongText sampling protocol.
+Scoring failures are excluded from the affected metric. Check the metric's sample count and the
+run's execution summary. Successful recognition with no text counts as missing text.
+Use `rerun_review=True` to rescore cached images with the current scoring version.
 
 ## OpenAI-Compatible Image Service
 

@@ -1,0 +1,6 @@
+# PaddlePaddle 2.6 wheels require the NumPy 1.x ABI.
+numpy<2
+paddleocr==2.10.0
+paddlepaddle==2.6.2
+# PyArrow 26 requires NumPy 2 at import time.
+pyarrow<26

@@ -104,11 +104,13 @@ data URI。`api_url` 可以传基础地址、完整的 `/images/generations` 地
 [evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench) 加载。
 CVTG 和 CVTG-Style 分别包含 1,002 和 998 条提示词；LongText-Bench 的中英文各有 160 条。
 
-除 EvalScope 外，还需安装评分器依赖。CVTG 使用 PaddleOCR 2.x 接口：
+在有 PaddlePaddle wheel 的平台上，使用 Python 3.11 或 3.12 安装 CVTG-2K 的评分依赖：
 
 ```bash
-pip install 'paddlepaddle==2.6.2' 'paddleocr==2.10.0' 'numpy<2'
+pip install 'evalscope[cvtg_2k]'
 ```
+
+如果在本地运行文生图模型，安装 `evalscope[aigc,cvtg_2k]`。
 
 LongText-Bench 通过视觉模型 API 转写图中文字，不需要本地 VLM 权重或加速器。
 默认调用 DashScope 的 `qwen3.8-flash`，关闭思考模式。设置 `DASHSCOPE_API_KEY` 后，
@@ -152,8 +154,9 @@ run_task(TaskConfig(
 
 CVTG 将两个子集的所有参考词合并计分。LongText-Bench 在英文内按词、中文内按字符汇总，
 总分取中英文得分的平均值。按官方 LongText 多图协议评测时，单独运行 `longtext_bench` 并设置 `repeats=4`。
-评分失败的样本会从受影响的指标中排除，应同时检查该指标的样本数和评审错误；成功转写但未识别出文字的图像按缺失文字计分。
-如果旧版本的评审缓存没有保存汇总所需的计数，设置 `rerun_review=True` 重新评分。
+如果同时评估中英文，而其中一种语言没有有效分数，报告只展示可用的单语结果。
+评分失败的样本会从受影响的指标中排除，请同时检查指标样本数和运行摘要。识别成功但没有读出文字的图像按缺失文字计分。
+如需用当前评分版本重新评审缓存的图像，请设置 `rerun_review=True`。
 
 ## 本地模型评测
 

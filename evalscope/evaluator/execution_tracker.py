@@ -22,14 +22,15 @@ class ExecutionTracker:
         self, dataset_dict: Dict[str, Dataset], sample_scores_by_subset: Dict[str, List[SampleScore]]
     ) -> ExecutionSummary:
         """Return report-ready completion counts after scoring has finished."""
-        subsets = {
-            subset: ExecutionSubset(
+        subsets = {}
+        for subset, dataset in dataset_dict.items():
+            scores = sample_scores_by_subset.get(subset, [])
+            unavailable = sum(not item.score.status.is_usable for item in scores)
+            subsets[subset] = ExecutionSubset(
                 requested=len(dataset),
-                succeeded=len(sample_scores_by_subset.get(subset, [])),
-                errored=self._errors_by_subset.get(subset, 0),
+                succeeded=len(scores) - unavailable,
+                errored=self._errors_by_subset.get(subset, 0) + unavailable,
             )
-            for subset, dataset in dataset_dict.items()
-        }
         requested = sum(summary.requested for summary in subsets.values())
         succeeded = sum(summary.succeeded for summary in subsets.values())
         errored = sum(summary.errored for summary in subsets.values())
