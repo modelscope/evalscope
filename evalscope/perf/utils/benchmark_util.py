@@ -176,6 +176,7 @@ class MetricsAccumulator:
     concurrency: int = 0
     rate: float = 0.0
     enable_pd_metrics: bool = False
+    device_count: Optional[int] = None
 
     # --- Request counts ---
     n_total: int = 0
@@ -347,8 +348,9 @@ class MetricsAccumulator:
     # Result factory
     # -----------------------------------------------------------------------
 
-    def to_result(self) -> 'BenchmarkMetrics':
+    def to_result(self, device_count: Optional[int] = None) -> 'BenchmarkMetrics':
         """Compute averages and return an immutable :class:`BenchmarkMetrics` snapshot."""
+        resolved_device_count = device_count if device_count is not None else self.device_count
         n = self.n_success
         t = self.wall_time
 
@@ -471,6 +473,7 @@ class MetricsAccumulator:
             avg_first_turn_ttft=avg_first_turn_ttft,
             avg_subsequent_turn_ttft=avg_subsequent_turn_ttft,
             avg_decoded_tokens_per_iter=avg_decoded_tokens_per_iter,
+            device_count=resolved_device_count,
         )
 
     def log_cache_coverage_warning(self) -> None:
@@ -510,6 +513,7 @@ class BenchmarkMetrics:
     # --- Test configuration ---
     concurrency: int = 0
     rate: float = 0.0
+    device_count: Optional[int] = None
 
     # --- Request statistics ---
     total_requests: int = 0
@@ -609,6 +613,16 @@ class BenchmarkMetrics:
             Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency * 1000, 2),
             Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, r),
         }
+        if self.device_count is not None and self.device_count >= 1:
+            fields[Metrics.DEVICE_COUNT] = self.device_count
+            if self.avg_output_token_throughput >= 0:
+                fields[Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE] = round(
+                    self.avg_output_token_throughput / self.device_count, r
+                )
+            if self.avg_total_token_throughput >= 0:
+                fields[Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE] = round(
+                    self.avg_total_token_throughput / self.device_count, r
+                )
         if enable_pd_metrics:
             fields.update(self._build_pd_handoff_fields())
         return fields

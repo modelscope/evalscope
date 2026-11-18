@@ -56,6 +56,9 @@ class BenchmarkSummary(BaseModel):
     # --- LLM-specific ---
     output_token_throughput: float = Field(0.0, alias=Metrics.OUTPUT_TOKEN_THROUGHPUT)
     total_token_throughput: float = Field(0.0, alias=Metrics.TOTAL_TOKEN_THROUGHPUT)
+    device_count: Optional[int] = Field(None, alias=Metrics.DEVICE_COUNT)
+    output_token_throughput_per_device: Optional[float] = Field(None, alias=Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE)
+    total_token_throughput_per_device: Optional[float] = Field(None, alias=Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE)
     avg_ttft: float = Field(0.0, alias=Metrics.AVERAGE_TIME_TO_FIRST_TOKEN)
     avg_tpot: float = Field(0.0, alias=Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN)
     avg_itl: float = Field(0.0, alias=Metrics.AVERAGE_INTER_TOKEN_LATENCY)
@@ -198,6 +201,22 @@ class BenchmarkSummary(BaseModel):
             rows.append(
                 (Metrics.TOTAL_TOKEN_THROUGHPUT, _fmt(Metrics.TOTAL_TOKEN_THROUGHPUT, self.total_token_throughput))
             )
+        if self.device_count is not None:
+            rows.append((Metrics.DEVICE_COUNT, _fmt(Metrics.DEVICE_COUNT, self.device_count)))
+            if self.output_token_throughput_per_device is not None:
+                rows.append(
+                    (
+                        Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE,
+                        _fmt(Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE, self.output_token_throughput_per_device),
+                    )
+                )
+            if self.total_token_throughput_per_device is not None:
+                rows.append(
+                    (
+                        Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE,
+                        _fmt(Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE, self.total_token_throughput_per_device),
+                    )
+                )
         if self.input_token_throughput:
             rows.append(
                 (Metrics.INPUT_TOKEN_THROUGHPUT, _fmt(Metrics.INPUT_TOKEN_THROUGHPUT, self.input_token_throughput))

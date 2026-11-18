@@ -357,6 +357,21 @@ def build_summary_items(
         extra = [
             ('Output Tok Throughput (tok/s)', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput)),
             ('Total Tok Throughput (tok/s)', _cell(Metrics.TOTAL_TOKEN_THROUGHPUT, s.total_token_throughput)),
+            *(
+                [
+                    ('Device Count', _cell(Metrics.DEVICE_COUNT, s.device_count)),
+                    (
+                        'Output Throughput per Device (tok/s)',
+                        _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE, s.output_token_throughput_per_device),
+                    ),
+                    (
+                        'Total Throughput per Device (tok/s)',
+                        _cell(Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE, s.total_token_throughput_per_device),
+                    ),
+                ]
+                if s.device_count is not None
+                else []
+            ),
             ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
             ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
             ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),

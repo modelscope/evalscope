@@ -110,6 +110,9 @@ class Arguments(BaseArgument):
     parallel: Union[int, List[int]] = 1
     """Number of parallel requests."""
 
+    device_count: Optional[int] = None
+    """Total number of inference devices serving the endpoint (TP * PP * replicas)."""
+
     rate: Union[float, List[float]] = -1
     """Rate limit for requests per second (default: -1, no limit). Supports a list of values for multi-run sweeps in open-loop mode."""
 
@@ -529,6 +532,13 @@ class Arguments(BaseArgument):
             raise ValueError('--num-workers must be >= 0')
         return v
 
+    @field_validator('device_count', mode='after')
+    @classmethod
+    def _validate_device_count(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError('--device-count must be >= 1')
+        return v
+
     @field_validator('scenario', mode='before')
     @classmethod
     def _parse_scenario(cls, value: Any) -> Optional[AgentXScenario]:
@@ -836,6 +846,13 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument('-n', '--number', type=int, default=None, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
+    parser.add_argument(
+        '--device-count',
+        type=int,
+        default=None,
+        help='Total number of inference devices serving the endpoint (TP * PP * replicas). '
+             'When declared, records Device Count and reports per-device throughputs derived from aggregate throughputs.',
+    )
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
                         help='Number of requests per second. default -1 means no rate limit. '
                              'Accepts multiple values for open-loop multi-run sweeps, e.g. --rate 5 10 20')  # noqa: E501

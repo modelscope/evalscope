@@ -77,6 +77,18 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='perf.throughput.tokens_per_second',
         metric_name=Metrics.TOTAL_TOKEN_THROUGHPUT,
     ),
+    Metrics.DEVICE_COUNT: MetricEntry(
+        baseline='diagnostic.count.items',
+        metric_name=Metrics.DEVICE_COUNT,
+    ),
+    Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE: MetricEntry(
+        baseline='perf.throughput.tokens_per_second',
+        metric_name=Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE,
+    ),
+    Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE: MetricEntry(
+        baseline='perf.throughput.tokens_per_second',
+        metric_name=Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE,
+    ),
     Metrics.INPUT_TOKEN_THROUGHPUT: MetricEntry(
         baseline='perf.throughput.tokens_per_second',
         metric_name=Metrics.INPUT_TOKEN_THROUGHPUT,
