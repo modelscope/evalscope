@@ -343,6 +343,53 @@ def run_prereq_inference(
             entry.pop('_group_scenario', None)
             entry.pop('_scenario_idx', None)
 
+    _warn_on_empty_memory_snapshots(groups, model_result_dir, logger)
+
+
+def _warn_on_empty_memory_snapshots(
+    groups: Dict[Tuple[str, str], List[Dict[str, Any]]],
+    model_result_dir: Path,
+    logger: Any,
+) -> None:
+    """Warn when prereq inference produced missing or empty memory snapshots.
+
+    Memory categories score by checking whether the model's final text message
+    contains the memorized facts, so a missing or empty snapshot guarantees a 0
+    for every memory entry while all other categories still score normally —
+    with no other diagnostic (#1100). The usual cause is the model never making
+    a memory API call during prereq, e.g. its FC responses not being parsed by
+    the serving endpoint.
+    """
+    from bfcl_eval.utils import get_directory_structure_by_id
+
+    for (backend, scenario), group_entries in sorted(groups.items()):
+        snapshot_file = (
+            model_result_dir
+            / get_directory_structure_by_id(group_entries[0]['id'])
+            / 'memory_snapshot'
+            / f'{scenario}_final.json'
+        )
+        if not snapshot_file.exists():
+            logger.warning(
+                f'BFCL memory prereq produced no snapshot for {backend}/{scenario} '
+                f'({snapshot_file}). Memory entries for this scenario will start with empty '
+                'memory, so they will score 0 regardless of the model answers.'
+            )
+            continue
+        try:
+            snapshot = json.loads(snapshot_file.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning(f'BFCL memory prereq snapshot for {backend}/{scenario} is unreadable: {e}')
+            continue
+        n_entries = len(snapshot.get('core_memory') or []) + len(snapshot.get('archival_memory') or [])
+        if n_entries == 0:
+            logger.warning(
+                f'BFCL memory prereq snapshot for {backend}/{scenario} contains no memory entries '
+                '(core_memory and archival_memory are both empty). The model most likely never made a '
+                'memory API call during prereq — check how the serving endpoint returns tool calls. '
+                'Memory categories will score 0 regardless of the model answers.'
+            )
+
 
 # ----------------------------
 # Visualization helpers
