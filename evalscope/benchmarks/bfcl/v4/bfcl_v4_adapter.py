@@ -1,6 +1,5 @@
 import json
 import os
-import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -73,7 +72,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 - Primary metric: **Accuracy** per category
 - Configure `is_fc_model` based on model capabilities
 - Memory tasks prepare the scenarios required by the selected samples. An empty memory snapshot is logged as a warning
-- Optional: Set `SERPAPI_API_KEY` for web search tasks
+- Web search requires a valid `SERPAPI_API_KEY`. To evaluate without a key, omit `web_search_base` and `web_search_no_snippet` from `subset_list`
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)
 """,
         dataset_id='https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard',
@@ -93,7 +92,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
             },
             'SERPAPI_API_KEY': {
                 'type': 'str | null',
-                'description': 'SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.',
+                'description': 'SerpAPI key for web search. If unset, BFCL reads the SERPAPI_API_KEY environment variable.',
                 'value': None,
             },
         },
@@ -223,47 +222,29 @@ class BFCLV4Adapter(AgentAdapter):
         self.prereq_finished = True
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
-        try:
-            self._init_handler()
-            self._prereq_inference()
-            category = sample.metadata['category']
-            scenario = sample.metadata.get('scenario')
-            if (category.removeprefix('memory_'), scenario) in self.prereq_failures:
-                raise RuntimeError(f'BFCL memory prerequisites did not complete for {category}/{scenario}')
+        self._init_handler()
+        self._prereq_inference()
+        category = sample.metadata['category']
+        scenario = sample.metadata.get('scenario')
+        if (category.removeprefix('memory_'), scenario) in self.prereq_failures:
+            raise RuntimeError(f'BFCL memory prerequisites did not complete for {category}/{scenario}')
 
-            result, metadata = run_isolated_inference(
-                self.handler, sample.metadata, include_input_log=False, exclude_state_log=True
-            )
+        result, metadata = run_isolated_inference(
+            self.handler, sample.metadata, include_input_log=False, exclude_state_log=True
+        )
 
-            output = ModelOutput.from_content(
-                model=model.name,
-                content=json.dumps(result),
-            )
-            agent_messages = synthesize_agent_messages(
-                prompt_entry=sample.metadata,
-                model_result=result,
-                is_fc_model=self.is_fc_model,
-                inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
-            )
-            self._attach_perf_metrics(output, agent_messages, metadata)
-            return InferenceResult(output=output, messages=agent_messages or None)
-        except Exception as e:
-            # This is usually the case when the model getting stuck on one particular test case.
-            # For example, timeout error or FC model returning invalid JSON response.
-            # Since temperature is already set to 0.001, retrying the same test case will not help.
-            # So we continue the generation process and record the error message as the model response
-            logger.error(f'Error during inference for sample ID {sample.metadata.get("id")}: {e}')
-            logger.error(traceback.format_exc())
-
-            return ModelOutput.from_content(
-                model=model.name,
-                content=json.dumps(
-                    {
-                        'error': str(e),
-                        'error_message': traceback.format_exc(),
-                    }
-                ),
-            )
+        output = ModelOutput.from_content(
+            model=model.name,
+            content=json.dumps(result),
+        )
+        agent_messages = synthesize_agent_messages(
+            prompt_entry=sample.metadata,
+            model_result=result,
+            is_fc_model=self.is_fc_model,
+            inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
+        )
+        self._attach_perf_metrics(output, agent_messages, metadata)
+        return InferenceResult(output=output, messages=agent_messages or None)
 
     @staticmethod
     def _attach_perf_metrics(output: ModelOutput, agent_messages, metadata) -> None:

@@ -26,7 +26,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 - Primary metric: **Accuracy** per category
 - Configure `is_fc_model` based on model capabilities
 - Memory tasks prepare the scenarios required by the selected samples. An empty memory snapshot is logged as a warning
-- Optional: Set `SERPAPI_API_KEY` for web search tasks
+- Web search requires a valid `SERPAPI_API_KEY`. To evaluate without a key, omit `web_search_base` and `web_search_no_snippet` from `subset_list`
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)
 
 
@@ -86,7 +86,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 {
   "input": [
     {
-      "id": "e96476fe",
+      "id": "9f29fc22",
       "content": "[[{\"role\": \"user\", \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"}]]"
     }
   ],
@@ -142,7 +142,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 |-----------|------|---------|-------------|
 | `underscore_to_dot` | `bool` | `True` | Convert underscores to dots in function names for evaluation. |
 | `is_fc_model` | `bool` | `True` | Indicates the evaluated model natively supports function calling. |
-| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI key enabling web-search capability in BFCL V4. Null disables web search. |
+| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI key for web search. If unset, BFCL reads the SERPAPI_API_KEY environment variable. |
 
 ## Usage
 

@@ -3,30 +3,30 @@
 
 ## 概述
 
-BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测试，用于评估大语言模型（LLM）的智能体函数调用能力。它测试网络搜索、内存操作和格式敏感性，作为智能体应用的基础构建模块。
+BFCL-v4（伯克利函数调用排行榜 V4）是一个综合基准测试，用于评估大语言模型（LLM）的智能体函数调用能力。它测试了作为智能体应用构建模块的网络搜索、内存操作和格式敏感性。
 
 ## 任务描述
 
 - **任务类型**：智能体函数调用评估
-- **输入**：需要调用函数进行网络搜索、内存操作等的场景
+- **输入**：需要函数调用的场景，如网络搜索、内存操作等
 - **输出**：带有参数的函数调用以及智能体任务的最终答案
 - **能力**：网络搜索、内存读写、格式处理
 
 ## 主要特点
 
-- 整体性的智能体评估框架
-- 测试 LLM 智能体的基础构建模块（搜索、内存、格式化）
-- 提供多种评分类别以进行详细分析
+- 全面的智能体评估框架
+- 测试 LLM 智能体的构建模块（搜索、内存、格式化）
+- 提供多个评分类别以进行详细分析
 - 支持 FC 模型和非 FC 模型
 - 可选的网络搜索功能，集成 SerpAPI
 
 ## 评估说明
 
 - **安装要求**：`pip install 'evalscope[bfcl]'`，需配合 `bfcl-eval==2026.3.23`
-- 主要指标：**准确率**（按类别统计）
+- 主要指标：**Accuracy**（按类别统计）
 - 根据模型能力配置 `is_fc_model`
-- 内存任务会准备所选样本所需的场景。如果内存快照为空，将记录警告日志
-- 可选：为网络搜索任务设置 `SERPAPI_API_KEY`
+- 内存任务会准备所选样本所需的场景。如果内存快照为空，将记录警告
+- 网络搜索需要有效的 `SERPAPI_API_KEY`。若要在没有密钥的情况下进行评估，请从 `subset_list` 中省略 `web_search_base` 和 `web_search_no_snippet`
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v4.html)
 
 
@@ -49,9 +49,9 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 |--------|-------|
 | 总样本数 | 5,106 |
 | 提示词长度（平均值） | 348.78 字符 |
-| 提示词长度（最小/最大） | 36 / 10805 字符 |
+| 提示词长度（最小/最大值） | 36 / 10805 字符 |
 
-**各子集统计信息：**
+**各子集统计：**
 
 | 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
@@ -86,7 +86,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 {
   "input": [
     {
-      "id": "e96476fe",
+      "id": "9f29fc22",
       "content": "[[{\"role\": \"user\", \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"}]]"
     }
   ],
@@ -142,7 +142,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 |-----------|------|---------|-------------|
 | `underscore_to_dot` | `bool` | `True` | 在评估过程中将函数名中的下划线转换为点号。 |
 | `is_fc_model` | `bool` | `True` | 指示被评估的模型原生支持函数调用。 |
-| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI 密钥，用于启用 BFCL V4 中的网络搜索功能。设置为 Null 则禁用网络搜索。 |
+| `SERPAPI_API_KEY` | `str \| null` | `None` | 用于网络搜索的 SerpAPI 密钥。如果未设置，BFCL 将读取环境变量 SERPAPI_API_KEY。 |
 
 ## 使用方法
 

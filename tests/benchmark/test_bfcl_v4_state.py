@@ -19,9 +19,9 @@ pytest.importorskip('bfcl_eval')
 
 from bfcl_eval.eval_checker.multi_turn_eval import multi_turn_utils
 from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
-from bfcl_eval.utils import load_dataset_entry, load_ground_truth_entry
+from bfcl_eval.utils import is_memory_prereq, load_dataset_entry, load_ground_truth_entry
 
-from evalscope import TaskConfig
+from evalscope import TaskConfig, run_task
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.bfcl.v4 import utils as bfcl_utils
@@ -380,6 +380,49 @@ def test_failed_memory_prerequisite_blocks_later_steps(tmp_path: Path, monkeypat
     failures = bfcl_utils.run_prereq_inference(None, entries, tmp_path, 1, logging.getLogger(__name__))
     assert failures == {('kv', 'student')}
     assert calls == [entries[0]['id']]
+
+
+def test_resume_retries_memory_sample_after_prerequisite_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    subset = 'memory_kv'
+    answer = load_ground_truth_entry(subset)[0]['ground_truth'][0]
+    calls: list[str] = []
+
+    def scripted_inference(handler: Any, entry: dict[str, Any], include_input_log: bool,
+                           exclude_state_log: bool) -> tuple[list, dict]:
+        entry_id = entry['id']
+        calls.append(entry_id)
+        if len(calls) == 1:
+            raise TimeoutError('scripted prerequisite timeout')
+        _, instances = multi_turn_utils.execute_multi_turn_func_call(
+            [], entry['initial_config'], entry['involved_classes'], handler.model_name_underline_replaced, entry_id,
+        )
+        memory = instances['MemoryAPI_kv']
+        if is_memory_prereq(entry_id):
+            if not memory.core_memory:
+                memory.core_memory_add('answer', answer)
+            memory._flush_memory_to_local_file()
+            return [], {}
+        return [[memory.core_memory['answer']]], {}
+
+    monkeypatch.setattr(OpenAICompletionsHandler, 'inference', scripted_inference)
+    config = TaskConfig(
+        model='scripted', api_url='http://127.0.0.1:9/v1', api_key='test-key', eval_type='openai_api',
+        datasets=['bfcl_v4'], dataset_args={'bfcl_v4': {'subset_list': [subset]}}, limit=1, eval_batch_size=1,
+        work_dir=str(tmp_path), no_timestamp=True, ignore_errors=True, analysis_report=False,
+        enable_progress_tracker=False,
+    )
+    run_task(config)
+    assert len(calls) == 1 and is_memory_prereq(calls[0])
+    name = f'bfcl_v4_{subset}.jsonl'
+    assert not list((tmp_path / 'predictions').rglob(name))
+
+    run_task(config.model_copy(deep=True, update={'use_cache': str(tmp_path)}))
+    assert calls[0] == calls[1]
+    assert not is_memory_prereq(calls[-1])
+    assert len(next((tmp_path / 'predictions').rglob(name)).read_text().splitlines()) == 1
+    score = json.loads(next((tmp_path / 'reviews').rglob(name)).read_text())['sample_score']['score']
+    assert score['status'] == ScoreStatus.SUCCESS
+    assert score['value'] == {'acc': 1}
 
 
 def test_recorded_inference_error_is_excluded_from_accuracy() -> None:

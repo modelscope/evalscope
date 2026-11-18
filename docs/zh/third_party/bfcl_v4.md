@@ -51,7 +51,7 @@ SUBSET_LIST = [
 ```{important}
 在使用该评测基准时请注意以下几点：
 - `live_relevance` 任务不计入最终得分。
-- 评测网络搜索（Web Search）任务时，请确保在环境变量中设置 `SERPAPI_API_KEY`，以便访问 [SerpAPI](https://serpapi.com/dashboard) 服务，并确保有充足的调用额度，否则评测结果可能都为0。
+- 网络搜索任务需要有效且额度充足的 [SerpAPI](https://serpapi.com/dashboard) 密钥 `SERPAPI_API_KEY`。没有密钥时，请显式指定 `subset_list` 并排除 `web_search_base` 和 `web_search_no_snippet`。这两个子集默认都会入选，即使未配置密钥。
 - 评测记忆任务前，会先填充入选样本所依赖的场景。如果快照为空，请检查写入记忆的工具调用是否成功，并确认 FC 模式下服务端返回了结构化工具调用。
 - `memory_vector` 首次运行时会从 Hugging Face Hub 下载嵌入模型。在 macOS 上，每条样本的 FAISS 操作使用一个原生线程，以避免与 PyTorch 的 OpenMP 运行时冲突。API 请求仍可并发执行。
 ```

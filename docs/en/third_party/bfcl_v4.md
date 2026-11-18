@@ -51,7 +51,7 @@ SUBSET_LIST = [
 ```{important}
 Please note the following when using this evaluation benchmark:
 - The `live_relevance` task is not included in the final score.
-- When evaluating Web Search tasks, please ensure that `SERPAPI_API_KEY` is set in the environment variables to access the [SerpAPI](https://serpapi.com/dashboard) service, and make sure you have sufficient call credits, otherwise the evaluation results may be all zeros.
+- Web Search tasks require a valid `SERPAPI_API_KEY` with available [SerpAPI](https://serpapi.com/dashboard) credits. To evaluate without a key, explicitly omit `web_search_base` and `web_search_no_snippet` from `subset_list`. Both subsets are included by default, even when the key is missing.
 - Memory tasks first populate the memory for the scenarios required by the selected samples. If a snapshot is empty, look for failed memory-write calls and check that the endpoint returns structured tool calls in FC mode.
 - `memory_vector` downloads its embedding model from Hugging Face Hub on first use. On macOS, FAISS uses one native thread per rollout to avoid an OpenMP conflict with PyTorch. API requests can still run concurrently.
 ```
