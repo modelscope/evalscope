@@ -1,7 +1,7 @@
 """Analysis entry points: per-sample analysis and provider resolution."""
 
 from functools import lru_cache
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import AbstractSet, Dict, Iterable, List, Optional, Tuple
 
 from evalscope.api.analysis import (
     INFORMATIONAL_CATEGORIES,
@@ -71,6 +71,7 @@ def analyze_sample(
     config: TraceAnalysisConfig,
     rules: Optional[CompiledRules] = None,
     metric_directions: Optional[Dict[str, str]] = None,
+    correctness_metrics: AbstractSet[str] = frozenset(),
 ) -> FailureCase:
     """Analyze one review row; every sample gets a case, including successful ones."""
     rules = rules or CompiledRules.from_config(config)
@@ -82,7 +83,7 @@ def analyze_sample(
     for finding in findings:
         finding.call_ids = [calls[p] for p in finding.positions if calls.get(p)]
     apply_attribution(findings, rules)
-    outcome = resolve_outcome(view, signals, config, findings, metric_directions)
+    outcome = resolve_outcome(view, signals, config, findings, metric_directions, correctness_metrics)
     if outcome.task_success is False and all(f.category in INFORMATIONAL_CATEGORIES for f in findings):
         # A failed benchmark result alone does not establish abnormal termination or its cause.
         outcome_finding = Finding(
@@ -110,11 +111,14 @@ def analyze_records(
     records: Iterable[Tuple[SampleRef, ReviewResult]],
     config: Optional[TraceAnalysisConfig] = None,
     metric_directions: Optional[Dict[str, str]] = None,
+    correctness_metrics: AbstractSet[str] = frozenset(),
 ) -> List[FailureCase]:
     """Analyze review rows with one compiled rule set per batch."""
     config = config or TraceAnalysisConfig()
     rules = CompiledRules.from_config(config)
-    return [analyze_sample(record, ref, config, rules, metric_directions) for ref, record in records]
+    return [
+        analyze_sample(record, ref, config, rules, metric_directions, correctness_metrics) for ref, record in records
+    ]
 
 
 __all__ = ['analyze_records', 'analyze_sample', 'resolve_provider']

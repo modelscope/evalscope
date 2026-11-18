@@ -38,6 +38,8 @@ The Python entry points `evalscope.analysis.diagnose_run()` and `diagnose_benchm
 
 ## Reading the results
 
+Diagnostics read saved evaluation records without requiring a benchmark adapter. A mean metric declared as accuracy or exact match can provide binary outcomes even if its score key uses a different name. Optional benchmark providers add benchmark-specific signals such as a safety verdict; they are not required for basic analysis.
+
 Reports use three tabs: **Results → Diagnosis → Samples**. The shared dataset navigator shows each dataset’s metric, score and sample count. Switching tabs preserves the dataset; switching datasets clears old subset, diagnostic filters and sample selection. Narrow screens use a dataset dropdown. Token counts use compact K/M notation with exact values in tooltips. Latency/token details and task configuration are expanded by default and can be collapsed.
 
 The **Diagnosis** tab starts with failed tasks and their known-outcome denominator. Open an issue to inspect its samples alongside the list. Unscored samples, unknown outcomes, and execution errors without records are shown separately. Analysis information shows the scope and, for model analysis, usage and citation checks.

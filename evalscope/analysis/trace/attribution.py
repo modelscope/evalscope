@@ -1,7 +1,7 @@
 """Per-finding attribution and sample outcomes."""
 
 import re
-from typing import Dict, List, Optional, Pattern, Tuple
+from typing import AbstractSet, Dict, List, Optional, Pattern, Tuple
 
 from evalscope.api.analysis import (
     INFORMATIONAL_CATEGORIES,
@@ -118,6 +118,7 @@ def resolve_outcome(
     config: TraceAnalysisConfig,
     findings: List[Finding],
     metric_directions: Optional[Dict[str, str]] = None,
+    correctness_metrics: AbstractSet[str] = frozenset(),
 ) -> Outcome:
     """Use provider outcomes, explicit thresholds, then the main score's binary fallback."""
     refused = any(f.category == FindingCategory.REFUSAL for f in findings)
@@ -145,7 +146,9 @@ def resolve_outcome(
         value, threshold = view.score_value[metric], thresholds[metric]
         outcome.task_success = value <= threshold if direction == 'lower_is_better' else value >= threshold
         outcome.source = 'threshold'
-    elif not thresholds and main in {'accuracy', 'acc', 'exact_match', 'em', 'is_correct'}:
+    elif not thresholds and (
+        main in correctness_metrics or main in {'accuracy', 'acc', 'exact_match', 'em', 'is_correct'}
+    ):
         value = view.score_value.get(main)
         if value in (0.0, 1.0):
             outcome.task_success = value == (0.0 if direction == 'lower_is_better' else 1.0)

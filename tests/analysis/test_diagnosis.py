@@ -335,6 +335,36 @@ def test_binary_primary_and_continuous_secondary_keep_the_failure_population(mak
     assert report.coverage.task_failed == report.coverage.task_success_known == 1
 
 
+@pytest.mark.parametrize('semantic_id,known', [
+    ('quality.accuracy.ratio', 2),
+    ('quality.exact_match.ratio', 2),
+    ('quality.score.ratio', 0),
+    ('quality.pass_at_k.ratio', 0),
+])
+def test_custom_score_name_uses_report_correctness_semantics(make_run: Callable, semantic_id: str, known: int) -> None:
+    rows = [review(index) for index in range(3)]
+    for row, value in zip(rows, (0, 1, 0.5)):
+        row.sample_score.score.value = {'custom_result': value}
+    root = make_run(rows=rows)
+    path = root / 'reports/m/demo.json'
+    report = json.loads(path.read_text())
+    report['metrics'] = [{
+        'identity': {'name': 'custom_result', 'aggregation': 'mean'},
+        'semantics': {
+            'semantic_id': semantic_id,
+            'metric_name': 'Custom result',
+            'kind': 'quality',
+            'direction': 'higher_is_better',
+        },
+    }]
+    path.write_text(json.dumps(report))
+
+    result = diagnose_benchmark(str(root), 'm', 'demo', config())
+    assert result.coverage.task_success_known == known
+    assert result.coverage.task_failed == known // 2
+    assert result.coverage.outcome_unknown == 3 - known
+
+
 def test_no_reviews_retains_execution_errors_without_fabricating_zero_scores(make_run: Callable) -> None:
     root = make_run(rows=[])
     path = root / 'reports/m/demo.json'
