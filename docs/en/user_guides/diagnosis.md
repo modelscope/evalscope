@@ -106,7 +106,9 @@ Evidence has two separate checks:
   annotation and review are still required. If any submitted citation fails, the sample proposal is
   withheld as a whole. Explicit scoring exclusion reasons and execution errors are shown directly
   from the record (with secrets redacted) in either mode. These samples do not use the model or take
-  a sample budget slot. If there are no eligible samples, no model summary is requested.
+  a sample budget slot. Default failed-task selection also skips samples whose only recorded issue is
+  a generation budget stop. Use an explicit sample selection or `scope='all'` to investigate those further.
+  A model summary is requested only when at least one usable sample proposal can be included; rule facts are already in the report.
   Failed requests, invalid formats and low confidence also prevent proposals from being used. Official scores and reference answers remain unchanged;
   suspected reference errors are only marked for review.
 

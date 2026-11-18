@@ -28,7 +28,7 @@ from .inputs import has_nontext_output, is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact
 from .trace.reader import discover_runs, iter_report_pairs
 
-ANALYZER_VERSION = '3.4.3'
+ANALYZER_VERSION = '3.4.4'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -322,10 +322,7 @@ def _diagnose_benchmark(
         for sample in samples
     )
     if config.level == 'diagnose':
-        if coverage.selected:
-            summarize(report, samples, config, target, force, _atomic_write)
-        else:
-            report.narrative_status = 'no_findings'
+        summarize(report, samples, config, target, force, _atomic_write)
         report.limitations += [
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
             'Model hypotheses describe only the selected samples; no population cause estimates are made.',

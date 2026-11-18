@@ -54,7 +54,14 @@ def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig)
         matches = (
             (sample.key.subset, sample.key.index) in requested if requested is not None else eligible[config.scope]
         )
-        if matches and not sample.recorded_error:
+        recorded_text_stop = (
+            requested is None
+            and config.scope == 'failed'
+            and sample.stop_reason in ('length', 'max_tokens', 'model_length')
+            and sample.observed_types == ['truncated']
+            and not sample.has_risk
+        )
+        if matches and not sample.recorded_error and not recorded_text_stop:
             groups[sample.key.subset].append(sample)
     population = sum(map(len, groups.values()))
     budget = population if config.max_diagnosed_samples is None else min(config.max_diagnosed_samples, population)
@@ -435,6 +442,9 @@ def summarize(
     for sample in samples:
         if sample.llm_status == 'ok' and sample.llm is not None:
             groups[sample.llm.failure_type].append(sample)
+    if not groups:
+        report.narrative_status = 'no_findings'
+        return
     payload = {
         'facts': sources,
         'sample_hypotheses': hypotheses,
@@ -498,7 +508,7 @@ def summarize(
             f'Summary considered {considered} valid sample hypotheses by type; '
             f'{len(hypotheses)} representative explanations fit the input budget.'
         )
-    if not ids:
+    if not hypotheses:
         report.narrative_status = 'no_findings'
         return
     prompt = (
@@ -508,6 +518,7 @@ def summarize(
         'Write plain language for an evaluation user; omit internal field names, diagnostic bookkeeping and '
         'inapplicable statistics. '
         'When supplied, describe sample_hypotheses as model proposals awaiting review and cite their refs. '
+        'Do not repeat standalone report statistics; use facts only to contextualize a sample hypothesis. '
         'Do not strengthen a proposal or fill in missing facts. An execution error does not establish answer correctness; '
         'an unavailable score does not establish a task failure or its cause. '
         'inspected_hypotheses counts ALL usable proposals by primary type within the inspected scope, '

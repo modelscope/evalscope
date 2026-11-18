@@ -100,6 +100,21 @@ def fake_model(monkeypatch: pytest.MonkeyPatch,reply: Callable, calls: list) -> 
     monkeypatch.setattr('evalscope.analysis.llm.get_model',lambda *a,**kw:FakeModel())
 
 
+def test_default_selection_skips_only_recorded_stops_with_no_other_issue() -> None:
+    stopped, estimated, other, extraction, risk = [sample(i) for i in range(5)]
+    stopped.stop_reason = other.stop_reason = risk.stop_reason = 'max_tokens'
+    stopped.observed_types = estimated.observed_types = risk.observed_types = ['truncated']
+    risk.safety_violation = True
+    other.observed_types = ['tool_error', 'truncated']
+    extraction.observed_types = ['extraction_failure']
+    rows = [stopped, estimated, other, extraction, risk]
+
+    selected, population = select_samples(rows, options())
+    assert population == 4 and {row.key.index for row in selected} == {1, 2, 3, 4}
+    assert select_samples(rows, options(samples=[stopped.key])) == ([stopped], 1)
+    assert select_samples(rows, options(scope='all'))[1] == 5
+
+
 def test_model_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
     root=make_run()
     original=(root/'reviews/m/demo_default.jsonl').read_bytes()
@@ -162,10 +177,7 @@ def test_partial_sample_references_do_not_promote_an_explanation(
     calls = []
 
     def reply(prompt: str, count: int) -> str:
-        if 'Summarize evaluation' in prompt:
-            payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
-            assert not payload['sample_hypotheses']
-            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+        assert 'Summarize evaluation' not in prompt
         result = verdict()
         result.evidence.append(EvidenceReference(source_id='score', quote='A reason absent from the score record.'))
         return result.model_dump_json()
@@ -178,7 +190,7 @@ def test_partial_sample_references_do_not_promote_an_explanation(
     assert row.evidence_errors == ['quote_missing_or_ambiguous']
     assert report.coverage.diagnosed_ok == 0
     assert (report.coverage.citations_valid, report.coverage.citations_total) == (1, 2)
-    assert len(calls) == 2
+    assert len(calls) == 1 and report.narrative_status == 'no_findings'
 
 
 @pytest.mark.parametrize('unscored', [True, False])
@@ -680,7 +692,7 @@ def test_unknown_continuous_outcomes_are_not_silently_counted_as_failure_candida
     assert 'selection-outcome-unknown' in report.coverage.skipped_facts
 
 
-def test_low_rate_failures_remain_summary_sources_without_valid_model_hypotheses(
+def test_low_rate_failures_remain_available_to_contextualize_a_hypothesis(
     make_run: Callable, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from evalscope.analysis.llm import summarize
@@ -692,11 +704,14 @@ def test_low_rate_failures_remain_summary_sources_without_valid_model_hypotheses
         'findings': [{'text': 'One of fifty tasks did not pass; its cause remains unverified.', 'refs': ['F-task-failure']}],
         'recommendations': [], 'limitations': [],
     }), calls)
-    summarize(report, [], options(), root, False, lambda *a: None)
+    row = sample(0)
+    row.llm = verdict()
+    row.llm_status = 'ok'
+    summarize(report, [row], options(), root, False, lambda *a: None)
     payload, _ = json.JSONDecoder().raw_decode(calls[0][calls[0].index('{"facts":'):])
     fact = next(f for f in payload['facts'] if f['id'] == 'F-task-failure')
     assert fact['numerator'] == 1 and fact['denominator'] == 50
-    assert payload['sample_hypotheses'] == [] and report.narrative_status == 'ok'
+    assert len(payload['sample_hypotheses']) == 1 and report.narrative_status == 'ok'
 
 
 @pytest.mark.parametrize('fixture', ['gsm8k_invalid_type.txt', 'gsm8k_invalid_json.txt'])
