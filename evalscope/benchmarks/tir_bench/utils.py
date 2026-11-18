@@ -25,7 +25,7 @@ _DECLARATION_RE = re.compile(
     r'(?:^|(?<=[.!?])[ \t]+)[ \t]*(?:(?:on reflection|therefore|so)[, \t]+)?'
     r'(?:(?:(?:the|my) )?(?:(?:correct|final) )?(?:answer|option|choice) is[ \t]+'
     r'|answer[ \t]*-[ \t]*|答案[ \t]*[是为：:][ \t]*'
-    r'|option[ \t]+([A-J])(?=[ \t]+matches\b))',
+    r'|option[ \t]+([A-J])(?=[ \t]+matches the (?:needle position|reading)[ \t]*(?:[.!。](?:[ \t]|$)|$)))',
     re.IGNORECASE | re.MULTILINE,
 )
 

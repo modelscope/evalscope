@@ -54,6 +54,8 @@ def test_explicit_single_choice_is_scored(prediction: str, target: str) -> None:
         ('I ruled out option B.', 'B'),
         ('I ruled out option B. I cannot determine the reading.', 'B'),
         ('Option B is wrong.', 'B'),
+        ('Option B matches none of the readings. I cannot tell.', 'B'),
+        ('Option B matches the wrong scale. I cannot tell.', 'B'),
         ('I do not think the answer is B.', 'B'),
         ('I ruled out option B. My final choice is H.', 'B'),
         ('Answer: C or B', 'C'),
