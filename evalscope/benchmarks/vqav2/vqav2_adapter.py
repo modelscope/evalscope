@@ -1,6 +1,5 @@
 import json
 import re
-import string
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -12,6 +11,8 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
+from .answer_normalization import normalize_annotated_answer, normalize_exact_answer
+
 logger = get_logger()
 
 PROMPT_TEMPLATE = """Answer the question according to the image using a short phrase.
@@ -19,34 +20,6 @@ PROMPT_TEMPLATE = """Answer the question according to the image using a short ph
 The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes)."""
 
 _ANSWER_PATTERN = re.compile(r'ANSWER:\s*(.*)', flags=re.IGNORECASE)
-_ARTICLES = {'a', 'an', 'the'}
-_NUMBER_MAP = {
-    'none': '0',
-    'zero': '0',
-    'one': '1',
-    'two': '2',
-    'three': '3',
-    'four': '4',
-    'five': '5',
-    'six': '6',
-    'seven': '7',
-    'eight': '8',
-    'nine': '9',
-    'ten': '10',
-}
-
-
-def _normalize_vqa_answer(answer: str) -> str:
-    text = answer.lower().strip().replace('\n', ' ').replace('\t', ' ')
-    punctuation = string.punctuation.replace(':', '')
-    text = re.sub(r'(?<=\d),(?=\d)', '', text)
-    text = ''.join(' ' if c in punctuation else c for c in text)
-    words = []
-    for word in text.split():
-        mapped = _NUMBER_MAP.get(word, word)
-        if mapped not in _ARTICLES:
-            words.append(mapped)
-    return ' '.join(words)
 
 
 def _vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
@@ -54,20 +27,26 @@ def _vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
 
     This is the official VQA evaluation (vqaEval.py), where 3 matches out of 10 answers score 0.9, not 1.0.
     """
-    norm_pred = _normalize_vqa_answer(prediction)
-    if not norm_pred or not answers:
+    if not prediction.strip() or not answers:
         return 0.0
-    hits = [_normalize_vqa_answer(a) == norm_pred for a in answers]
+    if len(answers) == 1:
+        norm_pred = normalize_exact_answer(prediction)
+        return float(bool(norm_pred) and norm_pred == normalize_exact_answer(answers[0])) / 3.0
+
+    prediction = prediction.replace('\n', ' ').replace('\t', ' ').strip()
+    answers = [answer.replace('\n', ' ').replace('\t', ' ').strip() for answer in answers]
+    # The toolkit only applies punctuation, number and contraction rules when annotators disagree.
+    if len(set(answers)) > 1:
+        prediction = normalize_annotated_answer(prediction)
+        answers = [normalize_annotated_answer(answer) for answer in answers]
+    hits = [answer == prediction for answer in answers]
     matches = sum(hits)
-    if len(hits) == 1:
-        # Preserve legacy soft scoring for single-reference fallback inputs.
-        return matches / 3.0
     return sum(min(1.0, (matches - hit) / 3.0) for hit in hits) / len(hits)
 
 
 def _vqa_exact_match(prediction: str, answers: List[str]) -> float:
-    norm_pred = _normalize_vqa_answer(prediction)
-    return float(norm_pred in {_normalize_vqa_answer(a) for a in answers})
+    norm_pred = normalize_exact_answer(prediction)
+    return float(norm_pred in {normalize_exact_answer(a) for a in answers})
 
 
 def _ensure_answer_list(value: Any) -> List[str]:
@@ -119,7 +98,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
         primary_metric='vqa_score',
         eval_split='validation',
         prompt_template=PROMPT_TEMPLATE,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class VQAv2Adapter(VisionLanguageAdapter):
