@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import re
-import traceback
 import uuid
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from copy import copy, deepcopy
 from pathlib import Path
+from sys import platform
 from typing import Any, Dict, Iterator, List, Tuple
 
 from tqdm import tqdm
@@ -100,7 +100,7 @@ def _isolated_execution(entry: Dict[str, Any], *, evaluation: bool) -> Iterator[
     # The pinned harness caches all involved classes, including stateless ones,
     # under these exact names. Never clear another invocation's live instances.
     keys = [
-        re.sub(r'[-./]', '_', f'{model_name}_{entry["id"]}_{class_name}_instance')
+        re.sub(r'[-./:]', '_', f'{model_name}_{entry["id"]}_{class_name}_instance')
         for model_name in model_names
         for class_name in entry.get('involved_classes', [])
     ]
@@ -109,6 +109,21 @@ def _isolated_execution(entry: Dict[str, Any], *, evaluation: bool) -> Iterator[
     finally:
         for key in keys:
             vars(multi_turn_utils).pop(key, None)
+
+
+@contextmanager
+def _limit_vector_search_threads() -> Iterator[None]:
+    # Load the encoder before FAISS, as required by the upstream memory module.
+    from bfcl_eval.eval_checker.multi_turn_eval.func_source_code.memory_vector import faiss
+
+    # The PyTorch and FAISS wheels on macOS can load separate OpenMP runtimes.
+    # Keep FAISS single-threaded for this rollout without limiting the API call pool.
+    previous = faiss.omp_get_max_threads()
+    faiss.omp_set_num_threads(1)
+    try:
+        yield
+    finally:
+        faiss.omp_set_num_threads(previous)
 
 
 def run_isolated_inference(
@@ -128,7 +143,12 @@ def run_isolated_inference(
     # Only the backend instance name changes. The API model/client, registry and
     # memory snapshot paths retain their original identity on this shallow copy.
     isolated_handler = copy(handler)
-    with _isolated_execution(entry, evaluation=False) as namespace:
+    vector_search = (
+        _limit_vector_search_threads()
+        if (platform == 'darwin' and entry['id'].startswith('memory_vector_'))
+        else nullcontext()
+    )
+    with vector_search, _isolated_execution(entry, evaluation=False) as namespace:
         isolated_handler.model_name_underline_replaced = namespace
         return isolated_handler.inference(
             entry, include_input_log=include_input_log, exclude_state_log=exclude_state_log
@@ -144,9 +164,8 @@ def patch_openai_completions_handler_empty_tool_calls(handler_cls: type[Any]) ->
     ``tool_calls: []`` instead of omitting/nulling it for text-only completions, so the
     list comprehension over an empty list succeeds and silently produces
     ``model_responses == []``, discarding the model's real final answer. This has been
-    reported and fixed upstream (ShishirPatil/gorilla#1316, #1351) but is not yet
-    included in the ``bfcl-eval`` version this package pins, so we patch the method on
-    the handler class here.
+    reported upstream (ShishirPatil/gorilla#1316, #1351) and still occurs in
+    bfcl-eval 2026.3.23.
     """
 
     def _parse_query_response_FC(self, api_response):
@@ -254,94 +273,101 @@ def run_prereq_inference(
     model_result_dir: Path,
     batch_size: int,
     logger: Any,
-) -> None:
+) -> set[Tuple[str, str]]:
     """
     Run prerequisite inferences for memory snapshot creation if results are missing.
     Optimized to run different (backend, scenario) groups in parallel while preserving in-group order.
+    Return groups whose prerequisite chain could not complete.
     """
-    import re
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     from bfcl_eval.utils import get_directory_structure_by_id
 
     if not prereq_entries:
-        return
+        return set()
 
-    def _parse_backend_scenario_idx(entry_id: str) -> Tuple[str, str, int]:
-        """
-        Extract backend, scenario, and scenario index from an entry id.
-        Expected format:
-          memory_{backend}_prereq_{total_index}-{scenario}-{scenario_index}
-        Returns ('unknown', 'unknown', 0) on failure.
-        """
-        backend = 'unknown'
-        scenario = 'unknown'
-        idx = 0
-
-        m_backend = re.search(r'^memory_(?P<backend>.+?)_prereq_', entry_id)
-        if m_backend:
-            backend = m_backend.group('backend')
-
-        m_tail = re.search(r'-(?P<scenario>[a-zA-Z_]+)-(?P<idx>\d+)$', entry_id)
-        if m_tail:
-            scenario = m_tail.group('scenario')
-            idx = int(m_tail.group('idx'))
-
-        return backend, scenario, idx
-
-    # Group entries by (backend, scenario)
-    groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+    groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
     for entry in prereq_entries:
-        backend, scenario, idx = _parse_backend_scenario_idx(entry['id'])
-        entry['_group_backend'] = backend
-        entry['_group_scenario'] = scenario
-        entry['_scenario_idx'] = idx
-        groups.setdefault((backend, scenario), []).append(entry)
+        prefix, scenario, _ = entry['id'].rsplit('-', 2)
+        backend = prefix.removeprefix('memory_').split('_prereq_', 1)[0]
+        groups[backend, scenario].append(entry)
 
-    # Sort entries within each group by scenario index to keep order
-    for group_entries in groups.values():
-        group_entries.sort(key=lambda e: e.get('_scenario_idx', 0))
-
-    # Worker to process a single (backend, scenario) group sequentially
-    def _process_group_entries(group_entries: List[Dict[str, Any]], progress: Any) -> None:
-        for entry in group_entries:
+    def _process_group(backend: str, scenario: str, entries: List[Dict[str, Any]], progress: Any) -> bool:
+        entries.sort(key=lambda entry: int(entry['id'].rsplit('-', 1)[1]))
+        folder = model_result_dir / get_directory_structure_by_id(entries[0]['id']) / 'memory_snapshot'
+        snapshot_path = folder / f'{scenario}_final.json'
+        checkpoints = folder / 'prereq_checkpoints'
+        resume = _memory_resume_index(snapshot_path, checkpoints, backend, entries)
+        progress.update(resume)
+        for entry in entries[resume:]:
             try:
-                memory_snapshot_folder = (
-                    model_result_dir
-                    / get_directory_structure_by_id(entry['id'])
-                    / 'memory_snapshot'
-                    / 'prereq_checkpoints'
-                )
-                existing_filenames = {f.name for f in memory_snapshot_folder.rglob('*.json')}
-                if (entry['id'] + '.json') in existing_filenames:
-                    logger.info(f'Skipping prereq inference for entry ID {entry["id"]} as result already exists.')
-                else:
-                    run_isolated_inference(handler, entry, include_input_log=False, exclude_state_log=False)
-            except Exception as e:
-                logger.error(f'Error during prereq inference for entry ID {entry.get("id")}: {e}')
-                logger.error(traceback.format_exc())
+                run_isolated_inference(handler, entry, include_input_log=False, exclude_state_log=False)
+            except Exception:
+                logger.exception(f'BFCL memory prerequisite {entry["id"]} failed. Later entries depend on this step.')
+                return False
             finally:
-                # tqdm is thread-safe; each worker updates shared progress bar
                 progress.update(1)
+
+        try:
+            has_content = _memory_snapshot_has_content(snapshot_path.read_bytes(), backend)
+        except FileNotFoundError:
+            logger.warning(f'BFCL memory {backend}/{scenario} has no final snapshot at {snapshot_path}.')
+            return False
+        except (OSError, ValueError) as exc:
+            logger.warning(f'BFCL memory {backend}/{scenario} has an unreadable snapshot at {snapshot_path}: {exc}')
+            return False
+        if not has_content:
+            logger.warning(
+                f'BFCL memory {backend}/{scenario} has an empty snapshot at {snapshot_path}. '
+                'Check whether the model called the memory write tools and whether those calls succeeded.'
+            )
+        return True
 
     # Run each (backend, scenario) group in parallel; preserve in-group order
     total = len(prereq_entries)
     with tqdm(total=total, desc='Running prereq inferences for memory snapshots...') as progress:
         max_workers = min(batch_size, len(groups))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(_process_group_entries, group_entries, progress) for group_entries in groups.values()
-            ]
-            for _ in as_completed(futures):
-                # Errors are logged within workers
-                pass
+            futures = {
+                executor.submit(_process_group, backend, scenario, entries, progress): (backend, scenario)
+                for (backend, scenario), entries in groups.items()
+            }
+            return {futures[future] for future in as_completed(futures) if not future.result()}
 
-    # Cleanup temp keys
-    for group_entries in groups.values():
-        for entry in group_entries:
-            entry.pop('_group_backend', None)
-            entry.pop('_group_scenario', None)
-            entry.pop('_scenario_idx', None)
+
+def _memory_snapshot_has_content(data: bytes, backend: str) -> bool:
+    snapshot = json.loads(data)
+    if not isinstance(snapshot, dict):
+        raise ValueError('snapshot must be a JSON object')
+    if backend == 'rec_sum':
+        memory = snapshot.get('memory')
+        if not isinstance(memory, str):
+            raise ValueError('memory must be a string')
+        return bool(memory.strip())
+
+    stores = [snapshot.get(key) for key in ('core_memory', 'archival_memory')]
+    if backend == 'vector':
+        if not all(isinstance(store, dict) and isinstance(store.get('next_id'), int) for store in stores):
+            raise ValueError('vector memory must contain its next entry ID')
+        stores = [store.get('store') for store in stores]
+    if not all(isinstance(store, dict) for store in stores):
+        raise ValueError('core and archival memory stores must be JSON objects')
+    return any(stores)
+
+
+def _memory_resume_index(snapshot_path: Path, checkpoints: Path, backend: str, entries: List[Dict[str, Any]]) -> int:
+    """Resume only from a checkpoint matching the final snapshot used by BFCL."""
+    resume = 0
+    try:
+        snapshot = snapshot_path.read_bytes()
+        _memory_snapshot_has_content(snapshot, backend)
+        for index, entry in enumerate(entries, start=1):
+            if (checkpoints / f'{entry["id"]}.json').read_bytes() == snapshot:
+                resume = index
+    except (OSError, ValueError):
+        # A gap ends the usable prefix. A bad final snapshot requires a fresh start.
+        pass
+    return resume
 
 
 # ----------------------------
@@ -520,7 +546,7 @@ def compute_entry_result(
             index=index,
             model_result_list=model_result,
             possible_answer_item=ground_truth,
-            prompt_entry=prompt_entry,
+            prompt_entry=prompt_entry.copy(),
             model_name=model_name,
             test_category=test_category,
         )

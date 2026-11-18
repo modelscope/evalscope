@@ -1,18 +1,17 @@
 import json
 import os
-import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
+from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample, build_dataset_from_records
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages.chat_message import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoreStatus, Tags
 from evalscope.report import Report
 from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import thread_safe
@@ -45,7 +44,7 @@ def _normalize_openai_base_url(api_url: Optional[str]) -> str:
     BenchmarkMeta(
         name='bfcl_v4',
         pretty_name='BFCL-v4',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
         description="""
 ## Overview
@@ -56,7 +55,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 
 - **Task Type**: Agentic Function Calling Evaluation
 - **Input**: Scenarios requiring function calls for web search, memory, etc.
-- **Output**: Correct function calls with proper arguments
+- **Output**: Function calls with arguments and final answers for agentic tasks
 - **Capabilities**: Web search, memory read/write, format handling
 
 ## Key Features
@@ -69,10 +68,11 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 
 ## Evaluation Notes
 
-- **Installation Required**: `pip install 'evalscope[bfcl]'`
+- **Installation Required**: `pip install 'evalscope[bfcl]'` with `bfcl-eval==2026.3.23`
 - Primary metric: **Accuracy** per category
 - Configure `is_fc_model` based on model capabilities
-- Optional: Set `SERPAPI_API_KEY` for web search tasks
+- Memory tasks prepare the scenarios required by the selected samples. An empty memory snapshot is logged as a warning
+- Web search requires a valid `SERPAPI_API_KEY`. To evaluate without a key, omit `web_search_base` and `web_search_no_snippet` from `subset_list`
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)
 """,
         dataset_id='https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard',
@@ -92,7 +92,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
             },
             'SERPAPI_API_KEY': {
                 'type': 'str | null',
-                'description': 'SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.',
+                'description': 'SerpAPI key for web search. If unset, BFCL reads the SERPAPI_API_KEY environment variable.',
                 'value': None,
             },
         },
@@ -119,6 +119,7 @@ class BFCLV4Adapter(AgentAdapter):
         self.model_result_dir = Path(self._task_config.work_dir) if self._task_config else Path('./bfcl_model_results')
         self.handler = None
         self.prereq_entries = []
+        self.prereq_failures: set[tuple[str, str]] = set()
         self.prereq_finished = False
 
     def load(self):
@@ -144,7 +145,7 @@ class BFCLV4Adapter(AgentAdapter):
 
     def _create_dataset_for_category(
         self, category: str, test_entries: List[Dict], ground_truth_entries: List[Dict]
-    ) -> DatasetDict:
+    ) -> MemoryDataset:
         """Create a dataset for a single category by merging test and ground truth data."""
         processed_entries, prereq_entries = process_test_entries(
             category=category,
@@ -152,10 +153,7 @@ class BFCLV4Adapter(AgentAdapter):
             ground_truth_entries=ground_truth_entries,
             model_result_dir=self.model_result_dir,
         )
-        # collect prereq entries for later prereq inference
-        self.prereq_entries.extend(prereq_entries)
-
-        return build_dataset_from_records(
+        dataset = build_dataset_from_records(
             records=processed_entries,
             sample_fields=self.record_to_sample,
             name=category,
@@ -163,8 +161,12 @@ class BFCLV4Adapter(AgentAdapter):
             limit=self.limit,
             repeats=self.repeats,
             shuffle=self.shuffle,
-            seed=None,
+            seed=self._task_config.seed if self._task_config else None,
         )
+        if prereq_entries:
+            required_ids = {entry_id for sample in dataset for entry_id in sample.metadata['depends_on']}
+            self.prereq_entries.extend(entry for entry in prereq_entries if entry['id'] in required_ids)
+        return dataset
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a data record to a Sample object."""
@@ -175,35 +177,42 @@ class BFCLV4Adapter(AgentAdapter):
         )
 
     @thread_safe
-    def _init_handler(self):
+    def _init_handler(self) -> None:
         if self.handler is not None:
             return  # Handler already initialized
 
         from bfcl_eval.model_handler.api_inference.openai_completion import OpenAICompletionsHandler
 
-        # Set env variables for OpenAI API
         base_url = _normalize_openai_base_url(self._task_config.api_url)
-        os.environ['OPENAI_API_KEY'] = get_secret_value(self._task_config.api_key) or ''
-        if base_url:
-            os.environ['OPENAI_BASE_URL'] = base_url
-        else:
-            os.environ.pop('OPENAI_BASE_URL', None)
+        api_key = get_secret_value(self._task_config.api_key) or ''
+        generation = self._task_config.generation_config
 
-        patch_openai_completions_handler_empty_tool_calls(OpenAICompletionsHandler)
+        class ConfiguredHandler(OpenAICompletionsHandler):
+            def _build_client_kwargs(self) -> Dict[str, Any]:
+                kwargs = super()._build_client_kwargs()
+                kwargs.update(api_key=api_key, base_url=base_url or 'https://api.openai.com/v1')
+                if generation.timeout is not None:
+                    kwargs['timeout'] = generation.timeout
+                return kwargs
 
-        self.handler = OpenAICompletionsHandler(
+            def generate_with_backoff(self, **kwargs: Any) -> Any:
+                if generation.extra_body:
+                    kwargs['extra_body'] = generation.extra_body
+                return super().generate_with_backoff(**kwargs)
+
+        patch_openai_completions_handler_empty_tool_calls(ConfiguredHandler)
+        self.handler = ConfiguredHandler(
             model_name=self._task_config.model,
             temperature=self._task_config.generation_config.temperature,
             registry_name=self._task_config.model_id,
             is_fc_model=self.is_fc_model,
         )
 
-        self._prereq_inference()
-
-    def _prereq_inference(self):
+    @thread_safe
+    def _prereq_inference(self) -> None:
         if self.prereq_finished:
             return
-        run_prereq_inference(
+        self.prereq_failures = run_prereq_inference(
             handler=self.handler,
             prereq_entries=self.prereq_entries,
             model_result_dir=self.model_result_dir,
@@ -213,42 +222,29 @@ class BFCLV4Adapter(AgentAdapter):
         self.prereq_finished = True
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
-        try:
-            self._init_handler()
+        self._init_handler()
+        self._prereq_inference()
+        category = sample.metadata['category']
+        scenario = sample.metadata.get('scenario')
+        if (category.removeprefix('memory_'), scenario) in self.prereq_failures:
+            raise RuntimeError(f'BFCL memory prerequisites did not complete for {category}/{scenario}')
 
-            result, metadata = run_isolated_inference(
-                self.handler, sample.metadata, include_input_log=False, exclude_state_log=True
-            )
+        result, metadata = run_isolated_inference(
+            self.handler, sample.metadata, include_input_log=False, exclude_state_log=True
+        )
 
-            output = ModelOutput.from_content(
-                model=model.name,
-                content=json.dumps(result),
-            )
-            agent_messages = synthesize_agent_messages(
-                prompt_entry=sample.metadata,
-                model_result=result,
-                is_fc_model=self.is_fc_model,
-                inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
-            )
-            self._attach_perf_metrics(output, agent_messages, metadata)
-            return InferenceResult(output=output, messages=agent_messages or None)
-        except Exception as e:
-            # This is usually the case when the model getting stuck on one particular test case.
-            # For example, timeout error or FC model returning invalid JSON response.
-            # Since temperature is already set to 0.001, retrying the same test case will not help.
-            # So we continue the generation process and record the error message as the model response
-            logger.error(f'Error during inference for sample ID {sample.metadata.get("id")}: {e}')
-            logger.error(traceback.format_exc())
-
-            return ModelOutput.from_content(
-                model=model.name,
-                content=json.dumps(
-                    {
-                        'error': str(e),
-                        'error_message': traceback.format_exc(),
-                    }
-                ),
-            )
+        output = ModelOutput.from_content(
+            model=model.name,
+            content=json.dumps(result),
+        )
+        agent_messages = synthesize_agent_messages(
+            prompt_entry=sample.metadata,
+            model_result=result,
+            is_fc_model=self.is_fc_model,
+            inference_log=metadata.get('inference_log') if isinstance(metadata, dict) else None,
+        )
+        self._attach_perf_metrics(output, agent_messages, metadata)
+        return InferenceResult(output=output, messages=agent_messages or None)
 
     @staticmethod
     def _attach_perf_metrics(output: ModelOutput, agent_messages, metadata) -> None:
@@ -310,13 +306,17 @@ class BFCLV4Adapter(AgentAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        self._init_handler()
-
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
         model_result = json.loads(filtered_prediction)
+        if isinstance(model_result, dict) and 'error' in model_result:
+            score.status = ScoreStatus.INVALID_SESSION
+            score.metadata = model_result
+            return score
+
+        self._init_handler()
         prompt = task_state.metadata
 
         entry_result = compute_entry_result(
@@ -328,11 +328,13 @@ class BFCLV4Adapter(AgentAdapter):
 
         valid = 1 if entry_result['valid'] else 0
         score.value = {'acc': valid}
+        error = entry_result.get('error')
+        details = error if isinstance(error, dict) else entry_result
         score.metadata = {
             'valid': bool(entry_result.get('valid')),
-            'error': str(entry_result.get('error')),
-            'error_message': str(entry_result.get('error_message')),
-            'error_type': str(entry_result.get('error_type')),
+            'error': str(error),
+            'error_message': str(details.get('error_message')),
+            'error_type': str(details.get('error_type')),
         }
         return score
 

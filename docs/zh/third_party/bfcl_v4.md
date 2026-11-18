@@ -51,9 +51,9 @@ SUBSET_LIST = [
 ```{important}
 在使用该评测基准时请注意以下几点：
 - `live_relevance` 任务不计入最终得分。
-- 评测网络搜索（Web Search）任务时，请确保在环境变量中设置 `SERPAPI_API_KEY`，以便访问 [SerpAPI](https://serpapi.com/dashboard) 服务，并确保有充足的调用额度，否则评测结果可能都为0。
-- 评测模型记忆（Memory）任务时，会先运行预处理请求以填充记忆，这个过程可能比较耗时，请耐心等待。
-- 评测`memory_vector`任务时，会自动从Hugging Face Hub下载所需的模型文件，请确保网络连接正常。
+- 网络搜索任务需要有效且额度充足的 [SerpAPI](https://serpapi.com/dashboard) 密钥 `SERPAPI_API_KEY`。没有密钥时，请显式指定 `subset_list` 并排除 `web_search_base` 和 `web_search_no_snippet`。这两个子集默认都会入选，即使未配置密钥。
+- 评测记忆任务前，会先填充入选样本所依赖的场景。如果快照为空，请检查写入记忆的工具调用是否成功，并确认 FC 模式下服务端返回了结构化工具调用。
+- `memory_vector` 首次运行时会从 Hugging Face Hub 下载嵌入模型。在 macOS 上，每条样本的 FAISS 操作使用一个原生线程，以避免与 PyTorch 的 OpenMP 运行时冲突。API 请求仍可并发执行。
 ```
 
 ## 安装依赖
@@ -64,9 +64,11 @@ SUBSET_LIST = [
 pip install 'evalscope[bfcl]'
 ```
 
+评测版本 `v1.2` 使用 `bfcl-eval==2026.3.23`。从旧评测版本升级时请使用新的输出目录。从源码安装时，运行 `pip install -e '.[bfcl]'` 更新依赖。在共享机器上，将 `BFCL_PROJECT_ROOT` 指向仅当前账号可写的目录，供上游包创建文件锁。
+
 ## 使用方法
 
-运行下面的代码即可启动评测。下面以qwen-plus模型为例进行评测。
+下面以 `qwen3.8-flash` 的原生函数调用模式为例。
 
 **⚠️ 注意：仅支持API模型服务评测，本地模型评测建议使用vLLM等框架预先拉起服务。**
 
@@ -75,7 +77,7 @@ import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
-    model='qwen-plus',
+    model='qwen3.8-flash',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',  # 使用API模型服务
@@ -119,15 +121,17 @@ task_cfg = TaskConfig(
         }
     },
     generation_config={
-        'temperature': 0, # 只支持设置温度参数，其他参数会被忽略
+        'temperature': 0,
+        'timeout': 60,
+        'extra_body': {'enable_thinking': False},
     },
-    use_cache='outputs/bfcl_v4', # 建议设置缓存目录，评测出错时可以加快重跑速度
+    use_cache='outputs/bfcl_v4_v1_2', # 复用当前评测版本的预测和记忆快照
     limit=10,  # 限制评测数量，便于快速测试，正式评测时建议去掉此项
 )
 run_task(task_cfg=task_cfg)
 ```
 
-输出示例：
+早期评测版本使用 `qwen-plus` 的输出示例：
 
 ```text
 +-----------+-----------+----------+-------------------------+-------+---------+---------+

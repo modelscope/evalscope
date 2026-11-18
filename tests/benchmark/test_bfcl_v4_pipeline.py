@@ -222,7 +222,7 @@ def _assert_artifacts(output: Path, model: str) -> None:
     assert report.model_name == model
     _assert_report(report)
     snapshot = yaml.safe_load((output / 'configs' / 'task_config.yaml').read_text())
-    assert snapshot['evaluation_identity']['benchmarks']['bfcl_v4']['evaluation_version'] == 'v1.1'
+    assert snapshot['evaluation_identity']['benchmarks']['bfcl_v4']['evaluation_version'] == 'v1.2'
 
 
 @pytest.mark.parametrize('is_fc_model', [False, True], ids=['prompting', 'function-calling'])

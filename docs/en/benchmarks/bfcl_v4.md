@@ -9,7 +9,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 
 - **Task Type**: Agentic Function Calling Evaluation
 - **Input**: Scenarios requiring function calls for web search, memory, etc.
-- **Output**: Correct function calls with proper arguments
+- **Output**: Function calls with arguments and final answers for agentic tasks
 - **Capabilities**: Web search, memory read/write, format handling
 
 ## Key Features
@@ -22,10 +22,11 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 
 ## Evaluation Notes
 
-- **Installation Required**: `pip install 'evalscope[bfcl]'`
+- **Installation Required**: `pip install 'evalscope[bfcl]'` with `bfcl-eval==2026.3.23`
 - Primary metric: **Accuracy** per category
 - Configure `is_fc_model` based on model capabilities
-- Optional: Set `SERPAPI_API_KEY` for web search tasks
+- Memory tasks prepare the scenarios required by the selected samples. An empty memory snapshot is logged as a warning
+- Web search requires a valid `SERPAPI_API_KEY`. To evaluate without a key, omit `web_search_base` and `web_search_no_snippet` from `subset_list`
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/bfcl_v4.html)
 
 
@@ -47,7 +48,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 | Metric | Value |
 |--------|-------|
 | Total Samples | 5,106 |
-| Prompt Length (Mean) | 350.4 chars |
+| Prompt Length (Mean) | 348.78 chars |
 | Prompt Length (Min/Max) | 36 / 10805 chars |
 
 **Per-Subset Statistics:**
@@ -64,10 +65,10 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 | `memory_kv` | 155 | 646.46 | 585 | 826 |
 | `memory_rec_sum` | 155 | 646.46 | 585 | 826 |
 | `memory_vector` | 155 | 646.46 | 585 | 826 |
-| `multi_turn_base` | 200 | 808.43 | 106 | 1756 |
-| `multi_turn_long_context` | 200 | 808.41 | 106 | 1756 |
-| `multi_turn_miss_func` | 200 | 811.88 | 110 | 1760 |
-| `multi_turn_miss_param` | 200 | 863.88 | 167 | 1791 |
+| `multi_turn_base` | 200 | 798.28 | 106 | 1756 |
+| `multi_turn_long_context` | 200 | 798.24 | 106 | 1756 |
+| `multi_turn_miss_func` | 200 | 801.57 | 110 | 1760 |
+| `multi_turn_miss_param` | 200 | 853.16 | 167 | 1791 |
 | `multiple` | 200 | 120.75 | 65 | 229 |
 | `parallel` | 200 | 297.93 | 69 | 781 |
 | `parallel_multiple` | 200 | 432.17 | 88 | 1249 |
@@ -85,7 +86,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 {
   "input": [
     {
-      "id": "4e05e910",
+      "id": "9f29fc22",
       "content": "[[{\"role\": \"user\", \"content\": \"Calculate the area of a triangle given the base is 10 meters and height is 5 meters.\"}]]"
     }
   ],
@@ -141,7 +142,7 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
 |-----------|------|---------|-------------|
 | `underscore_to_dot` | `bool` | `True` | Convert underscores to dots in function names for evaluation. |
 | `is_fc_model` | `bool` | `True` | Indicates the evaluated model natively supports function calling. |
-| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI key enabling web-search capability in BFCL V4. Null disables web search. |
+| `SERPAPI_API_KEY` | `str | null` | `None` | SerpAPI key for web search. If unset, BFCL reads the SERPAPI_API_KEY environment variable. |
 
 ## Usage
 
