@@ -374,18 +374,24 @@ class MeanPassHatK(Aggregator):
             if not has_binary_outcomes(scores, metric_name):
                 continue
             group_attempts = collect_planned_attempts(scores, metric_name)
-            prefixes = eligible_prefixes(group_attempts)
-            if not prefixes:
-                continue
-            for n, eligible in prefixes.items():
-                values = []
-                ids = []
-                for group_id, attempts in eligible:
-                    attempt_values = [
-                        float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None
-                    ]
-                    values.append(float(calculate_pass_hat_k(len(attempt_values), int(sum(attempt_values)), n)))
-                    ids.append(group_id)
+            max_k = min((max(attempts, default=-1) + 1 for attempts in group_attempts.values()), default=0)
+            estimates_by_k: Dict[int, Dict[Any, float]] = defaultdict(dict)
+            for group_id, attempts in group_attempts.items():
+                if max_k <= 0 or attempts.get(0) is None:
+                    continue
+                # The estimator uses all available trials, including those after a gap.
+                # Only eligibility depends on the contiguous prefix.
+                attempt_values = [
+                    float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None
+                ]
+                num_trials, success_count = len(attempt_values), int(sum(attempt_values))
+                for n in range(1, max_k + 1):
+                    if attempts.get(n - 1) is None:
+                        break
+                    estimates_by_k[n][group_id] = float(calculate_pass_hat_k(num_trials, success_count, n))
+
+            for n, estimates in estimates_by_k.items():
+                values = list(estimates.values())
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -393,7 +399,7 @@ class MeanPassHatK(Aggregator):
                         aggregation='pass_hat_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=ids,
+                        ids=list(estimates),
                         metadata={
                             'eligible': len(values),
                             'total': len(group_attempts),
