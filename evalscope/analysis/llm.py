@@ -32,7 +32,7 @@ from .trace.export import _env_secrets, redact
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
-PROTOCOL_VERSION = '3.4'
+PROTOCOL_VERSION = '3.6'
 
 
 def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
@@ -101,16 +101,19 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         )
     add('gold', json.dumps(item.record.target, ensure_ascii=False))
     score = item.record.sample_score.score
+    metadata = dict(score.metadata or {})
+    if score.explanation and metadata.get('error') == score.explanation:
+        metadata.pop('error')
     add(
         'score',
         json.dumps(
             {
                 'status': score.status,
                 'value': score.value,
-                'extracted': score.extracted_prediction,
                 'explanation': score.explanation,
                 'generation_stop_reason': item.stop_reason,
-                'metadata': score.metadata,
+                'extracted': score.extracted_prediction,
+                'metadata': metadata,
             },
             ensure_ascii=False,
             default=str,
@@ -232,6 +235,23 @@ def validate_evidence(diagnosis: LLMDiagnosis, sources: List[DiagnosticSource]) 
     return diagnosis.model_copy(update={'evidence': valid}), errors
 
 
+def _scoring_error(item: SampleInput, sample: SampleDiagnosis) -> Optional[Tuple[str, str]]:
+    """Use stored evaluation errors without speculating about the submitted answer."""
+    score = item.record.sample_score.score
+    metadata = score.metadata or {}
+    if sample.is_unscored:
+        kind = 'judge_failure'
+        reason = score.explanation or metadata.get('error')
+    else:
+        execution = metadata.get('execution_result')
+        if not isinstance(execution, dict) or execution.get('status') != 'error':
+            return None
+        kind, reason = 'environment_failure', execution.get('error')
+    if isinstance(reason, str) and reason.strip():
+        return kind, redact(reason, _env_secrets())
+    return None
+
+
 def _request(
     prompt: str,
     schema: Type[BaseModel],
@@ -329,8 +349,10 @@ def enrich(
         logger.warning('Diagnostic and evaluated model identities match; this is self-evaluation.')
     items = {(s.key.subset, s.key.index): s for s in inputs.samples}
     prompts = []
+    scoring_errors = {}
     for s in selected:
-        item = items[(s.key.subset, s.key.index)]
+        key = (s.key.subset, s.key.index)
+        item = items[key]
         s.sources = build_sources(item, inputs, config)
         sent = {source.id for source in s.sources}
         s.context_omitted = (
@@ -368,7 +390,18 @@ def enrich(
             'types': ISSUE_DEFINITIONS,
             'language': config.language if config.language != 'auto' else DEFAULT_LANGUAGE,
         }
-        prompts.append(PROMPT.read_text() + '\n' + json.dumps(payload, ensure_ascii=False))
+        instruction = PROMPT.read_text()
+        if recorded := _scoring_error(item, s):
+            scoring_errors[key] = recorded
+            kind, reason = recorded
+            payload['recorded_scoring_error'] = {'failure_type': kind, 'reason': reason}
+            instruction += (
+                '\nIf recorded_scoring_error is present, report only that observation. Copy its reason exactly into '
+                'explanation (do not translate) and cite that exact reason from score. Use its failure_type, '
+                'attribution unknown, secondary_types [], root_cause_step null and gold_suspect false. '
+                'If the reason cannot be cited, return unexplained.\n'
+            )
+        prompts.append(instruction + '\n' + json.dumps(payload, ensure_ascii=False))
     report.cost.estimated_calls = len(prompts) + 1
     report.cost.estimated_input_tokens = sum(len(p) // 3 for p in prompts)
     logger.info(
@@ -385,11 +418,29 @@ def enrich(
         sample.llm, errors = validate_evidence(parsed, sample.sources)
         sample.invalid_evidence = len(parsed.evidence) - len(sample.llm.evidence)
         sample.evidence_errors = errors
-        if not sample.llm.evidence or all(
-            e.source_id in ('gold', 'benchmark', 'omitted-content') for e in sample.llm.evidence
+        key = (sample.key.subset, sample.key.index)
+        recorded = scoring_errors.get(key)
+        if (
+            errors
+            or not sample.llm.evidence
+            or all(e.source_id in ('gold', 'benchmark', 'omitted-content') for e in sample.llm.evidence)
         ):
             sample.llm_status = 'invalid_evidence'
-        elif parsed.failure_type == 'truncated' and items[(sample.key.subset, sample.key.index)].stop_reason not in (
+        elif (
+            recorded
+            and parsed.failure_type != 'unexplained'
+            and (
+                (parsed.failure_type, parsed.explanation) != recorded
+                or parsed.attribution != 'unknown'
+                or parsed.secondary_types
+                or parsed.root_cause_step is not None
+                or parsed.gold_suspect
+                or not any(e.source_id == 'score' and e.quote == recorded[1] for e in sample.llm.evidence)
+            )
+        ):
+            sample.llm_status = 'unexplained'
+            sample.evidence_errors.append('exceeds_recorded_scoring_error')
+        elif parsed.failure_type == 'truncated' and items[key].stop_reason not in (
             None,
             'length',
             'max_tokens',
@@ -501,6 +552,8 @@ def summarize(
         'Write plain language for an evaluation user; omit internal field names, diagnostic bookkeeping and '
         'inapplicable statistics. '
         'When supplied, describe sample_hypotheses as model proposals awaiting review and cite their refs. '
+        'Do not strengthen a proposal or fill in missing facts. An execution error does not establish answer correctness; '
+        'an unavailable score does not establish a task failure or its cause. '
         'inspected_hypotheses counts ALL usable proposals by primary type within the inspected scope, '
         'including types outside the representative examples. Use these counts only to prioritize review; '
         'they are not verified causes or population frequencies, and a sample reference cannot support a group count. '

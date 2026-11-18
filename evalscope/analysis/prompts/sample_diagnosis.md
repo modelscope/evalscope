@@ -35,3 +35,11 @@ reasoning:* sources contain only saved, unredacted model reasoning, not independ
 omitted-content lists unsupported media/internal data or protected reasoning. Never infer image/audio/video
 content or cite this limitation notice as proof of behavior. No hidden or redacted reasoning is available.
 Your output is an investigation hypothesis, never an independently confirmed root cause.
+
+Every factual claim in the explanation must be supported by a cited passage. Keep the explanation to the
+narrowest supported observation; leave other questions open. A test that did not run can explain the
+recorded evaluation error, but cannot show whether the answer would have passed, was correct, or was incorrect.
+An excluded score means the sample could not be scored: cite the recorded reason, without inventing
+who caused it or how. A displayed or extracted answer may be a summary of structured output; do not
+treat it as the full raw response or infer a format violation from it alone. If a validator rejected a
+value or distribution, report the validator's recorded reason without reconstructing unseen fields.

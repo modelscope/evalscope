@@ -156,6 +156,93 @@ def test_failed_diagnoses_never_count_as_explained(make_run: Callable,monkeypatc
         assert sum('Summarize evaluation' not in prompt for prompt in calls) == 2
 
 
+def test_partial_sample_references_do_not_promote_an_explanation(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = []
+
+    def reply(prompt: str, count: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
+            assert not payload['sample_hypotheses']
+            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+        result = verdict()
+        result.evidence.append(EvidenceReference(source_id='score', quote='A reason absent from the score record.'))
+        return result.model_dump_json()
+
+    fake_model(monkeypatch, reply, calls)
+    root = make_run(rows=[review(0)])
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    row = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    assert row.llm_status == 'invalid_evidence'
+    assert row.evidence_errors == ['quote_missing_or_ambiguous']
+    assert report.coverage.diagnosed_ok == 0
+    assert (report.coverage.citations_valid, report.coverage.citations_total) == (1, 2)
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize('unscored', [True, False])
+@pytest.mark.parametrize('overclaims', [True, False])
+def test_known_scoring_error_does_not_prove_answer_correctness(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, unscored: bool, overclaims: bool,
+) -> None:
+    from evalscope.constants import ScoreStatus
+
+    row = review(0)
+    score = row.sample_score.score
+    reason = 'Distribution exceeds the probability sum tolerance.' if unscored else 'Sandbox pool is empty.'
+    kind = 'judge_failure' if unscored else 'environment_failure'
+    if unscored:
+        score.status = ScoreStatus.EXCLUDED
+        score.value = {}
+        score.explanation = reason
+    else:
+        score.metadata = {'execution_result': {'status': 'error', 'error': reason}}
+    calls = []
+
+    def reply(prompt: str, count: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            payload, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"facts":'):])
+            assert bool(payload['sample_hypotheses']) is not overclaims
+            return json.dumps({'findings': [], 'recommendations': [], 'limitations': []})
+        proposal = LLMDiagnosis(
+            failure_type=kind, attribution='unknown', confidence='high',
+            explanation=f'{reason} The submitted answer was correct.' if overclaims else reason,
+            evidence=[EvidenceReference(source_id='score', quote=reason)],
+        )
+        return proposal.model_dump_json()
+
+    fake_model(monkeypatch, reply, calls)
+    root = make_run(rows=[row])
+    report = diagnose_benchmark(str(root), 'm', 'demo', options(scope='unscored' if unscored else 'failed'))
+    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    assert (report.coverage.citations_valid, report.coverage.citations_total) == (1, 1)
+    assert persisted.llm_status == ('unexplained' if overclaims else 'ok')
+    assert persisted.evidence_errors == (['exceeds_recorded_scoring_error'] if overclaims else [])
+    assert report.coverage.diagnosed_ok == int(not overclaims)
+
+
+def test_score_reason_is_citable_once_without_changing_saved_metadata(make_run: Callable) -> None:
+    from evalscope.analysis.inputs import load_inputs
+
+    row = review(0)
+    reason = "Distribution exceeds this benchmark's probability sum tolerance."
+    row.sample_score.score.explanation = reason
+    row.sample_score.score.metadata = {'error': reason, 'metric_unavailable': True}
+    root = make_run(rows=[row])
+    config = options()
+    inputs = load_inputs(str(root), 'm', 'demo', config.trace)
+    item = inputs.samples[0]
+    sources = build_sources(item, inputs, config)
+    source = next(source for source in sources if source.id == 'score')
+    parsed, errors = validate_evidence(
+        verdict().model_copy(update={'evidence': [EvidenceReference(source_id='score', quote=reason)]}), sources
+    )
+    assert not errors and parsed.evidence[0].quote == reason
+    assert json.loads(source.text)['metadata'] == {'metric_unavailable': True}
+    assert item.record.sample_score.score.metadata['error'] == reason
+
+
 def test_no_model_configuration_never_silently_calls_evaluation_model(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr('evalscope.analysis.llm.get_model',lambda *a,**kw:pytest.fail('No explicit model'))
     with pytest.raises(ValueError,match='explicit analysis model'):

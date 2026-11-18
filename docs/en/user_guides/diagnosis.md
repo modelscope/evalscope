@@ -103,8 +103,10 @@ Evidence has two separate checks:
   ambiguous, out-of-bounds or mismatched references are invalid. A proposed root step must have a valid
   reference on that exact supplied step.
 - **Semantic support:** a locatable quotation does not establish that it supports a diagnosis. Independent
-  annotation and review are still required. Responses with no usable evidence, failed requests, invalid
-  formats or low confidence do not count as usable model hypotheses. Official scores and reference answers remain unchanged;
+  annotation and review are still required. If any submitted citation fails, the sample proposal is
+  withheld as a whole. When the scoring record contains an explicit exclusion reason or execution error,
+  the proposal may only report that reason; it cannot judge the submitted answer or assign blame.
+  Failed requests, invalid formats and low confidence also prevent proposals from being used. Official scores and reference answers remain unchanged;
   suspected reference errors are only marked for review.
 
 Facts always cover all readable samples, independently of the model-analysis budget. Rule observations and model hypotheses remain separate; hypotheses never replace observed issue groups. Samples can have multiple observations, so group counts must not be added. Citation validation establishes locatability, not confirmed causes. No population cause proportions or unresolved-rate estimates are produced.
