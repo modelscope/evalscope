@@ -4,9 +4,9 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentText
-from evalscope.api.metric import Score
+from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoreStatus, Tags
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -141,7 +141,7 @@ LANGUAGE_BY_CODE = {
 @register_benchmark(
     BenchmarkMeta(
         name='wmt24pp',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         pretty_name='WMT2024++',
         dataset_id='extraordinarylab/wmt24pp',
         hf_dataset_id='extraordinarylab/wmt24pp',
@@ -241,23 +241,36 @@ class WMT24PPAdapter(DefaultDataAdapter):
         task_state: TaskState,
     ) -> Score:
         """Compute per-sample translation metrics."""
-        # Create a Score object for the current sample
-        score = Score(
-            prediction=original_prediction,
-            extracted_prediction=filtered_prediction,
-            value={},
-        )
-
-        # ---- BLEU ----
+        score = Score(prediction=original_prediction, extracted_prediction=filtered_prediction)
         if self.has_metric('bleu'):
-            try:
-                from evalscope.metrics import bleu_ngram_one_sample
-
-                bleu_results = bleu_ngram_one_sample(filtered_prediction, reference)
-                score.value.update(bleu_results)
-            except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] BLEU single-sample calculation failed: {e}')
+            self._score_bleu(score, filtered_prediction, reference)
         return score
+
+    @staticmethod
+    def _record_failure(score: Score, name: str, error: Exception) -> None:
+        if score.metadata is None:
+            score.metadata = {}
+        score.metadata.setdefault('metric_errors', {})[name] = f'{type(error).__name__}: {error}'
+        score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
+
+    def _score_bleu(self, score: Score, prediction: str, reference: str) -> None:
+        try:
+            from evalscope.metrics import bleu_ngram_one_sample
+
+            score.value.update(bleu_ngram_one_sample(prediction, reference))
+        except Exception as exc:
+            logger.warning(f'[WMT24PPAdapter] BLEU calculation failed: {exc}')
+            self._record_failure(score, 'bleu', exc)
+
+    def batch_calculate_metrics(
+        self, task_states: List[TaskState], sample_scores: List[SampleScore]
+    ) -> List[SampleScore]:
+        """Refine the preliminary scores in place so cached reviews retain per-metric failures."""
+        if len(task_states) != len(sample_scores):
+            raise ValueError('Batch scores length must match task states length.')
+        predictions = [self.filter_prediction(state.output.completion, state) for state in task_states]
+        self._refine_batch([s.score for s in sample_scores], predictions, [s.target for s in task_states], task_states)
+        return sample_scores
 
     def batch_match_score(
         self,
@@ -266,55 +279,54 @@ class WMT24PPAdapter(DefaultDataAdapter):
         references: List[str],
         task_states: List[TaskState],
     ) -> List[Score]:
-        """Compute batched translation metrics (BLEU, BERTScore, COMET)."""
-        scores: List[Score] = []
-        for i in range(len(original_predictions)):
-            score = Score(
-                extracted_prediction=filtered_predictions[i],
-                prediction=original_predictions[i],
-                value={},
-            )
-            scores.append(score)
-
-        # ---- BLEU (per-sample within batch) ----
-        if self.has_metric('bleu'):
-            try:
-                from evalscope.metrics import bleu_ngram_one_sample
-
-                for i in range(len(scores)):
-                    bleu_results = bleu_ngram_one_sample(filtered_predictions[i], references[i])
-                    scores[i].value.update(bleu_results)
-            except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] BLEU batch calculation failed: {e}')
-
-        # ---- BERTScore ----
-        if self.has_metric('bert_score'):
-            try:
-                from evalscope.metrics.nlp.metrics import BertScore
-
-                score_args = self.get_metric_args('bert_score')
-                bert_scorer = BertScore(**score_args)
-                bert_score_f1 = bert_scorer.apply(filtered_predictions, references)
-                for i in range(len(scores)):
-                    scores[i].value.update({'bert_score': bert_score_f1[i]})
-            except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] BERTScore batch calculation failed: {e}')
-
-        # ---- COMET ----
-        if self.has_metric('comet'):
-            try:
-                from evalscope.metrics.nlp.metrics import COMETScore
-
-                score_args = self.get_metric_args('comet')
-                comet_scorer = COMETScore(**score_args)
-                data = [
-                    {'src': st.metadata.get('source_text'), 'mt': pred, 'ref': ref}
-                    for pred, ref, st in zip(filtered_predictions, references, task_states)
-                ]
-                comet_scores = comet_scorer.apply(data)
-                for i in range(len(scores)):
-                    scores[i].value.update({'comet': comet_scores[i]})
-            except Exception as e:
-                logger.warning(f'[WMT24PPAdapter] COMET batch calculation failed: {e}')
-
+        """Compute all requested metrics for callers without preliminary scores."""
+        scores = [
+            Score(prediction=original, extracted_prediction=filtered)
+            for original, filtered in zip(original_predictions, filtered_predictions, strict=True)
+        ]
+        self._refine_batch(scores, filtered_predictions, references, task_states)
         return scores
+
+    def _refine_batch(
+        self, scores: List[Score], predictions: List[str], references: List[str], task_states: List[TaskState]
+    ) -> None:
+        if not scores:
+            return
+        if self.has_metric('bleu'):
+            for score, pred, ref in zip(scores, predictions, references, strict=True):
+                if self.use_llm_judge:
+                    # Judge recall can replace a preliminary BLEU value with its verdict.
+                    for n in range(1, 5):
+                        score.value.pop(f'bleu-{n}', None)
+                if 'bleu-4' not in score.value and 'bleu' not in (score.metadata or {}).get('metric_errors', {}):
+                    self._score_bleu(score, pred, ref)
+
+        for metric in ('bert_score', 'comet'):
+            if not self.has_metric(metric):
+                continue
+            try:
+                if metric == 'bert_score':
+                    from evalscope.metrics.nlp.metrics import BertScore
+
+                    values = BertScore(**self.get_metric_args(metric)).apply(predictions, references)
+                else:
+                    from evalscope.metrics.nlp.metrics import COMETScore
+
+                    data = [
+                        {'src': st.metadata.get('source_text'), 'mt': pred, 'ref': ref}
+                        for pred, ref, st in zip(predictions, references, task_states, strict=True)
+                    ]
+                    values = COMETScore(**self.get_metric_args(metric)).apply(data)
+                if len(values) != len(scores):
+                    raise ValueError(f'Expected {len(scores)} scores, received {len(values)}')
+            except Exception as exc:
+                logger.warning(f'[WMT24PPAdapter] {metric} batch calculation failed: {exc}')
+                for score in scores:
+                    self._record_failure(score, metric, exc)
+            else:
+                for score, value in zip(scores, values):
+                    score.value[metric] = value
+
+        for score in scores:
+            if score.value and (not score.status.is_usable or (score.metadata or {}).get('metric_errors')):
+                score.status = ScoreStatus.DEGRADED
