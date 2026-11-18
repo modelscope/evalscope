@@ -162,6 +162,10 @@ Where:
 - `id` is the unique sample ID in the evaluation benchmark
 - `image_path` is the storage path of the generated image
 
+Relative `image_path` values are resolved against the JSONL file's directory, not the working directory. For example, `outputs/example_edit.jsonl` with `"image_path": "images/result.png"` reads `outputs/images/result.png`. Absolute paths are also supported. Use `extra_params.id_key` and `extra_params.image_key` if your manifest uses different field names.
+
+When `local_file` is set, only benchmark samples with matching manifest IDs and the configured language are evaluated. An empty manifest selects no samples. Missing image files are rejected when the manifest is loaded.
+
 ### Task Configuration
 
 Use the following script to load local data for evaluation:
