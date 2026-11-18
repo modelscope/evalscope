@@ -8,16 +8,26 @@ import re
 from typing import List, Optional, Tuple
 
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 logger = get_logger()
 
 # Valid MCQ choice letters
 _CHOICES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
-# Option labels in a prompt: at the start of a line ('A. 10', 'A: 10', 'A) 10', '(A) 10', 'A 10')
-# or inline in parentheses ('... (A) Yes (B) No').
-_OPTION_LINE_RE = re.compile(r'^\s*\(?([A-J])(?:[.:)]|\s)', re.MULTILINE)
-_OPTION_INLINE_RE = re.compile(r'\(([A-J])\)')
+_OPTION_LINE_RE = re.compile(r'^[ \t]*([A-J])(?:[.:)]|[ \t]+)[ \t]*(\S[^\n]*)$', re.MULTILINE)
+_OPTION_INLINE_RE = re.compile(r'\(([A-J])\)[ \t]*(.*?)(?=\([A-J]\)|$)', re.MULTILINE)
+
+_SINGLE_CHOICE_TOKEN = r'[A-J]|\([A-J]\)|\[[A-J]\]|\\boxed\{[A-J]\}|\$[A-J]\$'
+_FINAL_CHOICE_RE = re.compile(rf'(?:^|\bso[ \t]+)({_SINGLE_CHOICE_TOKEN})[.!。]?$')
+_MARKED_CHOICE_RE = re.compile(rf'({_SINGLE_CHOICE_TOKEN})(?=[ \t]*(?:[.!。](?:[ \t]|$)|$))')
+_DECLARATION_RE = re.compile(
+    r'(?:^|(?<=[.!?])[ \t]+)[ \t]*(?:(?:on reflection|therefore|so)[, \t]+)?'
+    r'(?:(?:(?:the|my) )?(?:(?:correct|final) )?(?:answer|option|choice) is[ \t]+'
+    r'|answer[ \t]*-[ \t]*|答案[ \t]*[是为：:][ \t]*'
+    r'|option[ \t]+([A-J])(?=[ \t]+matches\b))',
+    re.IGNORECASE | re.MULTILINE,
+)
 
 # ---------------------------------------------------------------------------
 # Answer-type classification
@@ -54,34 +64,29 @@ def classify_string(s: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _offered_choices(prompt_text: str) -> List[str]:
-    """Option letters listed in the prompt, or all of A-J when none are recognised."""
-    letters = set(_OPTION_LINE_RE.findall(prompt_text)) | set(_OPTION_INLINE_RE.findall(prompt_text))
-    return sorted(letters) or list(_CHOICES)
+def _extract_single_choice(prediction: str) -> str:
+    """Read an explicit answer or retain the text for exact option matching."""
+    text = prediction.strip()
+    final_choice = _FINAL_CHOICE_RE.search(text.rsplit('\n', 1)[-1].strip())
+    if final_choice:
+        answer = final_choice[1]
+    else:
+        normalized = _DECLARATION_RE.sub(
+            lambda match: f' Answer: {match[1].upper()}. ' if match[1] else ' Answer: ',
+            text,
+        )
+        answer = extract_answer_line(normalized)
+    if answer is None:
+        return text
+
+    marked_choice = _MARKED_CHOICE_RE.match(answer)
+    if marked_choice:
+        return marked_choice[1].removeprefix(r'\boxed{').strip('()[]{}$')
+    return answer
 
 
-def extract_mcq_answer(prediction: str, prompt_text: str = '') -> str:
-    """Extract a MCQ choice letter (A-J) from a model prediction.
-
-    Priority order:
-    1. \\boxed{X} – LaTeX boxed answer (highest priority)
-    2. Explicit keyword patterns: 'ANSWER: A', 'Answer: A', 'The answer is A', etc. –
-       take the **last** occurrence, since models often restate or revise their answer
-    3. '(X)' parenthesised letter – take the **last** occurrence to avoid matching
-       option listings in the reasoning text
-    4. Last standalone uppercase letter A-J at a word boundary, preferring the options
-       offered in ``prompt_text`` so that a word such as the pronoun 'I' is not read
-       as the answer
-    5. Return the stripped prediction as-is if nothing matches
-
-    Args:
-        prediction: Raw model output string.
-        prompt_text: Question text including the options. When it lists no
-            recognisable option labels, every letter A-J counts as an option.
-
-    Returns:
-        Extracted choice letter, or the stripped prediction.
-    """
+def extract_mcq_answer(prediction: str) -> str:
+    """Extract a choice using the legacy rules for non-single-choice references."""
     if not prediction:
         return prediction
 
@@ -90,17 +95,16 @@ def extract_mcq_answer(prediction: str, prompt_text: str = '') -> str:
     if m:
         return m.group(1).upper()
 
-    # Pattern 2: explicit keyword markers — take the LAST match of a pattern so that
-    # a restated or corrected answer wins over an earlier one
+    # Pattern 2: explicit keyword markers
     explicit_patterns = [
         r'(?:ANSWER|Answer|answer)\s*[:\-]\s*([A-J])\b',
         r'(?:The answer is|the answer is|答案[是为])\s*([A-J])\b',
         r'\b([A-J])\s*(?:is correct|is the answer)',
     ]
     for pat in explicit_patterns:
-        marker_matches = re.findall(pat, prediction)
-        if marker_matches:
-            return marker_matches[-1].upper()
+        m = re.search(pat, prediction)
+        if m:
+            return m.group(1).upper()
 
     # Pattern 3: parenthesised letter (A) — take the LAST match so that option
     # listings like "(A) cat  (B) dog  …" do not shadow the model's final answer
@@ -108,28 +112,21 @@ def extract_mcq_answer(prediction: str, prompt_text: str = '') -> str:
     if paren_matches:
         return paren_matches[-1].upper()
 
-    # Pattern 4: last isolated letter (word boundary) that is one of the offered options;
-    # a capital that is not an option, such as the pronoun 'I', is not the model's choice
+    # Pattern 4: last isolated letter A-J (word boundary)
     matches = re.findall(r'\b([A-J])\b', prediction)
-    options = _offered_choices(prompt_text)
-    offered = [x for x in matches if x in options]
-    if offered:
-        return offered[-1].upper()
     if matches:
-        # No offered letter: keep the last letter rather than passing the raw text to the
-        # nearest-letter fallback in judge_choice
         return matches[-1].upper()
 
     return prediction.strip()
 
 
-def extract_answer_with_classify(prediction: str, reference: str, prompt_text: str = '') -> str:
+def extract_answer_with_classify(prediction: str, reference: str) -> str:
     """Dispatch answer extraction based on the type of the reference answer.
 
     Uses :func:`classify_string` on the reference to select the right strategy:
 
-    - **type 1** (alphabetic / MCQ letter): apply :func:`extract_mcq_answer`
-      to pull a single choice letter out of the model's reasoning text.
+    - **type 1** (alphabetic / MCQ letter): use explicit answer extraction for
+      single-choice items and the legacy parser for other items.
     - **type 2 / 3 / 4** (integer / float / composite like ``[2, 3]``): return
       the raw prediction unchanged so that the task-specific scoring functions
       in :meth:`TIRBenchAdapter.match_score` (``judge_int``, ``judge_float``,
@@ -139,28 +136,15 @@ def extract_answer_with_classify(prediction: str, reference: str, prompt_text: s
     Args:
         prediction: Raw model output string.
         reference: Ground-truth answer string.
-        prompt_text: Question text including the options, passed to
-            :func:`extract_mcq_answer`.
 
     Returns:
         Extracted or raw prediction string.
     """
+    if reference in _CHOICES:
+        return _extract_single_choice(prediction)
     if classify_string(reference) == 1:
-        return extract_mcq_answer(prediction, prompt_text)
+        return extract_mcq_answer(prediction)
     return prediction
-
-
-# ---------------------------------------------------------------------------
-# Levenshtein-based nearest match
-# ---------------------------------------------------------------------------
-
-
-def get_most_similar(prediction: str, choices: List[str]) -> str:
-    """Return the choice most similar to prediction using Levenshtein distance."""
-    from evalscope.metrics.utils.functions import levenshtein_distance
-
-    distances = [levenshtein_distance(prediction, choice) for choice in choices]
-    return choices[distances.index(min(distances))]
 
 
 # ---------------------------------------------------------------------------
@@ -169,39 +153,23 @@ def get_most_similar(prediction: str, choices: List[str]) -> str:
 
 
 def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
-    """Score an MCQ response against the ground-truth answer.
+    """Score a single label or exact option text, or compare a multi-choice answer."""
+    if answer not in _CHOICES:
+        return float(sorted(answer) == sorted(extracted_answer))
 
-    Handles single-choice (len(answer)==1) and multi-choice questions.
-    Uses Levenshtein nearest-match as a fallback when extracted_answer is
-    not a valid choice letter.
-    """
-    correctness = 0.0
+    extraction = extracted_answer.removeprefix('Extracted answer:').strip()
+    if extraction in _CHOICES:
+        return float(extraction == answer)
+    if not extraction:
+        return 0.0
 
-    if len(answer) == 1 and answer in _CHOICES:
-        # Single-choice question
-        extraction = extracted_answer.replace('Extracted answer:', '').strip()
-        if extraction not in _CHOICES:
-            # Try to match via prompt context (e.g. "A. cat" style options)
-            for x in _CHOICES:
-                if (
-                    f'{x}. {extraction}' in prompt_text
-                    or f'{x}.{extraction}' in prompt_text
-                    or f'{x} {extraction}' in prompt_text
-                    or f'{x}{extraction}' in prompt_text
-                ):
-                    extraction = x
-                    break
-            extraction = get_most_similar(extraction, _CHOICES)
-        if extraction == answer:
-            correctness = 1.0
-    else:
-        # Multi-choice question: compare sorted letter sets
-        sorted_answer = ''.join(sorted(answer))
-        sorted_extracted = ''.join(sorted(extracted_answer))
-        if sorted_answer == sorted_extracted:
-            correctness = 1.0
-
-    return correctness
+    matching_labels = {
+        label
+        for pattern in (_OPTION_LINE_RE, _OPTION_INLINE_RE)
+        for label, option in pattern.findall(prompt_text)
+        if option.strip() == extraction
+    }
+    return float(matching_labels == {answer})
 
 
 # ---------------------------------------------------------------------------

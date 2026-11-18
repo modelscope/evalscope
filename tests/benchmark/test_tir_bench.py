@@ -1,108 +1,94 @@
-"""Unit tests for TIR-Bench multiple-choice answer extraction."""
+"""Regression tests for TIR-Bench answer scoring."""
+
 import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentText
+from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
-from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
-from evalscope.benchmarks.tir_bench.tir_bench_adapter import TIRBenchAdapter
-from evalscope.benchmarks.tir_bench.utils import extract_mcq_answer, judge_choice
+from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 
 PROMPT = 'What is the reading on the gauge?\nA. 10\nB. 20\nC. 30\nD. 40'
 
 
-def test_tir_bench_evaluation_version_reflects_scoring_change() -> None:
-    metadata = BENCHMARK_REGISTRY['tir_bench']
-
-    assert metadata.data_adapter is TIRBenchAdapter
-    assert metadata.evaluation_version == 'v1.3'
+def _score(prediction: str, target: str, prompt: str = PROMPT, task: str = 'instrument') -> Score:
+    adapter = get_benchmark('tir_bench', config=TaskConfig(datasets=['tir_bench'], judge={'strategy': 'rule'}))
+    state = TaskState(
+        model='offline',
+        sample=Sample(input=[ChatMessageUser(content=[ContentText(text=prompt)])], target=target, metadata={'task': task}),
+        output=ModelOutput.from_content('offline', prediction),
+        completed=True,
+    )
+    return adapter.calculate_metrics(state).score
 
 
 @pytest.mark.parametrize(
-    ('prediction', 'expected'),
+    ('prediction', 'target'),
     [
-        # The pronoun 'I' is not one of the options.
         ('The correct option is C. I double-checked the dial markings.', 'C'),
         ('Option B matches the needle position. I am fairly confident.', 'B'),
-        # 'H' is a valid letter in general, but not an option of this question.
-        ('The reading is B, not the value at mark H.', 'B'),
-    ],
-)
-def test_bare_letter_must_be_an_offered_option(prediction: str, expected: str) -> None:
-    extracted = extract_mcq_answer(prediction, PROMPT)
-
-    assert extracted == expected
-    assert judge_choice(extracted, expected, PROMPT) == 1.0
-
-
-@pytest.mark.parametrize(
-    ('prediction', 'expected'),
-    [
         ('Answer: A looks close, but the needle is past 25.\nAnswer: C', 'C'),
-        ('The answer is A at first glance. Looking again, the answer is C.', 'C'),
-        ('A is correct? No, C is correct.', 'C'),
-    ],
-)
-def test_last_explicit_answer_marker_wins(prediction: str, expected: str) -> None:
-    assert extract_mcq_answer(prediction) == expected
-
-
-@pytest.mark.parametrize(
-    ('prediction', 'expected'),
-    [
+        ('Answer: A at first. On reflection the answer is C.', 'C'),
+        ('**Answer:** C.', 'C'),
+        ('Answer - C', 'C'),
+        ('答案是C。', 'C'),
+        ('Answer: $C$', 'C'),
         ('C', 'C'),
-        ('Answer: B', 'B'),
-        ('The answer is D.', 'D'),
+        ('After comparing the readings:\n(C)', 'C'),
         (r'The reading is 30, so \boxed{C}.', 'C'),
-        ('(A) is too low; the needle is at (C).', 'C'),
         ('The needle points at 30, so C.', 'C'),
     ],
 )
-def test_clear_answers_are_unchanged(prediction: str, expected: str) -> None:
-    assert extract_mcq_answer(prediction, PROMPT) == expected
+def test_explicit_single_choice_is_scored(prediction: str, target: str) -> None:
+    score = _score(prediction, target)
+
+    assert score.extracted_prediction == target
+    assert score.main_value == 1
 
 
 @pytest.mark.parametrize(
-    'prompt',
+    ('prediction', 'target'),
     [
-        'What proportion of the image is the man?\nA: 65%\nB: 73%\nC: 81%',
-        'What is the voltmeter reading in kV?\nA 200-205\nB 205-210\nC 210-215',
-        'How many edges are there in this polygon?\nA.12\nB.13\nC.14',
-        'Does the bar have a uniform color? Select from the following choices. (A) Hard to tell (B) Yes (C) No',
+        ('I ruled out option B.', 'B'),
+        ('I ruled out option B. I cannot determine the reading.', 'B'),
+        ('Option B is wrong.', 'B'),
+        ('I do not think the answer is B.', 'B'),
+        ('I ruled out option B. My final choice is H.', 'B'),
+        ('Answer: C or B', 'C'),
+        ('Answer: I think it might be C.', 'C'),
+        ('It is unreadable.', 'A'),
+        ('', 'A'),
     ],
 )
-def test_option_labels_are_read_from_dataset_prompt_styles(prompt: str) -> None:
-    assert extract_mcq_answer('It is B. I checked twice.', prompt) == 'B'
+def test_single_choice_does_not_credit_mentions_or_guesses(prediction: str, target: str) -> None:
+    assert _score(prediction, target).main_value == 0
 
 
-def test_all_letters_count_when_the_prompt_lists_no_options() -> None:
-    assert extract_mcq_answer('It is H.', 'Which option is correct?') == 'H'
+@pytest.mark.parametrize(
+    ('prompt', 'prediction', 'target', 'expected'),
+    [
+        (PROMPT, '20', 'B', 1),
+        (PROMPT, 'Answer: 20', 'B', 1),
+        ('A 200-205\nB 205-210\nC 210-215', '205-210', 'B', 1),
+        ('A: 65%\nB: 73%\nC: 81%', '73%', 'B', 1),
+        ('A.12\nB.13\nC.14', '13', 'B', 1),
+        ('Choose one. (A) Hard to tell (B) Yes (C) No', 'Yes', 'B', 1),
+        ('A. 200\nB. 20', '20', 'A', 0),
+        ('A. 20\nB. 20', '20', 'A', 0),
+        (PROMPT, '2', 'B', 0),
+    ],
+)
+def test_single_choice_matches_only_unique_complete_option_text(
+    prompt: str, prediction: str, target: str, expected: int
+) -> None:
+    assert _score(prediction, target, prompt).main_value == expected
 
 
-def test_reply_without_an_offered_letter_is_not_credited() -> None:
-    # Raw text would reach the nearest-letter fallback in judge_choice, which picks 'A' here.
-    prediction = 'After zooming in, I still cannot read the dial.'
-
-    assert judge_choice(extract_mcq_answer(prediction, PROMPT), 'A', PROMPT) == 0.0
-
-
-def test_adapter_passes_the_prompt_to_answer_extraction() -> None:
-    adapter = get_benchmark('tir_bench', config=TaskConfig(datasets=['tir_bench'], judge={'strategy': 'rule'}))
-    sample = Sample(
-        input=[ChatMessageUser(content=[ContentText(text=PROMPT)])],
-        target='C',
-        metadata={'task': 'instrument', 'meta_data': {}, 'id': 1},
-    )
-    state = TaskState(
-        model='offline',
-        sample=sample,
-        output=ModelOutput.from_content('offline', 'The correct option is C. I double-checked the dial markings.'),
-        completed=True,
-    )
-
-    score = adapter.calculate_metrics(state).score
-
-    assert score.extracted_prediction == 'C'
-    assert score.main_value == 1
+@pytest.mark.parametrize(
+    ('task', 'prediction', 'target'),
+    [('instrument', 'BA', 'AB'), ('instrument', '20', '20'), ('ocr', 'The text reads ABC.', 'ABC')],
+)
+def test_other_answer_types_keep_their_scoring(task: str, prediction: str, target: str) -> None:
+    assert _score(prediction, target, task=task).main_value == 1
