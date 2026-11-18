@@ -8,11 +8,17 @@ import re
 from typing import List, Optional, Tuple
 
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 logger = get_logger()
 
 # Valid MCQ choice letters
 _CHOICES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+
+_OPTION_LINE_RE = re.compile(r'^[ \t]*([A-J])(?:[.:)]|[ \t]+)[ \t]*(\S[^\n]*)$', re.MULTILINE)
+_OPTION_INLINE_RE = re.compile(r'\(([A-J])\)[ \t]*(.*?)(?=\([A-J]\)|$)', re.MULTILINE)
+
+_SINGLE_CHOICE_RE = re.compile(r'(?:[A-J]|\([A-J]\)|\[[A-J]\]|\\boxed\{[A-J]\}|\$[A-J]\$)[.。]?')
 
 # ---------------------------------------------------------------------------
 # Answer-type classification
@@ -49,17 +55,24 @@ def classify_string(s: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def extract_mcq_answer(prediction: str) -> str:
-    """Extract a MCQ choice letter (A-J) from a model prediction.
+def is_single_choice_answer(reference: str) -> bool:
+    """Return whether the reference is a single choice label."""
+    return reference in _CHOICES
 
-    Priority order:
-    1. \\boxed{X} – LaTeX boxed answer (highest priority)
-    2. Explicit keyword patterns: 'ANSWER: A', 'Answer: A', 'The answer is A', etc.
-    3. '(X)' parenthesised letter – take the **last** occurrence to avoid matching
-       option listings in the reasoning text
-    4. Last standalone uppercase letter A-J at a word boundary
-    5. Return the stripped prediction as-is if nothing matches
-    """
+
+def _extract_single_choice(prediction: str) -> str:
+    """Read a structured answer or retain the text for exact option matching."""
+    answer = prediction.strip()
+    last_line = answer.rsplit('\n', 1)[-1]
+    if last_line.partition(':')[0].strip(' \t*').casefold() == 'answer':
+        answer = extract_answer_line(last_line) or answer
+    if _SINGLE_CHOICE_RE.fullmatch(answer):
+        return answer.removeprefix(r'\boxed{').strip('()[]{}$.。')
+    return answer
+
+
+def extract_mcq_answer(prediction: str) -> str:
+    """Extract a choice using the legacy rules for non-single-choice references."""
     if not prediction:
         return prediction
 
@@ -98,8 +111,8 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
 
     Uses :func:`classify_string` on the reference to select the right strategy:
 
-    - **type 1** (alphabetic / MCQ letter): apply :func:`extract_mcq_answer`
-      to pull a single choice letter out of the model's reasoning text.
+    - **type 1** (alphabetic / MCQ letter): use explicit answer extraction for
+      single-choice items and the legacy parser for other items.
     - **type 2 / 3 / 4** (integer / float / composite like ``[2, 3]``): return
       the raw prediction unchanged so that the task-specific scoring functions
       in :meth:`TIRBenchAdapter.match_score` (``judge_int``, ``judge_float``,
@@ -113,22 +126,11 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
     Returns:
         Extracted or raw prediction string.
     """
+    if is_single_choice_answer(reference):
+        return _extract_single_choice(prediction)
     if classify_string(reference) == 1:
         return extract_mcq_answer(prediction)
     return prediction
-
-
-# ---------------------------------------------------------------------------
-# Levenshtein-based nearest match
-# ---------------------------------------------------------------------------
-
-
-def get_most_similar(prediction: str, choices: List[str]) -> str:
-    """Return the choice most similar to prediction using Levenshtein distance."""
-    from evalscope.metrics.utils.functions import levenshtein_distance
-
-    distances = [levenshtein_distance(prediction, choice) for choice in choices]
-    return choices[distances.index(min(distances))]
 
 
 # ---------------------------------------------------------------------------
@@ -137,39 +139,23 @@ def get_most_similar(prediction: str, choices: List[str]) -> str:
 
 
 def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
-    """Score an MCQ response against the ground-truth answer.
+    """Score a single label or exact option text, or compare a multi-choice answer."""
+    if not is_single_choice_answer(answer):
+        return float(sorted(answer) == sorted(extracted_answer))
 
-    Handles single-choice (len(answer)==1) and multi-choice questions.
-    Uses Levenshtein nearest-match as a fallback when extracted_answer is
-    not a valid choice letter.
-    """
-    correctness = 0.0
+    extraction = extracted_answer.removeprefix('Extracted answer:').strip()
+    if extraction in _CHOICES:
+        return float(extraction == answer)
+    if not extraction:
+        return 0.0
 
-    if len(answer) == 1 and answer in _CHOICES:
-        # Single-choice question
-        extraction = extracted_answer.replace('Extracted answer:', '').strip()
-        if extraction not in _CHOICES:
-            # Try to match via prompt context (e.g. "A. cat" style options)
-            for x in _CHOICES:
-                if (
-                    f'{x}. {extraction}' in prompt_text
-                    or f'{x}.{extraction}' in prompt_text
-                    or f'{x} {extraction}' in prompt_text
-                    or f'{x}{extraction}' in prompt_text
-                ):
-                    extraction = x
-                    break
-            extraction = get_most_similar(extraction, _CHOICES)
-        if extraction == answer:
-            correctness = 1.0
-    else:
-        # Multi-choice question: compare sorted letter sets
-        sorted_answer = ''.join(sorted(answer))
-        sorted_extracted = ''.join(sorted(extracted_answer))
-        if sorted_answer == sorted_extracted:
-            correctness = 1.0
-
-    return correctness
+    matching_labels = {
+        label
+        for pattern in (_OPTION_LINE_RE, _OPTION_INLINE_RE)
+        for label, option in pattern.findall(prompt_text)
+        if option.strip() == extraction
+    }
+    return float(matching_labels == {answer})
 
 
 # ---------------------------------------------------------------------------
