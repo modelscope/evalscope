@@ -58,7 +58,7 @@ LongText-Bench evaluates whether text-to-image models accurately render long Eng
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        evaluation_version='v1.1',
+        evaluation_version='v1.0',
     )
 )
 class LongTextBenchAdapter(CorpusAggregationMixin, Text2ImageAdapter):
