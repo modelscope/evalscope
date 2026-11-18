@@ -3,13 +3,13 @@
 
 ## 概述
 
-LongText-Bench 评估文本到图像模型能否准确渲染长英文和中文文本。
+LongText-Bench 评估文本到图像模型是否准确渲染长英文和中文文本。
 
 ## 任务描述
 
 - **任务类型**：文本到图像生成
-- **输入**：描述包含指定文本场景的提示词
-- **输出**：包含请求文本的图像
+- **输入**：描述包含指定文本的场景的提示词
+- **输出**：包含所请求文本的图像
 - **领域**：长文本渲染
 
 ## 主要特点
@@ -19,9 +19,9 @@ LongText-Bench 评估文本到图像模型能否准确渲染长英文和中文�
 
 ## 评估说明
 
-- 使用视觉 API 转录图像内容。文本得分（Text Score）为匹配 token 数除以真实值 token 数（英文单词或中文字符）。总体得分为两种语言得分的平均值。
+- 使用视觉 API 转录图像。文本分数（Text Score）为匹配 token 数除以 ground-truth token 数（英文单词或中文字符）。双语总体分数要求每种语言都有评分结果；否则报告将显示可用语言的分数。
 - 默认在 DashScope 上使用 qwen3.8-flash：需设置 DASHSCOPE_API_KEY；无需本地 VLM 权重。官方评估器使用 Qwen2.5-VL-7B，因此不同转录模型的结果不可直接比较。
-- 评分遵循官方匹配规则；对于其重复图像协议，请使用 repeats=4。文本得分不评估布局或美学效果。API 失败和截断的回复将被排除；有效的空转录得分为零。
+- 评分遵循官方匹配规则；对于其重复图像协议，请使用 repeats=4。文本分数不评估布局或美学效果。API 失败和截断回复将被排除；有效的空转录得分为零。
 
 
 ## 属性
@@ -33,7 +33,7 @@ LongText-Bench 评估文本到图像模型能否准确渲染长英文和中文�
 | **论文** | [Paper](https://arxiv.org/abs/2507.22058) |
 | **标签** | `TextToImage` |
 | **指标** | `LongTextScore` |
-| **默认示例数** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -60,7 +60,7 @@ LongText-Bench 评估文本到图像模型能否准确渲染长英文和中文�
 {
   "input": [
     {
-      "id": "e1c21379",
+      "id": "a3412209",
       "content": "A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \"CENTRAL PARK - 2 BLOCKS\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere."
     }
   ],
@@ -85,7 +85,7 @@ LongText-Bench 评估文本到图像模型能否准确渲染长英文和中文�
 }
 ```
 
-*注意：部分内容为显示目的已截断。*
+*注意：部分内容为展示目的已截断。*
 
 ## 提示模板
 

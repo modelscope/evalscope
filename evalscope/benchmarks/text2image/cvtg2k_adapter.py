@@ -44,7 +44,8 @@ CVTG-2K evaluates whether text-to-image models accurately render multiple text r
 
 ## Evaluation Notes
 
-- Requires PaddleOCR 2.x and PaddlePaddle to recognize generated text.
+- Install `evalscope[cvtg_2k]` for PaddleOCR scoring. Use Python 3.11 or 3.12 on a platform
+  supported by PaddlePaddle 2.6.
 - Word Accuracy and word-level normalized edit similarity (NED, higher is better) follow the official evaluator,
   aggregating across all ground-truth words rather than averaging image scores.
 - These metrics assess text content, not font, color, layout or image aesthetics.

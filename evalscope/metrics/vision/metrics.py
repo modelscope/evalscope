@@ -426,7 +426,8 @@ class MPS(T2IMetric):
 # ############################
 @lru_cache(maxsize=None)
 def _get_cvtg_ocr(lang: str) -> Any:
-    check_import('paddleocr', raise_error=True, feature_name='CVTG-2K Metric')
+    for module in ('paddle', 'paddleocr'):
+        check_import(module, extra='cvtg_2k', raise_error=True, feature_name='CVTG-2K scoring')
     from paddleocr import PaddleOCR
 
     return PaddleOCR(use_angle_cls=True, lang=lang, show_log=False)
@@ -552,7 +553,8 @@ class LongTextScore(_TextRenderingMetric):
             raise RuntimeError(output.error or 'VLM API transcription failed.')
         if output.stop_reason == 'max_tokens':
             raise ValueError('VLM transcription reached max_tokens; increase the scorer generation_config.max_tokens.')
-        return output.completion.replace('No text recognized.', '')
+        transcript = output.completion.strip()
+        return '' if transcript.casefold() in {'no text recognized', 'no text recognized.'} else transcript
 
     def _score_counts(self, image_path: str, gt_text: str) -> Tuple[float, float, int]:
         return text_score_counts(gt_text, self._transcribe(image_path), self.lang)

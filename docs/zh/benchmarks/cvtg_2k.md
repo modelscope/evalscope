@@ -3,7 +3,7 @@
 
 ## 概述
 
-CVTG-2K 评估文本到图像模型在单张图像中准确渲染多个文本区域的能力。
+CVTG-2K 评估文本到图像模型能否在单张图像中准确渲染多个文本区域。
 
 ## 任务描述
 
@@ -14,17 +14,16 @@ CVTG-2K 评估文本到图像模型在单张图像中准确渲染多个文本区
 
 ## 主要特点
 
-- 包含来自 TextCrafter 的 2,000 条提示词：CVTG（1,002 条）和 CVTG-Style（998 条）。
+- 来自 TextCrafter: CVTG (1,002) 和 CVTG-Style (998) 的 2,000 条提示词。
 - CVTG-Style 额外指定了文本大小、颜色和字体。
 - 默认加载 ModelScope 镜像；同时也支持官方 Hugging Face 源。
 
 ## 评估说明
 
-- 需要 PaddleOCR 2.x 和 PaddlePaddle 来识别生成的文本。
-- 单词准确率（Word Accuracy）和单词级归一化编辑相似度（NED，值越高越好）遵循官方评估器标准，
-  对所有真实标签单词进行聚合计算，而非对图像得分取平均值。
+- 安装 `evalscope[cvtg_2k]` 以使用 PaddleOCR 进行评分。请在支持 PaddlePaddle 2.6 的平台上的 Python 3.11 或 3.12 环境中运行。
+- 单词准确率（Word Accuracy）和单词级归一化编辑相似度（NED，值越高越好）遵循官方评估器标准，对所有真实标签单词进行聚合计算，而非对图像得分取平均值。
 - 这些指标仅评估文本内容，不涉及字体、颜色、布局或图像美学。
-- 评分失败的样本将被排除；有效但未识别出任何文本的图像视为缺失文本。
+- 评分失败的样本将被排除；对于未识别出任何文本的有效图像，视为缺失文本。
 
 
 ## 属性
@@ -63,7 +62,7 @@ CVTG-2K 评估文本到图像模型在单张图像中准确渲染多个文本区
 {
   "input": [
     {
-      "id": "7c67e1db",
+      "id": "58a209ac",
       "content": "A quiet bookstore with a sign that says 'READ'. A coffee cup on the table with the word 'MORNING'."
     }
   ],

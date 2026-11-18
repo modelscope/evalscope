@@ -5,10 +5,11 @@ from typing import Any, Dict, List, Type
 
 from evalscope.api.benchmark import BenchmarkMeta, Text2ImageAdapter
 from evalscope.api.dataset import DataLoader, Dataset, LocalDataLoader, Sample, download_dataset_file
-from evalscope.api.metric import MetricSelector
+from evalscope.api.metric import AggScore, MetricIdentity, MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.text2image.corpus_aggregation import CorpusAggregationMixin
 from evalscope.constants import HubType, Tags
+from evalscope.report import Report
 
 
 @register_benchmark(
@@ -41,7 +42,8 @@ LongText-Bench evaluates whether text-to-image models accurately render long Eng
 ## Evaluation Notes
 
 - A vision API transcribes the image. Text Score is matched tokens divided by ground-truth
-  tokens (English words or Chinese characters). The overall score averages the two language scores.
+  tokens (English words or Chinese characters). A bilingual overall score requires a scored result
+  for each language; otherwise the report shows available language scores.
 - Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are needed.
   The official evaluator uses Qwen2.5-VL-7B, so results from different transcription models
   are not directly comparable.
@@ -56,7 +58,7 @@ LongText-Bench evaluates whether text-to-image models accurately render long Eng
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class LongTextBenchAdapter(CorpusAggregationMixin, Text2ImageAdapter):
@@ -65,6 +67,34 @@ class LongTextBenchAdapter(CorpusAggregationMixin, Text2ImageAdapter):
     def _corpus_report_score(self, counts: List[Dict[str, Any]]) -> float:
         """Average language scores, matching the official LongText-Bench leaderboard."""
         return sum(item['numerator'] / item['denominator'] for item in counts) / len(counts)
+
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+        report = super()._on_generate_report(scores, model_name)
+        scored_languages = {
+            subset
+            for subset, aggregates in scores.items()
+            if any(item.metric_name == 'text_score' and item.dimensions == {'scope': 'overall'} for item in aggregates)
+        }
+        missing_languages = set(self.subset_list) - scored_languages
+        if len(scored_languages) != 1 or not missing_languages:
+            return report
+
+        # Keep the surviving language visible without presenting it as the bilingual result.
+        language = next(iter(scored_languages))
+        if report.primary_metric_identity and report.primary_metric_identity.name == 'text_score':
+            report.primary_metric_identity = None
+            report.primary_metric_unavailable_reason = (
+                f'No usable Text Score for: {", ".join(sorted(missing_languages))}.'
+            )
+        for metric in report.metrics:
+            if metric.identity.name == 'text_score':
+                dimensions = {key: value for key, value in metric.identity.dimensions.items() if key != 'scope'}
+                metric.identity = MetricIdentity(
+                    name=metric.identity.name,
+                    aggregation=metric.identity.aggregation,
+                    dimensions={**dimensions, 'subset': language},
+                )
+        return report
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """Load each official HF language file through the shared download and conversion flow."""

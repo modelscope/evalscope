@@ -21,7 +21,8 @@ LongText-Bench evaluates whether text-to-image models accurately render long Eng
 ## Evaluation Notes
 
 - A vision API transcribes the image. Text Score is matched tokens divided by ground-truth
-  tokens (English words or Chinese characters). The overall score averages the two language scores.
+  tokens (English words or Chinese characters). A bilingual overall score requires a scored result
+  for each language; otherwise the report shows available language scores.
 - Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are needed.
   The official evaluator uses Qwen2.5-VL-7B, so results from different transcription models
   are not directly comparable.
@@ -66,7 +67,7 @@ LongText-Bench evaluates whether text-to-image models accurately render long Eng
 {
   "input": [
     {
-      "id": "e1c21379",
+      "id": "a3412209",
       "content": "A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \"CENTRAL PARK - 2 BLOCKS\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere."
     }
   ],
