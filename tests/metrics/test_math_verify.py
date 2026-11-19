@@ -173,6 +173,33 @@ def test_mixed_benchmarks_keep_categorical_scores(name: Any, metadata: Any, pred
         assert score.value == {'accuracy':1}
 
 
+@pytest.mark.parametrize(('prediction', 'rounded_prediction', 'expected'), [
+    ('2.04', '2.0', 1), ('2.06', '2.1', 0),
+])
+def test_math_vista_float_answers_use_sample_precision(
+    prediction: str, rounded_prediction: str, expected: int,
+) -> None:
+    metadata = {'question_type': 'free_form', 'answer_type': 'float', 'precision': 1}
+    score = adapter('math_vista').calculate_metrics(state(r'\boxed{' + prediction + '}', '2.0', metadata)).score
+    assert score.main_value == expected
+    assert score.extracted_prediction == rounded_prediction
+
+
+@pytest.mark.parametrize(('prediction', 'reference', 'metadata', 'expected'), [
+    ('2.04', '2.0', {'answer_type': 'integer', 'precision': 1}, 0),
+    ('2.04', '2.0', {'answer_type': 'list', 'precision': 1}, 0),
+    ('2.04', '2.0', {'answer_type': 'float'}, 0),
+    (r'\frac{51}{25}', '2.04', {'answer_type': 'float', 'precision': 1}, 1),
+])
+def test_math_vista_keeps_answers_without_float_rounding(
+    prediction: str, reference: str, metadata: dict[str, Any], expected: int,
+) -> None:
+    metadata = {'question_type': 'free_form', **metadata}
+    score = adapter('math_vista').calculate_metrics(state(r'\boxed{' + prediction + '}', reference, metadata)).score
+    assert score.main_value == expected
+    assert score.extracted_prediction == prediction
+
+
 def test_parallel_matches_sequential() -> None:
     cases = [('1800','18'),('18%','.18'),(r'\frac{1}{2}','.5'),('x+x','2x')] * 12
     sequential = [math_equal(*case) for case in cases]
