@@ -6,6 +6,8 @@ on:
     types: [completed]
   issue_comment:
     types: [created]
+  issues:
+    types: [opened, reopened, edited, labeled]
 
 permissions: {}
 
@@ -26,6 +28,7 @@ jobs:
       sha: ${{ steps.pr.outputs.sha }}
       command: ${{ steps.pr.outputs.command }}
       intake: ${{ steps.pr.outputs.intake }}
+      requeue: ${{ steps.pr.outputs.requeue }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,7 +46,8 @@ jobs:
       contents: read
       pull-requests: write
     concurrency:
-      group: pr-path-labels-${{ needs.resolve.outputs.number }}
+      group: evalscope-ai-review-${{ needs.resolve.outputs.number }}
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,12 +56,50 @@ jobs:
         with:
           pr-number: ${{ needs.resolve.outputs.number }}
           sync-labels: true
+      - name: Sync triage and review labels
+        run: python3 .github/scripts/pr_automation.py triage-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.resolve.outputs.number }}
+          PR_SHA: ${{ needs.resolve.outputs.sha }}
+          PR_REQUEUE: ${{ needs.resolve.outputs.requeue }}
+
+  triage:
+    if: >-
+      (github.event_name == 'issues' &&
+       (github.event.action == 'opened' || github.event.action == 'reopened' ||
+        (github.event.action == 'edited' && github.event.changes.body &&
+         github.event.sender.id == github.event.issue.user.id &&
+         contains(github.event.issue.labels.*.name, 'needs-info')) ||
+        (github.event.action == 'labeled' &&
+         contains(fromJSON('["needs-triage","needs-info","accepted","ready-for-review"]'), github.event.label.name)))) ||
+      (github.event_name == 'issue_comment' && github.event.comment.user.type == 'User' &&
+       github.event.comment.user.id == github.event.issue.user.id &&
+       contains(github.event.issue.labels.*.name, 'needs-info'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: evalscope-ai-review-${{ github.event.issue.number }}
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Update triage status
+        run: python3 .github/scripts/pr_automation.py triage-event
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   review:
     needs: resolve
     if: >-
       needs.resolve.outputs.number != '' &&
       vars.PR_REVIEW_API_BASE != '' && vars.PR_REVIEW_MODEL != '' &&
+      !contains(fromJSON('["PR Intake (labeled)","PR Intake (edited)","PR Intake (converted_to_draft)"]'),
+                github.event.workflow_run.display_title) &&
       (needs.resolve.outputs.command != '0' || vars.PR_REVIEW_AUTO_START_AT != '')
     runs-on: ubuntu-latest
     timeout-minutes: 12

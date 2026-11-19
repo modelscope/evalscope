@@ -1,7 +1,8 @@
 ---
-name: 1-Issue 模版（中文版）
-about: 模型评测遇到的问题
+name: 1-Bug 报告（中文版）
+about: 报告评测中可以复现的问题
 title: ''
+type: Bug
 labels: ''
 assignees: ''
 
