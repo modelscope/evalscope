@@ -556,8 +556,9 @@ class Arguments(BaseArgument):
         if api_key:
             self.headers['Authorization'] = SecretStr(f'Bearer {api_key}')
 
-        # Set the model ID based on the model name
-        self.model_id = os.path.basename(self.model) if self.model else (self.dataset or 'unknown')
+        # Set the model ID based on the model name; a trailing separator (as shell completion adds to a
+        # directory) must not leave it empty.
+        self.model_id = os.path.basename(self.model.rstrip('/\\')) if self.model else (self.dataset or 'unknown')
 
         if self.model is None:
             from evalscope.perf.plugin.registry import DatasetRegistry
