@@ -41,6 +41,8 @@ AI_TITLES = {
     'ai:failed': 'Review failed',
     'ai:skipped': 'Review skipped',
 }
+AI_ALERT_LABELS = frozenset(('ai:findings', 'ai:failed'))
+# Include retired labels so synchronization removes them from existing PRs.
 AI_LABELS = frozenset(AI_TITLES)
 AI_SUCCESS = frozenset(('ai:no-findings', 'ai:findings'))
 PREVIOUS_REVIEW = '\n\n### Previous successful review\n\n'
@@ -201,21 +203,18 @@ def triage_event() -> None:
 
 def review_label(state: dict, previous: str, sha: str) -> str:
     if 'result_sha' in state:
-        if state['result_sha'] == sha and state.get('outcome') in AI_TITLES:
+        if state['result_sha'] == sha and state.get('outcome') in AI_ALERT_LABELS:
             return state['outcome']
         return ''
     # Summaries published before review labels used a standalone Commit line.
     if not re.search(rf'^Commit {sha[:12]}$', previous, re.MULTILINE):
         return ''
     if state.get('size_skip_sha') == sha and 'Review skipped' in previous:
-        return 'ai:skipped'
+        return ''
     if 'The model did not return a review.' in previous or 'could be located' in previous:
         return 'ai:failed'
-    if state.get('reviewed'):
-        if re.search(r'^- \*\*', previous, re.MULTILINE):
-            return 'ai:findings'
-        if 'PR-Agent found no actionable issues' in previous:
-            return 'ai:no-findings'
+    if state.get('reviewed') and re.search(r'^- \*\*', previous, re.MULTILINE):
+        return 'ai:findings'
     return ''
 
 
@@ -449,7 +448,8 @@ def publish(number: int, sha: str, command: int, directory: Path) -> None:
         github(f'issues/{number}/comments', '-X', 'POST', body=comment)
     else:
         github(f'issues/comments/{comment_id}', '-X', 'PATCH', body=comment)
-    replace_family(number, {label['name'] for label in pr['labels']}, AI_LABELS, outcome)
+    label = outcome if outcome in AI_ALERT_LABELS else ''
+    replace_family(number, {label['name'] for label in pr['labels']}, AI_LABELS, label)
     if outcome == 'ai:failed':
         raise SystemExit('PR-Agent did not return a review.')
 
