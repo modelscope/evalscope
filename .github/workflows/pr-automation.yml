@@ -98,7 +98,9 @@ jobs:
           PR_REVIEW_API_BASE: ${{ vars.PR_REVIEW_API_BASE }}
           PR_REVIEW_MODEL: ${{ vars.PR_REVIEW_MODEL }}
           PR_REVIEW_MAX_OUTPUT_TOKENS: ${{ vars.PR_REVIEW_MAX_OUTPUT_TOKENS }}
-          PR_REVIEW_DISABLE_THINKING: ${{ vars.PR_REVIEW_DISABLE_THINKING }}
+          PR_REVIEW_ENABLE_THINKING: ${{ vars.PR_REVIEW_ENABLE_THINKING }}
+          PR_REVIEW_REASONING_EFFORT: ${{ vars.PR_REVIEW_REASONING_EFFORT }}
+          PR_REVIEW_TEMPERATURE: ${{ vars.PR_REVIEW_TEMPERATURE }}
       - name: Update the PR summary
         if: steps.prepare.outputs.decision == 'size-skip' || steps.agent.outputs.result != ''
         run: python3 .github/scripts/pr_automation.py publish
