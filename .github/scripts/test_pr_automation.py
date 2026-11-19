@@ -147,6 +147,53 @@ def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.Mon
     ]
 
 
+@pytest.mark.parametrize(
+    ('outcome', 'label'),
+    [('ai:no-findings', ''), ('ai:skipped', ''), ('ai:findings', 'ai:findings'), ('ai:failed', 'ai:failed')],
+)
+def test_review_label_only_restores_alerts(outcome: str, label: str) -> None:
+    assert bot.review_label({'result_sha': SHA, 'outcome': outcome}, '', SHA) == label
+
+
+@pytest.mark.parametrize(
+    ('result', 'title'),
+    [('review', 'No actionable findings'), ('size-skip', 'Review skipped')],
+)
+def test_quiet_review_updates_comment_and_clears_labels(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, result: str, title: str
+) -> None:
+    (tmp_path / 'request.json').write_text(json.dumps({'files': [], 'skip_reason': 'Diff too large.'}))
+    (tmp_path / 'result.json').write_text(
+        json.dumps(
+            {
+                'review': {'key_issues_to_review': []},
+                'coverage': {'files_not_reviewed': [], 'files_partially_reviewed': []},
+            }
+        )
+    )
+    monkeypatch.setenv('REVIEW_RESULT', result)
+    monkeypatch.setenv('GITHUB_SERVER_URL', 'https://github.com')
+    monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/repo')
+    monkeypatch.setenv('GITHUB_RUN_ID', '918')
+    labels = [{'name': name} for name in ('ai:findings', 'ai:no-findings', 'area:core')]
+    monkeypatch.setattr(bot, 'current_pr', lambda *_: dict(PR, labels=labels))
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {}, ''))
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> None:
+        calls.append((path, args, body))
+
+    monkeypatch.setattr(bot, 'github', github)
+    bot.publish(42, SHA, 0, tmp_path)
+    path, args, payload = calls[0]
+    assert (path, args) == ('issues/comments/17', ('-X', 'PATCH'))
+    assert f'**{title}**' in payload['body']
+    assert calls[1:] == [
+        ('issues/42/labels/ai%3Afindings', ('-X', 'DELETE'), None),
+        ('issues/42/labels/ai%3Ano-findings', ('-X', 'DELETE'), None),
+    ]
+
+
 def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPatch) -> None:
     labels = ['area:core', 'needs-info', 'ai:findings']
     monkeypatch.setattr(bot, 'get', lambda _: dict(PR, labels=[{'name': label} for label in labels]))

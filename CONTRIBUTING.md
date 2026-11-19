@@ -31,16 +31,15 @@ area labels from their changed files.
 - `ready-for-review` means a maintainer has checked a PR's scope and validation evidence.
 
 Each item has one triage status. Use GitHub's review requests, approvals, and change requests
-to manage the human review. The bot adds one `ai:*` label for the reviewed commit.
+to manage the human review. The bot labels findings or failures for the current commit.
 
-- `ai:no-findings` means the review finished without actionable findings.
 - `ai:findings` means the reviewer returned findings for a maintainer to verify.
 - `ai:failed` means the review did not produce a usable result.
-- `ai:skipped` means the bot skipped review and recorded the reason in its summary.
 
-PR Intake clears the AI label when the PR head changes. The summary shows the last attempt,
-commit, completion time, and the Actions run. A failed re-review preserves the previous
-successful review for reference.
+The review summary records every outcome, including reviews with no actionable findings
+and skipped reviews with their reason. It shows the last attempt, commit, completion time,
+and the Actions run. PR Intake clears the AI label when the PR head changes. A failed re-review
+preserves the previous successful review for reference.
 
 ### Operating the AI review workflow
 
