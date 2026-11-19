@@ -18,10 +18,22 @@ a new PR. Diffs over 50 changed files or 48 KiB go to manual review. To request 
 Maintainers can also request a review while CI is pending or failing. The bot updates its summary
 in place. Maintainers make the final review and merge decisions.
 
+### Operating the AI review workflow
+
+In the repository's Actions settings, configure the OpenAI-compatible base URL and model in
+the `PR_REVIEW_API_BASE` and `PR_REVIEW_MODEL` variables, and store the credential in the
+`PR_REVIEW_API_KEY` secret. Set `PR_REVIEW_AUTO_START_AT` to a UTC timestamp such as
+`2026-11-19T00:00:00Z` to start first reviews for newly opened PRs. Remove the start variable to
+pause automatic reviews while keeping the `/review` command available.
+
+The PR Automation job summary and logs show whether a request reached the model. Open the AI
+review comment to see the commit it covers and any actionable findings.
+
 ## Table of Contents
 
 - [Contributing to EvalScope](#contributing-to-evalscope)
   - [Before opening a pull request](#before-opening-a-pull-request)
+    - [Operating the AI review workflow](#operating-the-ai-review-workflow)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
   - [Development Setup](#development-setup)
