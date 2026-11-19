@@ -45,6 +45,9 @@ class JudgeCase(BaseModel):
     output_contract: OutputContract
     """Declares the verdict shape and is the only thing allowed to parse the response."""
 
+    required: bool = True
+    """Allow other independent cases to contribute if this case fails."""
+
     metadata: Dict[str, Any] = Field(default_factory=dict)
     """Adapter-defined data carried through the request callback and onto the verdict."""
 

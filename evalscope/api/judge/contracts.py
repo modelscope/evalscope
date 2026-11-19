@@ -37,6 +37,7 @@ class OutputContract(BaseModel):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     schema_model: Type[BaseModel]
+    allow_json_fences: bool = False
 
     def instruction(self) -> str:
         """The format requirement appended to the benchmark's own prompt."""
@@ -55,6 +56,9 @@ class OutputContract(BaseModel):
         """Validate the entire final reply as one JSON object, then apply the Pydantic schema."""
         if not response or not response.strip():
             return ParseResult.failure('empty response')
+
+        if self.allow_json_fences:
+            response = response.strip().removeprefix('```json\n').removeprefix('```\n').removesuffix('```').strip()
 
         try:
             data = json.loads(

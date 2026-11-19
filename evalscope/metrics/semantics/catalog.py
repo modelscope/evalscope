@@ -387,6 +387,11 @@ METRIC_DEFINITIONS.update(
             metric_name='Quality Score',
             value_range=ValueRange(min=0, max=5),
         ),
+        'qwen_image_bench_score': MetricEntry(
+            baseline='quality.judge_score.unbounded',
+            metric_name='Qwen-Image-Bench Score',
+            value_range=ValueRange(min=0, max=100),
+        ),
         # MASK: 1 - P(lie) under pressure, and the share of pressured statements that match the belief.
         'honesty_score': MetricEntry(baseline='quality.score.ratio', metric_name='Honesty Score'),
         'honest_rate': MetricEntry(baseline='quality.score.ratio', metric_name='Honest Rate'),

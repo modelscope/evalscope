@@ -1,9 +1,11 @@
 """Smoke tests for migrated Native judge adapters."""
 
 import json
+from pathlib import Path
 from typing import Any, List
 
 import pytest
+from PIL import Image
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -25,6 +27,80 @@ class TransportFailingJudge(ScriptedJudge):
     def generate(self, messages):
         self.calls.append(messages)
         raise RuntimeError('judge transport unavailable')
+
+
+def test_qwen_image_bench_uses_chinese_prompts_without_task_config() -> None:
+    adapter = get_benchmark('qwen_image_bench')
+    sample = adapter.record_to_sample({
+        'ID': 1,
+        'prompt_cn': '红色立方体',
+        'prompt_en': 'a red cube',
+        'dims_en': 'Quality / Realism / Physical Logic',
+    })
+    assert sample.metadata['prompt'] == '红色立方体'
+
+
+@pytest.mark.parametrize(
+    ('replies', 'expected_status', 'expected'),
+    [
+        (['{"Physical Logic":{"score":0},"Detail":{"Noise":{"score":"N/A"}}}',
+          '```json\n{"Attributes":{"Color":{"score":2}}}\n```'], ScoreStatus.SUCCESS, 50.0),
+        (['not JSON', '{"Attributes":{"Color":{"score":1}}}'], ScoreStatus.DEGRADED, 60.0),
+        (['not JSON', '[ERROR] judge transport unavailable'], ScoreStatus.EXCLUDED, None),
+        (['{"Realism":{"Physical Logic":{"score":"N/A"}}}', '{"Attributes":{"Color":{"score":"N/A"}}}'],
+         ScoreStatus.EXCLUDED, None),
+    ],
+)
+def test_qwen_image_bench_contract(
+    tmp_path: Path, replies: list[str], expected_status: ScoreStatus, expected: float | None
+) -> None:
+    image = tmp_path / 'sample.png'
+    Image.new('RGB', (8, 12)).save(image)
+    manifest = tmp_path / 'dataset.jsonl'
+    manifest.write_text(json.dumps({
+        'ID': 1,
+        'prompt_cn': '红色立方体',
+        'prompt_en': 'a red cube',
+        'dims_en': 'Quality / Detail / Noise; Alignment / Attributes / Color; Quality / Realism / Physical Logic',
+        'image_path': str(image),
+    }) + '\n', encoding='utf-8')
+    adapter = get_benchmark('qwen_image_bench', TaskConfig(
+        datasets=['qwen_image_bench'],
+        dataset_args={'qwen_image_bench': {'dataset_id': str(manifest), 'extra_params': {'language': 'en'}}},
+        judge={'models': [{'model_id': 'Qwen/Qwen-Image-Bench'}]},
+        work_dir=str(tmp_path / 'evaluation'),
+    ))
+    judge = ScriptedJudge(replies)
+    adapter.llm_judge = judge
+    sample = adapter.load_dataset()['default'][0]
+    assert sample.metadata['prompt'] == 'a red cube'
+    task = TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', ''), completed=True)
+
+    sample_score = adapter.calculate_metrics(task)
+    score = sample_score.score
+    assert score.status is expected_status
+    assert len(judge.calls) == 2
+    assert score.prediction == str(image)
+    artifacts = list((tmp_path / 'evaluation' / 'judge_images').rglob('*.png'))
+    assert len(artifacts) == 1
+    attempts = score.metadata['judge_attempts']
+    assert [attempt['messages'][1]['content'][1]['image'] for attempt in attempts] == [str(artifacts[0])] * 2
+    if expected is None:
+        assert score.value == {}
+        assert adapter.aggregate_scores([sample_score]) == []
+    else:
+        assert score.main_value == expected
+        by_component = {
+            item.dimensions.get('component'): item for item in adapter.aggregate_scores([sample_score])
+        }
+        assert by_component[None].score == expected and by_component[None].num == 1
+        assert by_component['alignment_attributes'].score == score.value['qwen_image_bench_score:alignment']
+        if expected_status is ScoreStatus.DEGRADED:
+            assert 'quality' not in by_component
+            assert score.judge_summary.failures == {'parse_error': 1}
+        else:
+            assert by_component['quality_realism'].score == 0.0
+            assert 'quality_detail' not in by_component
 
 
 @pytest.mark.parametrize(('judge', 'expected'), [
