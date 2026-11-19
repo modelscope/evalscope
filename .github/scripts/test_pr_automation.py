@@ -13,6 +13,8 @@ PR = {
     'draft': False,
     'base': {'ref': 'main'},
     'head': {'sha': SHA, 'ref': 'updates', 'repo': {'id': 123}},
+    'labels': [],
+    'user': {'id': 1},
 }
 RUN = {
     'id': 10,
@@ -97,17 +99,30 @@ def test_render_only_changed_files_and_suppresses_mentions() -> None:
         'issue_content': '<!-- evasion --> @someone [text](https://example.org)',
     }
     result = {'review': {'key_issues_to_review': [finding, dict(finding, relevant_file='unrelated.py')]}}
-    body = bot.render(result, ['a.py'])
+    outcome, body = bot.render(result, ['a.py'])
+    assert outcome == 'ai:findings'
     assert 'a.py:12' in body
     assert 'unrelated.py' not in body
     assert '<!--' not in body
     assert '@someone' not in body
 
 
+def test_skip_reason_explains_the_actual_diff_limit() -> None:
+    assert bot.skip_reason(15, [], b'x' * 62068) == (
+        'The PR changes 15 files and the raw diff is 62,068 bytes (60.6 KiB). The diff limit is 49,152 bytes (48 KiB).'
+    )
+    assert bot.skip_reason(51, [], None) == 'The PR changes 51 files. The review limit is 50.'
+    assert bot.skip_reason(1, [{}], b'x') == 'GitHub did not supply a text patch for 1 of 1 changed files.'
+    assert bot.skip_reason(1, [{'patch': 'x'}], b'x' * bot.MAX_DIFF_BYTES) == ''
+
+
 def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     (tmp_path / 'request.json').write_text(json.dumps({'actor': 'maintainer'}))
     monkeypatch.setenv('REVIEW_RESULT', 'failed')
-    monkeypatch.setattr(bot, 'current_pr', lambda *_: PR)
+    monkeypatch.setenv('GITHUB_SERVER_URL', 'https://github.com')
+    monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/repo')
+    monkeypatch.setenv('GITHUB_RUN_ID', '918')
+    monkeypatch.setattr(bot, 'current_pr', lambda *_: dict(PR, labels=[{'name': 'ai:findings'}]))
     previous = '## EvalScope AI review\n\nPrevious review'
     monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {'reviewed': True}, previous))
     calls = []
@@ -118,13 +133,58 @@ def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.Mon
     monkeypatch.setattr(bot, 'github', github)
     with pytest.raises(SystemExit, match='did not return a review'):
         bot.publish(42, SHA, 23, tmp_path)
-    assert calls == [
-        (
-            'issues/comments/17',
-            ('-X', 'PATCH'),
-            {'body': f'<!-- evalscope-pr-review {{"reviewed": true, "last_command": 23}} -->\n{previous}'},
-        )
+    path, args, payload = calls[0]
+    assert (path, args) == ('issues/comments/17', ('-X', 'PATCH'))
+    body = payload['body']
+    assert '"last_command": 23' in body
+    assert f'"result_sha": "{SHA}"' in body
+    assert '**Review failed**' in body
+    assert '[Actions run](https://github.com/owner/repo/actions/runs/918)' in body
+    assert bot.PREVIOUS_REVIEW + 'Previous review' in body
+    assert calls[1:] == [
+        ('issues/42/labels', ('-X', 'POST'), {'labels': ['ai:failed']}),
+        ('issues/42/labels/ai%3Afindings', ('-X', 'DELETE'), None),
     ]
+
+
+def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+    labels = ['area:core', 'needs-info', 'ai:findings']
+    monkeypatch.setattr(bot, 'get', lambda _: dict(PR, labels=[{'name': label} for label in labels]))
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {'result_sha': 'b' * 40, 'outcome': 'ai:findings'}, ''))
+    monkeypatch.setenv('PR_REQUEUE', 'true')
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> None:
+        calls.append((path, args, body))
+
+    monkeypatch.setattr(bot, 'github', github)
+    bot.triage_pr(42, SHA)
+    assert calls == [
+        ('issues/42/labels', ('-X', 'POST'), {'labels': ['needs-triage']}),
+        ('issues/42/labels/needs-info', ('-X', 'DELETE'), None),
+        ('issues/42/labels/ai%3Afindings', ('-X', 'DELETE'), None),
+    ]
+
+
+def test_triage_resolves_conflicting_states_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    item = {
+        'number': 42,
+        'state': 'open',
+        'labels': [{'name': 'needs-triage'}, {'name': 'area:core'}, {'name': 'accepted'}],
+    }
+    events = [
+        {'event': 'labeled', 'label': {'name': 'accepted'}, 'created_at': '2026-11-19T08:10:00Z', 'id': 2},
+        {'event': 'labeled', 'label': {'name': 'needs-triage'}, 'created_at': '2026-11-19T08:09:00Z', 'id': 1},
+    ]
+    monkeypatch.setattr(bot, 'list_all', lambda _: events)
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> None:
+        calls.append((path, args, body))
+
+    monkeypatch.setattr(bot, 'github', github)
+    bot.sync_triage(item)
+    assert calls == [('issues/42/labels/needs-triage', ('-X', 'DELETE'), None)]
 
 
 def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

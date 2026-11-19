@@ -18,6 +18,30 @@ a new PR. Diffs over 50 changed files or 48 KiB go to manual review. To request 
 Maintainers can also request a review while CI is pending or failing. The bot updates its summary
 in place. Maintainers make the final review and merge decisions.
 
+### Triage and review labels
+
+Use the Bug or Feature issue template for a reproducible bug or a feature request. Use GitHub's
+Task type for maintenance work. Assign an `area:*` label to route the issue. Ready PRs receive
+area labels from their changed files.
+
+- `needs-triage` is the intake queue for new issues and ready PRs.
+- `needs-info` indicates that the author needs to provide more information. An author reply
+  returns the item to triage. An author's issue description edit or PR update also requeues it.
+- `accepted` means a maintainer has approved an issue's scope for implementation.
+- `ready-for-review` means a maintainer has checked a PR's scope and validation evidence.
+
+Each item has one triage status. Use GitHub's review requests, approvals, and change requests
+to manage the human review. The bot adds one `ai:*` label for the reviewed commit.
+
+- `ai:no-findings` means the review finished without actionable findings.
+- `ai:findings` means the reviewer returned findings for a maintainer to verify.
+- `ai:failed` means the review did not produce a usable result.
+- `ai:skipped` means the bot skipped review and recorded the reason in its summary.
+
+PR Intake clears the AI label when the PR head changes. The summary shows the last attempt,
+commit, completion time, and the Actions run. A failed re-review preserves the previous
+successful review for reference.
+
 ### Operating the AI review workflow
 
 In the repository's Actions settings, configure the OpenAI-compatible base URL and model in
@@ -39,6 +63,7 @@ review comment to see the commit it covers and any actionable findings.
 
 - [Contributing to EvalScope](#contributing-to-evalscope)
   - [Before opening a pull request](#before-opening-a-pull-request)
+    - [Triage and review labels](#triage-and-review-labels)
     - [Operating the AI review workflow](#operating-the-ai-review-workflow)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
