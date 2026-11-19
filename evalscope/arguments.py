@@ -2,8 +2,36 @@
 import argparse
 import ast
 import json
+from typing import List
 
 from evalscope.constants import EvalBackend, EvalType, ModelTask
+
+
+def _split_pairs(text: str) -> List[str]:
+    """Split ``key=value,key=value`` on the commas that sit outside brackets.
+
+    A comma inside ``[...]``, ``{...}`` or ``(...)`` belongs to a list, dict or tuple value such as
+    ``stop_seqs=['a','b']``, and quotes are honoured inside those brackets so ``['a,b', 'c]']`` stays whole.
+    Text with an unclosed bracket or quote falls back to a plain split on every comma.
+    """
+    parts: List[str] = []
+    start = depth = 0
+    quote = ''
+    for index, char in enumerate(text):
+        if quote:
+            if char == quote and text[index - 1] != '\\':
+                quote = ''
+        elif depth and char in '\'"':
+            quote = char
+        elif char in '([{':
+            depth += 1
+        elif char in ')]}':
+            depth = max(depth - 1, 0)
+        elif char == ',' and depth == 0:
+            parts.append(text[start:index])
+            start = index + 1
+    parts.append(text[start:])
+    return text.split(',') if depth or quote else parts
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -20,8 +48,10 @@ class ParseStrArgsAction(argparse.Action):
 
         # If JSON load fails, fall back to parsing as key=value pairs
         arg_dict = {}
-        for arg in values.strip().split(','):
-            key, value = map(str.strip, arg.split('=', 1))  # Use maxsplit=1 to handle multiple '='
+        for arg in _split_pairs(values.strip()):
+            key, separator, value = map(str.strip, arg.partition('='))  # Split on the first '=' only
+            if not separator:
+                parser.error(f'argument {option_string}: expected key=value, got {arg.strip()!r}')
             try:
                 # Safely evaluate the value using ast.literal_eval
                 arg_dict[key] = ast.literal_eval(value)
