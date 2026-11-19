@@ -202,8 +202,11 @@ def generate(directory: Path) -> None:
         'OPENAI__API_BASE': base.geturl(),
         'CONFIG__MODEL': f'openai/{model}',
         'CONFIG__FALLBACK_MODELS': '[]',
-        'CONFIG__CUSTOM_MODEL_MAX_TOKENS': '32000',
-        'CONFIG__MAX_OUTPUT_TOKENS': '4096',
+        'CONFIG__CUSTOM_MODEL_MAX_TOKENS': '65536',
+        'CONFIG__MAX_MODEL_TOKENS': '65536',
+        'CONFIG__MAX_OUTPUT_TOKENS': os.environ.get('PR_REVIEW_MAX_OUTPUT_TOKENS') or '0',
+        'CONFIG__AI_TIMEOUT': '210',
+        'CONFIG__RETRY_SAME_MODEL_ON_TIMEOUT': 'false',
         'CONFIG__USE_REPO_SETTINGS_FILE': 'false',
         'CONFIG__PROPAGATE_TOOL_ERRORS': 'true',
         'PR_REVIEWER__ENABLE_LARGE_PR_CHUNKING': 'false',
@@ -215,6 +218,13 @@ def generate(directory: Path) -> None:
             'compatibility or regression-test gaps introduced by this change. Keep findings concise.'
         ),
     }
+    if effort := os.environ.get('PR_REVIEW_REASONING_EFFORT'):
+        env['CONFIG__REASONING_EFFORT'] = effort
+        env['CONFIG__ADDITIONAL_REASONING_EFFORT_MODELS'] = json.dumps([model])
+    if temperature := os.environ.get('PR_REVIEW_TEMPERATURE'):
+        env['CONFIG__TEMPERATURE'] = temperature
+    if os.environ.get('PR_REVIEW_ENABLE_THINKING') == 'true':
+        env['LITELLM__EXTRA_BODY'] = '{"chat_template_kwargs":{"enable_thinking":true}}'
     result = directory / 'result.json'
     try:
         completed = subprocess.run(
@@ -297,6 +307,8 @@ def publish(number: int, sha: str, command: int, directory: Path) -> None:
         github(f'issues/{number}/comments', '-X', 'POST', body=body)
     else:
         github(f'issues/comments/{comment_id}', '-X', 'PATCH', body=body)
+    if result == 'failed':
+        raise SystemExit('PR-Agent did not return a review.')
 
 
 def main() -> None:

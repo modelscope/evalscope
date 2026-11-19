@@ -102,3 +102,57 @@ def test_render_only_changed_files_and_suppresses_mentions() -> None:
     assert 'unrelated.py' not in body
     assert '<!--' not in body
     assert '@someone' not in body
+
+
+def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    (tmp_path / 'request.json').write_text(json.dumps({'actor': 'maintainer'}))
+    monkeypatch.setenv('REVIEW_RESULT', 'failed')
+    monkeypatch.setattr(bot, 'current_pr', lambda *_: PR)
+    previous = '## EvalScope AI review\n\nPrevious review'
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {'reviewed': True}, previous))
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> None:
+        calls.append((path, args, body))
+
+    monkeypatch.setattr(bot, 'github', github)
+    with pytest.raises(SystemExit, match='did not return a review'):
+        bot.publish(42, SHA, 23, tmp_path)
+    assert calls == [
+        (
+            'issues/comments/17',
+            ('-X', 'PATCH'),
+            {'body': f'<!-- evalscope-pr-review {{"reviewed": true, "last_command": 23}} -->\n{previous}'},
+        )
+    ]
+
+
+def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    settings = {
+        'PR_REVIEW_API_KEY': 'test-key',
+        'PR_REVIEW_API_BASE': 'https://review.example.test/v1',
+        'PR_REVIEW_MODEL': 'review-model',
+        'PR_REVIEW_MAX_OUTPUT_TOKENS': '32768',
+        'PR_REVIEW_ENABLE_THINKING': 'true',
+        'PR_REVIEW_REASONING_EFFORT': 'high',
+        'PR_REVIEW_TEMPERATURE': '1.0',
+    }
+    for name, value in settings.items():
+        monkeypatch.setenv(name, value)
+    output = tmp_path / 'output'
+    monkeypatch.setenv('GITHUB_OUTPUT', str(output))
+    launch_env = {}
+
+    def run(args: list, *, env: dict, **kwargs: object) -> bot.subprocess.CompletedProcess:
+        launch_env.update(env)
+        (tmp_path / 'result.json').write_text('{}')
+        return bot.subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(bot.subprocess, 'run', run)
+    bot.generate(tmp_path)
+    assert launch_env['CONFIG__MAX_OUTPUT_TOKENS'] == '32768'
+    assert launch_env['CONFIG__REASONING_EFFORT'] == 'high'
+    assert json.loads(launch_env['CONFIG__ADDITIONAL_REASONING_EFFORT_MODELS']) == ['review-model']
+    assert json.loads(launch_env['LITELLM__EXTRA_BODY']) == {'chat_template_kwargs': {'enable_thinking': True}}
+    assert launch_env['CONFIG__TEMPERATURE'] == '1.0'
+    assert output.read_text() == 'result=review\n'
