@@ -24,6 +24,8 @@
     "@tailwindcss/vite": "^4.2.4",
     "@types/react-syntax-highlighter": "^15.5.13",
     "clsx": "^2.1.1",
+    "highlight.js": "10.7.0",
+    "katex": "^0.19.1",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
