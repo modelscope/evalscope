@@ -10,7 +10,7 @@ from contextvars import ContextVar
 from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Optional, Union
 from uuid import uuid4
 
 from filelock import FileLock
@@ -135,6 +135,31 @@ def _publish_dataset_cache(dataset: 'HFDataset', cache_dir: str) -> None:
 def repeat_samples(samples: list, repeats: int) -> list:
     """Repeat each converted sample, so one record that yields several samples keeps each repeat group to one question."""
     return [copy.deepcopy(sample) for sample in samples for _ in range(repeats)] if repeats > 1 else samples
+
+
+def _build_memory_dataset(
+    data: Iterable[dict],
+    data_to_sample: Callable,
+    *,
+    filter_func: Optional[Callable[[Sample], bool]],
+    limit: Optional[int],
+    repeats: int,
+    auto_id: bool,
+    name: Optional[str] = None,
+    location: Optional[str] = None,
+    shuffled: bool = False,
+    shuffle_choices: Optional[Union[bool, int]] = None,
+    seed: Optional[int] = None,
+) -> MemoryDataset:
+    """Build a MemoryDataset with the shared conversion, repetition, and indexing pipeline."""
+    samples = data_to_samples(data=data, data_to_sample=data_to_sample, filter_func=filter_func, limit=limit)
+    memory_dataset = MemoryDataset(
+        samples=repeat_samples(samples, repeats), name=name, location=location, shuffled=shuffled
+    )
+    if auto_id:
+        memory_dataset.reindex(group_size=repeats)
+    shuffle_choices_if_requested(memory_dataset, shuffle_choices, seed)
+    return memory_dataset
 
 
 def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
@@ -330,26 +355,19 @@ class RemoteDataLoader(DataLoader):
         if self.shuffle:
             dataset = dataset.shuffle(seed=self.seed)
 
-        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
         resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-
-        # return the dataset
-        samples = data_to_samples(
-            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
-        )
-        memory_dataset = MemoryDataset(
-            samples=repeat_samples(samples, self.repeats),
+        return _build_memory_dataset(
+            data=dataset,
+            data_to_sample=data_to_sample,
+            filter_func=self.filter_func,
+            limit=resolved_limit,
+            repeats=self.repeats,
+            auto_id=self.auto_id,
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
+            shuffle_choices=self.shuffle_choices,
+            seed=self.seed,
         )
-
-        # assign ids and group_ids if requested
-        if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats)
-
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
-
-        return memory_dataset
 
 
 class LocalDataLoader(DataLoader):
@@ -422,26 +440,19 @@ class LocalDataLoader(DataLoader):
         if self.shuffle:
             _shuffle_in_place(dataset, self.seed)
 
-        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
         resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-
-        # return the dataset
-        samples = data_to_samples(
-            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
-        )
-        memory_dataset = MemoryDataset(
-            samples=repeat_samples(samples, self.repeats),
+        return _build_memory_dataset(
+            data=dataset,
+            data_to_sample=data_to_sample,
+            filter_func=self.filter_func,
+            limit=resolved_limit,
+            repeats=self.repeats,
+            auto_id=self.auto_id,
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
+            shuffle_choices=self.shuffle_choices,
+            seed=self.seed,
         )
-
-        # assign ids and group_ids if requested
-        if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats)
-
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
-
-        return memory_dataset
 
 
 class DictDataLoader(DataLoader):
@@ -459,19 +470,14 @@ class DictDataLoader(DataLoader):
         if self.shuffle:
             _shuffle_in_place(dataset, self.seed)
 
-        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
         resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-
-        # return the dataset
-        samples = data_to_samples(
-            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
+        return _build_memory_dataset(
+            data=dataset,
+            data_to_sample=data_to_sample,
+            filter_func=self.filter_func,
+            limit=resolved_limit,
+            repeats=self.repeats,
+            auto_id=self.auto_id,
+            shuffle_choices=self.shuffle_choices,
+            seed=self.seed,
         )
-        memory_dataset = MemoryDataset(samples=repeat_samples(samples, self.repeats))
-
-        # assign ids and group_ids if requested
-        if self.auto_id:
-            memory_dataset.reindex(group_size=self.repeats)
-
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
-
-        return memory_dataset
