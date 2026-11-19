@@ -50,10 +50,31 @@ def record_to_sample_fn(
         return sample_fields
 
 
-def data_to_samples(data: Iterable[dict], data_to_sample: Callable) -> List[Sample]:
+def data_to_samples(
+    data: Iterable[dict],
+    data_to_sample: Callable,
+    filter_func: Optional[Callable[[Sample], bool]] = None,
+    limit: Optional[int] = None,
+) -> List[Sample]:
+    """Convert raw records to samples.
+
+    Args:
+        data: Raw records, in the order they should be taken.
+        data_to_sample: Converts one record to a sample or a list of samples (an empty list drops the record).
+        filter_func: Optional predicate; only samples it accepts are kept.
+        limit: Optional number of records to keep. A record that yields no sample, or whose samples are all
+            rejected by ``filter_func``, does not count, so the limit is spent on records that are evaluated.
+    """
     samples: List[Sample] = []
+    kept = 0
     for record in tqdm(data, desc='Processing records'):
+        if limit is not None and kept >= limit:
+            break
         record_samples = as_sample_list(data_to_sample(record=record))
+        if filter_func is not None:
+            record_samples = [sample for sample in record_samples if filter_func(sample)]
+        if record_samples:
+            kept += 1
         samples.extend(record_samples)
     return samples
 

@@ -330,25 +330,18 @@ class RemoteDataLoader(DataLoader):
         if self.shuffle:
             dataset = dataset.shuffle(seed=self.seed)
 
-        # limit if requested
-        if self.limit is not None:
-            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-            if resolved_limit is not None and len(dataset) > resolved_limit:
-                dataset = dataset.select(range(resolved_limit))
-
-        # convert to list
-        dataset_list = list(dataset)
+        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
+        resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
 
         # return the dataset
+        samples = data_to_samples(
+            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
+        )
         memory_dataset = MemoryDataset(
-            samples=repeat_samples(data_to_samples(data=dataset_list, data_to_sample=data_to_sample), self.repeats),
+            samples=repeat_samples(samples, self.repeats),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
-
-        # Apply filtering if a filter function is provided
-        if self.filter_func is not None:
-            memory_dataset = memory_dataset.filter(self.filter_func)
 
         # assign ids and group_ids if requested
         if self.auto_id:
@@ -429,21 +422,18 @@ class LocalDataLoader(DataLoader):
         if self.shuffle:
             _shuffle_in_place(dataset, self.seed)
 
-        # limit if requested
-        if self.limit is not None:
-            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-            dataset = dataset[:resolved_limit]
+        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
+        resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
 
         # return the dataset
+        samples = data_to_samples(
+            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
+        )
         memory_dataset = MemoryDataset(
-            samples=repeat_samples(data_to_samples(data=dataset, data_to_sample=data_to_sample), self.repeats),
+            samples=repeat_samples(samples, self.repeats),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
-
-        # Apply filtering if a filter function is provided
-        if self.filter_func is not None:
-            memory_dataset = memory_dataset.filter(self.filter_func)
 
         # assign ids and group_ids if requested
         if self.auto_id:
@@ -469,19 +459,14 @@ class DictDataLoader(DataLoader):
         if self.shuffle:
             _shuffle_in_place(dataset, self.seed)
 
-        # limit if requested
-        if self.limit is not None:
-            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
-            dataset = dataset[:resolved_limit]
+        # The limit is applied after filtering, so samples rejected by the filter do not use it up.
+        resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
 
         # return the dataset
-        memory_dataset = MemoryDataset(
-            samples=repeat_samples(data_to_samples(data=dataset, data_to_sample=data_to_sample), self.repeats),
+        samples = data_to_samples(
+            data=dataset, data_to_sample=data_to_sample, filter_func=self.filter_func, limit=resolved_limit
         )
-
-        # Apply filtering if a filter function is provided
-        if self.filter_func is not None:
-            memory_dataset = memory_dataset.filter(self.filter_func)
+        memory_dataset = MemoryDataset(samples=repeat_samples(samples, self.repeats))
 
         # assign ids and group_ids if requested
         if self.auto_id:

@@ -45,16 +45,14 @@ def build_dataset_from_records(
             limit = int(len(record_list) * limit)
         elif isinstance(limit, int) and limit < 0:
             raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-        record_list = record_list[:limit]
 
+    # The limit is applied after filtering, so samples rejected by the filter do not use it up.
     data_to_sample = record_to_sample_fn(sample_fields)
-    samples = data_to_samples(data=record_list, data_to_sample=data_to_sample)
+    samples = data_to_samples(data=record_list, data_to_sample=data_to_sample, filter_func=filter_func, limit=limit)
     if repeats > 1:
         samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
 
     dataset = MemoryDataset(samples=samples, name=name, location=location, shuffled=shuffle)
-    if filter_func is not None:
-        dataset = dataset.filter(filter_func)
     if auto_id:
         dataset.reindex(group_size=repeats)
     return dataset
