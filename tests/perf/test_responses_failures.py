@@ -55,7 +55,19 @@ def provider() -> Iterator[str]:
                     {'type': 'response.output_text.delta', 'delta': 'partial answer', 'sequence_number': 0},
                     terminal,
                 ]
+                if status in ('empty', 'done', 'heartbeat'):
+                    events = []
+                elif status == 'created':
+                    events = [{'type': 'response.created', 'response': response, 'sequence_number': 0}]
+                elif status == 'truncated':
+                    events = events[:1]
+                elif mode == 'terminal':
+                    events = events[1:]
                 body = ''.join(f'event: {e["type"]}\ndata: {json.dumps(e)}\n\n' for e in events).encode()
+                if status == 'done':
+                    body = b'data: [DONE]\n\n'
+                elif status == 'heartbeat':
+                    body = b': ping\n\n'
                 content_type = 'text/event-stream'
             self.send_response(200)
             self.send_header('Content-Type', content_type)
@@ -105,13 +117,17 @@ def test_application_error_is_counted_as_failure(provider: str, model: str) -> N
     assert accumulator.total_completion_tokens == 0
 
 
-@pytest.mark.parametrize('model', ['json:completed', 'sse:completed', 'json:incomplete', 'sse:incomplete'])
+@pytest.mark.parametrize(
+    'model',
+    ['json:completed', 'sse:completed', 'json:incomplete', 'sse:incomplete', 'terminal:completed', 'terminal:incomplete'],
+)
 def test_completed_and_token_limited_responses_remain_successes(provider: str, model: str) -> None:
     plugin = OpenAIResponsesPlugin(Arguments(model=model, api='openai_responses'))
 
     output = _request(plugin, provider, model)
 
     assert output.success is True
+    assert output.is_stream == (not model.startswith('json:'))
     assert output.error is None
     assert output.generated_text == 'partial answer'
     accumulator = MetricsAccumulator()
@@ -123,6 +139,27 @@ def test_completed_and_token_limited_responses_remain_successes(provider: str, m
     assert output.cached_tokens == 2
     assert accumulator.total_cached_tokens == 2
     assert result.avg_cached_percent == pytest.approx(2 / 7 * 100)
+
+
+@pytest.mark.parametrize('model', ['sse:empty', 'sse:done', 'sse:heartbeat', 'sse:created', 'sse:truncated'])
+def test_stream_without_terminal_response_is_failure(provider: str, model: str) -> None:
+    plugin = OpenAIResponsesPlugin(Arguments(model=model, api='openai_responses'))
+
+    output = _request(plugin, provider, model)
+
+    assert output.success is False
+    assert output.is_stream is True
+    assert 'terminal' in output.error
+    assert output.generated_text == ('partial answer' if model == 'sse:truncated' else '')
+    assert output.completed_time > output.start_time > 0
+    assert output.query_latency == pytest.approx(output.completed_time - output.start_time)
+
+    accumulator = MetricsAccumulator()
+    accumulator.update(output, plugin)
+    result = accumulator.to_result()
+    assert (result.succeed_requests, result.failed_requests) == (0, 1)
+    assert accumulator.total_latency == 0
+    assert accumulator.total_completion_tokens == 0
 
 
 @pytest.fixture
