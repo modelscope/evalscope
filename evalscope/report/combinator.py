@@ -284,6 +284,8 @@ def percentage_weighted_average_from_subsets(
     for name, weight in zip(subset_names, weights):
         if name in subset_dict:
             subset = subset_dict[name]
+            if subset.num <= 0:  # skip subsets with no evaluated samples, as unweighted_average_from_subsets does
+                continue
             valid_subsets.append(subset)
             valid_weights.append(weight)
             total_count += subset.num
