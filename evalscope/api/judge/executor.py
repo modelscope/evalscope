@@ -74,6 +74,8 @@ class JudgeExecutor:
             for case in pending:
                 verdict = self._run_case(definition, context, judge, repeat_id, case, completed, review)
                 if verdict is None:
+                    if not case.required:
+                        continue
                     observation.status = ScoreStatus.INVALID_SESSION
                     observation.error = f'case {case.case_id} produced no usable verdict'
                     return observation
@@ -274,7 +276,7 @@ class JudgeExecutor:
         if tie_broken:
             review.metadata['tie_broken_by_primary'] = True
             review.status = ScoreStatus.DEGRADED
-        elif len(review.valid_observations) != expected or unresolved_ties or repeat_ties:
+        elif len(review.valid_observations) != expected or review.failure_counts or unresolved_ties or repeat_ties:
             review.status = ScoreStatus.DEGRADED
 
     def _aggregate_rule_fallback(self, review: JudgeReview) -> None:

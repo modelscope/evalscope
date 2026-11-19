@@ -220,6 +220,7 @@
  "process_bench": "evalscope.benchmarks.process_bench.process_bench_adapter",
  "pubmedqa": "evalscope.benchmarks.pumed_qa.pubmed_qa_adapter",
  "qasc": "evalscope.benchmarks.qasc.qasc_adapter",
+ "qwen_image_bench": "evalscope.benchmarks.qwen_image_bench.qwen_image_bench_adapter",
  "race": "evalscope.benchmarks.race.race_adapter",
  "real_world_qa": "evalscope.benchmarks.real_world_qa.real_world_qa_adapter",
  "ref_adv_s": "evalscope.benchmarks.ref_adv_s.ref_adv_s_adapter",

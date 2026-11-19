@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "pretty_name": "Qwen-Image-Bench",
+    "dataset_id": "Qwen/Qwen-Image-Bench",
+    "paper_url": "https://arxiv.org/abs/2605.28091",
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "qwen_image_bench_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nQwen-Image-Bench measures how well text-to-image models handle creative tasks.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: A Chinese or English prompt\n- **Output**: A generated image\n- **Domain**: Image quality, aesthetics, prompt alignment, real-world fidelity, and creativity\n\n## Key Features\n\n- 1,000 bilingual prompts. Set `extra_params.language` to `cn` (default) or `en`.\n- Score existing images with a local JSONL (`ID`, `prompt`, `dims_en`, and absolute `image_path`).\n  Set `model_task='image_generation'` and omit `model`.\n\n## Evaluation Notes\n\n- Configure `judge.models` with an OpenAI-compatible endpoint serving the official Q-Judger\n  (`Qwen/Qwen-Image-Bench`). See the [official inference settings](https://github.com/QwenLM/Qwen-Image-Bench#inference-parameters).\n- Scores range from 0 to 100. Higher is better. The report shows overall and breakdown scores with their valid image counts.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "language": {
+        "type": "str",
+        "description": "Language of the generation prompts (cn or en).",
+        "value": "cn",
+        "choices": [
+          "cn",
+          "en"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "aigc",
+    "primary_metric": {
+      "name": "qwen_image_bench_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
+    "requires_judge": true,
+    "eval_type": "text2image",
+    "requires_local_dataset": false
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1000,
+        "prompt_length_mean": 83.05,
+        "prompt_length_min": 25,
+        "prompt_length_max": 317,
+        "prompt_length_std": 42.81,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 83.05,
+      "min": 25,
+      "max": 317,
+      "std": 42.81
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-11-19T17:51:26.667375"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "58f90ec0",
+          "content": "一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。"
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": 1,
+        "prompt": "一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。",
+        "dimensions": [
+          "Quality",
+          "Aesthetics",
+          "Alignment"
+        ],
+        "image_path": "",
+        "category": "",
+        "tags": []
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Qwen-Image-Bench\n\n\n## Overview\n\nQwen-Image-Bench measures how well text-to-image models handle creative tasks.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: A Chinese or English prompt\n- **Output**: A generated image\n- **Domain**: Image quality, aesthetics, prompt alignment, real-world fidelity, and creativity\n\n## Key Features\n\n- 1,000 bilingual prompts. Set `extra_params.language` to `cn` (default) or `en`.\n- Score existing images with a local JSONL (`ID`, `prompt`, `dims_en`, and absolute `image_path`).\n  Set `model_task='image_generation'` and omit `model`.\n\n## Evaluation Notes\n\n- Configure `judge.models` with an OpenAI-compatible endpoint serving the official Q-Judger\n  (`Qwen/Qwen-Image-Bench`). See the [official inference settings](https://github.com/QwenLM/Qwen-Image-Bench#inference-parameters).\n- Scores range from 0 to 100. Higher is better. The report shows overall and breakdown scores with their valid image counts.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `qwen_image_bench` |\n| **Dataset ID** | [Qwen/Qwen-Image-Bench](https://modelscope.cn/datasets/Qwen/Qwen-Image-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2605.28091) |\n| **Tags** | `TextToImage` |\n| **Metrics** | `qwen_image_bench_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 83.05 chars |\n| Prompt Length (Min/Max) | 25 / 317 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"58f90ec0\",\n      \"content\": \"一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": 1,\n    \"prompt\": \"一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。\",\n    \"dimensions\": [\n      \"Quality\",\n      \"Aesthetics\",\n      \"Alignment\"\n    ],\n    \"image_path\": \"\",\n    \"category\": \"\",\n    \"tags\": []\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `language` | `str` | `cn` | Language of the generation prompts (cn or en). Choices: ['cn', 'en'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets qwen_image_bench \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['qwen_image_bench'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'qwen_image_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Qwen-Image-Bench\n\n\n## 概述\n\nQwen-Image-Bench 用于衡量文本到图像模型在处理创意任务时的表现。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成\n- **输入**：中文或英文提示词\n- **输出**：生成的图像\n- **领域**：图像质量、美学、提示词对齐度、真实世界保真度和创造力\n\n## 主要特点\n\n- 包含 1,000 条双语提示词。将 `extra_params.language` 设置为 `cn`（默认）或 `en`。\n- 使用本地 JSONL 文件对现有图像进行评分（需包含 `ID`、`prompt`、`dims_en` 以及绝对路径的 `image_path`）。\n  设置 `model_task='image_generation'` 并省略 `model` 参数。\n\n## 评估说明\n\n- 配置 `judge.models`，指向提供官方 Q-Judger (`Qwen/Qwen-Image-Bench`) 服务的 OpenAI 兼容端点。请参阅[官方推理设置](https://github.com/QwenLM/Qwen-Image-Bench#inference-parameters)。\n- 分数范围为 0 到 100，分数越高越好。报告将显示总体得分及细分得分，并列出有效图像的数量。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `qwen_image_bench` |\n| **数据集ID** | [Qwen/Qwen-Image-Bench](https://modelscope.cn/datasets/Qwen/Qwen-Image-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2605.28091) |\n| **标签** | `TextToImage` |\n| **指标** | `qwen_image_bench_score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均值） | 83.05 字符 |\n| 提示词长度（最小/最大值） | 25 / 317 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"58f90ec0\",\n      \"content\": \"一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": 1,\n    \"prompt\": \"一只拆开的机械手表放在黑色工作台上，制表师用镊子夹起齿轮，特写镊子夹起齿轮，银色与暗灰色调，零部件结构精密，金属边缘细节清晰。\",\n    \"dimensions\": [\n      \"Quality\",\n      \"Aesthetics\",\n      \"Alignment\"\n    ],\n    \"image_path\": \"\",\n    \"category\": \"\",\n    \"tags\": []\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `language` | `str` | `cn` | 生成提示词的语言（cn 或 en）。可选值：['cn', 'en'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets qwen_image_bench \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['qwen_image_bench'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'qwen_image_bench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "e98d26f3e4694460163c62fb09a94057",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-19T17:51:27.307218",
+  "translation_updated_at": "2026-11-19T17:51:29"
+}

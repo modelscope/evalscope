@@ -11,6 +11,7 @@
 | `general_t2i` | [General-T2I](../../benchmarks/general_t2i.md) | `Custom`, `TextToImage` |
 | `hpdv2` | [HPD-v2](../../benchmarks/hpdv2.md) | `TextToImage` |
 | `longtext_bench` | [LongText-Bench](../../benchmarks/longtext_bench.md) | `TextToImage` |
+| `qwen_image_bench` | [Qwen-Image-Bench](../../benchmarks/qwen_image_bench.md) | `TextToImage` |
 | `tifa160` | [TIFA-160](../../benchmarks/tifa160.md) | `TextToImage` |
 
 :::{toctree}
@@ -24,5 +25,6 @@
 ../../benchmarks/general_t2i.md
 ../../benchmarks/hpdv2.md
 ../../benchmarks/longtext_bench.md
+../../benchmarks/qwen_image_bench.md
 ../../benchmarks/tifa160.md
 :::
