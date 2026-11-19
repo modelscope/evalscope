@@ -1,6 +1,7 @@
 name: PR Automation
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: [PR Intake, CI Tests Lite, Lint Test, Frontend checks]
     types: [completed]
@@ -12,6 +13,65 @@ on:
 permissions: {}
 
 jobs:
+  list-open-prs:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      targets: ${{ steps.open.outputs.targets }}
+    steps:
+      - id: open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          targets=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" |
+            jq -c 'add | map(select(.base.ref == "main") | {number})')
+          printf 'targets=%s\n' "$targets" >> "$GITHUB_OUTPUT"
+
+  batch-label:
+    name: Sync labels on PR #${{ matrix.number }}
+    needs: list-open-prs
+    if: needs.list-open-prs.outputs.targets != '' && needs.list-open-prs.outputs.targets != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include: ${{ fromJSON(needs.list-open-prs.outputs.targets) }}
+    concurrency:
+      group: evalscope-ai-review-${{ matrix.number }}
+      queue: max
+    env:
+      PR_NUMBER: ${{ matrix.number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: head
+        name: Confirm open PR and read its head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+            --jq 'select(.state == "open" and .base.ref == "main") | .head.sha')
+          printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        if: steps.head.outputs.sha != ''
+        with:
+          pr-number: ${{ matrix.number }}
+          sync-labels: true
+      - name: Sync triage and review labels
+        if: steps.head.outputs.sha != ''
+        run: python3 .github/scripts/pr_automation.py triage-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_SHA: ${{ steps.head.outputs.sha }}
+
   resolve:
     if: >-
       (github.event_name == 'workflow_run' &&
