@@ -15,7 +15,7 @@ from evalscope.benchmarks.ifbench.instructions import (
     PersonNameCountChecker,
     PronounCountChecker,
     QuoteExplanationChecker,
-    RepeatSpanChecker,
+    RepeatChangeChecker,    RepeatSpanChecker,    SpecialBulletPointsChecker,
     SentenceAlphabetChecker,
     SentTypeRatioChecker,
     StopWordPercentageChecker,
@@ -29,7 +29,7 @@ def test_ifbench_evaluation_version_reflects_scoring_change() -> None:
     metadata = BENCHMARK_REGISTRY['ifbench']
 
     assert metadata.data_adapter is IFBenchAdapter
-    assert metadata.evaluation_version == 'v1.4'
+    assert metadata.evaluation_version == 'v1.5'
 
 
 @pytest.mark.parametrize(
@@ -459,3 +459,14 @@ def test_evaluation_short_circuits_empty_incrementing_word_count(response: str) 
     )
     assert evaluation_lib.test_instruction_following_strict(inp, response).follow_instruction_list == [False]
     assert evaluation_lib.test_instruction_following_loose(inp, response).follow_instruction_list == [False]
+def test_special_bullet_points_requires_line_prefixes() -> None:
+    checker = SpecialBulletPointsChecker('format:list')
+    checker.build_description(sep='-')
+    assert checker.check_following('- first item\n  - second item') is True
+    assert checker.check_following('Two embedded markers - here - do not form a list.') is False
+def test_repeat_change_requires_a_different_first_word_only() -> None:
+    checker = RepeatChangeChecker('repeat:repeat_change')
+    checker.build_description(prompt_to_repeat='Please write a poem')
+    assert checker.check_following('Kindly write a poem') is True
+    assert checker.check_following('Please write a poem\n') is False
+    assert checker.check_following('Kindly write a song') is False
