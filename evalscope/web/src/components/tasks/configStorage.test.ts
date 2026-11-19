@@ -204,6 +204,31 @@ describe('Shared connection and template semantics', () => {
     })
     expect(connectionPayload({ ...connection, api: 'local' }, 'perf')).not.toHaveProperty('api_key')
   })
+  it('maps openai_responses and anthropic connections to the right backend fields', () => {
+    const connection = savedWorkspace().connection
+    expect(connectionPayload({ ...connection, api: 'openai_responses' }, 'eval')).toMatchObject({
+      eval_type: 'openai_responses_api',
+      api_url: connection.url,
+      api_key: 'fake-secret',
+    })
+    expect(connectionPayload({ ...connection, api: 'openai_responses' }, 'perf')).toMatchObject({
+      api: 'openai_responses',
+      url: connection.url,
+      api_key: 'fake-secret',
+    })
+    expect(connectionPayload({ ...connection, api: 'anthropic' }, 'eval')).toMatchObject({
+      eval_type: 'anthropic_api',
+      api_url: connection.url,
+      api_key: 'fake-secret',
+    })
+    expect(connectionPayload({ ...connection, api: 'anthropic' }, 'perf')).toMatchObject({
+      api: 'anthropic',
+      url: connection.url,
+      api_key: 'fake-secret',
+    })
+    // The default openai connection must not send eval_type so the backend keeps its default.
+    expect(connectionPayload(connection, 'eval')).not.toHaveProperty('eval_type')
+  })
   it('clears credentials when switching destinations, but not model or URL path', () => {
     const connection = savedWorkspace().connection
     expect(editConnection(connection, { url: 'http://server-b:8000/v1' }).apiKey).toBe('')

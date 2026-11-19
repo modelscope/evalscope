@@ -245,9 +245,9 @@ describe('Performance form → Arguments payload', () => {
       max_prompt_length: 100, min_prompt_length: 0, tokenizer_path: '/tmp/tokenizer',
     })
   })
-  it('offers only the protocols the form can execute and omits unused local connection fields', () => {
+  it('offers every protocol and omits unused local connection fields', () => {
     const submit = perfForm()
-    expect([...document.querySelectorAll('#connection-api option')].map((item) => (item as HTMLOptionElement).value)).toEqual(['openai', 'local'])
+    expect([...document.querySelectorAll('#connection-api option')].map((item) => (item as HTMLOptionElement).value)).toEqual(['openai', 'openai_responses', 'anthropic', 'local'])
     change('connection-apiKey', 'must-not-leak')
     change('connection-api', 'local')
     expect(screen.queryByRole('textbox', { name: /Model API URL/ })).not.toBeInTheDocument()

@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { inputClass } from '@/components/ui/formStyles'
 import { AliasField, ApiUrlField, ModelField } from './TaskFormFields'
 import PresetToolbar from './PresetToolbar'
-import { DEFAULT_CONNECTION, displayEndpoint, type ModelConnection, type FieldErrors } from './taskConfig'
+import { DEFAULT_CONNECTION, displayEndpoint, isRemoteApi, type ModelConnection, type FieldErrors } from './taskConfig'
 import type { ConnectionPreset } from './configStorage'
 
 interface Props {
@@ -112,10 +112,12 @@ export default function ModelConnectionEditor({
                 value={connection.api}
                 onChange={(event) => {
                   const api = event.target.value
-                  if (api === 'openai' || api === 'local') onChange({ api })
+                  if (api === 'openai' || api === 'openai_responses' || api === 'anthropic' || api === 'local') onChange({ api })
                 }}
               >
                 <option value="openai">OpenAI-compatible</option>
+                <option value="openai_responses">OpenAI Responses</option>
+                <option value="anthropic">Anthropic Messages</option>
                 <option value="local">Local Transformers</option>
               </select>
             )}
@@ -126,7 +128,7 @@ export default function ModelConnectionEditor({
             error={errors.model ? t(errors.model) : undefined}
             onChange={(model) => onChange({ model })}
           />
-          {connection.api === 'openai' && (
+          {isRemoteApi(connection.api) && (
             <>
               <ApiUrlField
                 id="connection-url"
@@ -166,6 +168,8 @@ export default function ModelConnectionEditor({
         </div>
         {connection.api === 'local' ? (
           <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.localOnly')}</p>
+        ) : connection.api === 'anthropic' ? (
+          <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.anthropicOnly')}</p>
         ) : (
           <div className="mt-4 border-t border-[var(--border)] pt-3">
             <div className="flex flex-wrap items-center gap-2">
