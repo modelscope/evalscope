@@ -102,3 +102,26 @@ def test_render_only_changed_files_and_suppresses_mentions() -> None:
     assert 'unrelated.py' not in body
     assert '<!--' not in body
     assert '@someone' not in body
+
+
+def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    (tmp_path / 'request.json').write_text(json.dumps({'actor': 'maintainer'}))
+    monkeypatch.setenv('REVIEW_RESULT', 'failed')
+    monkeypatch.setattr(bot, 'current_pr', lambda *_: PR)
+    previous = '## EvalScope AI review\n\nPrevious review'
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {'reviewed': True}, previous))
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> None:
+        calls.append((path, args, body))
+
+    monkeypatch.setattr(bot, 'github', github)
+    with pytest.raises(SystemExit, match='did not return a review'):
+        bot.publish(42, SHA, 23, tmp_path)
+    assert calls == [
+        (
+            'issues/comments/17',
+            ('-X', 'PATCH'),
+            {'body': f'<!-- evalscope-pr-review {{"reviewed": true, "last_command": 23}} -->\n{previous}'},
+        )
+    ]

@@ -203,7 +203,7 @@ def generate(directory: Path) -> None:
         'CONFIG__MODEL': f'openai/{model}',
         'CONFIG__FALLBACK_MODELS': '[]',
         'CONFIG__CUSTOM_MODEL_MAX_TOKENS': '32000',
-        'CONFIG__MAX_OUTPUT_TOKENS': '4096',
+        'CONFIG__MAX_OUTPUT_TOKENS': os.environ.get('PR_REVIEW_MAX_OUTPUT_TOKENS') or '8192',
         'CONFIG__USE_REPO_SETTINGS_FILE': 'false',
         'CONFIG__PROPAGATE_TOOL_ERRORS': 'true',
         'PR_REVIEWER__ENABLE_LARGE_PR_CHUNKING': 'false',
@@ -215,6 +215,8 @@ def generate(directory: Path) -> None:
             'compatibility or regression-test gaps introduced by this change. Keep findings concise.'
         ),
     }
+    if os.environ.get('PR_REVIEW_DISABLE_THINKING') == 'true':
+        env['LITELLM__EXTRA_BODY'] = '{"chat_template_kwargs":{"enable_thinking":false}}'
     result = directory / 'result.json'
     try:
         completed = subprocess.run(
@@ -297,6 +299,8 @@ def publish(number: int, sha: str, command: int, directory: Path) -> None:
         github(f'issues/{number}/comments', '-X', 'POST', body=body)
     else:
         github(f'issues/comments/{comment_id}', '-X', 'PATCH', body=body)
+    if result == 'failed':
+        raise SystemExit('PR-Agent did not return a review.')
 
 
 def main() -> None:

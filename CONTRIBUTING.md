@@ -26,6 +26,10 @@ the `PR_REVIEW_API_BASE` and `PR_REVIEW_MODEL` variables, and store the credenti
 `2026-11-19T00:00:00Z` to start first reviews for newly opened PRs. Remove the start variable to
 pause automatic reviews while keeping the `/review` command available.
 
+`PR_REVIEW_MAX_OUTPUT_TOKENS` defaults to 8192. For endpoints that support
+`chat_template_kwargs.enable_thinking`, set `PR_REVIEW_DISABLE_THINKING` to `true`
+if the reasoning budget leaves too little space for the actual review.
+
 The PR Automation job summary and logs show whether a request reached the model. Open the AI
 review comment to see the commit it covers and any actionable findings.
 
