@@ -37,38 +37,35 @@ def build_task_prompt(record: Dict[str, Any], pair_index: int = 0) -> str:
     return '\n'.join(parts)
 
 
-def parse_grid_from_response(response: str) -> list:
-    """Extract a 2D grid (list of lists) from model response."""
-    response = response.strip()
-
-    # First try: direct JSON parse
+def _decode_grid(text: str) -> list | None:
     try:
-        result = json.loads(response)
-        if isinstance(result, list) and all(isinstance(row, list) for row in result):
-            return result
-    except (json.JSONDecodeError, TypeError):
-        pass
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(value, list) and all(isinstance(row, list) for row in value):
+        return value
+    return None
 
-    # Second try: find content between ```json and ```
-    code_block_pattern = r'```(?:json)?\s*\n?(.*?)\n?```'
-    code_matches = re.findall(code_block_pattern, response, re.DOTALL)
-    for match in code_matches:
-        try:
-            result = json.loads(match.strip())
-            if isinstance(result, list) and all(isinstance(row, list) for row in result):
-                return result
-        except (json.JSONDecodeError, TypeError):
-            continue
 
-    # Third try: find JSON array pattern in text
-    pattern = r'\[\s*\[.*?\]\s*\]'
-    matches = re.findall(pattern, response, re.DOTALL)
-    for match in matches:
-        try:
-            result = json.loads(match)
-            if isinstance(result, list) and all(isinstance(row, list) for row in result):
-                return result
-        except (json.JSONDecodeError, TypeError):
-            continue
+def parse_grid_from_response(response: str) -> list:
+    """Use the boxed answer first, then the final bracketed value, as ARC Prize does."""
+    boxed = re.search(r'\\boxed\{(.*?)\}', response, re.DOTALL)
+    if boxed:
+        grid = _decode_grid(boxed[1])
+        if grid is not None:
+            return grid
 
+    end = response.rfind(']')
+    if end == -1 or response.rfind('}') > end:
+        return []
+
+    # Match the outer array ending here, including all rows of a multi-row grid.
+    depth = 0
+    for start in range(end, -1, -1):
+        if response[start] == ']':
+            depth += 1
+        elif response[start] == '[':
+            depth -= 1
+            if depth == 0:
+                return _decode_grid(response[start : end + 1]) or []
     return []
