@@ -211,8 +211,7 @@ def model_output_to_openai_response(
         if message.tool_calls:
             msg_payload['tool_calls'] = [_render_tool_call(tc) for tc in message.tool_calls]
 
-    stop_reason = output.choices[0].stop_reason if output.choices else 'stop'
-    finish_reason = map_stop_reason_to_openai(stop_reason)
+    finish_reason = openai_finish_reason(output)
     usage = output.usage
     return {
         'id': output.id or f'chatcmpl-{uuid.uuid4().hex[:24]}',
@@ -288,3 +287,20 @@ _STOP_REASON_MAP = {
 def map_stop_reason_to_openai(reason: str) -> str:
     """Translate an EvalScope ``StopReason`` to its OpenAI ``finish_reason``."""
     return _STOP_REASON_MAP.get(reason, 'stop')
+
+
+def openai_finish_reason(output: ModelOutput) -> str:
+    """OpenAI ``finish_reason`` for ``output``.
+
+    Some OpenAI-compatible backends (Gemini) finish a tool-calling turn with
+    ``finish_reason: "stop"``. Clients that decide on ``finish_reason`` whether
+    to run the tool calls would treat the turn as final, so a message that
+    carries tool calls reports ``tool_calls`` when the original reason is
+    ``stop``. Truncation and ``content_filter`` are left as mapped.
+    """
+    if not output.choices:
+        return map_stop_reason_to_openai('stop')
+    choice = output.choices[0]
+    if choice.stop_reason == 'stop' and choice.message.tool_calls:
+        return 'tool_calls'
+    return map_stop_reason_to_openai(choice.stop_reason)
