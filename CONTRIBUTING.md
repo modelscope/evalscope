@@ -2,9 +2,26 @@
 
 Thank you for considering contributing to EvalScope! This guide covers everything you need to get started.
 
+## Before opening a pull request
+
+- Open a PR directly for a focused, reproducible bug fix, an upstream scoring correction,
+  or a documentation fix. Include the reproduction or upstream reference and the validation you ran.
+- Start with an issue for a new benchmark, feature, public configuration option, large refactor,
+  or performance optimization. Explain the user need and proposed scope. For benchmarks, include
+  the public dataset and official scoring references. For optimizations, include a baseline and
+  measured results. Wait for a maintainer to label the issue `accepted`, then link it with `Fixes #NNN`.
+- Search for related issues and PRs first. Maintainers use the path labels to route PRs.
+
+The AI reviewer posts a summary after Lint, CI Lite and any applicable frontend checks pass for
+a new PR. Diffs over 50 changed files or 48 KiB go to manual review. To request another review, leave
+`/review` on its own line in a PR comment. The author can request it once per commit after CI passes.
+Maintainers can also request a review while CI is pending or failing. The bot updates its summary
+in place. Maintainers make the final review and merge decisions.
+
 ## Table of Contents
 
 - [Contributing to EvalScope](#contributing-to-evalscope)
+  - [Before opening a pull request](#before-opening-a-pull-request)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
   - [Development Setup](#development-setup)

@@ -1,0 +1,105 @@
+name: PR Automation
+
+on:
+  workflow_run:
+    workflows: [PR Intake, CI Tests Lite, Lint Test, Frontend checks]
+    types: [completed]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  resolve:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+       github.event.comment.user.type == 'User' && contains(github.event.comment.body, '/review'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      sha: ${{ steps.pr.outputs.sha }}
+      command: ${{ steps.pr.outputs.command }}
+      intake: ${{ steps.pr.outputs.intake }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: pr
+        run: python3 .github/scripts/pr_automation.py resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  label:
+    needs: resolve
+    if: needs.resolve.outputs.intake == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: pr-path-labels-${{ needs.resolve.outputs.number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          pr-number: ${{ needs.resolve.outputs.number }}
+          sync-labels: true
+
+  review:
+    needs: resolve
+    if: >-
+      needs.resolve.outputs.number != '' &&
+      vars.PR_REVIEW_API_BASE != '' && vars.PR_REVIEW_MODEL != '' &&
+      (needs.resolve.outputs.command != '0' || vars.PR_REVIEW_AUTO_START_AT != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: evalscope-ai-review-${{ needs.resolve.outputs.number }}
+      queue: max
+    env:
+      PR_NUMBER: ${{ needs.resolve.outputs.number }}
+      PR_SHA: ${{ needs.resolve.outputs.sha }}
+      PR_COMMAND: ${{ needs.resolve.outputs.command }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check eligibility and fetch the diff
+        id: prepare
+        run: python3 .github/scripts/pr_automation.py prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_REVIEW_AUTO_START_AT: ${{ vars.PR_REVIEW_AUTO_START_AT }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        if: steps.prepare.outputs.decision == 'review'
+        with:
+          python-version: '3.12'
+      - name: Install PR-Agent
+        if: steps.prepare.outputs.decision == 'review'
+        run: python -m pip install --disable-pip-version-check pr-agent==0.50.0
+      - name: Review the diff
+        id: agent
+        if: steps.prepare.outputs.decision == 'review'
+        run: python .github/scripts/pr_automation.py generate
+        env:
+          PR_REVIEW_API_KEY: ${{ secrets.PR_REVIEW_API_KEY }}
+          PR_REVIEW_API_BASE: ${{ vars.PR_REVIEW_API_BASE }}
+          PR_REVIEW_MODEL: ${{ vars.PR_REVIEW_MODEL }}
+      - name: Update the PR summary
+        if: steps.prepare.outputs.decision == 'size-skip' || steps.agent.outputs.result != ''
+        run: python3 .github/scripts/pr_automation.py publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_RESULT: ${{ steps.agent.outputs.result || steps.prepare.outputs.decision }}
