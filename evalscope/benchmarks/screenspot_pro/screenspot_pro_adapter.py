@@ -1,4 +1,5 @@
 # flake8: noqa: E501
+import json
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -67,6 +68,7 @@ PROMPT_TEMPLATE = (
         subset_list=['CAD', 'Creative', 'Dev', 'OS', 'Office', 'Scientific'],
         metric_list=['acc', 'text_acc', 'icon_acc'],
         primary_metric='accuracy',
+        evaluation_version='v1.1',
         eval_split='train',
         extra_params={
             'coordinate_format': {
@@ -147,7 +149,7 @@ class ScreenSpotProAdapter(VisionLanguageAdapter):
         point = to_normalized_point(
             point, task_state.metadata['sent_size'], self.extra_params.get('coordinate_format', 'auto')
         )
-        return f'[{point[0]:.6f}, {point[1]:.6f}]'
+        return json.dumps(point)
 
     def match_score(
         self,
@@ -161,13 +163,12 @@ class ScreenSpotProAdapter(VisionLanguageAdapter):
         Returns a Score with ``acc`` plus ``text_acc`` or ``icon_acc`` depending on the
         sample's ``ui_type``, so that both breakdowns are averaged over their own samples.
         """
-        from .utils import parse_point, point_in_bbox
+        from .utils import point_in_bbox
 
         score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
 
-        # ``filtered_prediction`` is the already-normalized ``[x, y]`` produced by
-        # ``extract_answer``; re-parse it (empty string means nothing was extracted).
-        point = parse_point(filtered_prediction) if filtered_prediction else None
+        # Read the normalized point at the same precision used for the target box.
+        point = json.loads(filtered_prediction) if filtered_prediction else None
         metadata = task_state.metadata or {}
         correct = float(point is not None and point_in_bbox(point, metadata['bbox_norm']))
 

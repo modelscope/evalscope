@@ -3,6 +3,7 @@
 The scoring path is a silent-failure risk: a mis-parsed coordinate still looks like a
 plausible click point, so a regression would corrupt scores without raising anything.
 """
+import json
 import re
 
 import pytest
@@ -127,8 +128,8 @@ def test_extract_answer_reads_coordinate_format_from_extra_params() -> None:
         )
         return adapter.extract_answer('Answer: [500, 300]', state)
 
-    assert extract({}) == '[0.500000, 0.300000]'
-    assert extract({'extra_params': {'coordinate_format': 'pixel'}}) == '[0.195312, 0.208333]'
+    assert json.loads(extract({})) == [0.5, 0.3]
+    assert json.loads(extract({'extra_params': {'coordinate_format': 'pixel'}})) == [500 / 2560, 300 / 1440]
     with pytest.raises(ValueError):
         extract({'extra_params': {'coordinate_format': 'pixels'}})
 
@@ -143,3 +144,27 @@ def test_point_in_bbox_is_strict() -> None:
     assert point_in_bbox((gt[0], gt[1]), gt)
     # 1.4 px above the box top is a miss: the tolerance is the element itself
     assert not point_in_bbox((0.8140, 0.6870), gt)
+
+
+@pytest.mark.parametrize(
+    ('coordinate_format', 'answer', 'bbox', 'expected'),
+    [
+        ('pixel', 'Answer: [2341, 1238]', normalize_bbox([2341, 1238, 2353, 1250], 2880, 1800), 1.0),
+        ('normalized', 'Answer: [0.4999999, 0.6]', [0.5, 0.5, 0.7, 0.7], 0.0),
+        ('normalized', 'Answer: [0.0000001, 0.6]', [0.0000001, 0.5, 0.7, 0.7], 1.0),
+        ('normalized', 'Cannot locate the element.', [0, 0, 1, 1], 0.0),
+    ],
+)
+def test_scores_clicks_at_full_precision(
+    coordinate_format: str, answer: str, bbox: list[float], expected: float
+) -> None:
+    config = TaskConfig(
+        datasets=['screenspot_pro'],
+        dataset_args={'screenspot_pro': {'extra_params': {'coordinate_format': coordinate_format}}},
+    )
+    adapter = get_benchmark('screenspot_pro', config)
+    sample = Sample(
+        input='q', target=str(bbox), metadata={'sent_size': [2880, 1800], 'bbox_norm': bbox, 'ui_type': 'icon'}
+    )
+    state = TaskState(model='mock', sample=sample, output=ModelOutput.from_content('mock', answer), completed=True)
+    assert adapter.calculate_metrics(state).score.value == {'acc': expected, 'icon_acc': expected}
