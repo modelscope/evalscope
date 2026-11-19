@@ -1483,7 +1483,7 @@ class SpecialBulletPointsChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the response includes at least two instances of {sep} that start a new line."""
-        return len(re.findall(re.escape(self._bullet_marker), value)) >= 2
+        return sum(line.lstrip().startswith(self._bullet_marker) for line in value.splitlines()) >= 2
 
 
 class ItalicsThesisChecker(Instruction):
@@ -2227,12 +2227,11 @@ class RepeatChangeChecker(Instruction):
           True if the repeated request is found in the response;
           otherwise, False.
         """
-        if self._prompt_to_repeat == value:
-            return False
-        if ' '.join(self._prompt_to_repeat.split()[1:]) == ' '.join(value.split()[1:]):
-            return True
-        else:
-            return False
+        prompt_words = self._prompt_to_repeat.split()
+        response_words = value.split()
+        return bool(prompt_words and response_words) and (
+            prompt_words[0] != response_words[0] and prompt_words[1:] == response_words[1:]
+        )
 
 
 class RepeatSimpleChecker(Instruction):
