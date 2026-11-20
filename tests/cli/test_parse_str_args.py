@@ -52,8 +52,14 @@ def test_brackets_and_commas_inside_quoted_items_do_not_end_the_value() -> None:
     assert _parse("stop_seqs=['a,b','c]d'],seed=1") == {'stop_seqs': ['a,b', 'c]d'], 'seed': 1}
 
 
-def test_apostrophe_in_a_plain_value_does_not_swallow_later_pairs() -> None:
-    assert _parse("name=it's,top_p=0.9") == {'name': "it's", 'top_p': 0.9}
+def test_apostrophe_in_a_plain_value_requires_quotes(capsys: pytest.CaptureFixture) -> None:
+    assert _parse('name="it\'s",top_p=0.9') == {'name': "it's", 'top_p': 0.9}
+
+    with pytest.raises(SystemExit) as excinfo:
+        _parse("name=it's,top_p=0.9")
+
+    assert excinfo.value.code == 2
+    assert 'expected comma-separated key=value pairs' in capsys.readouterr().err
 
 
 def test_escaped_backslash_before_a_closing_quote_is_handled_by_python() -> None:
@@ -70,7 +76,7 @@ def test_pair_without_equals_is_a_usage_error(capsys: pytest.CaptureFixture) -> 
         _parse('temperature=0.5,stop_seqs')
 
     assert excinfo.value.code == 2
-    assert "expected key=value, got 'stop_seqs'" in capsys.readouterr().err
+    assert 'expected comma-separated key=value pairs' in capsys.readouterr().err
 
 
 def test_unclosed_literal_is_a_usage_error(capsys: pytest.CaptureFixture) -> None:
@@ -78,7 +84,7 @@ def test_unclosed_literal_is_a_usage_error(capsys: pytest.CaptureFixture) -> Non
         _parse("stop_seqs=['a','b'")
 
     assert excinfo.value.code == 2
-    assert 'expected key=value' in capsys.readouterr().err
+    assert 'expected comma-separated key=value pairs' in capsys.readouterr().err
 
 
 def test_stop_sequences_reach_the_task_config() -> None:

@@ -35,28 +35,20 @@ class ParseStrArgsAction(argparse.Action):
         wrapped = f'_args({values.strip()})'
         try:
             call = ast.parse(wrapped, mode='eval').body
-        except (SyntaxError, ValueError):
-            call = None
+        except (SyntaxError, ValueError) as exc:
+            parser.error(f'argument {option_string}: expected comma-separated key=value pairs: {exc}')
 
-        if call is not None:
-            if (
-                not isinstance(call, ast.Call)
-                or not isinstance(call.func, ast.Name)
-                or call.func.id != '_args'
-                or call.args
-                or not call.keywords
-                or any(keyword.arg is None for keyword in call.keywords)
-            ):
-                parser.error(f'argument {option_string}: expected comma-separated key=value pairs')
-            pairs = [(keyword.arg, ast.get_source_segment(wrapped, keyword.value)) for keyword in call.keywords]
-        else:
-            pairs = []
-            for arg in values.strip().split(','):
-                key, separator, value = map(str.strip, arg.partition('='))
-                if not separator:
-                    parser.error(f'argument {option_string}: expected key=value, got {arg.strip()!r}')
-                pairs.append((key, value))
+        if (
+            not isinstance(call, ast.Call)
+            or not isinstance(call.func, ast.Name)
+            or call.func.id != '_args'
+            or call.args
+            or not call.keywords
+            or any(keyword.arg is None for keyword in call.keywords)
+        ):
+            parser.error(f'argument {option_string}: expected comma-separated key=value pairs')
 
+        pairs = [(keyword.arg, ast.get_source_segment(wrapped, keyword.value)) for keyword in call.keywords]
         arg_dict = {key: _parse_value(value) for key, value in pairs}
 
         setattr(namespace, self.dest, arg_dict)
