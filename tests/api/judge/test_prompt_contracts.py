@@ -385,7 +385,7 @@ def test_wide_search_non_integer_or_out_of_range_column_scores_are_rejected(repl
 
 
 def test_strict_judge_scoring_versions_are_advanced() -> None:
-    assert SHARED_SCORING_VERSION == 'v1.3'
+    assert SHARED_SCORING_VERSION == 'v1.4'
     expected_versions = {
         'deepsearchqa': 'v1.1',
         'gedit': 'v1.2',

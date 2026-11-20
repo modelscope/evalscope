@@ -209,12 +209,20 @@ def extract_answer_line(text: str) -> Optional[str]:
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
     # Fallback to find the last upper case letter
-    for letter in reversed(completion):
-        if letter.isupper():
-            # A letter that is not one of the sample's labels cannot be the model's choice, and
-            # returning it would record an answer the model never gave.  Reporting no answer
-            # scores the same (an invalid label never equals the target) and stays diagnosable.
-            return {letter} if letter in allowed_options else None
+    marker_spans = [marker.span() for marker in _ANSWER_MARKER_RE.finditer(completion)]
+    for index in range(len(completion) - 1, -1, -1):
+        letter = completion[index]
+        if not letter.isupper():
+            continue
+        # A capital of the answer marker is the keyword, not a choice: the 'A' of 'Answer: none of
+        # the above' would be reported as option A.  Report no answer, as 'ANSWER: none of the
+        # above' already does through its final 'R', instead of reading on into the reasoning.
+        if any(start <= index < end for start, end in marker_spans):
+            return None
+        # A letter that is not one of the sample's labels cannot be the model's choice, and
+        # returning it would record an answer the model never gave.  Reporting no answer
+        # scores the same (an invalid label never equals the target) and stays diagnosable.
+        return {letter} if letter in allowed_options else None
     return None
 
 

@@ -346,6 +346,46 @@ def test_parse_answers_still_rejects_prose_that_names_no_label() -> None:
     assert parse_answers_zh(_make_state('答案：无法确定')) == set()
 
 
+@pytest.mark.parametrize(
+    'reply',
+    [
+        'Answer: none of the above',
+        'Answer: b',
+        'Answer: (c)',
+        'Answer: 2',
+        '**Answer:** cannot be determined',
+        'the options are all wrong.\nFinal Answer: unknown',
+    ],
+)
+def test_fallback_does_not_read_the_answer_keyword_as_option_a(reply: str) -> None:
+    """The capital of a title-case 'Answer:' marker is the keyword, not the model's choice.
+
+    The last-capital fallback used to return it, so a reply naming no label was recorded as
+    option A and scored correct whenever A was the target.
+    """
+    assert parse_answers(_make_state(reply)) == set()
+    assert parse_answers_zh(_make_state(reply)) == set()
+
+
+def test_fallback_still_reads_a_capital_outside_the_answer_keyword() -> None:
+    assert parse_answers(_make_state('Answer: the correct option is B')) == {'B'}
+    assert parse_answers(_make_state('A is the only option that fits')) == {'A'}
+    assert parse_answers(_make_state('Answer: A')) == {'A'}
+
+
+@pytest.mark.parametrize('marker', ['ANSWER: ', 'Answer: ', '**Answer:** ', 'Final Answer: '])
+@pytest.mark.parametrize('body', ['none of the above', 'cannot be determined', 'b', ''])
+def test_fallback_does_not_read_past_a_marker_into_the_reasoning(marker: str, body: str) -> None:
+    """A marker that carries no label ends the reply; a letter named in the reasoning is not the answer.
+
+    'ANSWER: none of the above' already reports no answer because the keyword's capitals are not
+    labels, so a title-case marker must not start answering with an option the model had rejected.
+    """
+    reply = f'Option B looks tempting, but it fails. We can rule out C and D.\n{marker}{body}'
+    assert parse_answers(_make_state(reply)) == set()
+    assert parse_answers_zh(_make_state(reply)) == set()
+
+
 def test_completion_argument_overrides_raw_model_output() -> None:
     """An explicit `completion` must be parsed instead of the raw model output.
 
