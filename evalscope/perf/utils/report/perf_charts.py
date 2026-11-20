@@ -55,6 +55,32 @@ _LAYOUT_BASE = dict(
 # ---------------------------------------------------------------------------
 
 
+def _is_fully_transparent(color: Any) -> bool:
+    """Return True when *color* renders fully transparent (alpha 0) in plotly.
+
+    Covers the ``rgba(r,g,b,0)`` family (spaces and float alpha allowed), the
+    ``transparent`` keyword, and 8-digit hex with a zero alpha channel.
+    """
+    if not isinstance(color, str):
+        return False
+    text = color.strip().lower()
+    if text == 'transparent':
+        return True
+    if text.startswith('rgba') and text.endswith(')'):
+        parts = [p.strip() for p in text[text.find('(') + 1 : text.rfind(')')].split(',')]
+        if len(parts) == 4:
+            try:
+                return float(parts[3]) == 0.0
+            except ValueError:
+                return False
+    if text.startswith('#') and len(text) == 9:
+        try:
+            return int(text[7:9], 16) == 0
+        except ValueError:
+            return False
+    return False
+
+
 class ChartBuilder:
     """Generic Plotly chart factory shared by all perf chart builders."""
 
@@ -82,7 +108,10 @@ class ChartBuilder:
         import plotly.io as pio
 
         merged = dict(_LAYOUT_BASE)
-        template_name = 'plotly_white' if theme == 'light' else 'plotly_dark'
+        # An explicit `template` override wins over the theme pick, and the
+        # hoverlabel colors below must follow the *effective* template so a
+        # dark template never gets a light tooltip box (or vice versa).
+        template_name = overrides.get('template') or ('plotly_white' if theme == 'light' else 'plotly_dark')
         merged['template'] = template_name
         # Opaque unified-hover tooltip box. plotly.js defaults an unset
         # hoverlabel.bgcolor to paper_bgcolor for legend-less charts, which is
@@ -92,11 +121,11 @@ class ChartBuilder:
         # picked up automatically. Border follows the template's legend border
         # (the plotly.js default for unified hover on charts with a legend),
         # falling back to plotly.js's own default border color '#444'.
-        paper = overrides.get('paper_bgcolor') or getattr(pio.templates[template_name].layout, 'paper_bgcolor', None)
-        if not paper or str(paper).endswith(',0)'):  # unset or fully transparent
+        tpl_layout = pio.templates[template_name].layout
+        paper = overrides.get('paper_bgcolor') or getattr(tpl_layout, 'paper_bgcolor', None)
+        if not paper or _is_fully_transparent(paper):  # unset or fully transparent
             paper = '#ffffff' if theme == 'light' else 'rgb(17,17,17)'
-        tpl_legend = getattr(pio.templates[template_name].layout, 'legend', None)
-        border = getattr(tpl_legend, 'bordercolor', None) or '#444444'
+        border = getattr(getattr(tpl_layout, 'legend', None), 'bordercolor', None) or '#444444'
         merged['hoverlabel'] = dict(bgcolor=paper, bordercolor=border)
         if 'hoverlabel' in overrides:
             # Merge a partial caller override into the computed hoverlabel
