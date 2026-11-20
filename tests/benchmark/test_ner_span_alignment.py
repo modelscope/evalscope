@@ -27,6 +27,11 @@ CASES = [
     (['John', 'visits', 'Paris', 'with', 'Acme'], ['B-PER', 'O', 'B-LOC', 'O', 'B-ORG']),
     (['Paris', 'visits', 'Paris'], ['B-PER', 'O', 'B-LOC']),
     (['John', 'Smith', 'meets', 'John', 'Smith'], ['O', 'O', 'O', 'B-PER', 'I-PER']),
+    (['x', '<', 'y', 'and', 'John', 'and', 'John'], ['O', 'O', 'O', 'O', 'B-PER', 'O', 'B-PER']),
+    (
+        ['John', 'was', 'lower', '(', 'p', '<', '0.05', ')', ',', 'John', 'was', 'lower', '(', 'p', '<', '0.01', ')'],
+        ['B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-PER', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
+    ),
     (['John', 'visits', 'Paris'], ['O', 'O', 'O']),
 ]
 
