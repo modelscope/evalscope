@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from evalscope.perf.arguments import Arguments
+from evalscope.perf.arguments import Arguments, parse_args
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.plugin.api.anthropic_api import AnthropicMessagesPlugin
 from evalscope.perf.plugin.registry import ApiRegistry
@@ -42,9 +42,28 @@ def test_request_conversion_url_and_authentication() -> None:
         'system': 'Be concise',
         'max_tokens': 32,
         'stream': True,
-        'temperature': 0.0,
         'stop_sequences': ['DONE'],
     }
+
+
+@pytest.mark.parametrize(
+    ('api', 'options', 'expected'),
+    [
+        ('anthropic', [], None),
+        ('anthropic', ['--temperature', '0'], 0.0),
+        ('openai', [], 0.0),
+    ],
+)
+def test_cli_temperature_default_depends_on_protocol(
+    monkeypatch: pytest.MonkeyPatch, api: str, options: list[str], expected: float | None
+) -> None:
+    monkeypatch.setattr('sys.argv', ['evalscope perf', '--api', api, '--model', 'test-model', *options])
+    args = Arguments.from_args(parse_args())
+    body = ApiRegistry.get_class(api)(args).build_request([{'role': 'user', 'content': 'hello'}])
+    if expected is None:
+        assert 'temperature' not in body
+    else:
+        assert body['temperature'] == expected
 
 
 def test_complete_body_fields_take_precedence() -> None:
@@ -173,14 +192,13 @@ def provider() -> Iterator[tuple[str, dict]]:
                 if mode == 'error':
                     events.append({'type': 'error', 'error': {'type': 'server_error', 'message': 'upstream failed'}})
                 elif mode != 'incomplete':
-                    events.extend([
-                        {
-                            'type': 'message_delta',
-                            'delta': {'stop_reason': 'end_turn'},
-                            'usage': {'output_tokens': 3},
-                        },
-                        {'type': 'message_stop'},
-                    ])
+                    events.append({
+                        'type': 'message_delta',
+                        'delta': {'stop_reason': 'end_turn'},
+                        'usage': {'output_tokens': 3},
+                    })
+                    if mode != 'missing_stop':
+                        events.append({'type': 'message_stop'})
                 body = ''.join(
                     f'data: {event}\n\n'
                     if isinstance(event, str) else f'event: {event["type"]}\ndata: {json.dumps(event)}\n\n'
@@ -253,13 +271,20 @@ def test_tool_argument_deltas_drive_timing(provider: tuple[str, dict]) -> None:
     assert len(output.inter_chunk_latency) == 1
 
 
-@pytest.mark.parametrize('mode', ['incomplete', 'error', 'malformed', 'missing_start'])
+@pytest.mark.parametrize('mode', ['incomplete', 'error', 'malformed', 'missing_start', 'missing_stop'])
 def test_incomplete_and_error_streams_fail(provider: tuple[str, dict], mode: str) -> None:
     url, _ = provider
     args = Arguments(model=mode, api='anthropic', url=url, stream=True)
-    output = _request(args, AnthropicMessagesPlugin(args))
+    plugin = AnthropicMessagesPlugin(args)
+    output = _request(args, plugin)
 
     assert output.success is False
     assert output.error
     if mode == 'error':
         assert 'upstream failed' in output.error
+    if mode == 'missing_stop':
+        assert 'message_stop' in output.error
+        accumulator = MetricsAccumulator()
+        accumulator.update(output, plugin)
+        result = accumulator.to_result()
+        assert (result.succeed_requests, result.failed_requests) == (0, 1)

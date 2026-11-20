@@ -213,6 +213,19 @@ The benchmark page provides browsing and search functionality for all evaluation
 
 The web interface supports directly submitting evaluation and stress test tasks without command-line operations.
 
+#### Model Connection
+
+Evaluation and stress testing share the model connection. Select **API Type**, then enter the model name, API URL, and API key for that service.
+
+| API Type | Example API URL | Supported tasks |
+|----------|-----------------|-----------------|
+| OpenAI-compatible | `http://localhost:8000/v1` | Evaluation and stress testing |
+| OpenAI Responses | `https://api.openai.com/v1` | Evaluation and stress testing |
+| Anthropic Messages | `https://api.anthropic.com` or `https://api.anthropic.com/v1/messages` | Evaluation and stress testing |
+| Local Transformers | No API URL required | Stress testing |
+
+For the DashScope Anthropic-compatible endpoint, select **Anthropic Messages** and use `https://dashscope.aliyuncs.com/apps/anthropic`. The `evalscope[service]` installation includes the Anthropic SDK.
+
 #### Evaluation Task
 
 The evaluation task page provides a configuration form and task monitoring panel:

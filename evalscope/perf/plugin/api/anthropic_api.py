@@ -143,6 +143,7 @@ class AnthropicMessagesPlugin(DefaultApiPlugin):
         last_output_timestamp: Optional[float] = None
         stop_reason: Optional[str] = None
         message_started = False
+        message_stopped = False
         stream_usage: Dict = {}
         async for chunk_bytes in response.content.iter_any():
             if not chunk_bytes:
@@ -174,6 +175,8 @@ class AnthropicMessagesPlugin(DefaultApiPlugin):
                 elif event_type == 'message_delta':
                     stop_reason = payload.get('delta', {}).get('stop_reason') or stop_reason
                     self._apply_usage(output, payload.get('usage'), stream_usage)
+                elif event_type == 'message_stop':
+                    message_stopped = True
                 elif event_type == 'error':
                     output.error = json.dumps(payload, ensure_ascii=False)
 
@@ -188,8 +191,10 @@ class AnthropicMessagesPlugin(DefaultApiPlugin):
             output.error = 'SSE stream ended without an Anthropic message_start event.'
         elif stop_reason is None and output.error is None:
             output.error = 'Anthropic stream ended without a stop reason.'
+        elif not message_stopped and output.error is None:
+            output.error = 'SSE stream ended without an Anthropic message_stop event.'
         output.generated_text = generated_text
-        output.success = output.error is None and message_started and stop_reason is not None
+        output.success = output.error is None
         output.completed_time = most_recent_timestamp
         output.query_latency = most_recent_timestamp - st
         return output

@@ -387,8 +387,8 @@ class Arguments(BaseArgument):
     stream: Optional[bool] = True
     """Whether to stream the response."""
 
-    temperature: float = 0.0
-    """Temperature setting for the response."""
+    temperature: Optional[float] = None
+    """Sampling temperature. Defaults to 0.0 for APIs other than Anthropic Messages."""
 
     top_p: Optional[float] = None
     """Top-p (nucleus) sampling setting for the response."""
@@ -549,6 +549,9 @@ class Arguments(BaseArgument):
                 raise ValueError('--prefix-count > 1 is supported only with --dataset random.')
             if self.prefix_length <= 0:
                 raise ValueError('--prefix-count > 1 requires --prefix-length > 0.')
+
+        if self.temperature is None and self.api != 'anthropic':
+            self.temperature = 0.0
 
         # Set the default headers
         self.headers = self.headers or {}
@@ -1020,7 +1023,10 @@ def _add_response_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)
-    parser.add_argument('--temperature', type=float, help='The sample temperature', default=0.0)
+    parser.add_argument(
+        '--temperature', type=float,
+        help='Sampling temperature (default: server default for Anthropic Messages, 0 otherwise).',
+    )
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
     parser.add_argument('--extra-args', type=json.loads, default='{}', help='Extra arguments, should in JSON format',)
