@@ -27,13 +27,14 @@ Use the Bug or Feature issue template for a reproducible bug or a feature reques
 Task type for maintenance work. Assign an `area:*` label to route the issue. Ready PRs receive
 area labels from their changed files.
 
-- `needs-triage` is the intake queue for new issues and ready PRs.
+Open issues and ready PRs without a triage status are awaiting initial triage.
+
 - `needs-info` indicates that the author needs to provide more information. An author reply
   returns the item to triage. An author's issue description edit or PR update also requeues it.
 - `accepted` means a maintainer has approved an issue's scope for implementation.
 - `ready-for-review` means a maintainer has checked a PR's scope and validation evidence.
 
-Each item has one triage status. Use GitHub's review requests, approvals, and change requests
+Each item has at most one triage status. Use GitHub's review requests, approvals, and change requests
 to manage the human review. The bot labels findings or failures for the current commit.
 
 - `ai:findings` means the reviewer returned findings for a maintainer to verify.

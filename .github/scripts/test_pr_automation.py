@@ -118,6 +118,12 @@ def test_review_prompt_requests_severity_without_a_count_limit() -> None:
     assert prompt.endswith('A concise list')
 
 
+def test_severity_example_has_the_same_shape_as_a_review_finding() -> None:
+    example = 'review:\n  key_issues_to_review:\n    - relevant_file: a.py\n      start_line: 14\n'
+    findings = yaml.safe_load(pr_agent_review.severity_example(example))['review']['key_issues_to_review']
+    assert findings == [{'severity': 'medium', 'relevant_file': 'a.py', 'start_line': 14}]
+
+
 def test_inline_review_publishes_all_anchored_findings_and_preserves_unanchored_ones(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -262,7 +268,6 @@ def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(bot, 'github', github)
     bot.triage_pr(42, SHA)
     assert calls == [
-        ('issues/42/labels', ('-X', 'POST'), {'labels': ['needs-triage']}),
         ('issues/42/labels/needs-info', ('-X', 'DELETE'), None),
         ('issues/42/labels/ai%3Afindings', ('-X', 'DELETE'), None),
     ]
@@ -272,11 +277,11 @@ def test_triage_resolves_conflicting_states_in_order(monkeypatch: pytest.MonkeyP
     item = {
         'number': 42,
         'state': 'open',
-        'labels': [{'name': 'needs-triage'}, {'name': 'area:core'}, {'name': 'accepted'}],
+        'labels': [{'name': 'needs-info'}, {'name': 'area:core'}, {'name': 'accepted'}],
     }
     events = [
         {'event': 'labeled', 'label': {'name': 'accepted'}, 'created_at': '2026-11-19T08:10:00Z', 'id': 2},
-        {'event': 'labeled', 'label': {'name': 'needs-triage'}, 'created_at': '2026-11-19T08:09:00Z', 'id': 1},
+        {'event': 'labeled', 'label': {'name': 'needs-info'}, 'created_at': '2026-11-19T08:09:00Z', 'id': 1},
     ]
     monkeypatch.setattr(bot, 'list_all', lambda _: events)
     calls = []
@@ -286,7 +291,16 @@ def test_triage_resolves_conflicting_states_in_order(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(bot, 'github', github)
     bot.sync_triage(item)
-    assert calls == [('issues/42/labels/needs-triage', ('-X', 'DELETE'), None)]
+    assert calls == [('issues/42/labels/needs-info', ('-X', 'DELETE'), None)]
+
+
+@pytest.mark.parametrize('item', [PR, {'number': 43, 'state': 'open', 'labels': [{'name': 'area:core'}]}])
+def test_new_open_items_without_a_triage_status_keep_their_labels(monkeypatch: pytest.MonkeyPatch, item: dict) -> None:
+    def github(*args: object, **kwargs: object) -> None:
+        pytest.fail('Triage should not update labels when there is no triage status.')
+
+    monkeypatch.setattr(bot, 'github', github)
+    bot.sync_triage(item)
 
 
 def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

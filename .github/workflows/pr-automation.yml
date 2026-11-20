@@ -72,7 +72,7 @@ jobs:
          github.event.sender.id == github.event.issue.user.id &&
          contains(github.event.issue.labels.*.name, 'needs-info')) ||
         (github.event.action == 'labeled' &&
-         contains(fromJSON('["needs-triage","needs-info","accepted","ready-for-review"]'), github.event.label.name)))) ||
+         contains(fromJSON('["needs-info","accepted","ready-for-review"]'), github.event.label.name)))) ||
       (github.event_name == 'issue_comment' && github.event.comment.user.type == 'User' &&
        github.event.comment.user.id == github.event.issue.user.id &&
        contains(github.event.issue.labels.*.name, 'needs-info'))

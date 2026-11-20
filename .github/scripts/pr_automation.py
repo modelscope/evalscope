@@ -36,7 +36,7 @@ FRONTEND_PATHS = (
 )
 MAX_FILES = 50
 MAX_DIFF_BYTES = 48 * 1024
-TRIAGE_LABELS = frozenset(('needs-triage', 'needs-info', 'accepted', 'ready-for-review'))
+TRIAGE_LABELS = frozenset(('needs-info', 'accepted', 'ready-for-review'))
 AI_TITLES = {
     'ai:no-findings': 'No actionable findings',
     'ai:findings': 'Findings to verify',
@@ -179,7 +179,7 @@ def latest_status(number: int, states: set[str]) -> str:
         if event['event'] == 'labeled' and (event.get('label') or {}).get('name') in states
     )
     latest = max(events, key=lambda event: (event['created_at'], event['id']), default=None)
-    return latest['label']['name'] if latest else 'needs-triage'
+    return latest['label']['name'] if latest else 'needs-info'
 
 
 def sync_triage(item: dict, *, requeue: bool = False) -> None:
@@ -189,9 +189,9 @@ def sync_triage(item: dict, *, requeue: bool = False) -> None:
     labels = {label['name'] for label in item['labels']}
     allowed = TRIAGE_LABELS - ({'accepted'} if is_pr else {'ready-for-review'})
     states = labels & allowed
-    status = latest_status(item['number'], states) if states else ('' if item.get('draft') else 'needs-triage')
+    status = latest_status(item['number'], states) if states else ''
     if requeue and status == 'needs-info':
-        status = 'needs-triage'
+        status = ''
     replace_family(item['number'], labels, TRIAGE_LABELS, status)
 
 
