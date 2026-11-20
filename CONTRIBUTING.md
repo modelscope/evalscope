@@ -45,25 +45,11 @@ and skipped reviews with their reason. It shows the last attempt, commit, comple
 and the Actions run. PR Intake clears the AI label when the PR head changes. A failed re-review
 preserves the previous successful review for reference.
 
-### Operating the AI review workflow
-
-The PR Automation workflow runs DSH-action in a read-only Docker worker. It connects directly
-to Alibaba Cloud Model Studio's Messages endpoint at `https://dashscope.aliyuncs.com/apps/anthropic`.
-Set `PR_REVIEW_MODEL` to `deepseek-v4.1-flash-1017` and keep the API credential in the
-`PR_REVIEW_API_KEY` secret. Set `PR_REVIEW_REASONING_EFFORT` to `high` for extended thinking.
-
-Set `PR_REVIEW_AUTO_START_AT` to a UTC timestamp such as `2026-11-19T00:00:00Z` to start first
-reviews for newly opened PRs. Remove that variable to pause automatic reviews while keeping
-`/review` available. The bot lists high-confidence findings with severity and confidence, and carries
-findings without a valid inline location in the summary. The summary links to its Actions run for
-diagnostics. Reviews above the existing 50-file or 48 KiB diff limits are skipped.
-
 ## Table of Contents
 
 - [Contributing to EvalScope](#contributing-to-evalscope)
   - [Before opening a pull request](#before-opening-a-pull-request)
     - [Triage and review labels](#triage-and-review-labels)
-    - [Operating the AI review workflow](#operating-the-ai-review-workflow)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
   - [Development Setup](#development-setup)

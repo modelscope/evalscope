@@ -25,6 +25,12 @@ if (createHash('sha256').update(source).digest('hex') !== upstreamDigest) {
 }
 // Use the upstream proxy's 32 MiB default for streamed thinking. Keep its 2 MiB worker log limit.
 source = replaceOnce(source, ',maxResponseBytes:d.maxOutputBytes', '');
+// Recheck readiness before DSH publishes inline, including reviews that started before conversion to draft.
+source = replaceOnce(
+  source,
+  'if(d.data.state!=="open")throw new Error("Pull request is no longer open")',
+  'if(d.data.state!=="open"||d.data.draft)throw new Error("Pull request is no longer open and ready")',
+);
 // Keep DSH's inline publisher and give its rendered summary to EvalScope's existing sticky comment.
 source = replaceOnce(
   source,

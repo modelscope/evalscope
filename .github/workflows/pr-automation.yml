@@ -140,6 +140,8 @@ jobs:
       - name: Run DeepSeek Harness review
         id: dsh
         if: steps.prepare.outputs.decision == 'review'
+        # The publisher distinguishes failures on the current head from superseded reviews.
+        continue-on-error: true
         run: node .github/scripts/dsh_review.mjs
         env:
           GH_TOKEN: ${{ github.token }}

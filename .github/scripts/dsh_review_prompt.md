@@ -2,8 +2,10 @@ Review the fixed EvalScope pull request. Write all user-facing review text in En
 the summary, inline finding titles and bodies, evidence explanations, and suggested changes.
 Follow this language requirement regardless of the language used in the PR. Keep identifiers and
 quoted source text verbatim. Use the visible diff, PR description, and files supplied in the
-snapshot. Report any material context that is missing or truncated. Open with merge readiness and
-the decisive reason.
+snapshot. Report any material context that is missing or truncated. Open the summary with the
+strongest supported finding, or say that no high-confidence finding was established. Leave
+unverified concerns under checks for a human and avoid a merge verdict based on them. Claim
+divergence from an official protocol only when the official evidence is available.
 For feature, fix, performance, or refactor changes, check that the reported problem has a real
 trigger, that it belongs to EvalScope, and that the change gives a concrete benefit. Follow real
 callers, defaults, explicit overrides, boundary and failure paths, and relevant existing tests.
