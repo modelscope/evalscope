@@ -29,15 +29,13 @@ __all__ = [
 def parse_scenario(value: Any) -> PerfScenario:
     """Parse scenario shorthand, JSON, mappings, or an existing typed model."""
     if isinstance(value, str):
-        if value in {'agentx', 'agentx_harness', 'agentx_harness_256k'}:
+        if value in {'agentx', 'agentx_harness'}:
             value = {'name': value}
         else:
             try:
                 value = json.loads(value)
             except ValueError as error:
-                raise ValueError(
-                    '--scenario must be agentx, agentx_harness, agentx_harness_256k, or a scenario JSON object.'
-                ) from error
+                raise ValueError('--scenario must be agentx, agentx_harness, or a scenario JSON object.') from error
     if isinstance(value, dict):
         # Preserve legacy JSON configurations that omitted the scenario name.
         value = {'name': 'agentx', **value}

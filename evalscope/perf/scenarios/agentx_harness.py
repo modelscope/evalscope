@@ -1,15 +1,9 @@
-"""AgentX Harness serving-performance scenarios, separate from the legacy MVP runner.
-
-The pinned harness owns official scenario locks, warmup, trajectory replay, and
-native metrics. EvalScope owns configuration, provenance, process supervision,
-and summaries. The harness and upstream AIPerf must not share an environment.
-"""
+"""Full-corpus AgentX Harness runner; replay and native metrics belong to the harness."""
 
 import importlib.metadata
 import json
 import math
 import os
-import re
 import signal
 import subprocess
 import sys
@@ -52,12 +46,11 @@ _AIPERF_SUMMARY = 'profile_export_aiperf.json'
 
 
 class AgentXHarnessScenario(BaseModel):
-    """Configure the official harness; the scenario name selects its corpus."""
+    """Configure the full-corpus AgentX Harness scenario."""
 
     model_config = ConfigDict(extra='forbid')
 
-    name: Literal['agentx_harness', 'agentx_harness_256k'] = 'agentx_harness'
-    variant: Literal['256k', 'full'] = 'full'
+    name: Literal['agentx_harness'] = 'agentx_harness'
     mode: Literal['benchmark', 'smoke'] = 'benchmark'
     max_context_length: Optional[int] = Field(default=None, gt=0)
     trace_limit: Optional[int] = Field(default=None, gt=0)
@@ -69,18 +62,6 @@ class AgentXHarnessScenario(BaseModel):
     tokenizer_revision: Optional[str] = None
     request_timeout_seconds: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     benchmark_grace_period: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
-
-    @model_validator(mode='before')
-    @classmethod
-    def _select_corpus(cls, value: Any) -> Any:
-        if isinstance(value, dict):
-            value = dict(value)
-            name = value.get('name', 'agentx_harness')
-            expected = '256k' if name == 'agentx_harness_256k' else 'full'
-            if 'variant' in value and value['variant'] != expected:
-                raise ValueError(f'{name} requires variant={expected}; select the other scenario name instead.')
-            value['variant'] = expected
-        return value
 
     @model_validator(mode='after')
     def _validate_mode(self) -> 'AgentXHarnessScenario':
@@ -182,7 +163,7 @@ def _require_harness() -> None:
 
 
 def _resolve_dataset(args: 'Arguments', scenario: AgentXHarnessScenario) -> AgentXDatasetProvenance:
-    spec = _DATASETS[scenario.variant]
+    spec = _DATASETS['full']
     source = HubType.LOCAL if args.dataset_path else (args.data_source or HubType.HUGGINGFACE)
     if source not in {HubType.MODELSCOPE, HubType.HUGGINGFACE, HubType.LOCAL}:
         raise ValueError(f'Unsupported AgentX Harness data source: {source}')
@@ -310,7 +291,7 @@ def _build_command(
         if value is not None:
             command.extend([flag, str(value)])
     if dataset.source == HubType.HUGGINGFACE:
-        command.extend(['--public-dataset', _DATASETS[scenario.variant]['public_dataset']])
+        command.extend(['--public-dataset', _DATASETS['full']['public_dataset']])
     else:
         # The harness accepts a directory of JSONL rows through its datasets loader.
         command.extend(['--hf-weka-dataset', str(Path(dataset.trace_file).parent)])
@@ -513,6 +494,6 @@ def _redact_command(command: List[str]) -> List[str]:
             redacted.append('<redacted>')
             redact_next = False
         else:
-            redacted.append(re.sub(r'\$\{EVALSCOPE_AGENTX_[^}]+\}', '<redacted>', part))
+            redacted.append(part)
             redact_next = part in {'--api-key', '--header'}
     return redacted

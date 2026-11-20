@@ -832,10 +832,7 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
         '--scenario',
         type=str,
         default=None,
-        help=(
-            'External performance scenario: "agentx" (legacy MVP), "agentx_harness" (full corpus), '
-            '"agentx_harness_256k" (256K corpus), or a scenario JSON object.'
-        ),
+        help='External performance scenario: "agentx" (legacy MVP), "agentx_harness" (full corpus), or scenario JSON.',
     )
     parser.add_argument('-n', '--number', type=int, default=None, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501

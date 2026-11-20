@@ -15,7 +15,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |
 | `--debug` | `bool` | Whether to output debug information | `False` |
-| `--scenario` | `str` | External workload: `agentx` (legacy MVP), `agentx_harness` (full corpus), or `agentx_harness_256k` (256K corpus). Also accepts scenario JSON. See [AgentX](./agentx.md). | `None` |
+| `--scenario` | `str` | External workload: `agentx` (legacy MVP) or `agentx_harness` (full corpus). Also accepts scenario JSON. See [AgentX](./agentx.md). | `None` |
 
 ## Network Configuration
 

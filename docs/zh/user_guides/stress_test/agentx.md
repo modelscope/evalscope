@@ -2,8 +2,6 @@
 
 AgentX 用于衡量推理服务处理长编码 Agent 会话时的性能，不评估模型能力或任务正确率。
 
-`agentx` 保留原有 MVP 口径。[AgentX Harness 场景](#agentx-harness) 使用独立 runner，不改变已有命令或默认配置。
-
 ## 安装
 
 AgentX 要求 Python 3.11--3.13，并且不包含在默认 Perf extra 中：
@@ -79,61 +77,24 @@ evalscope perf \
 
 smoke、取消、失败、缩短或哈希不符的运行，`submission_valid` 均为 false。需要可比较结果时，请使用符合要求的数据集和时长执行正式运行。
 
-## MVP 兼容性
+## 兼容性
 
-原有 `agentx` 场景固定 `aiperf==0.12.0` 及其 `inferencex-agentx-mvp` 场景。它不等同于当前 InferenceX AgentX v1.0 榜单口径，后者的 profiling 和 warmup 规则已变化。AgentX 指标不能作为模型质量或 Agent 任务得分。
+首版固定 `aiperf==0.12.0` 及其 `inferencex-agentx-mvp` 场景。它不等同于当前 InferenceX AgentX v1.0 榜单口径，后者的 profiling 和 warmup 规则已变化。AgentX 指标不能作为模型质量或 Agent 任务得分。
 
 ## AgentX Harness
 
-新增场景固定使用 `agentx-harness==1.0.13`，均调用其原生 `agentx` 场景：
+`agentx_harness` 使用 `agentx-harness==1.0.13` 运行 **完整语料**；原有 `agentx` MVP 不变。要求 POSIX、Python 3.11--3.13、流式 Chat Completions、`ignore_eos=true` 和足够的上下文（可能超过 256K）。
 
-| 场景 | 语料 | 默认正式运行时长 | 默认 seed |
-| --- | --- | --- | --- |
-| `agentx_harness` | 完整 Weka 语料 | 3600 秒 | 42 |
-| `agentx_harness_256k` | 256K Weka 子集 | 3600 秒 | 42 |
-
-要求 POSIX 和 Python 3.11--3.13。**不要在同一环境安装 `evalscope[agentx]` 和 `evalscope[agentx_harness]`**：两个 runner 均安装 `aiperf` Python 包。检测到混装会拒绝运行；应重建干净环境，而不是在混装环境直接卸载其中一个包。
+**必须与 `evalscope[agentx]` 使用独立环境**：两个 runner 均安装 `aiperf` 包。混装会被拒绝，应重建干净环境。
 
 ```bash
 python3 -m venv .venv/agentx_harness
 .venv/agentx_harness/bin/python -m pip install -e '.[agentx_harness]'
-
-# Smoke check: four traces, 60 seconds, not a valid submission.
-.venv/agentx_harness/bin/evalscope perf \
-  --scenario '{"name":"agentx_harness_256k","mode":"smoke"}' \
-  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
-  --url http://localhost:8000/v1/chat/completions --parallel 1
-
-# Benchmark: use agentx_harness for the full corpus.
-.venv/agentx_harness/bin/evalscope perf \
-  --scenario agentx_harness_256k \
+.venv/agentx_harness/bin/evalscope perf --scenario agentx_harness \
   --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-以上 editable 安装命令用于源码仓库；发行包可在新环境安装 `evalscope[agentx_harness]`。已有 MVP 环境保持独立。
+默认：固定完整语料、seed 42、3600 秒（至少 900 秒）、会话树并发，harness 管理 warmup/drain。Smoke：`--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1`（60 秒、4 条 trace）。Python 使用 `Arguments`，远程 tokenizer 代码仍须显式开启。
 
-256K 场景要求服务至少支持 256K 上下文；完整语料可能需要更大的上下文窗口。均要求流式 OpenAI Chat Completions 和 `ignore_eos=true` 支持。`--parallel` 表示活跃会话树数，并非单次请求并发。Harness 自行管理 warmup 和 drain，因此墙钟耗时可能超过 `--duration`。正式运行时长须为有限值且至少 900 秒；smoke 默认 60 秒、4 条 trace，只有 smoke 允许 `trace_limit`。
-
-JSON 支持前文的时间、tokenizer 和部署元数据选项。`tokenizer_trust_remote_code` 默认 false，执行远程 tokenizer 代码须显式开启，建议同时固定 `tokenizer_revision`。与场景名称冲突的 `variant` 会被拒绝。不支持 `--number`、open-loop/rate 控制、multi-turn、SLA 调优、Perf warmup 或自定义 dataset arguments。
-
-Python 使用相同的类型化 `Arguments` 接口：
-
-```python
-from evalscope.perf.arguments import Arguments
-from evalscope.perf.main import run_perf_benchmark
-
-results = run_perf_benchmark(Arguments(
-    scenario={'name': 'agentx_harness_256k', 'mode': 'smoke'},
-    model='YOUR_MODEL',
-    tokenizer_path='YOUR_TOKENIZER_PATH_OR_ID',
-    url='http://localhost:8000/v1/chat/completions',
-    parallel=[1],
-))
-```
-
-默认使用固定身份的上游公开数据集，并校验原生别名实际读取的当前仓库 head 和预期校验和。`--data-source modelscope` 或 `--dataset-path` 可选择镜像/本地语料。本地 JSONL 目录直接交给 harness loader，不进行 MVP 的逐 trace JSON 转换。正式运行拒绝哈希不匹配的数据；未校验数据仅允许 smoke。
-
-每个并发点生成 `<scenario>/parallel_<n>/agentx_summary.json`（schema `2.0`）、`harness/` 原始产物和 `harness.log`；场景目录下另有 `agentx_sweep_summary.json`。汇总保留 harness/原生引擎版本、数据来源、原生无效原因和指标。失败或取消会保留诊断并终止 sweep。已有原生产物目录不可复用，以免误读旧结果。
-
-原生 submission validity 为最终依据：镜像和 smoke 使用 `unsafe_override`，不会被提升为有效提交。不要混合比较 harness 与 MVP 数值。本次提供 CLI/Python 接口，不提供 Web dashboard 专用结果表或归档展示。
+`--data-source modelscope` / `--dataset-path` 接受校验哈希的 JSONL 镜像。镜像和 smoke 均为无效提交，原生有效性为最终依据。Schema `2.0` 汇总和 `harness/` 文件与 MVP 结果分离，不可覆盖已有运行。仅完整语料，仅 CLI/Python。
