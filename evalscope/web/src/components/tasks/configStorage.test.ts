@@ -15,6 +15,7 @@ import {
   DEFAULT_EVAL,
   editConnection,
   connectionPayload,
+  validateConnection,
   validateEvalDraft,
   validatePerfDraft,
   DEFAULT_PERF,
@@ -221,11 +222,11 @@ describe('Shared connection and template semantics', () => {
       api_url: connection.url,
       api_key: 'fake-secret',
     })
-    expect(connectionPayload({ ...connection, api: 'anthropic' }, 'perf')).toMatchObject({
-      api: 'anthropic',
-      url: connection.url,
-      api_key: 'fake-secret',
-    })
+    // Anthropic has no perf plugin: the perf payload omits `api` so the backend
+    // falls back to its openai default instead of receiving an unsupported value.
+    const anthropicPerf = connectionPayload({ ...connection, api: 'anthropic' }, 'perf')
+    expect(anthropicPerf).not.toHaveProperty('api')
+    expect(anthropicPerf).toMatchObject({ url: connection.url, api_key: 'fake-secret' })
     // The default openai connection must not send eval_type so the backend keeps its default.
     expect(connectionPayload(connection, 'eval')).not.toHaveProperty('eval_type')
   })
@@ -242,5 +243,13 @@ describe('Shared connection and template semantics', () => {
     expect(validatePerfDraft({ ...DEFAULT_PERF, parallel: '1,2', number: '4,8', rate: '2.5' })).toEqual({})
     expect(validatePerfDraft({ ...DEFAULT_PERF, parallel: '1,2' })).toHaveProperty('number')
     expect(validateEvalDraft({ ...DEFAULT_EVAL, datasets: 'gsm8k', timeout: '0' })).toHaveProperty('timeout')
+  })
+  it('requires an API URL for every remote protocol, never for local', () => {
+    const base = { ...DEFAULT_CONNECTION, model: 'm', apiKey: 'k' }
+    for (const api of ['openai', 'openai_responses', 'anthropic'] as const) {
+      expect(validateConnection({ ...base, api, url: '' })).toHaveProperty('url')
+      expect(validateConnection({ ...base, api, url: 'http://localhost:8000/v1' })).not.toHaveProperty('url')
+    }
+    expect(validateConnection({ ...base, api: 'local', url: '' })).not.toHaveProperty('url')
   })
 })
