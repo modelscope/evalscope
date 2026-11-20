@@ -98,6 +98,13 @@ class ChartBuilder:
         tpl_legend = getattr(pio.templates[template_name].layout, 'legend', None)
         border = getattr(tpl_legend, 'bordercolor', None) or '#444444'
         merged['hoverlabel'] = dict(bgcolor=paper, bordercolor=border)
+        if 'hoverlabel' in overrides:
+            # Merge a partial caller override into the computed hoverlabel
+            # instead of letting it replace the dict wholesale (which would
+            # drop bgcolor/bordercolor and reintroduce the see-through
+            # tooltip). Explicit caller keys still win per-key.
+            merged['hoverlabel'].update(overrides['hoverlabel'])
+            overrides = {key: value for key, value in overrides.items() if key != 'hoverlabel'}
         merged.update(overrides)
         return merged
 
