@@ -80,3 +80,21 @@ smoke、取消、失败、缩短或哈希不符的运行，`submission_valid` �
 ## 兼容性
 
 首版固定 `aiperf==0.12.0` 及其 `inferencex-agentx-mvp` 场景。它不等同于当前 InferenceX AgentX v1.0 榜单口径，后者的 profiling 和 warmup 规则已变化。AgentX 指标不能作为模型质量或 Agent 任务得分。
+
+## AgentX Harness
+
+`agentx_harness` 使用 `agentx-harness==1.0.13` 运行 **完整语料**；原有 `agentx` MVP 不变。要求 POSIX、Python 3.11--3.13、流式 Chat Completions、`ignore_eos=true` 和足够的上下文（可能超过 256K）。
+
+**必须与 `evalscope[agentx]` 使用独立环境**：两个 runner 均安装 `aiperf` 包。混装会被拒绝，应重建干净环境。
+
+```bash
+python3 -m venv .venv/agentx_harness
+.venv/agentx_harness/bin/python -m pip install -e '.[agentx_harness]'
+.venv/agentx_harness/bin/evalscope perf --scenario agentx_harness \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions --parallel 8
+```
+
+默认：固定完整语料、seed 42、3600 秒（至少 900 秒）、会话树并发，harness 管理 warmup/drain。Smoke：`--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1`（60 秒、4 条 trace）。Python 使用 `Arguments`，远程 tokenizer 代码仍须显式开启。
+
+`--data-source modelscope` / `--dataset-path` 接受校验哈希的 JSONL 镜像。镜像和 smoke 均为无效提交，原生有效性为最终依据。Schema `2.0` 汇总和 `harness/` 文件与 MVP 结果分离，不可覆盖已有运行。仅完整语料，仅 CLI/Python。

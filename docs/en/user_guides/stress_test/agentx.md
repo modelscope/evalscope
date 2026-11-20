@@ -94,6 +94,24 @@ Smoke, cancelled, failed, shortened, and hash-mismatched runs have `submission_v
 
 This integration pins `aiperf==0.12.0` and its `inferencex-agentx-mvp` scenario. It is not equivalent to the newer InferenceX AgentX v1.0 leaderboard methodology, which has different profiling and warmup rules. Do not use AgentX metrics as model or agent-task quality scores.
 
+## AgentX Harness
+
+`agentx_harness` adds the **full corpus** using `agentx-harness==1.0.13`; existing `agentx` MVP runs are unchanged. Requires POSIX, Python 3.11--3.13, streaming Chat Completions with `ignore_eos=true`, and sufficient context (potentially beyond 256K).
+
+**Install in a separate environment from `evalscope[agentx]`**: both runners own the `aiperf` package. Mixed installations are rejected; rebuild a clean environment.
+
+```bash
+python3 -m venv .venv/agentx_harness
+.venv/agentx_harness/bin/python -m pip install -e '.[agentx_harness]'
+.venv/agentx_harness/bin/evalscope perf --scenario agentx_harness \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions --parallel 8
+```
+
+Defaults: pinned full corpus, seed 42, 3600 seconds (minimum 900), session-tree concurrency. The harness owns warmup/drain. Smoke: `--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1` (60 seconds, four traces). Python uses `Arguments`; remote tokenizer code remains opt-in.
+
+`--data-source modelscope` / `--dataset-path` accepts checksum-verified JSONL mirrors. Mirrors and smoke are submission-invalid; native validity is authoritative. Schema `2.0` summaries and `harness/` artifacts are separate from MVP results and cannot overwrite existing runs. Full corpus only; CLI/Python only.
+
 ## Custom tokenizers
 
 For tokenizers that require custom Python code, explicitly set `tokenizer_trust_remote_code` to `true` in the scenario JSON. EvalScope forwards this option to AIPerf as `--tokenizer-trust-remote-code`. It defaults to `false`; enable it only for tokenizer code you have reviewed and trust. Set `tokenizer_revision` to a HuggingFace tag or commit hash to pin the tokenizer and its remote code for reproducible runs.
