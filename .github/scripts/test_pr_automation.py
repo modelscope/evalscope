@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import pr_agent_review
 import pr_automation as bot
 import pytest
 import yaml
@@ -97,14 +98,68 @@ def test_render_only_changed_files_and_suppresses_mentions() -> None:
         'start_line': 12,
         'issue_header': 'Header',
         'issue_content': '<!-- evasion --> @someone [text](https://example.org)',
+        'severity': 'critical',
     }
     result = {'review': {'key_issues_to_review': [finding, dict(finding, relevant_file='unrelated.py')]}}
-    outcome, body = bot.render(result, ['a.py'])
+    outcome, _, findings = bot.render(result, ['a.py'])
     assert outcome == 'ai:findings'
-    assert 'a.py:12' in body
-    assert 'unrelated.py' not in body
+    assert len(findings) == 1
+    assert (findings[0].path, findings[0].line) == ('a.py', 12)
+    body = findings[0].body
+    assert '**[Critical] Header**' in body
     assert '<!--' not in body
     assert '@someone' not in body
+
+
+def test_review_prompt_requests_severity_without_a_count_limit() -> None:
+    template = 'class KeyIssuesComponentLink(BaseModel):\nA concise list (0-{{ num_max_findings }} issues)'
+    prompt = pr_agent_review.review_prompt(template)
+    assert 'Literal["critical", "high", "medium", "low"]' in prompt
+    assert prompt.endswith('A concise list')
+
+
+def test_inline_review_publishes_all_anchored_findings_and_preserves_unanchored_ones(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch = '@@ -9,2 +9,6 @@\n before\n-removed\n+one\n+two\n+three\n+four\n+five\n'
+    records = {'pulls/42/files': [{'filename': 'a.py', 'patch': patch}], 'pulls/42/comments': []}
+    monkeypatch.setattr(bot, 'list_all', records.__getitem__)
+    monkeypatch.setattr(bot, 'current_pr', lambda *_: PR)
+    calls = []
+
+    def github(path: str, *args: str, body: dict | None = None) -> bytes:
+        calls.append((path, args, body))
+        return b'{}'
+
+    monkeypatch.setattr(bot, 'github', github)
+    findings = [bot.ReviewFinding('a.py', line, f'**[High] Finding {line}**') for line in range(10, 15)]
+    outside_diff = bot.ReviewFinding('a.py', 40, '**[Medium] Outside the diff**')
+    summary = bot.findings_summary(42, SHA, [*findings, outside_diff])
+    assert len(calls) == 1
+    path, args, payload = calls[0]
+    assert (path, args) == ('pulls/42/reviews', ('-X', 'POST'))
+    assert payload['event'] == 'COMMENT'
+    assert payload['commit_id'] == SHA
+    assert [(c['path'], c['line'], c['side']) for c in payload['comments']] == [
+        ('a.py', line, 'RIGHT') for line in range(10, 15)
+    ]
+    assert '5 finding(s) in the inline review comments.' in summary
+    assert '**[Medium] Outside the diff** · a.py:40' in summary
+
+    records['pulls/42/comments'] = [
+        dict(comment, user={'login': 'github-actions[bot]'}) for comment in payload['comments']
+    ]
+    assert bot.findings_summary(42, SHA, [*findings, outside_diff]) == summary
+    assert len(calls) == 1
+
+
+def test_inline_review_falls_back_to_summary_if_github_rejects_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    def publish_inline(*args: object) -> None:
+        raise bot.subprocess.CalledProcessError(1, 'gh', stderr=b'HTTP 422')
+
+    monkeypatch.setattr(bot, 'publish_inline', publish_inline)
+    findings = [bot.ReviewFinding('a.py', 10, '**[High] Finding**')]
+    assert '**[High] Finding** · a.py:10' in bot.findings_summary(42, SHA, findings)
 
 
 def test_skip_reason_explains_the_actual_diff_limit() -> None:
@@ -251,6 +306,7 @@ def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp
     launch_env = {}
 
     def run(args: list, *, env: dict, **kwargs: object) -> bot.subprocess.CompletedProcess:
+        assert Path(args[1]).name == 'pr_agent_review.py'
         launch_env.update(env)
         (tmp_path / 'result.json').write_text('{}')
         return bot.subprocess.CompletedProcess(args, 0)
@@ -262,4 +318,5 @@ def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp
     assert json.loads(launch_env['CONFIG__ADDITIONAL_REASONING_EFFORT_MODELS']) == ['review-model']
     assert json.loads(launch_env['LITELLM__EXTRA_BODY']) == {'chat_template_kwargs': {'enable_thinking': True}}
     assert launch_env['CONFIG__TEMPERATURE'] == '1.0'
+    assert 'PR_REVIEWER__NUM_MAX_FINDINGS' not in launch_env
     assert output.read_text() == 'result=review\n'
