@@ -32,6 +32,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--parallel` | `list[int]` | Number of concurrent requests<br>Can input multiple values separated by spaces | `1` |
+| `--device-count` | `int` | Total number of inference devices serving the endpoint, i.e. `tensor_parallel_size × pipeline_parallel_size × replica_count` (a 2-way TP deployment with 4 replicas reports `8`)<br>When declared, the summary records `Device Count` and adds `Output Throughput per Device (tok/s)` / `Total Throughput per Device (tok/s)`, derived from the aggregate throughputs<br>Undeclared by default: nothing is recorded and no per-device rows are rendered | `None` |
 | `--number` | `list[int]` | Total number of requests to be sent<br>Can input multiple values (must correspond one-to-one with `parallel`) | `1000` |
 | `--rate` | `float` | Request scheduling rate (requests/second)<br>• `-1`: No rate pacing; in the default closed-loop mode, requests are scheduled as fast as possible, but the number of in-flight HTTP requests is still capped by `--parallel`, so requests are not all sent to the server at once<br>• `> 0`: Requests are scheduled following a Poisson arrival model — the inter-arrival interval follows an exponential distribution with mean `1/rate`, resulting in an **average** of `rate` scheduled requests per second | `-1` |
 | `--log-every-n-query` | `int` | Log every N queries | `100` |
