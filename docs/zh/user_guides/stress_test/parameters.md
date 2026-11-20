@@ -32,6 +32,7 @@
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--parallel` | `list[int]` | 并发请求的数量<br>可传入多个值，空格分隔 | `1` |
+| `--device-count` | `int` | 服务该端点的推理设备总数，即 `tensor_parallel_size × pipeline_parallel_size × replica_count`（2 路 TP + 4 副本的部署应报 `8`）<br>声明后摘要会记录 `Device Count` 并新增 `Output Throughput per Device (tok/s)` / `Total Throughput per Device (tok/s)`，由聚合吞吐除以设备数派生<br>默认不声明：不记录任何值，也不渲染 per-device 行 | `None` |
 | `--number` | `list[int]` | 发出的请求总数量<br>可传入多个值（需与`parallel`一一对应） | `1000` |
 | `--rate` | `float` | 请求调度速率（请求/秒）<br>• `-1`: 不做速率节流；在默认 closed-loop 模式下，请求会尽快调度，但实际同时在飞的 HTTP 请求数仍受 `--parallel` 限制，并不会一次性全部发送到服务端<br>• `> 0`: 请求按泊松到达模型调度，间隔服从均值为 `1/rate` 的指数分布，即**平均**每秒调度 `rate` 个请求 | `-1` |
 | `--log-every-n-query` | `int` | 每N个查询记录日志 | `100` |
