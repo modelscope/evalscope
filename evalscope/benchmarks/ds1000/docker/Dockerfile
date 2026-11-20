@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir \
 
 # PyPI aarch64 torch wheels are CPU-only; x86_64 wheels bundle CUDA, so use the CPU index there.
 RUN if [ "$(uname -m)" = "x86_64" ]; then \
-        pip install --no-cache-dir torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu; \
+        pip install --no-cache-dir torch==2.2.0 --extra-index-url https://download.pytorch.org/whl/cpu; \
     else \
         pip install --no-cache-dir torch==2.2.0; \
     fi
