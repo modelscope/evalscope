@@ -47,20 +47,16 @@ preserves the previous successful review for reference.
 
 ### Operating the AI review workflow
 
-In the repository's Actions settings, configure the OpenAI-compatible base URL and model in
-the `PR_REVIEW_API_BASE` and `PR_REVIEW_MODEL` variables, and store the credential in the
-`PR_REVIEW_API_KEY` secret. Set `PR_REVIEW_AUTO_START_AT` to a UTC timestamp such as
-`2026-11-19T00:00:00Z` to start first reviews for newly opened PRs. Remove the start variable to
-pause automatic reviews while keeping the `/review` command available.
+The PR Automation workflow runs DSH-action in a read-only Docker worker. It connects directly
+to Alibaba Cloud Model Studio's Messages endpoint at `https://dashscope.aliyuncs.com/apps/anthropic`.
+Set `PR_REVIEW_MODEL` to `deepseek-v4.1-flash-1017` and keep the API credential in the
+`PR_REVIEW_API_KEY` secret. Set `PR_REVIEW_REASONING_EFFORT` to `high` for extended thinking.
 
-Leave `PR_REVIEW_MAX_OUTPUT_TOKENS` unset to use the provider's output limit.
-On endpoints that support `chat_template_kwargs.enable_thinking`, set
-`PR_REVIEW_ENABLE_THINKING` to `true` and use `PR_REVIEW_REASONING_EFFORT`
-to select a reasoning effort supported by the configured model. Set
-`PR_REVIEW_TEMPERATURE` to override PR-Agent's sampling temperature.
-
-The PR Automation job summary and logs show whether a request reached the model. Open the AI
-review comment to see the commit it covers and any actionable findings.
+Set `PR_REVIEW_AUTO_START_AT` to a UTC timestamp such as `2026-11-19T00:00:00Z` to start first
+reviews for newly opened PRs. Remove that variable to pause automatic reviews while keeping
+`/review` available. The bot lists high-confidence findings with severity and confidence, and carries
+findings without a valid inline location in the summary. The summary links to its Actions run for
+diagnostics. Reviews above the existing 50-file or 48 KiB diff limits are skipped.
 
 ## Table of Contents
 

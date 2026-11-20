@@ -97,12 +97,12 @@ jobs:
     needs: resolve
     if: >-
       needs.resolve.outputs.number != '' &&
-      vars.PR_REVIEW_API_BASE != '' && vars.PR_REVIEW_MODEL != '' &&
+      vars.PR_REVIEW_MODEL != '' &&
       !contains(fromJSON('["PR Intake (labeled)","PR Intake (edited)","PR Intake (converted_to_draft)"]'),
                 github.event.workflow_run.display_title) &&
       (needs.resolve.outputs.command != '0' || vars.PR_REVIEW_AUTO_START_AT != '')
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 22
     permissions:
       actions: read
       contents: read
@@ -117,35 +117,40 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.workflow_sha }}
           persist-credentials: false
-      - name: Check eligibility and fetch the diff
+      - name: Check eligibility and prepare the review
         id: prepare
         run: python3 .github/scripts/pr_automation.py prepare
         env:
           GH_TOKEN: ${{ github.token }}
           PR_REVIEW_AUTO_START_AT: ${{ vars.PR_REVIEW_AUTO_START_AT }}
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.prepare.outputs.decision == 'review'
         with:
-          python-version: '3.12'
-      - name: Install PR-Agent
+          repository: Lixiaoyiao/DSH-action
+          ref: 497af93119203ca22af4f96f8fe89b3345ad665c # v0.13.0
+          path: .dsh-action
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         if: steps.prepare.outputs.decision == 'review'
-        run: python -m pip install --disable-pip-version-check pr-agent==0.50.0
-      - name: Review the diff
-        id: agent
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Run DeepSeek Harness review
+        id: dsh
         if: steps.prepare.outputs.decision == 'review'
-        run: python .github/scripts/pr_automation.py generate
+        run: node .github/scripts/dsh_review.mjs
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_REVIEW_API_KEY: ${{ secrets.PR_REVIEW_API_KEY }}
-          PR_REVIEW_API_BASE: ${{ vars.PR_REVIEW_API_BASE }}
           PR_REVIEW_MODEL: ${{ vars.PR_REVIEW_MODEL }}
-          PR_REVIEW_MAX_OUTPUT_TOKENS: ${{ vars.PR_REVIEW_MAX_OUTPUT_TOKENS }}
-          PR_REVIEW_ENABLE_THINKING: ${{ vars.PR_REVIEW_ENABLE_THINKING }}
           PR_REVIEW_REASONING_EFFORT: ${{ vars.PR_REVIEW_REASONING_EFFORT }}
-          PR_REVIEW_TEMPERATURE: ${{ vars.PR_REVIEW_TEMPERATURE }}
-      - name: Update the PR summary
-        if: steps.prepare.outputs.decision == 'size-skip' || steps.agent.outputs.result != ''
+      - name: Update the PR summary and AI label
+        if: >-
+          !cancelled() &&
+          (steps.prepare.outputs.decision == 'size-skip' || steps.prepare.outputs.decision == 'review')
         run: python3 .github/scripts/pr_automation.py publish
         env:
           GH_TOKEN: ${{ github.token }}
-          REVIEW_RESULT: ${{ steps.agent.outputs.result || steps.prepare.outputs.decision }}
+          REVIEW_RESULT: ${{ steps.prepare.outputs.decision == 'size-skip' && 'size-skip' || steps.dsh.outputs.result-json }}
