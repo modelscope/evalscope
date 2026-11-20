@@ -262,6 +262,7 @@ def test_prepare_binds_dsh_review_to_the_checked_head(monkeypatch: pytest.Monkey
     assert output.read_text() == 'decision=review\n'
     prompt = (tmp_path / 'prompt.txt').read_text()
     assert 'critical' in prompt and 'def format_prompt_template(' in prompt
+    assert 'Write all user-facing review text in English' in prompt
     assert 'verified required CI' not in prompt
 
     moved = dict(pr, head=dict(pr['head'], sha='b' * 40))
