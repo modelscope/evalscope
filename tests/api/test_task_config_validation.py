@@ -283,3 +283,18 @@ def test_cli_zero_limit_survives_config_round_trip(limit: str) -> None:
 
     assert config.limit == 0
     assert TaskConfig.from_dict(config.to_dict()).limit == 0
+
+
+@pytest.mark.parametrize(
+    'model, expected',
+    [
+        ('/models/Qwen2.5-7B-Instruct', 'Qwen2.5-7B-Instruct'),
+        ('/models/Qwen2.5-7B-Instruct/', 'Qwen2.5-7B-Instruct'),
+        ('./Qwen2.5-7B-Instruct//', 'Qwen2.5-7B-Instruct'),
+        ('Qwen/Qwen2.5-7B-Instruct', 'Qwen2.5-7B-Instruct'),
+    ],
+)
+def test_model_id_is_the_last_path_component(model: str, expected: str) -> None:
+    config = TaskConfig.from_dict({'model': model, 'eval_type': 'mock_llm'})
+
+    assert config.model_id == expected

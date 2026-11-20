@@ -584,7 +584,8 @@ class TaskConfig(BaseArgument):
 
     def _infer_model_id(self) -> str:
         if isinstance(self.model, str):
-            return safe_filename(os.path.basename(self.model))
+            # A trailing separator (as shell completion adds to a directory) must not leave an empty name.
+            return safe_filename(os.path.basename(self.model.rstrip('/\\')))
         elif isinstance(self.model, Model):
             return safe_filename(self.model.name)
         elif isinstance(self.model, ModelAPI):
