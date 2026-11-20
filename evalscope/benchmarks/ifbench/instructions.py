@@ -1483,7 +1483,9 @@ class SpecialBulletPointsChecker(Instruction):
 
     def check_following(self, value):
         """Checks if the response includes at least two instances of {sep} that start a new line."""
-        return len(re.findall(re.escape(self._bullet_marker), value)) >= 2
+        # Match upstream (allenai/IFBench#45): count only markers that start a line, so a marker
+        # inside a sentence (e.g. '-' in "well-known") or two markers on one line are not list items.
+        return sum(line.lstrip().startswith(self._bullet_marker) for line in value.splitlines()) >= 2
 
 
 class ItalicsThesisChecker(Instruction):
@@ -2218,21 +2220,23 @@ class RepeatChangeChecker(Instruction):
         return ['prompt_to_repeat']
 
     def check_following(self, value):
-        """Checks if the response contains the repeated request.
+        """Checks if only the first word of the repeated request is changed.
 
         Args:
           value: A string representing the response.
 
         Returns:
-          True if the repeated request is found in the response;
+          True if the first word differs and all remaining words match;
           otherwise, False.
         """
-        if self._prompt_to_repeat == value:
+        # Match upstream (allenai/IFBench#41): the first word must actually change. Comparing the
+        # whole strings only rejected an exact copy, so the request repeated with an extra space
+        # or newline but the same first word still passed.
+        prompt_words = self._prompt_to_repeat.split()
+        response_words = value.split()
+        if not prompt_words or not response_words:
             return False
-        if ' '.join(self._prompt_to_repeat.split()[1:]) == ' '.join(value.split()[1:]):
-            return True
-        else:
-            return False
+        return prompt_words[0] != response_words[0] and prompt_words[1:] == response_words[1:]
 
 
 class RepeatSimpleChecker(Instruction):
