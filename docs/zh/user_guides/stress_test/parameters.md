@@ -19,6 +19,8 @@
 
 使用 `--api anthropic` 时，`--url` 可填写服务根地址（例如 `https://api.anthropic.com`），也可填写完整的 `/v1/messages` 端点。EvalScope 通过 `x-api-key` 请求头发送 `--api-key`。对于要求使用服务端默认采样值的模型，请留空采样参数。
 
+Anthropic 压测使用服务端在 `usage` 中返回的输入和输出 token 数。缺少计数或计数无效时，该请求记为失败。分词器仍可用于生成压测数据和按输入长度筛选。
+
 ## 网络配置
 
 | 参数 | 类型 | 说明 | 默认值 |

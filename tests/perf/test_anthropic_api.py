@@ -3,6 +3,9 @@ import json
 import threading
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -100,6 +103,25 @@ def test_custom_anthropic_version_header_is_case_insensitive() -> None:
     assert 'anthropic-version' not in args.headers
 
 
+def test_template_and_dataset_system_messages_are_combined(tmp_path: Path) -> None:
+    template = tmp_path / 'messages.json'
+    cached_block = {'type': 'text', 'text': 'Be concise.', 'cache_control': {'type': 'ephemeral'}}
+    template.write_text(json.dumps({'system': [cached_block]}), encoding='utf-8')
+    args = Arguments(api='anthropic', model='stub', query_template=f'@{template}')
+
+    body = AnthropicMessagesPlugin(args).build_request([
+        {'role': 'system', 'content': 'Reply in JSON.'},
+        {'role': 'user', 'content': 'Hello'},
+    ])
+
+    assert body['system'] == [
+        cached_block,
+        {'type': 'text', 'text': '\n\n'},
+        {'type': 'text', 'text': 'Reply in JSON.'},
+    ]
+    assert body['messages'] == [{'role': 'user', 'content': 'Hello'}]
+
+
 def test_stream_usage_is_combined_across_events() -> None:
     plugin = AnthropicMessagesPlugin(Arguments(model='test-model', api='anthropic'))
     responses = [
@@ -138,13 +160,20 @@ def provider() -> Iterator[tuple[str, dict]]:
             captured['headers'] = self.headers
             captured['body'] = request
             mode = request['model']
-            if mode == 'json':
+            if mode == 'html':
+                body = b'<html>Gateway page</html>'
+                content_type = 'text/html'
+            elif mode in ('json', 'missing_usage', 'invalid_usage'):
                 payload = {
                     'type': 'message',
                     'content': [{'type': 'text', 'text': 'hello world'}],
                     'stop_reason': 'end_turn',
                     'usage': {'input_tokens': 7, 'output_tokens': 3, 'cache_read_input_tokens': 2},
                 }
+                if mode == 'missing_usage':
+                    del payload['usage']
+                elif mode == 'invalid_usage':
+                    payload['usage']['output_tokens'] = '3'
                 body = json.dumps(payload).encode()
                 content_type = 'application/json'
             else:
@@ -161,6 +190,8 @@ def provider() -> Iterator[tuple[str, dict]]:
                         },
                         {'type': 'content_block_start', 'index': 0, 'content_block': {'type': 'text', 'text': ''}},
                     ]
+                    if mode == 'missing_stream_usage':
+                        del events[0]['message']['usage']
                     if mode == 'tool':
                         events.extend([
                             {
@@ -258,6 +289,53 @@ def test_successful_responses_feed_standard_metrics(provider: tuple[str, dict], 
     assert (result.succeed_requests, result.failed_requests) == (1, 0)
     assert (accumulator.total_prompt_tokens, accumulator.total_completion_tokens) == (9, 3)
     assert result.avg_cached_percent == pytest.approx(2 / 9 * 100)
+
+
+def test_non_stream_latency_includes_the_response_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = Mock(return_value=100.0)
+    monkeypatch.setattr('evalscope.perf.plugin.api.anthropic_api.time', SimpleNamespace(perf_counter=clock))
+
+    async def read_body() -> dict:
+        clock.return_value = 100.25
+        return {'type': 'message', 'content': [], 'usage': {'input_tokens': 7, 'output_tokens': 0}}
+
+    response = AsyncMock(status=200, headers={'Content-Type': 'application/json'})
+    response.json.side_effect = read_body
+    response.__aenter__.return_value = response
+    client = Mock()
+    client.post.return_value = response
+    plugin = AnthropicMessagesPlugin(Arguments(model='stub', api='anthropic', stream=False))
+
+    output = asyncio.run(plugin.process_request(client, plugin.param.url, {}, plugin.build_request('hello')))
+
+    assert output.success
+    assert output.first_chunk_latency == output.query_latency == pytest.approx(0.25)
+
+
+@pytest.mark.parametrize(
+    ('mode', 'stream', 'error'),
+    [
+        ('html', False, 'Invalid Anthropic Messages response'),
+        ('missing_usage', False, 'Missing or invalid Anthropic token usage'),
+        ('invalid_usage', False, 'Missing or invalid Anthropic token usage'),
+        ('missing_stream_usage', True, 'Missing or invalid Anthropic token usage'),
+    ],
+)
+def test_invalid_responses_count_as_request_failures(
+    provider: tuple[str, dict], mode: str, stream: bool, error: str
+) -> None:
+    url, _ = provider
+    args = Arguments(model=mode, api='anthropic', url=url, stream=stream)
+    plugin = AnthropicMessagesPlugin(args)
+    output = _request(args, plugin)
+
+    assert not output.success
+    assert output.is_stream is stream
+    assert error in output.error
+    accumulator = MetricsAccumulator()
+    accumulator.update(output, plugin)
+    result = accumulator.to_result()
+    assert (result.succeed_requests, result.failed_requests) == (0, 1)
 
 
 def test_tool_argument_deltas_drive_timing(provider: tuple[str, dict]) -> None:

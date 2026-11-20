@@ -552,6 +552,8 @@ class Arguments(BaseArgument):
 
         if self.temperature is None and self.api != 'anthropic':
             self.temperature = 0.0
+        if self.api == 'anthropic' and self.n_choices is not None and self.n_choices > 1:
+            logger.warning('Anthropic Messages API does not support n_choices > 1; ignoring --n-choices.')
 
         # Set the default headers
         self.headers = self.headers or {}
@@ -733,6 +735,8 @@ class Arguments(BaseArgument):
             return
         if self.api in _OPENAI_RESPONSES_APIS:
             raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
+        if self.api == 'anthropic':
+            raise ValueError('--tokenize-prompt is not supported with the Anthropic Messages API.')
         if not self.tokenizer_path:
             raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
         self._redirect_chat_to_completions('--tokenize-prompt is set')

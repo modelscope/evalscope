@@ -9,13 +9,21 @@ import {
   validateRequestRate,
 } from '@/domain/form/validation'
 
-export type ConnectionApi = 'openai' | 'openai_responses' | 'anthropic' | 'local'
+export const CONNECTION_APIS = {
+  openai: 'OpenAI-compatible',
+  openai_responses: 'OpenAI Responses',
+  anthropic: 'Anthropic Messages',
+  local: 'Local Transformers',
+} as const
 
-/** Remote API types that need an API URL and key (everything but local). */
-const REMOTE_API_TYPES: ReadonlyArray<ConnectionApi> = ['openai', 'openai_responses', 'anthropic']
+export type ConnectionApi = keyof typeof CONNECTION_APIS
+
+export function isConnectionApi(api: string): api is ConnectionApi {
+  return Object.hasOwn(CONNECTION_APIS, api)
+}
 
 export function isRemoteApi(api: ConnectionApi): boolean {
-  return REMOTE_API_TYPES.includes(api)
+  return api !== 'local'
 }
 
 export interface ModelConnection {

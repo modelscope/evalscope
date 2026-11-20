@@ -19,6 +19,8 @@ Execute `evalscope perf --help` to get a full parameter description.
 
 With `--api anthropic`, pass the service base URL (for example, `https://api.anthropic.com`) or the full `/v1/messages` endpoint. EvalScope sends `--api-key` as the `x-api-key` header. Leave sampling options unset when the model requires provider defaults.
 
+Anthropic performance metrics use the input and output token counts reported by the service in `usage`. A response with missing or invalid counts is recorded as a failed request. Tokenizers can still be used for workload generation and input length filtering.
+
 ## Network Configuration
 
 | Parameter | Type | Description | Default |

@@ -3,6 +3,7 @@ import {
   DEFAULT_EVAL,
   DEFAULT_PERF,
   endpointOrigin,
+  isConnectionApi,
   validateConnection,
   validateEvalDraft,
   validatePerfDraft,
@@ -80,9 +81,7 @@ function parseDraft<T extends object>(value: unknown, defaults: T): T {
 
 function parseConnection(value: unknown): ModelConnection {
   const connection = parseDraft(value, DEFAULT_CONNECTION)
-  if (!['openai', 'openai_responses', 'anthropic', 'local'].includes(connection.api)) {
-    throw new Error('Invalid protocol')
-  }
+  if (!isConnectionApi(connection.api)) throw new Error('Invalid protocol')
   return connection
 }
 
