@@ -17,8 +17,9 @@ type TabKey = 'all' | 'text' | 'multimodal' | 'agent' | 'aigc'
 /** Stable placeholder so an unresolved catalog does not produce a new array each render. */
 const EMPTY_BENCHMARKS: BenchmarkEntry[] = []
 
-// Category -> small badge shown on cards. `llm` shows no badge (it is the default).
-const CATEGORY_BADGE: Partial<Record<BenchmarkEntry['category'], { label: string; variant: 'warning' | 'danger' | 'success' }>> = {
+// Category -> small badge shown on cards.
+const CATEGORY_BADGE: Partial<Record<BenchmarkEntry['category'], { label: string; variant: 'default' | 'warning' | 'danger' | 'success' }>> = {
+  llm: { label: 'LLM', variant: 'default' },
   vlm: { label: 'VLM', variant: 'warning' },
   agent: { label: 'Agent', variant: 'danger' },
   aigc: { label: 'AIGC', variant: 'success' },
