@@ -12,7 +12,7 @@ jobs:
   signal:
     if: >-
       github.event.action != 'labeled' ||
-      contains(fromJSON('["needs-triage","needs-info","accepted","ready-for-review"]'), github.event.label.name)
+      contains(fromJSON('["needs-info","accepted","ready-for-review"]'), github.event.label.name)
     runs-on: ubuntu-latest
     steps:
       - run: 'true'
