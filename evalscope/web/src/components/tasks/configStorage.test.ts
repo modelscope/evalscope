@@ -245,9 +245,11 @@ describe('Shared connection and template semantics', () => {
       api_url: connection.url,
       api_key: 'fake-secret',
     })
-    expect(() => connectionPayload({ ...connection, api: 'anthropic' }, 'perf')).toThrow(
-      'Anthropic Messages supports Evaluation only',
-    )
+    expect(connectionPayload({ ...connection, api: 'anthropic' }, 'perf')).toMatchObject({
+      api: 'anthropic',
+      url: connection.url,
+      api_key: 'fake-secret',
+    })
     // The default openai connection must not send eval_type so the backend keeps its default.
     expect(connectionPayload(connection, 'eval')).not.toHaveProperty('eval_type')
   })

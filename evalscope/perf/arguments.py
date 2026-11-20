@@ -68,9 +68,9 @@ class Arguments(BaseArgument):
 
     api: str = 'openai'
     """Service API protocol. One of: 'openai' (chat/completions), 'openai_responses'
-    (Responses API), 'openai_embedding'/'embedding' (embeddings), 'openai_rerank'/'rerank'
-    (reranks), or 'local'/'local_vllm' for in-process inference. The endpoint path is
-    auto-appended onto `--url` based on this value."""
+    (Responses API), 'anthropic' (Messages API), 'openai_embedding'/'embedding' (embeddings),
+    'openai_rerank'/'rerank' (reranks), or 'local'/'local_vllm' for in-process inference.
+    The endpoint path is auto-appended onto `--url` based on this value."""
 
     tokenizer_path: Optional[str] = None
     """Path to the tokenizer."""
@@ -552,9 +552,14 @@ class Arguments(BaseArgument):
 
         # Set the default headers
         self.headers = self.headers or {}
+        if self.api == 'anthropic' and not any(key.lower() == 'anthropic-version' for key in self.headers):
+            self.headers['anthropic-version'] = '2023-06-01'
         api_key = get_secret_value(self.api_key)
         if api_key:
-            self.headers['Authorization'] = SecretStr(f'Bearer {api_key}')
+            if self.api == 'anthropic':
+                self.headers['x-api-key'] = SecretStr(api_key)
+            else:
+                self.headers['Authorization'] = SecretStr(f'Bearer {api_key}')
 
         # Set the model ID based on the model name
         self.model_id = os.path.basename(self.model) if self.model else (self.dataset or 'unknown')
@@ -567,6 +572,7 @@ class Arguments(BaseArgument):
 
         # Set the URL based on the dataset type.
         self._resolve_local_url()
+        self._resolve_anthropic_url()
         self._resolve_openai_compatible_url()
         self._resolve_speed_benchmark_url()
 
@@ -667,6 +673,7 @@ class Arguments(BaseArgument):
     def _resolve_url(self) -> None:
         """Resolve URL based on api, dataset, port, and tokenize_prompt settings."""
         self._resolve_local_url()
+        self._resolve_anthropic_url()
         self._resolve_openai_compatible_url()
         self._resolve_speed_benchmark_url()
         self._resolve_tokenize_prompt_url()
@@ -677,6 +684,25 @@ class Arguments(BaseArgument):
                 self.url = f'http://127.0.0.1:{self.port}/v1/completions'
             else:
                 self.url = f'http://127.0.0.1:{self.port}/v1/chat/completions'
+
+    def _resolve_anthropic_url(self) -> None:
+        if self.api != 'anthropic':
+            return
+        parsed = urlsplit(self.url)
+        stripped_url = parsed.path.rstrip('/')
+        if stripped_url.endswith('/messages'):
+            return
+        for endpoint in ('chat/completions', 'completions', 'responses'):
+            if stripped_url.endswith('/' + endpoint):
+                self.url = parsed._replace(path=stripped_url[: -len(endpoint)] + 'messages').geturl()
+                logger.warning('Anthropic Messages API selected: URL auto-adjusted to messages endpoint')
+                return
+        suffix = 'messages' if stripped_url.endswith('/v1') else 'v1/messages'
+        self.url = parsed._replace(path=stripped_url + '/' + suffix).geturl()
+        logger.warning(
+            f'URL has no messages endpoint path, auto-appended "/{suffix}". '
+            'If this is not intended, please specify the full URL explicitly.'
+        )
 
     def _resolve_openai_compatible_url(self) -> None:
         if self.api in _OPENAI_API_ENDPOINT_MAP:
@@ -811,7 +837,7 @@ class ParseKVAction(argparse.Action):
 def _add_model_api_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--model', type=str, default=None, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementation')
-    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
+    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | anthropic | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 

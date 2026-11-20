@@ -168,8 +168,6 @@ export default function ModelConnectionEditor({
         </div>
         {connection.api === 'local' ? (
           <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.localOnly')}</p>
-        ) : connection.api === 'anthropic' ? (
-          <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.anthropicOnly')}</p>
         ) : (
           <div className="mt-4 border-t border-[var(--border)] pt-3">
             <div className="flex flex-wrap items-center gap-2">

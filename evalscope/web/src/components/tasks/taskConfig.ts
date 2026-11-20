@@ -224,12 +224,7 @@ const EVAL_TYPE_BY_API: Partial<Record<ConnectionApi, string>> = {
 /** Only explicit connection fields can become transport parameters. */
 export function connectionPayload(connection: ModelConnection, kind: 'eval' | 'perf'): Record<string, unknown> {
   const payload: Record<string, unknown> = { model: connection.model.trim() }
-  if (kind === 'perf') {
-    if (connection.api === 'anthropic') {
-      throw new Error('Anthropic Messages supports Evaluation only; Performance testing is unavailable.')
-    }
-    payload.api = connection.api
-  }
+  if (kind === 'perf') payload.api = connection.api
   if (kind === 'eval' && connection.api in EVAL_TYPE_BY_API) {
     payload.eval_type = EVAL_TYPE_BY_API[connection.api]
   }

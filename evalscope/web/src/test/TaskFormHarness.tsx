@@ -63,7 +63,6 @@ function TaskFormHarness({ kind, onSubmit }: Props & { kind: 'eval' | 'perf' }) 
           draft={perfDraft}
           onChange={setPerfDraft}
           onValidateConnection={checkConnection}
-          disabled={connection.api === 'anthropic'}
         />
       )}
     </>

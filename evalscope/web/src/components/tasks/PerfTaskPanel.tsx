@@ -36,7 +36,7 @@ export default function PerfTaskPanel({
       renderForm={({ onSubmit, disabled }) => (
         <PerfConfigForm
           onSubmit={onSubmit}
-          disabled={disabled || connection.api === 'anthropic'}
+          disabled={disabled}
           draft={draft}
           onChange={onChange}
           toolbar={toolbar}

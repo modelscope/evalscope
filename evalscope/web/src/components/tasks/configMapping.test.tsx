@@ -277,17 +277,19 @@ describe('Performance form → Arguments payload', () => {
     expect(submit.mock.calls[0][0]).not.toHaveProperty('url')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('api_key')
   })
-  it('disables Anthropic performance submission and maps OpenAI Responses', () => {
+  it('maps Anthropic and OpenAI Responses performance connections', () => {
     const submit = perfForm()
     change('connection-api', 'anthropic')
     change('connection-apiKey', 'anthropic-key')
-    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeDisabled()
-    expect(screen.getByText(/Anthropic Messages is available for Evaluation only/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeEnabled()
     submitPerf()
-    expect(submit).not.toHaveBeenCalled()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      api: 'anthropic',
+      url: 'http://localhost:18101/v1',
+      api_key: 'anthropic-key',
+    }))
     change('connection-api', 'openai_responses')
     change('connection-apiKey', 'responses-key')
-    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeEnabled()
     submitPerf()
     expect(submit).toHaveBeenCalledWith(expect.objectContaining({
       api: 'openai_responses',
