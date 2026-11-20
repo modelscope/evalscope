@@ -64,6 +64,8 @@ METRIC_ALIASES: Dict[str, MetricAlias] = {
     'em': MetricAlias('exact_match', 'quality.exact_match.ratio', scopes=_EVERY_SCOPE),
     # `bert_score` is registered as an alias of the scorer, so the registry lookup survives.
     'bertscore': MetricAlias('bert_score', scopes=frozenset({AliasScope.READ_OLD, AliasScope.PRODUCER})),
+    # The producer looks up aliases after snake-casing, which splits RefCOCO's "IoU" into "io_u".
+    'io_u': MetricAlias('iou', 'quality.iou.ratio', scopes=frozenset({AliasScope.READ_OLD, AliasScope.PRODUCER})),
     # X2I text-rendering scorers: snake-casing of the registered names does not produce the
     # canonical report names, so rewrite them explicitly.
     'cvtgned': MetricAlias(
@@ -91,7 +93,7 @@ METRIC_ALIASES: Dict[str, MetricAlias] = {
     'ROUGE_L': MetricAlias('rouge', 'quality.rouge.ratio'),
     'METEOR': MetricAlias('meteor', 'quality.meteor.ratio'),
     'CIDEr': MetricAlias('cider', 'quality.cider.unbounded'),
-    'IoU': MetricAlias('iou'),
+    'IoU': MetricAlias('iou', 'quality.iou.ratio'),
     'mean_IoU': MetricAlias('iou', 'quality.iou.ratio'),
     'HalluRate': MetricAlias('hallucination_rate'),
     'total_wall_time_s': MetricAlias('total_wall_time'),
