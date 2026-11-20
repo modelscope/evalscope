@@ -2,8 +2,21 @@
 import argparse
 import ast
 import json
+from typing import Any
 
 from evalscope.constants import EvalBackend, EvalType, ModelTask
+
+
+def _parse_value(value: str) -> Any:
+    try:
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        value_lower = value.lower()
+        if value_lower == 'true':
+            return True
+        if value_lower == 'false':
+            return False
+        return value
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -18,23 +31,33 @@ class ParseStrArgsAction(argparse.Action):
         except (json.JSONDecodeError, ValueError):
             pass
 
-        # If JSON load fails, fall back to parsing as key=value pairs
-        arg_dict = {}
-        for arg in values.strip().split(','):
-            key, value = map(str.strip, arg.split('=', 1))  # Use maxsplit=1 to handle multiple '='
-            try:
-                # Safely evaluate the value using ast.literal_eval
-                arg_dict[key] = ast.literal_eval(value)
-            except (ValueError, SyntaxError):
-                # If ast.literal_eval fails, check if it's a boolean value
-                value_lower = value.lower()
-                if value_lower == 'true':
-                    arg_dict[key] = True
-                elif value_lower == 'false':
-                    arg_dict[key] = False
-                else:
-                    # If not a boolean, keep the original string
-                    arg_dict[key] = value
+        # Parse key=value pairs as call keywords so Python handles nested literals and escaping.
+        wrapped = f'_args({values.strip()})'
+        try:
+            call = ast.parse(wrapped, mode='eval').body
+        except (SyntaxError, ValueError):
+            call = None
+
+        if call is not None:
+            if (
+                not isinstance(call, ast.Call)
+                or not isinstance(call.func, ast.Name)
+                or call.func.id != '_args'
+                or call.args
+                or not call.keywords
+                or any(keyword.arg is None for keyword in call.keywords)
+            ):
+                parser.error(f'argument {option_string}: expected comma-separated key=value pairs')
+            pairs = [(keyword.arg, ast.get_source_segment(wrapped, keyword.value)) for keyword in call.keywords]
+        else:
+            pairs = []
+            for arg in values.strip().split(','):
+                key, separator, value = map(str.strip, arg.partition('='))
+                if not separator:
+                    parser.error(f'argument {option_string}: expected key=value, got {arg.strip()!r}')
+                pairs.append((key, value))
+
+        arg_dict = {key: _parse_value(value) for key, value in pairs}
 
         setattr(namespace, self.dest, arg_dict)
 
