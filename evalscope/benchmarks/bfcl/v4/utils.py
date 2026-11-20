@@ -20,14 +20,7 @@ from evalscope.api.messages.chat_message import (
     ChatMessageUser,
 )
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.report import (
-    Category,
-    Report,
-    Subset,
-    percentage_weighted_average_from_subsets,
-    unweighted_average_from_subsets,
-    weighted_average_from_subsets,
-)
+from evalscope.report import Category, Report, Subset
 
 # ----------------------------
 # Public constants (extracted)
@@ -581,71 +574,87 @@ def compute_entry_result(
 
 
 def compute_aggregate_subsets(report: Report) -> None:
-    """
-    Compute aggregated subsets and overall score for BFCL report.
-    Modifies the report in-place.
-    """
+    """Aggregate BFCL scores with the official treatment of unevaluated categories."""
+    from bfcl_eval.eval_checker.eval_runner_helper import (
+        calculate_percentage_weighted_accuracy,
+        calculate_unweighted_accuracy,
+        calculate_weighted_accuracy,
+        get_category_score,
+    )
+
     for metric in report.metrics:
-        # Collect all subsets in a dictionary for easy access
         subset_dict: Dict[str, Subset] = {}
         for category in metric.categories:
             for subset in category.subsets:
                 subset_dict[subset.name] = subset
 
-        # Step 1: simple_ast
+        official_scores = {
+            subset.name: {
+                'accuracy': subset.score,
+                'total_count': subset.num,
+                'display_accuracy': subset.score,
+            }
+            for subset in subset_dict.values()
+            if subset.num > 0
+        }
+
+        def category_score(name: str) -> dict:
+            if name in official_scores:
+                return official_scores[name]
+            return get_category_score(official_scores, name)
+
+        def add_aggregate(name: str, sources: list[str], result: dict) -> None:
+            official_scores[name] = result
+            # Official counts include unevaluated entries; Report.num remains the actual evaluated count.
+            evaluated_num = sum(subset_dict[source].num for source in sources if source in subset_dict)
+            subset_dict[name] = Subset(name=name, score=result['accuracy'], num=evaluated_num)
+
         simple_subsets = ['simple_python', 'simple_java', 'simple_javascript']
-        simple_ast = unweighted_average_from_subsets(simple_subsets, subset_dict)
-        subset_dict['simple_ast'] = simple_ast
+        simple_ast = calculate_unweighted_accuracy([category_score(name) for name in simple_subsets])
+        add_aggregate('simple_ast', simple_subsets, simple_ast)
 
-        # Step 2.1: non_live (simple_ast, multiple, parallel, parallel_multiple)
         non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
-        non_live = unweighted_average_from_subsets(non_live_subsets, subset_dict)
-        subset_dict['non_live'] = non_live
+        non_live = calculate_unweighted_accuracy([category_score(name) for name in non_live_subsets])
+        add_aggregate('non_live', non_live_subsets, non_live)
 
-        # Step 2.2: live (weighted)
         live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
-        live = weighted_average_from_subsets(live_subsets, subset_dict)
-        subset_dict['live'] = live
+        live = calculate_weighted_accuracy([category_score(name) for name in live_subsets])
+        add_aggregate('live', live_subsets, live)
 
-        # Step 2.3: hallucination (unweighted)
         hallucination_subsets = ['live_irrelevance', 'irrelevance']
-        hallucination = unweighted_average_from_subsets(hallucination_subsets, subset_dict)
-        subset_dict['hallucination'] = hallucination
+        hallucination = calculate_unweighted_accuracy([category_score(name) for name in hallucination_subsets])
+        add_aggregate('hallucination', hallucination_subsets, hallucination)
 
-        # Step 2.4: multi_turn (unweighted)
         multi_turn_subsets = [
             'multi_turn_base',
             'multi_turn_miss_func',
             'multi_turn_miss_param',
             'multi_turn_long_context',
         ]
-        multi_turn = unweighted_average_from_subsets(multi_turn_subsets, subset_dict)
-        subset_dict['multi_turn'] = multi_turn
+        multi_turn = calculate_unweighted_accuracy([category_score(name) for name in multi_turn_subsets])
+        add_aggregate('multi_turn', multi_turn_subsets, multi_turn)
 
-        # Step 2.5: web_search (unweighted)
         web_search_subsets = ['web_search_base', 'web_search_no_snippet']
-        web_search = unweighted_average_from_subsets(web_search_subsets, subset_dict)
-        subset_dict['web_search'] = web_search
+        web_search = calculate_unweighted_accuracy([category_score(name) for name in web_search_subsets])
+        add_aggregate('web_search', web_search_subsets, web_search)
 
-        # Step 2.6: memory (unweighted)
         memory_subsets = ['memory_kv', 'memory_vector', 'memory_rec_sum']
-        memory = unweighted_average_from_subsets(memory_subsets, subset_dict)
-        subset_dict['memory'] = memory
+        memory = calculate_unweighted_accuracy([category_score(name) for name in memory_subsets])
+        add_aggregate('memory', memory_subsets, memory)
 
-        # Step 2.7: agentic (unweighted)
         agentic_subsets = ['web_search', 'memory']
-        agentic = unweighted_average_from_subsets(agentic_subsets, subset_dict)
-        subset_dict['agentic'] = agentic
+        agentic = calculate_unweighted_accuracy([category_score(name) for name in agentic_subsets])
+        add_aggregate('agentic', agentic_subsets, agentic)
 
-        # Step 4: overall (percentage weighted average)
         overall_subsets = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination']
-        overall = percentage_weighted_average_from_subsets(overall_subsets, subset_dict, weights=[40, 30, 10, 10, 10])
-        subset_dict['overall'] = overall
+        overall = calculate_percentage_weighted_accuracy(
+            [category_score(name) for name in overall_subsets],
+            [40, 30, 10, 10, 10],
+            display_na_if_category_missing=False,
+        )
+        add_aggregate('overall', overall_subsets, overall)
 
-        # Add computed scores to the category
         computed_subset_names = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination', 'overall']
-
-        # Add the computed scores as new subsets in the metric
         dummy_subsets: List[Subset] = []
         for subset_name in computed_subset_names:
             if subset_name in subset_dict and subset_dict[subset_name].num > 0:
