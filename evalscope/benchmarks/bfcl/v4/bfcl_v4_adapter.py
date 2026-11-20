@@ -129,6 +129,8 @@ class BFCLV4Adapter(AgentAdapter):
         datasets = {}
         all_test_categories = parse_test_category_argument(self.subset_list)
 
+        self._warn_if_web_search_unconfigured(all_test_categories)
+
         test_entries_by_cat, ground_truth_by_cat = load_bfcl_data(all_test_categories)
 
         for category in all_test_categories:
@@ -142,6 +144,27 @@ class BFCLV4Adapter(AgentAdapter):
 
         test_dataset = DatasetDict(datasets)
         return test_dataset, None
+
+    def _warn_if_web_search_unconfigured(self, categories: List[str]) -> None:
+        """Warn when web-search subsets are selected without a SerpAPI key.
+
+        Without ``SERPAPI_API_KEY`` every search call returns an error payload
+        instead of results, so the model answers against an error and the
+        subsets score 0 — after the full, expensive run. The adapter documents
+        omitting these subsets, but a user who keeps the default subset list has
+        no way to notice the missing key until the run ends. Warn up front so
+        the gap is visible before any tokens are spent.
+        """
+        from bfcl_eval.utils import is_web_search
+
+        web_search_subsets = [category for category in categories if is_web_search(category)]
+        if not web_search_subsets or os.environ.get('SERPAPI_API_KEY'):
+            return
+        logger.warning(
+            f'BFCL web-search subsets {web_search_subsets} are selected but SERPAPI_API_KEY is not set. '
+            'Every search call will return an error instead of results, so these subsets will score 0 '
+            'regardless of the model. Set SERPAPI_API_KEY, or omit these subsets from subset_list.'
+        )
 
     def _create_dataset_for_category(
         self, category: str, test_entries: List[Dict], ground_truth_entries: List[Dict]
