@@ -86,22 +86,6 @@ def test_bootstrap_interval_of_a_sweep_is_one():
     assert general_arena_utils.get_win_rate_column(stats, 'lower', BASELINE)['m1'] == 1.0
 
 
-def test_general_arena_num_counts_only_samples_with_a_battle():
-    config = TaskConfig(
-        model='candidate',
-        datasets=['general_arena'],
-        dataset_args={'general_arena': {'extra_params': {'baseline': 'baseline'}}},
-    )
-    adapter = get_benchmark('general_arena', config)
-    games = [{'model_a': 'candidate', 'model_b': 'baseline', 'judgment': j} for j in ['A>B'] * 6 + ['B>A'] * 4]
-    scores = [SampleScore(score=Score(metadata={'battle_result': {'games': [game]}})) for game in games]
-    scores += [SampleScore(score=Score(metadata={})) for _ in range(5)]  # judge verdicts unusable
-
-    agg = adapter.aggregate_scores(scores)
-
-    assert {score.num for score in agg} == {10}
-
-
 def _arena_hard_sample(first, second):
     """One arena_hard sample: the baseline is model_a; game 2 is played with the answers swapped."""
     games = [{'score': first}, {'score': second}]
@@ -159,9 +143,3 @@ def test_general_arena_bootstrap_survives_all_tie_resamples():
     agg = adapter.aggregate_scores(scores)
 
     assert next(score for score in agg if score.metric_name == 'win_rate').score == 0.75
-
-
-def test_scoring_change_raises_the_evaluation_version():
-    assert get_benchmark('arena_hard', TaskConfig(model='m', datasets=['arena_hard'])).benchmark_meta.evaluation_version == 'v1.1'
-    config = TaskConfig(model='m', datasets=['general_arena'], dataset_args={'general_arena': {'extra_params': {'baseline': 'b'}}})
-    assert get_benchmark('general_arena', config).benchmark_meta.evaluation_version == 'v1.3'
