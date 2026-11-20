@@ -221,19 +221,13 @@ const EVAL_TYPE_BY_API: Partial<Record<ConnectionApi, string>> = {
   anthropic: 'anthropic_api',
 }
 
-/**
- * API types the perf backend can actually execute (it has no Anthropic plugin).
- * Anthropic is Evaluation-only; if a saved connection carries it, the perf
- * payload omits `api` so the backend falls back to its `openai` default rather
- * than receiving a protocol it cannot dispatch. The Performance form also
- * disables submission in that case (see PerfTaskPanel).
- */
-const PERF_API_TYPES: ReadonlyArray<ConnectionApi> = ['openai', 'openai_responses', 'local']
-
 /** Only explicit connection fields can become transport parameters. */
 export function connectionPayload(connection: ModelConnection, kind: 'eval' | 'perf'): Record<string, unknown> {
   const payload: Record<string, unknown> = { model: connection.model.trim() }
-  if (kind === 'perf' && PERF_API_TYPES.includes(connection.api)) {
+  if (kind === 'perf') {
+    if (connection.api === 'anthropic') {
+      throw new Error('Anthropic Messages supports Evaluation only; Performance testing is unavailable.')
+    }
     payload.api = connection.api
   }
   if (kind === 'eval' && connection.api in EVAL_TYPE_BY_API) {

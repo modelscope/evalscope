@@ -78,6 +78,29 @@ describe('Browser configuration storage', () => {
     writeWorkspace(state)
     expect(localStorage.getItem(CONFIG_STORAGE_KEY)).not.toContain('fake-secret')
   })
+  it.each(['openai_responses', 'anthropic'] as const)('round-trips %s connections through storage and import', (api) => {
+    const state = savedWorkspace()
+    state.connection.api = api
+    state.connections[0].value.api = api
+    expect(writeWorkspace(state).ok).toBe(true)
+    expect(readWorkspace()).toMatchObject({
+      ok: true,
+      value: {
+        connection: { api, apiKey: 'fake-secret' },
+        connections: [{ value: { api, apiKey: 'fake-secret' } }],
+      },
+    })
+    const exported = exportLibrary(state, false)
+    expect(exported).not.toContain('fake-secret')
+    expect(parseImport(exported).connections[0]).toMatchObject({
+      rememberKey: false,
+      value: { api, apiKey: '' },
+    })
+    expect(parseImport(exportLibrary(state, true)).connections[0]).toMatchObject({
+      rememberKey: true,
+      value: { api, apiKey: 'fake-secret' },
+    })
+  })
   it('does not restore a cleared or unsaved replacement key', () => {
     const state = savedWorkspace()
     state.connection.apiKey = 'new-unsaved-key'
@@ -222,11 +245,9 @@ describe('Shared connection and template semantics', () => {
       api_url: connection.url,
       api_key: 'fake-secret',
     })
-    // Anthropic has no perf plugin: the perf payload omits `api` so the backend
-    // falls back to its openai default instead of receiving an unsupported value.
-    const anthropicPerf = connectionPayload({ ...connection, api: 'anthropic' }, 'perf')
-    expect(anthropicPerf).not.toHaveProperty('api')
-    expect(anthropicPerf).toMatchObject({ url: connection.url, api_key: 'fake-secret' })
+    expect(() => connectionPayload({ ...connection, api: 'anthropic' }, 'perf')).toThrow(
+      'Anthropic Messages supports Evaluation only',
+    )
     // The default openai connection must not send eval_type so the backend keeps its default.
     expect(connectionPayload(connection, 'eval')).not.toHaveProperty('eval_type')
   })

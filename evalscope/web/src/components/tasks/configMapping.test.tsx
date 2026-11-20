@@ -63,6 +63,26 @@ describe('Evaluation form → TaskConfig payload', () => {
     expect(submit.mock.calls[0][0]).not.toHaveProperty('timeout')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('stream')
   })
+  it.each([
+    ['openai_responses', 'openai_responses_api'],
+    ['anthropic', 'anthropic_api'],
+  ] as const)('validates and maps the %s evaluation connection', (api, evalType) => {
+    const submit = evalForm()
+    change('connection-api', api)
+    expect(screen.getByRole('textbox', { name: /Model API URL/ })).toBeVisible()
+    expect(screen.getByLabelText('Model API Key')).toBeVisible()
+    change('connection-url', '')
+    submitEval()
+    expect(submit).not.toHaveBeenCalled()
+    change('connection-url', ' http://localhost:18101/v1 ')
+    change('connection-apiKey', 'remote-key')
+    submitEval()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      eval_type: evalType,
+      api_url: 'http://localhost:18101/v1',
+      api_key: 'remote-key',
+    }))
+  })
   it('routes the thinking switch into generation_config.extra_body', () => {
     const submit = evalForm()
     fireEvent.click(screen.getByLabelText('Enable Thinking'))
@@ -257,21 +277,23 @@ describe('Performance form → Arguments payload', () => {
     expect(submit.mock.calls[0][0]).not.toHaveProperty('url')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('api_key')
   })
-  it('omits the api field for the Anthropic protocol, which has no perf plugin', () => {
+  it('disables Anthropic performance submission and maps OpenAI Responses', () => {
     const submit = perfForm()
     change('connection-api', 'anthropic')
-    // Set the key after switching protocols: editConnection clears credentials on api change.
     change('connection-apiKey', 'anthropic-key')
+    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeDisabled()
+    expect(screen.getByText(/Anthropic Messages is available for Evaluation only/)).toBeInTheDocument()
     submitPerf()
-    // The perf backend has no Anthropic plugin, so the payload must not send
-    // an `api` it cannot dispatch; the backend then falls back to its default.
-    expect(submit.mock.calls[0][0]).not.toHaveProperty('api')
-    expect(submit.mock.calls[0][0]).toMatchObject({ url: 'http://localhost:18101/v1', api_key: 'anthropic-key' })
-    // An executable protocol still sends its api through.
+    expect(submit).not.toHaveBeenCalled()
     change('connection-api', 'openai_responses')
     change('connection-apiKey', 'responses-key')
+    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeEnabled()
     submitPerf()
-    expect(submit.mock.calls[1][0].api).toBe('openai_responses')
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      api: 'openai_responses',
+      url: 'http://localhost:18101/v1',
+      api_key: 'responses-key',
+    }))
   })
   it.each(['', '-1', '.1', '2.5'])('accepts supported rate %j', (value) => {
     const submit = perfForm()

@@ -80,7 +80,9 @@ function parseDraft<T extends object>(value: unknown, defaults: T): T {
 
 function parseConnection(value: unknown): ModelConnection {
   const connection = parseDraft(value, DEFAULT_CONNECTION)
-  if (!['openai', 'local'].includes(connection.api)) throw new Error('Invalid protocol')
+  if (!['openai', 'openai_responses', 'anthropic', 'local'].includes(connection.api)) {
+    throw new Error('Invalid protocol')
+  }
   return connection
 }
 
