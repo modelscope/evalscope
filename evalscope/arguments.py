@@ -2,21 +2,8 @@
 import argparse
 import ast
 import json
-from typing import Any
 
 from evalscope.constants import EvalBackend, EvalType, ModelTask
-
-
-def _parse_value(value: str) -> Any:
-    try:
-        return ast.literal_eval(value)
-    except (ValueError, SyntaxError):
-        value_lower = value.lower()
-        if value_lower == 'true':
-            return True
-        if value_lower == 'false':
-            return False
-        return value
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -48,8 +35,20 @@ class ParseStrArgsAction(argparse.Action):
         ):
             parser.error(f'argument {option_string}: expected comma-separated key=value pairs')
 
-        pairs = [(keyword.arg, ast.get_source_segment(wrapped, keyword.value)) for keyword in call.keywords]
-        arg_dict = {key: _parse_value(value) for key, value in pairs}
+        arg_dict = {}
+        for keyword in call.keywords:
+            key = keyword.arg
+            value = ast.get_source_segment(wrapped, keyword.value)
+            try:
+                arg_dict[key] = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                value_lower = value.lower()
+                if value_lower == 'true':
+                    arg_dict[key] = True
+                elif value_lower == 'false':
+                    arg_dict[key] = False
+                else:
+                    arg_dict[key] = value
 
         setattr(namespace, self.dest, arg_dict)
 
