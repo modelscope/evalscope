@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-import pr_agent_review
 import pr_automation as bot
 import pytest
 import yaml
@@ -92,82 +91,6 @@ def test_command_actor(monkeypatch: pytest.MonkeyPatch, permission: str, user_id
     assert bot.command_actor(42, 15, dict(PR, user={'id': 1})) == actor
 
 
-def test_render_only_changed_files_and_suppresses_mentions() -> None:
-    finding = {
-        'relevant_file': 'a.py',
-        'start_line': 12,
-        'issue_header': 'Header',
-        'issue_content': '<!-- evasion --> @someone [text](https://example.org)',
-        'severity': 'critical',
-    }
-    result = {'review': {'key_issues_to_review': [finding, dict(finding, relevant_file='unrelated.py')]}}
-    outcome, _, findings = bot.render(result, ['a.py'])
-    assert outcome == 'ai:findings'
-    assert len(findings) == 1
-    assert (findings[0].path, findings[0].line) == ('a.py', 12)
-    body = findings[0].body
-    assert '**[Critical] Header**' in body
-    assert '<!--' not in body
-    assert '@someone' not in body
-
-
-def test_review_prompt_requests_severity_without_a_count_limit() -> None:
-    template = 'class KeyIssuesComponentLink(BaseModel):\nA concise list (0-{{ num_max_findings }} issues)'
-    prompt = pr_agent_review.review_prompt(template)
-    assert 'Literal["critical", "high", "medium", "low"]' in prompt
-    assert prompt.endswith('A concise list')
-
-
-def test_severity_example_has_the_same_shape_as_a_review_finding() -> None:
-    example = 'review:\n  key_issues_to_review:\n    - relevant_file: a.py\n      start_line: 14\n'
-    findings = yaml.safe_load(pr_agent_review.severity_example(example))['review']['key_issues_to_review']
-    assert findings == [{'severity': 'medium', 'relevant_file': 'a.py', 'start_line': 14}]
-
-
-def test_inline_review_publishes_all_anchored_findings_and_preserves_unanchored_ones(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    patch = '@@ -9,2 +9,6 @@\n before\n-removed\n+one\n+two\n+three\n+four\n+five\n'
-    records = {'pulls/42/files': [{'filename': 'a.py', 'patch': patch}], 'pulls/42/comments': []}
-    monkeypatch.setattr(bot, 'list_all', records.__getitem__)
-    monkeypatch.setattr(bot, 'current_pr', lambda *_: PR)
-    calls = []
-
-    def github(path: str, *args: str, body: dict | None = None) -> bytes:
-        calls.append((path, args, body))
-        return b'{}'
-
-    monkeypatch.setattr(bot, 'github', github)
-    findings = [bot.ReviewFinding('a.py', line, f'**[High] Finding {line}**') for line in range(10, 15)]
-    outside_diff = bot.ReviewFinding('a.py', 40, '**[Medium] Outside the diff**')
-    summary = bot.findings_summary(42, SHA, [*findings, outside_diff])
-    assert len(calls) == 1
-    path, args, payload = calls[0]
-    assert (path, args) == ('pulls/42/reviews', ('-X', 'POST'))
-    assert payload['event'] == 'COMMENT'
-    assert payload['commit_id'] == SHA
-    assert [(c['path'], c['line'], c['side']) for c in payload['comments']] == [
-        ('a.py', line, 'RIGHT') for line in range(10, 15)
-    ]
-    assert '5 finding(s) in the inline review comments.' in summary
-    assert '**[Medium] Outside the diff** · a.py:40' in summary
-
-    records['pulls/42/comments'] = [
-        dict(comment, user={'login': 'github-actions[bot]'}) for comment in payload['comments']
-    ]
-    assert bot.findings_summary(42, SHA, [*findings, outside_diff]) == summary
-    assert len(calls) == 1
-
-
-def test_inline_review_falls_back_to_summary_if_github_rejects_it(monkeypatch: pytest.MonkeyPatch) -> None:
-    def publish_inline(*args: object) -> None:
-        raise bot.subprocess.CalledProcessError(1, 'gh', stderr=b'HTTP 422')
-
-    monkeypatch.setattr(bot, 'publish_inline', publish_inline)
-    findings = [bot.ReviewFinding('a.py', 10, '**[High] Finding**')]
-    assert '**[High] Finding** · a.py:10' in bot.findings_summary(42, SHA, findings)
-
-
 def test_skip_reason_explains_the_actual_diff_limit() -> None:
     assert bot.skip_reason(15, [], b'x' * 62068) == (
         'The PR changes 15 files and the raw diff is 62,068 bytes (60.6 KiB). The diff limit is 49,152 bytes (48 KiB).'
@@ -218,21 +141,14 @@ def test_review_label_only_restores_alerts(outcome: str, label: str) -> None:
 
 @pytest.mark.parametrize(
     ('result', 'title'),
-    [('review', 'No actionable findings'), ('size-skip', 'Review skipped')],
+    [('dsh-success', 'No actionable findings'), ('size-skip', 'Review skipped')],
 )
 def test_quiet_review_updates_comment_and_clears_labels(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, result: str, title: str
 ) -> None:
     (tmp_path / 'request.json').write_text(json.dumps({'files': [], 'skip_reason': 'Diff too large.'}))
-    (tmp_path / 'result.json').write_text(
-        json.dumps(
-            {
-                'review': {'key_issues_to_review': []},
-                'coverage': {'files_not_reviewed': [], 'files_partially_reviewed': []},
-            }
-        )
-    )
-    monkeypatch.setenv('REVIEW_RESULT', result)
+    write_dsh_summary(tmp_path)
+    monkeypatch.setenv('REVIEW_RESULT', dsh_result(0) if result == 'dsh-success' else result)
     monkeypatch.setenv('GITHUB_SERVER_URL', 'https://github.com')
     monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/repo')
     monkeypatch.setenv('GITHUB_RUN_ID', '918')
@@ -303,34 +219,55 @@ def test_new_open_items_without_a_triage_status_keep_their_labels(monkeypatch: p
     bot.sync_triage(item)
 
 
-def test_generate_passes_reasoning_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    settings = {
-        'PR_REVIEW_API_KEY': 'test-key',
-        'PR_REVIEW_API_BASE': 'https://review.example.test/v1',
-        'PR_REVIEW_MODEL': 'review-model',
-        'PR_REVIEW_MAX_OUTPUT_TOKENS': '32768',
-        'PR_REVIEW_ENABLE_THINKING': 'true',
-        'PR_REVIEW_REASONING_EFFORT': 'high',
-        'PR_REVIEW_TEMPERATURE': '1.0',
-    }
-    for name, value in settings.items():
-        monkeypatch.setenv(name, value)
+def write_dsh_summary(directory: Path) -> None:
+    (directory / 'dsh-summary.md').write_text(
+        '<!-- dsh-action:v1 kind=summary -->\n## DeepSeek Harness review\n\n### Findings carried in the summary\n'
+    )
+
+
+def dsh_result(selected: int, status: str = 'success') -> str:
+    return json.dumps(
+        {
+            'schemaVersion': 1,
+            'status': status,
+            'operation': 'review',
+            'publication': {'selected': selected},
+        }
+    )
+
+
+def test_dsh_summary_preserves_findings_without_an_inline_location(tmp_path: Path) -> None:
+    write_dsh_summary(tmp_path)
+    assert bot.review_result(dsh_result(1), {}, tmp_path) == ('ai:findings', '### Findings carried in the summary')
+    assert bot.review_result(dsh_result(1, 'failed'), {}, tmp_path)[0] == 'ai:failed'
+    (tmp_path / 'dsh-summary.md').unlink()
+    assert bot.review_result(dsh_result(1), {}, tmp_path)[0] == 'ai:failed'
+
+
+def test_prepare_binds_dsh_review_to_the_checked_head(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    repository = {'id': 5, 'name': 'repo', 'full_name': 'owner/repo', 'owner': {'login': 'owner'}}
+    pr = dict(PR, base=dict(PR['base'], repo=repository), changed_files=1)
     output = tmp_path / 'output'
     monkeypatch.setenv('GITHUB_OUTPUT', str(output))
-    launch_env = {}
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (None, {}, ''))
+    monkeypatch.setattr(bot, 'command_actor', lambda *_: 'maintainer')
+    files = [{'filename': 'evalscope/benchmarks/example/example_adapter.py', 'status': 'added', 'patch': '+change'}]
+    monkeypatch.setattr(bot, 'list_all', lambda _: files)
+    monkeypatch.setattr(bot, 'github', lambda *_: b'+change')
+    monkeypatch.setattr(bot, 'get', lambda _: pr)
 
-    def run(args: list, *, env: dict, **kwargs: object) -> bot.subprocess.CompletedProcess:
-        assert Path(args[1]).name == 'pr_agent_review.py'
-        launch_env.update(env)
-        (tmp_path / 'result.json').write_text('{}')
-        return bot.subprocess.CompletedProcess(args, 0)
+    bot.prepare(42, SHA, 2, tmp_path)
+    event = json.loads((tmp_path / 'pull-request.json').read_text())
+    assert event['repository'] == repository and event['pull_request']['head']['sha'] == SHA
+    assert output.read_text() == 'decision=review\n'
+    prompt = (tmp_path / 'prompt.txt').read_text()
+    assert 'critical' in prompt and 'def format_prompt_template(' in prompt
+    assert 'Write all user-facing review text in English' in prompt
+    assert 'verified required CI' not in prompt
 
-    monkeypatch.setattr(bot.subprocess, 'run', run)
-    bot.generate(tmp_path)
-    assert launch_env['CONFIG__MAX_OUTPUT_TOKENS'] == '32768'
-    assert launch_env['CONFIG__REASONING_EFFORT'] == 'high'
-    assert json.loads(launch_env['CONFIG__ADDITIONAL_REASONING_EFFORT_MODELS']) == ['review-model']
-    assert json.loads(launch_env['LITELLM__EXTRA_BODY']) == {'chat_template_kwargs': {'enable_thinking': True}}
-    assert launch_env['CONFIG__TEMPERATURE'] == '1.0'
-    assert 'PR_REVIEWER__NUM_MAX_FINDINGS' not in launch_env
-    assert output.read_text() == 'result=review\n'
+    moved = dict(pr, head=dict(pr['head'], sha='b' * 40))
+    snapshots = iter((pr, moved))
+    monkeypatch.setattr(bot, 'get', lambda _: next(snapshots))
+    not_prepared = tmp_path / 'stale'
+    bot.prepare(42, SHA, 2, not_prepared)
+    assert not not_prepared.exists()

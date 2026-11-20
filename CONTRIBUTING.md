@@ -45,29 +45,11 @@ and skipped reviews with their reason. It shows the last attempt, commit, comple
 and the Actions run. PR Intake clears the AI label when the PR head changes. A failed re-review
 preserves the previous successful review for reference.
 
-### Operating the AI review workflow
-
-In the repository's Actions settings, configure the OpenAI-compatible base URL and model in
-the `PR_REVIEW_API_BASE` and `PR_REVIEW_MODEL` variables, and store the credential in the
-`PR_REVIEW_API_KEY` secret. Set `PR_REVIEW_AUTO_START_AT` to a UTC timestamp such as
-`2026-11-19T00:00:00Z` to start first reviews for newly opened PRs. Remove the start variable to
-pause automatic reviews while keeping the `/review` command available.
-
-Leave `PR_REVIEW_MAX_OUTPUT_TOKENS` unset to use the provider's output limit.
-On endpoints that support `chat_template_kwargs.enable_thinking`, set
-`PR_REVIEW_ENABLE_THINKING` to `true` and use `PR_REVIEW_REASONING_EFFORT`
-to select a reasoning effort supported by the configured model. Set
-`PR_REVIEW_TEMPERATURE` to override PR-Agent's sampling temperature.
-
-The PR Automation job summary and logs show whether a request reached the model. Open the AI
-review comment to see the commit it covers and any actionable findings.
-
 ## Table of Contents
 
 - [Contributing to EvalScope](#contributing-to-evalscope)
   - [Before opening a pull request](#before-opening-a-pull-request)
     - [Triage and review labels](#triage-and-review-labels)
-    - [Operating the AI review workflow](#operating-the-ai-review-workflow)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
   - [Development Setup](#development-setup)
