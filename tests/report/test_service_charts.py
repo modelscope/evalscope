@@ -3,6 +3,7 @@ import pytest
 
 from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
+from evalscope.perf.utils.report.perf_charts import ChartBuilder
 from evalscope.report import Category, Metric, Report, ReportRef, Subset
 from evalscope.report.data_frames import get_comparison_quality_report_df, get_quality_report_df
 from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
@@ -25,6 +26,21 @@ def test_apply_chart_theme_keeps_dark_template_as_safe_default() -> None:
 
     assert fig.layout.template.layout.plot_bgcolor == 'rgb(17,17,17)'
     assert fig.layout.template.layout.paper_bgcolor == 'rgb(17,17,17)'
+
+
+@pytest.mark.parametrize(
+    'template',
+    [
+        {'layout': {'paper_bgcolor': '#f8f9fa', 'legend': {'bordercolor': '#123456'}}},
+        go.layout.Template(layout={'paper_bgcolor': '#f8f9fa', 'legend': {'bordercolor': '#123456'}}),
+    ],
+    ids=['dict', 'template-object'],
+)
+def test_perf_chart_layout_reads_colors_from_structured_templates(template: object) -> None:
+    layout = ChartBuilder.layout(template=template)
+
+    assert layout['template'] is template
+    assert layout['hoverlabel'] == {'bgcolor': '#f8f9fa', 'bordercolor': '#123456'}
 
 
 def _hydrated(report: Report) -> Report:
