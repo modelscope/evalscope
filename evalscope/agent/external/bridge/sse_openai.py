@@ -27,7 +27,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall
 
 from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
-from .translate_openai import _split_text_and_reasoning, map_stop_reason_to_openai, unpack_openai_tool_call
+from .translate_openai import _split_text_and_reasoning, openai_finish_reason, unpack_openai_tool_call
 
 
 def _sse(data: Dict[str, Any]) -> bytes:
@@ -116,9 +116,7 @@ async def stream_openai_response(
 
     # 4. final frame — finish_reason set, optional usage block.
     final = _base_chunk(chunk_id, model_name)
-    final['choices'][0]['finish_reason'] = map_stop_reason_to_openai(
-        output.choices[0].stop_reason if output.choices else 'stop'
-    )
+    final['choices'][0]['finish_reason'] = openai_finish_reason(output)
     if include_usage:
         usage = output.usage
         final['usage'] = {
