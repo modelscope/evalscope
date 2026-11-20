@@ -105,14 +105,15 @@ class ChartBuilder:
         host surface on both themes. An explicit ``template`` in *overrides*
         takes precedence.
         """
+        import plotly.graph_objects as go
         import plotly.io as pio
 
         merged = dict(_LAYOUT_BASE)
         # An explicit `template` override wins over the theme pick, and the
         # hoverlabel colors below must follow the *effective* template so a
         # dark template never gets a light tooltip box (or vice versa).
-        template_name = overrides.get('template') or ('plotly_white' if theme == 'light' else 'plotly_dark')
-        merged['template'] = template_name
+        template = overrides.get('template') or ('plotly_white' if theme == 'light' else 'plotly_dark')
+        merged['template'] = template
         # Opaque unified-hover tooltip box. plotly.js defaults an unset
         # hoverlabel.bgcolor to paper_bgcolor for legend-less charts, which is
         # transparent here -> see-through tooltip. Resolve the colors
@@ -121,7 +122,9 @@ class ChartBuilder:
         # picked up automatically. Border follows the template's legend border
         # (the plotly.js default for unified hover on charts with a legend),
         # falling back to plotly.js's own default border color '#444'.
-        tpl_layout = pio.templates[template_name].layout
+        tpl_layout = (
+            pio.templates[template].layout if isinstance(template, str) else go.layout.Template(template).layout
+        )
         paper = overrides.get('paper_bgcolor') or getattr(tpl_layout, 'paper_bgcolor', None)
         if not paper or _is_fully_transparent(paper):  # unset or fully transparent
             paper = '#ffffff' if theme == 'light' else 'rgb(17,17,17)'
