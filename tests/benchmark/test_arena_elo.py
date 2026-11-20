@@ -42,6 +42,14 @@ def test_win_rate_matches_the_record_against_the_baseline(utils, wins, losses, t
 
 
 @UTILS
+@pytest.mark.parametrize('winner', ['tie', 'tie (bothbad)'])
+def test_all_ties_have_win_rate_half(utils, winner):
+    battles = _battles(('m1', 0, 0, 10)).assign(winner=winner)
+
+    assert _win_rates(utils, battles)['m1'] == 0.5
+
+
+@UTILS
 def test_a_model_that_wins_every_game_has_win_rate_one(utils):
     assert _win_rates(utils, _battles(('m1', 10, 0, 0)))['m1'] == 1.0
 
@@ -134,6 +142,23 @@ def test_general_arena_reports_every_sweeping_model_and_its_interval():
         ('win_rate_upper', 1.0),
     }
     assert len(agg) == 6  # three metrics for each of the two models
+
+
+def test_general_arena_bootstrap_survives_all_tie_resamples():
+    config = TaskConfig(
+        model='candidate',
+        datasets=['general_arena'],
+        dataset_args={'general_arena': {'extra_params': {'baseline': 'baseline'}}},
+    )
+    adapter = get_benchmark('general_arena', config)
+    scores = [
+        _general_arena_sample('candidate', 'A>B', 'B>A'),
+        _general_arena_sample('candidate', 'A=B', 'A=B'),
+    ]
+
+    agg = adapter.aggregate_scores(scores)
+
+    assert next(score for score in agg if score.metric_name == 'win_rate').score == 0.75
 
 
 def test_scoring_change_raises_the_evaluation_version():

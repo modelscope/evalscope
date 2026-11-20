@@ -159,12 +159,13 @@ def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gp
     tie_idx[len(tie_idx) // 2 :] = False
     Y[tie_idx] = 1.0
 
-    # Write the second copy from the other side (models swapped, outcome flipped). The likelihood is the
-    # same, since sigmoid(-z) = 1 - sigmoid(z), but the fit always sees both classes, so a model that won
-    # or lost every game is fitted like any other instead of needing a special case.
+    # Reverse non-tie second copies to keep both outcome classes for one-sided battles.
+    # Ties retain their original one-win/one-loss encoding.
     half = n // 2
-    X[half:] = -X[half:]
-    Y[half:] = 1.0 - Y[half:]
+    reverse_idx = ~((df['winner'] == 'tie') | (df['winner'] == 'tie (bothbad)'))
+    reverse_idx[:half] = False
+    X[reverse_idx] = -X[reverse_idx]
+    Y[reverse_idx] = 1.0 - Y[reverse_idx]
 
     from sklearn.linear_model import LogisticRegression
 
