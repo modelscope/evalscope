@@ -1,12 +1,12 @@
 from typing import Dict, List
 
-from pycocoevalcap.eval import Bleu, Cider, COCOEvalCap, Meteor, Rouge, Spice
-from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
-from pycocotools.coco import COCO
-
 
 def coco_score_result(results: List[str], references: List[List[str]]) -> Dict[str, float]:
     """COCO caption metrics of ``results`` as one corpus; ``references[i]`` holds the captions of ``results[i]``."""
+    from pycocoevalcap.eval import Bleu, Cider, COCOEvalCap, Meteor, Rouge
+    from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
+    from pycocotools.coco import COCO
+
     score_json = {}
     dataset = {'annotations': [], 'images': []}
     stored_results = []

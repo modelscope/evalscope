@@ -38,10 +38,8 @@ def test_caption_metrics_are_scored_as_one_corpus(monkeypatch: pytest.MonkeyPatc
     from pycocoevalcap.bleu.bleu import Bleu
     from pycocoevalcap.cider.cider import Cider
 
-    from evalscope.benchmarks.refcoco import evaluation_lib
-
-    monkeypatch.setattr(evaluation_lib, 'PTBTokenizer', _WhitespaceTokenizer)
-    monkeypatch.setattr(evaluation_lib, 'Meteor', _NoMeteor)
+    monkeypatch.setattr('pycocoevalcap.tokenizer.ptbtokenizer.PTBTokenizer', _WhitespaceTokenizer)
+    monkeypatch.setattr('pycocoevalcap.eval.Meteor', _NoMeteor)
     adapter = get_benchmark('refcoco', TaskConfig(datasets=['refcoco']))
 
     sample_scores = []
