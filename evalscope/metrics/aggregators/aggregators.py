@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
 from math import isfinite
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
-from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
+from evalscope.metrics.utils.functions import calculate_pass_hat_k, mean
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -48,21 +48,6 @@ def collect_planned_attempts(
             position = len(grouped[group_id])
         grouped[group_id][position] = score if metric_name in score.score.value else None
     return grouped
-
-
-def eligible_prefixes(
-    grouped: Dict[Any, Dict[int, Optional[SampleScore]]],
-) -> Dict[int, List[Tuple[Any, Dict[int, Optional[SampleScore]]]]]:
-    """Return eligible groups for each k without extending beyond the shortest planned group."""
-    max_k = min((max(attempts, default=-1) + 1 for attempts in grouped.values()), default=0)
-    result: Dict[int, List[Tuple[Any, Dict[int, Optional[SampleScore]]]]] = defaultdict(list)
-    for group_id, attempts in grouped.items():
-        for k in range(1, max_k + 1):
-            if all(attempts.get(index) is not None for index in range(k)):
-                result[k].append((group_id, attempts))
-            else:
-                break
-    return result
 
 
 @register_aggregation(name='mean')
@@ -210,50 +195,53 @@ class MeanPassAtK(Aggregator):
         self.name = 'mean_and_pass_at_k'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:
-        """Return the mean plus structured pass@n aggregates for all n <= k.
-
-        For each metric:
-        - Group scores by group_id
-        - Collect binary correctness values
-        - Limit k to the number of attempts available in every group
-        - Compute per-group pass@n for all n from 1 to k via calculate_pass_at_k
-        - Emit ``aggregation=pass_at_k`` and ``dimensions.k=n`` directly
-        """
+        """Estimate the chance of at least one success among k draws without replacement."""
         if not scores:
             return []
 
         aggregated_scores = Mean()(scores)
-        metrics = collect_metric_names(scores)
-
-        for metric_name in metrics:
+        for metric_name in collect_metric_names(scores):
             if not has_binary_outcomes(scores, metric_name):
                 continue
             group_attempts = collect_planned_attempts(scores, metric_name)
-            prefixes = eligible_prefixes(group_attempts)
-            if not prefixes:
-                continue
-            for n, eligible in prefixes.items():
-                group_order = [group_id for group_id, _ in eligible]
-                values_by_group = [
-                    [float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None]
-                    for _, attempts in eligible
-                ]
-                values = calculate_pass_at_k(
-                    [len(items) for items in values_by_group], [int(sum(items)) for items in values_by_group], n
-                )
+            max_k = min((max(attempts, default=-1) + 1 for attempts in group_attempts.values()), default=0)
+            estimates_by_k: Dict[int, Dict[Any, float]] = defaultdict(dict)
+            for group_id, attempts in group_attempts.items():
+                if max_k <= 0 or attempts.get(0) is None:
+                    continue
+                # All usable trials inform the estimate, even those after a missing generation.
+                trials = successes = 0
+                for attempt in attempts.values():
+                    if attempt is not None:
+                        trials += 1
+                        successes += int(attempt.score.value[metric_name])
+                probability = 0.0
+                for k in range(1, max_k + 1):
+                    if attempts.get(k - 1) is None:
+                        break
+                    if k > trials - successes:
+                        probability = 1.0
+                    else:
+                        # After k-1 failures, all successes are among the remaining trials.
+                        probability += (1.0 - probability) * successes / (trials - k + 1)
+                    estimates_by_k[k][group_id] = probability
+
+            for k, estimates in estimates_by_k.items():
+                eligible = len(estimates)
+                total = len(group_attempts)
                 aggregated_scores.append(
                     AggScore(
-                        score=mean(values.tolist()),
+                        score=mean(list(estimates.values())),
                         metric_name=metric_name,
                         aggregation='pass_at_k',
-                        dimensions={'k': n},
-                        num=len(values),
-                        ids=group_order,
+                        dimensions={'k': k},
+                        num=eligible,
+                        ids=list(estimates),
                         metadata={
-                            'eligible': len(values),
-                            'total': len(group_attempts),
-                            'coverage': len(values) / len(group_attempts),
-                            'excluded': len(group_attempts) - len(values),
+                            'eligible': eligible,
+                            'total': total,
+                            'coverage': eligible / total,
+                            'excluded': total - eligible,
                         },
                     )
                 )
