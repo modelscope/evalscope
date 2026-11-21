@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
+from evalscope.api.benchmark.adapters.vision_language_adapter import ImageChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -55,10 +56,10 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
-class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
+class ScienceQAAdapter(ImageChoiceAdapter, MultiChoiceAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -83,6 +84,7 @@ class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         target = answer_character(record['answer'])
 
         metadata: Dict[str, Any] = {
+            'question': question,
             'hint': record.get('hint'),
             'task': record.get('task'),
             'grade': record.get('grade'),
