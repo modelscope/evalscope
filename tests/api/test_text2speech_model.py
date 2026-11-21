@@ -2,7 +2,7 @@ import base64
 from typing import Any
 
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
-from evalscope.api.model import get_model
+from evalscope.api.model import GenerateConfig, get_model
 from evalscope.benchmarks.seed_tts_eval.seed_tts_eval_adapter import PROMPT_TEMPLATE
 from evalscope.constants import EvalType
 from evalscope.utils.uri_utils import data_uri_to_base64
@@ -163,3 +163,39 @@ def test_text2speech_openai_provider_returns_audio(monkeypatch: Any) -> None:
     assert audio_content.format == 'wav'
     assert base64.b64decode(data_uri_to_base64(audio_content.audio)) == b'audio-bytes'
     assert output.metadata['request_id'] == 'request-2'
+
+
+def test_text2speech_openai_provider_forwards_extra_headers_and_query(monkeypatch: Any) -> None:
+    calls: dict[str, Any] = {}
+
+    class MockResponse:
+
+        headers = {'x-request-id': 'request-3', 'Content-Type': 'audio/mpeg'}
+        content = b'audio-bytes'
+
+        def raise_for_status(self) -> None:
+            pass
+
+    def mock_post(self: Any, url: str, **kwargs: Any) -> MockResponse:
+        calls['url'] = url
+        calls.update(kwargs)
+        return MockResponse()
+
+    monkeypatch.setattr('requests.Session.post', mock_post)
+    model = get_model(
+        model='tts-1',
+        eval_type=EvalType.TEXT2SPEECH,
+        base_url='https://tts.example.com/v1',
+        api_key='openai-test-key',
+        config=GenerateConfig(
+            extra_headers={'X-Gateway-Token': 'abc'},
+            extra_query={'api-version': '2024-01'},
+        ),
+        model_args={'provider': 'openai'},
+        memoize=False,
+    )
+    model.generate([ChatMessageUser(content='Hello there.')])
+
+    assert calls['headers']['X-Gateway-Token'] == 'abc'
+    assert calls['headers']['Authorization'] == 'Bearer openai-test-key'
+    assert calls['params'] == {'api-version': '2024-01'}
