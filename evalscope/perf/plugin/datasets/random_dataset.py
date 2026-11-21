@@ -197,6 +197,17 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
         self._log_token_mismatch(token_mismatch_total)
 
+    def replacement_messages(self, start_index: int, stop: Event) -> Iterator[Union[List[Dict], List[int], str]]:
+        """Continue prefix rotation and the legacy batched RNG stream, yielding one message at a time."""
+        args = self.query_parameters
+        seed = np.random.SeedSequence(args.seed, spawn_key=(0,)).generate_state(4)
+        rng = np.random.RandomState(seed)
+        batch_size = max(args.parallel, args.prefix_count)
+        while not stop.is_set():
+            plan = self._create_generation_plan(batch_size, include_seeds=not args.tokenize_prompt, rng=rng)
+            yield from self._build_messages_for_count(batch_size, plan=plan, start_index=start_index, stop=stop)
+            start_index += batch_size
+
     def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
         """Random prompts are independent by index and can be generated in worker processes.
 
