@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
-from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
+from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.benchmark.adapters.vision_language_adapter import ImageChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
@@ -20,6 +21,7 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
 @register_benchmark(
     BenchmarkMeta(
         name='a_okvqa',
+        evaluation_version='v1.1',
         pretty_name='A-OKVQA',
         dataset_id='HuggingFaceM4/A-OKVQA',
         hf_dataset_id='HuggingFaceM4/A-OKVQA',
@@ -58,7 +60,7 @@ A-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reaso
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
-class AOkvqaAdapter(VisionLanguageAdapter):
+class AOkvqaAdapter(ImageChoiceAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -77,6 +79,7 @@ class AOkvqaAdapter(VisionLanguageAdapter):
         target = answer_character(record['correct_choice_idx'])
 
         metadata: Dict[str, Any] = {
+            'question': question,
             'question_id': record.get('question_id'),
             'direct_answers': record.get('direct_answers'),
             'difficult_direct_answer': record.get('difficult_direct_answer'),
