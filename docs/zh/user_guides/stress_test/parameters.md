@@ -7,15 +7,19 @@
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--model` | `str` | 测试模型名称，或模型路径 | - |
-| `--url` | `str` | API地址，支持`/chat/completions`、`/completions`和`/responses`端点 | - |
+| `--url` | `str` | API 地址，支持 `/chat/completions`、`/completions`、`/responses` 和 `/v1/messages` 端点 | - |
 | `--name` | `str` | wandb/swanlab数据库结果名称和结果数据库名称 | `{model_name}_{current_time}` |
 | `--alias` | `str` | 在 Web 界面列表与报告中展示的运行别名，用于区分同一模型的多次压测（仅展示用途） | `None` |
-| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容Chat Completions API（需提供`--url`）<br>• `openai_responses`: OpenAI官方Responses API<br>• `openai_embedding`: OpenAI兼容Embedding API<br>• `openai_rerank`: OpenAI/Cohere兼容Rerank API<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
+| `--api` | `str` | 服务API类型<br>• `openai`: OpenAI兼容Chat Completions API（需提供`--url`）<br>• `openai_responses`: OpenAI官方Responses API<br>• `anthropic`: Anthropic Messages API<br>• `openai_embedding`: OpenAI兼容Embedding API<br>• `openai_rerank`: OpenAI/Cohere兼容Rerank API<br>• `local`: 启动本地transformers推理<br>• `local_vllm`: 启动本地vLLM推理服务<br>• 自定义：参考[自定义API指南](./custom.md/#自定义请求-api) | - |
 | `--port` | `int` | 本地推理服务端口<br>仅对`local`和`local_vllm`有效 | `8877` |
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
 | `--debug` | `bool` | 是否输出调试信息 | `False` |
 | `--scenario` | `str` | 外部 workload 场景。`agentx` 运行 AIPerf AgentX MVP，也接受 AgentX JSON；见 [AgentX MVP](./agentx.md)。 | `None` |
+
+使用 `--api anthropic` 时，`--url` 可填写服务根地址（例如 `https://api.anthropic.com`），也可填写完整的 `/v1/messages` 端点。EvalScope 通过 `x-api-key` 请求头发送 `--api-key`。对于要求使用服务端默认采样值的模型，请留空采样参数。
+
+Anthropic 压测使用服务端在 `usage` 中返回的输入和输出 token 数。缺少计数或计数无效时，该请求记为失败。分词器仍可用于生成压测数据和按输入长度筛选。
 
 ## 网络配置
 
@@ -297,7 +301,7 @@ trace 文件为 JSONL，每行一条请求记录：
 | `--seed` | `int` | 随机种子 | `None` |
 | `--stop` | `str` | 停止生成的tokens | - |
 | `--stop-token-ids` | `list[int]` | 停止生成的token ID列表 | - |
-| `--temperature` | `float` | 采样温度 | `0` |
+| `--temperature` | `float` | 采样温度 | `anthropic` 使用服务端默认值，其他协议为 `0` |
 | `--top-p` | `float` | top_p采样 | - |
 | `--top-k` | `int` | top_k采样 | - |
 | `--extra-args` | `str` | 额外传入请求体的参数<br>JSON字符串格式<br>示例：`'{"ignore_eos": true}'` | - |

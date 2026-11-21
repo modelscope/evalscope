@@ -124,6 +124,34 @@ describe('Task workspace', () => {
     )
     expect(screen.getAllByRole('textbox', { name: /Model Name/ })).toHaveLength(1)
   })
+  it('submits Anthropic evaluation and performance with the shared connection', () => {
+    mount()
+    fillConnection()
+    change('connection-api', 'anthropic')
+    change('connection-apiKey', 'anthropic-key')
+    change('eval-datasets', 'gsm8k')
+    fireEvent.click(screen.getByRole('button', { name: 'Start Evaluation' }))
+    expect(submitEvalTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eval_type: 'anthropic_api',
+        api_url: 'http://localhost:18101/v1',
+        api_key: 'anthropic-key',
+      }),
+      expect.any(String),
+    )
+    tab('perf')
+    const start = screen.getByRole('button', { name: 'Start Performance Test' })
+    expect(start).toBeEnabled()
+    fireEvent.click(start)
+    expect(submitPerfTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: 'anthropic',
+        url: 'http://localhost:18101/v1',
+        api_key: 'anthropic-key',
+      }),
+      expect.any(String),
+    )
+  })
   it('preserves independent task drafts and restores them after reload', async () => {
     const view = mount()
     fillConnection()
@@ -153,6 +181,28 @@ describe('Task workspace', () => {
     view.unmount()
     mount()
     expect(document.getElementById('connection-apiKey')).toHaveValue('fake-key-for-tests')
+  })
+  it('keeps credential controls when switching a remembered OpenAI preset to Anthropic', () => {
+    const state = emptyWorkspace()
+    state.connection = { ...state.connection, model: 'm', url: 'http://localhost/v1', apiKey: 'fake-saved' }
+    state.connections = [{ id: 'a', name: 'Saved server', value: { ...state.connection }, rememberKey: true }]
+    state.selectedConnection = 'a'
+    writeWorkspace(state)
+    mount()
+    change('connection-api', 'anthropic')
+    change('connection-apiKey', 'anthropic-key')
+    expect(screen.getByRole('switch', { name: 'Save API Key on this browser' })).toBeChecked()
+    expect(screen.getByText(/API Key is stored in plaintext/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Remove saved API Key' })).toBeEnabled()
+    save('Saved server', 'Model connection')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(readWorkspace()).toMatchObject({
+      ok: true,
+      value: { connections: [{ rememberKey: true, value: { api: 'anthropic', apiKey: 'anthropic-key' } }] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Remove saved API Key' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(localStorage.getItem(CONFIG_STORAGE_KEY)).not.toContain('anthropic-key')
   })
   it('clears credentials on service changes without changing a saved profile', () => {
     mount()

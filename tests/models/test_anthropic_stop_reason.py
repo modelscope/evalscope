@@ -38,12 +38,15 @@ PROMPT_TOO_LONG = {
 
 
 @pytest.fixture
-def generate() -> Iterator[Callable[[int, Dict[str, Any]], ModelOutput]]:
+def generate() -> Iterator[Callable[..., ModelOutput]]:
     """Run the real Anthropic SDK against a local server that answers with one canned response."""
     reply: Tuple[int, Dict[str, Any]] = (200, TRUNCATED_REPLY)
 
     class Provider(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
+            if self.path != '/apps/anthropic/v1/messages':
+                self.send_error(404)
+                return
             self.rfile.read(int(self.headers['Content-Length']))
             status, payload = reply
             body = json.dumps(payload).encode()
@@ -60,11 +63,13 @@ def generate() -> Iterator[Callable[[int, Dict[str, Any]], ModelOutput]]:
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
 
-    def run(status: int, payload: Dict[str, Any]) -> ModelOutput:
+    def run(status: int, payload: Dict[str, Any], url_suffix: str = '') -> ModelOutput:
         nonlocal reply
         reply = (status, payload)
         api = AnthropicCompatibleAPI(
-            model_name='test-model', base_url=f'http://127.0.0.1:{server.server_port}', api_key='test-key'
+            model_name='test-model',
+            base_url=f'http://127.0.0.1:{server.server_port}/apps/anthropic{url_suffix}',
+            api_key='test-key',
         )
         config = GenerateConfig(retries=0, retry_interval=0, max_tokens=5)
         return api.generate([ChatMessageUser(content='q')], [], 'none', config)
@@ -77,8 +82,9 @@ def generate() -> Iterator[Callable[[int, Dict[str, Any]], ModelOutput]]:
         worker.join()
 
 
-def test_max_tokens_stop_reason_matches_the_openai_path(generate: Callable) -> None:
-    assert generate(200, TRUNCATED_REPLY).stop_reason == 'max_tokens'
+@pytest.mark.parametrize('url_suffix', ['', '/v1', '/v1/messages'])
+def test_max_tokens_stop_reason_matches_the_openai_path(generate: Callable, url_suffix: str) -> None:
+    assert generate(200, TRUNCATED_REPLY, url_suffix).stop_reason == 'max_tokens'
 
 
 def test_agent_loop_does_not_report_a_truncated_reply_as_context_overflow(generate: Callable) -> None:

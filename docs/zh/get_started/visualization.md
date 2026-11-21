@@ -213,6 +213,19 @@ evalscope service --outputs examples/viz
 
 Web 界面支持直接提交评测和压测任务，无需命令行操作。
 
+#### 模型连接
+
+评测和压测共用模型连接。选择 **API 类型**，然后填写对应服务的模型名称、API URL 和 API Key。
+
+| API 类型 | API URL 示例 | 支持的任务 |
+|----------|--------------|------------|
+| OpenAI-compatible | `http://localhost:8000/v1` | 评测、压测 |
+| OpenAI Responses | `https://api.openai.com/v1` | 评测、压测 |
+| Anthropic Messages | `https://api.anthropic.com` 或 `https://api.anthropic.com/v1/messages` | 评测、压测 |
+| Local Transformers | 无需填写 API URL | 压测 |
+
+使用 DashScope 的 Anthropic 兼容端点时，选择 **Anthropic Messages**，API URL 填写 `https://dashscope.aliyuncs.com/apps/anthropic`。安装 `evalscope[service]` 时会一并安装 Anthropic SDK。
+
 #### 评测任务
 
 评测任务页面提供配置表单和任务监控面板：

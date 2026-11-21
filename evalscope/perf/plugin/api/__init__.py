@@ -1,3 +1,4 @@
+from .anthropic_api import AnthropicMessagesPlugin
 from .base import ApiPluginBase
 from .custom_api import CustomPlugin
 from .decision_api import AutoTrustPerfPlugin, SystemOnePerfPlugin
