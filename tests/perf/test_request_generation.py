@@ -95,10 +95,6 @@ def test_overlap_exclusion_cli_flag_is_opt_in() -> None:
     argv = ['--model', 'test-model']
     assert not _parse_perf_args(argv).exclude_warmup_overlap
     assert _parse_perf_args(argv + ['--exclude-warmup-overlap']).exclude_warmup_overlap
-    assert _parse_perf_args(argv).warmup_reserve is None
-    assert _parse_perf_args(argv + ['--warmup-reserve', '0']).warmup_reserve == 0
-    with pytest.raises(ValueError, match='warmup_reserve'):
-        _parse_perf_args(argv + ['--warmup-reserve', '-1'])
 
 
 def test_sweep_scalar_strings_are_normalized_to_lists() -> None:

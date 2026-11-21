@@ -139,9 +139,6 @@ class Arguments(BaseArgument):
     exclude_warmup_overlap: bool = False
     """Exclude requests sent while warmup is still in flight (single-turn closed-loop only)."""
 
-    warmup_reserve: Optional[int] = Field(default=None, ge=0)
-    """Random replacement requests to prepare before dispatch (default: twice concurrency, token-budget limited)."""
-
     @property
     def warmup_count(self) -> int:
         """Resolved number of warmup requests/conversations.
@@ -857,9 +854,6 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
         action='store_true',
         help='Keep closed-loop handoff, record overlap requests separately, and replenish measured requests.',
     )
-    parser.add_argument('--warmup-reserve', type=int, default=None,
-                        help='Prebuild this many random replacements with --exclude-warmup-overlap. '
-                             'Defaults to twice concurrency, capped at 8M prompt tokens. Zero uses online supply only.')
     parser.add_argument('--open-loop', action='store_true', default=False,
                         help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
                              'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501

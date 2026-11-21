@@ -16,6 +16,7 @@ import pytest
 from evalscope.perf import benchmark as benchmark_module
 from evalscope.perf.benchmark import get_requests
 from evalscope.perf.core.pipeline import run_benchmark_pipeline
+from evalscope.perf.core.strategies import closed_loop
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.workload_timeline import WorkloadTimeline
@@ -315,10 +316,11 @@ def test_failed_measured_request_consumes_quota() -> None:
 
 
 def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', 0)
     worker_stopped = threading.Event()
     args = _make_args(
         number=2, parallel=2, warmup_num=1, dataset='random', prompt=None,
-        prefix_count=1, exclude_warmup_overlap=True, warmup_reserve=0, duration=0.05,
+        prefix_count=1, exclude_warmup_overlap=True, duration=0.05,
     )
 
     async def run() -> None:
@@ -362,10 +364,13 @@ def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyP
     asyncio.run(run())
 
 
-@pytest.mark.parametrize(('reserve', 'expected_prepared'), [(None, 4), (1, 1), (0, 0)])
-def test_random_overflow_dispatches_in_order(reserve: Optional[int], expected_prepared: int) -> None:
-    args = _make_args(number=5, parallel=2, warmup_num=2, dataset='random', warmup_reserve=reserve,
-                      exclude_warmup_overlap=True)
+@pytest.mark.parametrize(('token_budget', 'expected_prepared'), [(128, 4), (31, 1), (15, 0)])
+def test_random_overflow_dispatches_in_order(
+    monkeypatch: pytest.MonkeyPatch, token_budget: int, expected_prepared: int
+) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', token_budget)
+    args = _make_args(number=5, parallel=2, warmup_num=2, dataset='random', prefix_length=8,
+                      min_prompt_length=8, max_prompt_length=8, exclude_warmup_overlap=True)
     prepared = []
     sent = []
 
@@ -406,10 +411,11 @@ def test_random_overflow_dispatches_in_order(reserve: Optional[int], expected_pr
     asyncio.run(run())
 
 
-@pytest.mark.parametrize('reserve', [0, 3])
-def test_required_replacement_propagates_generation_failure(reserve: int) -> None:
-    args = _make_args(number=2, parallel=2, warmup_num=1, dataset='random',
-                      warmup_reserve=reserve, exclude_warmup_overlap=True)
+@pytest.mark.parametrize('token_budget', [0, 48])
+def test_required_replacement_propagates_generation_failure(monkeypatch: pytest.MonkeyPatch, token_budget: int) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', token_budget)
+    args = _make_args(number=2, parallel=2, warmup_num=1, dataset='random', prefix_length=8,
+                      min_prompt_length=8, max_prompt_length=8, exclude_warmup_overlap=True)
 
     async def run() -> None:
         release = asyncio.Event()
@@ -438,8 +444,7 @@ def test_required_replacement_propagates_generation_failure(reserve: int) -> Non
 
 
 def test_unused_reserve_failure_does_not_abort_a_complete_run() -> None:
-    args = _make_args(number=2, parallel=2, warmup_num=2, dataset='random',
-                      warmup_reserve=2, exclude_warmup_overlap=True)
+    args = _make_args(number=2, parallel=2, warmup_num=2, dataset='random', exclude_warmup_overlap=True)
 
     async def source() -> AsyncIterator[tuple[dict, bool]]:
         for i in range(args.total_count):

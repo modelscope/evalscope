@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
+_RANDOM_RESERVE_TOKEN_BUDGET = 8 * 1024 * 1024
+
 
 class _ReplacementBuffer:
     """Prebuild a reserve and produce one more candidate per excess transition."""
@@ -235,10 +237,9 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 and self.args.parallel > 1
             ):
                 # Limit the automatic reserve by prompt volume as well as request count.
-                token_limit = (8 * 1024 * 1024) // max(1, self.args.max_prompt_length + self.args.prefix_length)
-                reserve = self.args.warmup_reserve
-                if reserve is None:
-                    reserve = min(2 * self.args.parallel, token_limit)
+                prompt_tokens = max(1, self.args.max_prompt_length + self.args.prefix_length)
+                token_limit = _RANDOM_RESERVE_TOKEN_BUDGET // prompt_tokens
+                reserve = min(2 * self.args.parallel, token_limit)
                 buffer = _ReplacementBuffer(self._request_generator, reserve, min(self.args.parallel, token_limit))
                 try:
                     await buffer.prepare()
