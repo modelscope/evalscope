@@ -71,21 +71,30 @@ def test_ms_chat_preserves_none_for_legacy_templates(message: Any, field: str) -
     assert _make_api(LegacyTokenizer()).ms_chat([message], tools=[]) == 'True'
 
 
-class _BosTokenizer:
-    """Prepends its BOS token by default, like the Llama 3, Gemma and Mistral tokenizers."""
+class _SpecialTokenTokenizer:
+    """Configurable fake: an optional token it prepends (BOS) and an optional one it appends (EOS)."""
 
-    bos_token = '<s>'
     chat_template = 'set'
 
-    def __init__(self, template_bos: str) -> None:
+    def __init__(self, template_bos: str, prepend: str = '<s>', append: str = '') -> None:
         self.template_bos = template_bos
+        self.prepend = prepend
+        self.append = append
 
     def apply_chat_template(self, conversation: List[Any], **kwargs: Any) -> str:
         return self.template_bos + ''.join(f'[{message["role"]}]{message["content"]}' for message in conversation)
 
     def _encode(self, text: str, add_special_tokens: bool) -> List[str]:
-        pieces = [piece for piece in re.split(r'(<s>)', text) if piece]
-        return [self.bos_token, *pieces] if add_special_tokens else pieces
+        pieces = [piece for piece in re.split(r'(<s>|</s>)', text) if piece]
+        if add_special_tokens:
+            if self.prepend:
+                pieces.insert(0, self.prepend)
+            if self.append:
+                pieces.append(self.append)
+        return pieces
+
+    def decode(self, token_ids: List[str], **kwargs: Any) -> str:
+        return ''.join(token_ids)
 
     def __call__(self, text: Any, add_special_tokens: bool = True, **kwargs: Any) -> dict:
         if isinstance(text, str):
@@ -96,9 +105,26 @@ class _BosTokenizer:
         return []
 
 
-@pytest.mark.parametrize('template_bos', ['<s>', ''])
-def test_generate_sends_one_bos_token(monkeypatch: Any, template_bos: str) -> None:
-    """A template that renders BOS gets no second one; a template without it keeps the tokenizer's."""
+@pytest.mark.parametrize(
+    ('template_bos', 'prepend', 'append', 'tokenizer_call_args', 'expected'),
+    [
+        # Template renders BOS, tokenizer also prepends it: the duplicate is stripped.
+        ('<s>', '<s>', '', {}, '<s>[user]hi'),
+        # Template renders no BOS: the tokenizer's prepended BOS is kept.
+        ('', '<s>', '', {}, '<s>[user]hi'),
+        # Tokenizer prepends BOS and appends EOS: only the duplicated BOS is stripped, EOS stays.
+        ('<s>', '<s>', '</s>', {}, '<s>[user]hi</s>'),
+        # Tokenizer only appends EOS: nothing is stripped, EOS stays.
+        ('', '', '</s>', {}, '[user]hi</s>'),
+        # An explicit add_special_tokens override is honored untouched.
+        ('<s>', '<s>', '', {'add_special_tokens': True}, '<s><s>[user]hi'),
+    ],
+    ids=['bos-and-template-bos', 'bos-only', 'bos-and-eos', 'eos-only', 'explicit-add-special-tokens'],
+)
+def test_generate_special_token_prefix(
+    monkeypatch: Any, template_bos: str, prepend: str, append: str, tokenizer_call_args: dict, expected: str
+) -> None:
+    """The rendered chat reaches the tokenizer with exactly the special tokens it should have."""
     encoded = []
 
     def fake_batched_generate(generate_input: Any) -> List[Any]:
@@ -110,11 +136,11 @@ def test_generate_sends_one_bos_token(monkeypatch: Any, template_bos: str) -> No
         ]
 
     monkeypatch.setattr(modelscope_module, 'batched_generate', fake_batched_generate)
-    api = _make_api(_BosTokenizer(template_bos))
+    api = _make_api(_SpecialTokenTokenizer(template_bos, prepend=prepend, append=append))
     api.model_name = 'test-model'
     api.model = type('_Model', (), {'device': 'cpu', 'generate': lambda self, **kwargs: None})()
-    api.tokenizer_call_args = {}
+    api.tokenizer_call_args = tokenizer_call_args
 
     api.generate([ChatMessageUser(content='hi')], tools=[], tool_choice='none', config=GenerateConfig())
 
-    assert encoded == ['<s>[user]hi']
+    assert encoded == [expected]

@@ -135,6 +135,7 @@ class ModelScopeAPI(ModelAPI):
 
         # create chat
         chat = self.ms_chat(input, tools)
+        chat = self._strip_duplicate_prefix(chat)
 
         assert isinstance(self.tokenizer_call_args, dict)
         # prepare tokenizer
@@ -142,7 +143,7 @@ class ModelScopeAPI(ModelAPI):
             self.tokenizer,
             return_tensors='pt',
             padding=True,
-            **self._tokenizer_call_args(chat),
+            **self.tokenizer_call_args,
         )
 
         # prepare generator
@@ -265,17 +266,28 @@ class ModelScopeAPI(ModelAPI):
         """Effectively the batch size."""
         return 8
 
-    def _tokenizer_call_args(self, chat: str) -> Dict[str, Any]:
-        """Do not prepend special tokens, such as BOS, that the rendered chat template already starts with."""
-        call_args = dict(self.tokenizer_call_args)
-        if 'add_special_tokens' in call_args or self.tokenizer.chat_template is None:
-            return call_args
+    def _strip_duplicate_prefix(self, chat: str) -> str:
+        """Drop special tokens, such as BOS, that the rendered chat starts with and the tokenizer prepends again."""
+        if 'add_special_tokens' in self.tokenizer_call_args or self.tokenizer.chat_template is None:
+            return chat
         with_special = self.tokenizer(chat)['input_ids']
         without_special = self.tokenizer(chat, add_special_tokens=False)['input_ids']
         added = len(with_special) - len(without_special)
-        if added > 0 and without_special[:added] == with_special[:added]:
-            call_args['add_special_tokens'] = False
-        return call_args
+        prepended = next(
+            (k for k in range(1, added + 1) if with_special[k : k + len(without_special)] == without_special), 0
+        )
+        prefix = with_special[:prepended]
+        if not prefix or without_special[:prepended] != prefix:
+            return chat
+        prefix_text = self.tokenizer.decode(prefix)
+        if not chat.startswith(prefix_text):
+            return chat
+        stripped = chat[len(prefix_text) :]
+        if self.tokenizer(stripped)['input_ids'] != (
+            prefix + without_special[prepended:] + with_special[prepended + len(without_special) :]
+        ):
+            return chat
+        return stripped
 
     def ms_chat(self, messages: List[ChatMessage], tools: List[ToolInfo]) -> str:
         # convert to ms format
