@@ -142,7 +142,7 @@ class ModelScopeAPI(ModelAPI):
             self.tokenizer,
             return_tensors='pt',
             padding=True,
-            **self.tokenizer_call_args,
+            **self._tokenizer_call_args(chat),
         )
 
         # prepare generator
@@ -264,6 +264,18 @@ class ModelScopeAPI(ModelAPI):
     def max_connections(self) -> int:
         """Effectively the batch size."""
         return 8
+
+    def _tokenizer_call_args(self, chat: str) -> Dict[str, Any]:
+        """Do not prepend special tokens, such as BOS, that the rendered chat template already starts with."""
+        call_args = dict(self.tokenizer_call_args)
+        if 'add_special_tokens' in call_args or self.tokenizer.chat_template is None:
+            return call_args
+        with_special = self.tokenizer(chat)['input_ids']
+        without_special = self.tokenizer(chat, add_special_tokens=False)['input_ids']
+        added = len(with_special) - len(without_special)
+        if added > 0 and without_special[:added] == with_special[:added]:
+            call_args['add_special_tokens'] = False
+        return call_args
 
     def ms_chat(self, messages: List[ChatMessage], tools: List[ToolInfo]) -> str:
         # convert to ms format
