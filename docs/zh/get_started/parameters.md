@@ -107,7 +107,7 @@
 | `few_shot_num` | `int` | few-shot示例数量 |
 | `few_shot_random` | `bool` | 是否随机采样few-shot数据 |
 | `shuffle` | `bool` | 是否打乱数据 |
-| `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
+| `shuffle_choices` | `bool` | 是否打乱正式评测题的选项顺序（仅多选题）。few-shot 示例保留原始选项顺序。 |
 | `metric_list` | `list[str\|dict]` | 指标列表。应使用 `accuracy` 等规范名称；`acc` 等旧别名仅为兼容用途并会被规范化。 |
 | `primary_metric` | `str\|dict` | 可选的报告主指标选择器，用于覆盖 `mean_and_*` 的默认 mean，或消除其他多指标报告的主指标歧义。字符串按名称选择；字典可指定 `name`、`aggregation` 和 `dimensions`，例如 `{"name": "accuracy", "aggregation": "vote_at_k", "dimensions": {"k": 5}}`。字典中的指标名称需使用规范名称。省略的聚合方式和维度不作限制；选择器应唯一匹配一个已输出的评分指标。参见[重复生成示例](basic_usage.md)。 |
 | `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）、`bayes_at_n`。三种 `mean_and_*` 方式均默认将普通 `mean` 作为报告主指标。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`）<br>• `bayes_at_n`：固定题集上重复正确率的后验均值与后验标准差（`repeats=N`；仅二元 `accuracy`/`exact_match`，限单个 subset；见[常见问题](./faq.md)） |

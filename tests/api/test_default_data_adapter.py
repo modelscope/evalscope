@@ -18,12 +18,14 @@ class CapturingDataLoader(DataLoader):
     latest_repeats: ClassVar[Optional[int]] = None
     latest_version: ClassVar[Optional[str]] = None
     latest_seed: ClassVar[Optional[int]] = None
+    latest_shuffle_choices: ClassVar[Optional[bool]] = None
 
     def load(self) -> MemoryDataset:
         self.__class__.latest_limit = self.limit
         self.__class__.latest_repeats = self.repeats
         self.__class__.latest_version = self.version
         self.__class__.latest_seed = self.seed
+        self.__class__.latest_shuffle_choices = self.shuffle_choices
 
         samples: List[Sample] = [
             Sample(input='question-1', target='answer-1', subset_key='subset-a'),
@@ -122,6 +124,22 @@ def test_shuffle_choices_configuration_survives_adapter_initialization() -> None
     )
 
     assert user_configured_adapter.shuffle_choices is True
+
+
+def test_fewshot_choices_keep_authored_order_when_evaluation_choices_shuffle() -> None:
+    meta = BenchmarkMeta(
+        name='choice_shuffle',
+        dataset_id='dummy',
+        eval_split='test',
+        train_split='train',
+        shuffle_choices=True,
+    )
+    adapter = DummyReformatAdapter(benchmark_meta=meta, task_config=TaskConfig(datasets=['choice_shuffle']))
+
+    adapter.load_subset(subset='subset-a', data_loader=CapturingDataLoader)
+    assert CapturingDataLoader.latest_shuffle_choices is True
+    adapter.load_fewshot_subset(subset='subset-a', data_loader=CapturingDataLoader)
+    assert CapturingDataLoader.latest_shuffle_choices is False
 
 
 def test_auto_judge_strategy_uses_adapter_class_default() -> None:
