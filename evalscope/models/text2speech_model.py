@@ -11,6 +11,7 @@ import requests
 from evalscope.api.messages import ChatMessage, ContentAudio
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.io_utils import bytes_to_base64
 
 
@@ -63,7 +64,7 @@ class Text2SpeechAPI(ModelAPI):
         if self.provider == 'volcengine':
             audio_bytes, metadata = self._generate_volcengine_audio(input, config.timeout or self.timeout)
         else:
-            audio_bytes, metadata = self._generate_openai_audio(input, config.timeout or self.timeout)
+            audio_bytes, metadata = self._generate_openai_audio(input, config.timeout or self.timeout, config)
 
         return ModelOutput(
             model=self.model_name,
@@ -170,13 +171,26 @@ class Text2SpeechAPI(ModelAPI):
         response.raise_for_status()
         return self._collect_volcengine_audio(response)
 
-    def _generate_openai_audio(self, input: List[ChatMessage], timeout: float) -> tuple[bytes, Dict[str, Any]]:
+    def _generate_openai_audio(
+        self,
+        input: List[ChatMessage],
+        timeout: float,
+        config: Optional[GenerateConfig] = None,
+    ) -> tuple[bytes, Dict[str, Any]]:
         payload = self._openai_payload(input)
+        headers = self._openai_headers()
+        request_kwargs: Dict[str, Any] = {}
+        if config is not None:
+            if config.extra_headers:
+                headers.update(get_secret_value(config.extra_headers))
+            if config.extra_query:
+                request_kwargs['params'] = get_secret_value(config.extra_query)
         response = self.session.post(
             self.url,
-            headers=self._openai_headers(),
+            headers=headers,
             json=payload,
             timeout=timeout,
+            **request_kwargs,
         )
         response.raise_for_status()
         return self._collect_openai_audio(response)
