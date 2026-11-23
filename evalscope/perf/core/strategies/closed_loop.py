@@ -21,10 +21,10 @@ _RANDOM_RESERVE_TOKEN_BUDGET = 8 * 1024 * 1024
 class _ReplacementBuffer:
     """Prebuild a reserve and produce one more candidate per excess transition."""
 
-    def __init__(self, source: AsyncIterator[Tuple[dict, bool]], reserve: int, capacity: int) -> None:
+    def __init__(self, source: AsyncIterator[Tuple[dict, bool]], reserve: int) -> None:
         self.source = source
         self.reserve = reserve
-        self.ready: asyncio.Queue = asyncio.Queue(maxsize=max(reserve, capacity, 1))
+        self.ready: asyncio.Queue = asyncio.Queue(maxsize=max(reserve, 1))
         self.credits = asyncio.Semaphore(0)
         self.worker: Optional[asyncio.Task] = None
         self.transitions = 0
@@ -240,7 +240,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 prompt_tokens = max(1, self.args.max_prompt_length + self.args.prefix_length)
                 token_limit = _RANDOM_RESERVE_TOKEN_BUDGET // prompt_tokens
                 reserve = min(2 * self.args.parallel, token_limit)
-                buffer = _ReplacementBuffer(self._request_generator, reserve, min(self.args.parallel, token_limit))
+                buffer = _ReplacementBuffer(self._request_generator, reserve)
                 try:
                     await buffer.prepare()
                     await self._run_phase(requests, self.args.duration, buffer.items(), buffer)
