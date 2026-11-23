@@ -13,6 +13,7 @@ from evalscope.perf.utils.db_util import average_results
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
+from evalscope.perf.utils.statistics import summarize_runs, warn_if_under_sampled
 from evalscope.utils.logger import get_logger
 
 from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion, format_sla_operand
@@ -374,6 +375,18 @@ class SLAAutoTuner:
             for metric in self.metric_names
             if all(metric in values for values in run_values)
         }
+        # Run-to-run summary for the same metrics: how much each number moves
+        # between repeated runs of this pressure level. Only metrics present in
+        # every run are summarized, mirroring ``metric_values`` above.
+        statistics = {}
+        for metric in self.metric_names:
+            series = [values[metric] for values in run_values if metric in values]
+            if len(series) != len(run_values):
+                continue
+            summary = summarize_runs(series)
+            if summary is not None:
+                statistics[metric] = summary
+        warn_if_under_sampled(statistics, logger)
         probe = SLAProbe(
             value=val,
             averaged_result=avg_result,
@@ -384,6 +397,7 @@ class SLAAutoTuner:
             valid=not reasons,
             reasons=reasons,
             metric_values=metric_values,
+            statistics=statistics,
         )
         self.results_cache[val] = probe
         return probe
@@ -680,6 +694,36 @@ class SLAAutoTuner:
         logger.info(f'SLA summary saved to: {json_path}')
 
 
+def format_run_statistics(result: SLAResult, tablefmt: str = 'pipe') -> str:
+    """Render per-metric run-to-run statistics for every tested pressure level.
+
+    Only metrics measured in at least two runs are shown; with a single run per
+    level there is nothing to summarize and the section stays empty.
+    """
+    rows = []
+    for probe in result.probes:
+        for metric, stats in sorted(probe.statistics.items()):
+            if stats.std is None:
+                continue
+            rows.append(
+                [
+                    probe.value,
+                    metric,
+                    f'{stats.mean:.4g} ± {stats.std:.4g}',
+                    f'[{stats.ci_low:.4g}, {stats.ci_high:.4g}]' if stats.ci_low is not None else '-',
+                    f'±{stats.mdd:.4g}' if stats.mdd is not None else '-',
+                    stats.n,
+                ]
+            )
+    if not rows:
+        return ''
+    return tabulate(
+        rows,
+        headers=['Pressure', 'Metric', 'Mean ± std', '95% CI', 'MDD', 'Runs'],
+        tablefmt=tablefmt,
+    )
+
+
 def format_sla_tables(result: SLAResult, tablefmt: str = 'pipe') -> str:
     """Render decisions from the same exact counts stored in the SLA result."""
     probe_rows = [
@@ -705,7 +749,11 @@ def format_sla_tables(result: SLAResult, tablefmt: str = 'pipe') -> str:
         probe_rows, headers=['Pressure', 'Succeeded/Total', 'Run status', 'Groups', 'Reason'], tablefmt=tablefmt
     )
     selections = tabulate(selection_rows, headers=['Criteria', 'Selected', 'Status', 'Reason'], tablefmt=tablefmt)
-    return f'Probes:\n{probes}\n\nSelections:\n{selections}'
+    sections = [f'Probes:\n{probes}', f'Selections:\n{selections}']
+    statistics = format_run_statistics(result, tablefmt=tablefmt)
+    if statistics:
+        sections.append(f'Run statistics (per pressure level):\n{statistics}')
+    return '\n\n'.join(sections)
 
 
 def run_sla_auto_tune(args: Arguments, runner: Callable[[Arguments, Optional[str]], Dict[str, Any]]) -> SLAResult:

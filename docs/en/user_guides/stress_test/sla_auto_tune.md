@@ -102,7 +102,8 @@ Meaning: Find the concurrency corresponding to maximum TPS (token throughput).
    - If initial metrics violate SLA, halve the pressure to find a lower bound that satisfies conditions.
 3. **Binary Search**: Constraint mode searches the pass/fail boundary. Extremum mode compares adjacent values to locate a peak inside the bracket; if the initial value is ineligible, it first searches below that value.
 4. **Run Validation**: Each pressure is tested `--sla-num-runs` times (default 3). Every run must have successful requests and every requested metric; metric values are then averaged. Success counts are summed exactly across runs.
-5. **Report Output**: The result contains tested pressure points and one final selection per group.
+5. **Run Statistics**: With more than one run per pressure, the summary reports each metric as `mean ± std` with a two-sided 95% confidence interval for the mean and the minimum detectable difference (MDD) implied by the observed spread. The interval describes the variability of the run estimator, not a population percentile — for percentile metrics such as P99 it is the interval of the **mean of per-run percentiles**. Fewer than 5 runs (`--sla-num-runs < 5`) produce a warning, because the 95% interval is then wide enough that it usually cannot separate two configurations.
+6. **Report Output**: The result contains tested pressure points and one final selection per group.
 
 > **Note**: If the request success rate during testing is below 100%, that test point will be considered failed (violating SLA).
 >
