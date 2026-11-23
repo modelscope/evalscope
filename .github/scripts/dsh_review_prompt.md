@@ -57,9 +57,12 @@ demonstrable regression in a supported option or a deterministic existing test f
 limited inconvenience. A failed test alone or a formatting problem is not critical or high.
 Confidence reflects how certain the reported behavior is, separate from how often it occurs.
 A deterministic trace of supported inputs through the changed code, with a concrete before/after
-result and no counterevidence, warrants 0.9 or more even without execution. An option silently
-discarded on a supported path is at least medium severity. Reserve lower confidence for cases
-where a missing precondition could invalidate the claim.
+result and no counterevidence, warrants 0.9 or more even without execution. An introduced change
+that silently drops input, changes valid output, or discards a supported option is at least medium.
+Separate newly introduced compatibility regressions from pre-existing behavior the PR only
+partially fixes. Rate a new regression by its own trace and impact, even if it was discovered while
+checking whether the original bug was fully fixed. Reserve lower confidence for cases where a
+missing precondition could invalidate the claim.
 
 Put every supported actionable issue in the structured `findings` array, including exact location, severity, confidence, and
 `evidence`. The publisher derives the count, rating, inline comments, and label from that array.

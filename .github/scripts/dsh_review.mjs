@@ -61,9 +61,11 @@ source = replaceOnce(
   'const receipts=(u.toolReceipts??[]).filter(r=>r.completed&&r.counted&&r.ok);' +
     'if(!["workspace.read","workspace.search"].every(id=>receipts.some(r=>r.id===id)))' +
     'throw new Error("The review did not complete repository reads and searches");' +
-    'if(u.output.summary!=="Static review complete."&&!/^Limited: [^\\n]{1,191}$/.test(u.output.summary))' +
-    'throw new Error("The review did not return the required concise status");' +
-    'return publishPullRequestReview(a,c,l,{operation:"review",summary:u.output.summary,findings:u.output.findings,',
+    'const text=u.output.summary.trim();' +
+    'const reviewStatus=text.startsWith("Limited:")?text.split(/\\r?\\n/,1)[0].slice(0,200):' +
+    '(text==="Static review complete."||u.output.findings.length>0?' +
+    '"Static review complete.":"Limited: The model did not return a concise review status.");' +
+    'return publishPullRequestReview(a,c,l,{operation:"review",summary:reviewStatus,findings:u.output.findings,',
 );
 source = replaceOnce(
   source,
