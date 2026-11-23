@@ -62,7 +62,7 @@ source = replaceOnce(
     'if(!["workspace.read","workspace.search"].every(id=>receipts.some(r=>r.id===id)))' +
     'throw new Error("The review did not complete repository reads and searches");' +
     'const text=u.output.summary.trim().split(/\\r?\\n/,1)[0];' +
-    'const reviewStatus=text.startsWith("Limited: ")||text.startsWith("Checked: ")?text.slice(0,220):' +
+    'const reviewStatus=text.startsWith("Limited: ")?text.slice(0,200):text.startsWith("Checked: ")?text:' +
     '(text==="Static review complete."||u.output.findings.length>0?' +
     '"Static review complete.":"Limited: The model did not return a concise review status.");' +
     'return publishPullRequestReview(a,c,l,{operation:"review",summary:reviewStatus,findings:u.output.findings,',
