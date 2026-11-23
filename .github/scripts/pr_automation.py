@@ -407,6 +407,13 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
     limitation = next((line for line in overview.splitlines() if line.startswith('Limited: ')), '')
     if limitation:
         lines.append(html.escape(limitation[:200]))
+    elif candidates == 0:
+        checked = next(
+            (line.removeprefix('Checked: ').strip() for line in overview.splitlines() if line.startswith('Checked: ')),
+            '',
+        )
+        if checked:
+            lines.append(f'**What was checked** · {html.escape(checked)}')
     if selected:
         ratings = ', '.join(f'{severities.count(level)} {level}' for level in SEVERITIES if level in severities)
         lines.append(f'**{ratings}** · {selected - summary_only - omitted} inline · {summary_only} in summary.')

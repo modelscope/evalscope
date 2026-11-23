@@ -319,6 +319,26 @@ def test_limited_review_uses_dsh_sanitized_text(tmp_path: Path) -> None:
     assert 'Limited: Official scorer source is unavailable.' in text
 
 
+@pytest.mark.parametrize(
+    ('candidates', 'limitation', 'outcome'),
+    [(0, '', 'ai:no-findings'), (1, '', 'ai:limited'), (0, 'Limited: Caller unavailable.\n', 'ai:limited')],
+)
+def test_checked_behavior_is_shown_for_a_completed_clean_review(
+    tmp_path: Path, candidates: int, limitation: str, outcome: str
+) -> None:
+    write_dsh_summary(
+        tmp_path,
+        candidates=candidates,
+        details=f'\n{limitation}Checked: Mixed-case HTTP(S) schemes are detected without rewriting the URL.\n',
+    )
+    actual, text = bot.review_result(dsh_result(0), {}, tmp_path)
+    assert actual == outcome
+    assert ('**What was checked**' in text) == (outcome == 'ai:no-findings')
+    if outcome == 'ai:no-findings':
+        assert 'Mixed-case HTTP(S) schemes are detected without rewriting the URL.' in text
+        assert '[CI Lite passed](https://github.com/owner/repo/actions/runs/20)' in text
+
+
 def test_prepare_binds_dsh_review_to_the_checked_head(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     repository = {'id': 5, 'name': 'repo', 'full_name': 'owner/repo', 'owner': {'login': 'owner'}}
     pr = dict(PR, base=dict(PR['base'], repo=repository), changed_files=1)
