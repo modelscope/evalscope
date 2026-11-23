@@ -4,6 +4,7 @@ import importlib.metadata
 import json
 import math
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -11,7 +12,7 @@ import threading
 import time
 from pathlib import Path
 from types import FrameType
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Literal, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -76,7 +77,7 @@ class AgentXHarnessScenario(BaseModel):
 
 
 class AgentXHarnessRunSummary(BaseModel):
-    """EvalScope summary alongside untouched native harness artifacts."""
+    """EvalScope summary alongside credential-redacted native harness artifacts."""
 
     schema_version: str = '2.0'
     agentx_harness_version: str = _HARNESS_VERSION
@@ -124,7 +125,7 @@ def run_agentx_harness_benchmark(args: 'Arguments', output_path: str) -> Dict[st
         run_path = base_path / f'parallel_{concurrency}'
         artifacts_path = run_path / 'harness'
         # Never accept a stale native export as the result of a new run.
-        artifacts_path.mkdir(parents=True, exist_ok=False)
+        artifacts_path.mkdir(mode=0o700, parents=True, exist_ok=False)
         command, env = _build_command(args, scenario, dataset, int(concurrency), duration, seed, artifacts_path)
         summary = _run_one_agentx(
             command, env, scenario, dataset, int(concurrency), duration, seed, run_path, artifacts_path
@@ -168,14 +169,14 @@ def _resolve_dataset(args: 'Arguments', scenario: AgentXHarnessScenario) -> Agen
     if source not in {HubType.MODELSCOPE, HubType.HUGGINGFACE, HubType.LOCAL}:
         raise ValueError(f'Unsupported AgentX Harness data source: {source}')
     if source == HubType.HUGGINGFACE:
-        _verify_huggingface_revision(spec)
+        # ponytail: the harness loads a mutable public alias; verification needs a pinned loader upstream.
         return AgentXDatasetProvenance(
             source=source,
             dataset_id=spec['huggingface_id'],
-            revision=spec['huggingface_revision'],
+            revision=None,
             trace_file='',
-            sha256=spec['sha256'],
-            verified=True,
+            sha256='',
+            verified=False,
         )
     if source == HubType.MODELSCOPE:
         root = download_dataset_snapshot(
@@ -205,22 +206,6 @@ def _resolve_dataset(args: 'Arguments', scenario: AgentXHarnessScenario) -> Agen
         sha256=digest,
         verified=verified,
     )
-
-
-def _verify_huggingface_revision(spec: Dict[str, str]) -> None:
-    from huggingface_hub import HfApi
-
-    try:
-        # Public aliases load the current head, not an arbitrary historic revision.
-        info = HfApi().dataset_info(spec['huggingface_id'], revision='main', files_metadata=True)
-    except Exception as error:
-        raise RuntimeError('Unable to verify the AgentX Harness public dataset revision.') from error
-    if info.sha != spec['huggingface_revision']:
-        raise RuntimeError(f'AgentX Harness public dataset revision changed: expected {spec["huggingface_revision"]}.')
-    trace = next((file for file in info.siblings if file.rfilename == 'traces.jsonl'), None)
-    digest = trace.lfs.sha256 if trace is not None and trace.lfs is not None else None
-    if digest != spec['sha256']:
-        raise RuntimeError(f'AgentX Harness traces.jsonl hash changed: expected {spec["sha256"]}.')
 
 
 def _resolve_duration(args: 'Arguments', scenario: AgentXHarnessScenario) -> float:
@@ -297,15 +282,20 @@ def _build_command(
         command.extend(['--hf-weka-dataset', str(Path(dataset.trace_file).parent)])
     if scenario.mode == 'smoke' or dataset.source != HubType.HUGGINGFACE:
         command.append('--unsafe-override')
+    env = os.environ.copy()
     api_key = get_secret_value(args.api_key)
-    if api_key:
-        command.extend(['--api-key', str(api_key)])
-    for key, value in args.headers.items():
-        raw_value = str(get_secret_value(value))
-        if api_key and key.lower() == 'authorization' and raw_value == f'Bearer {api_key}':
-            continue
-        command.extend(['--header', f'{key}:{raw_value}'])
-    return command, os.environ.copy()
+    headers = {
+        key: str(get_secret_value(value))
+        for key, value in args.headers.items()
+        if not (api_key and key.lower() == 'authorization' and get_secret_value(value) == f'Bearer {api_key}')
+    }
+    if any('\r' in value or '\n' in value for value in [str(api_key or ''), *headers.values()]):
+        raise ValueError('AgentX Harness credentials must not contain CR or LF.')
+    # Preserve CLI scenario defaults; YAML/config interpolation is not safe for literal credentials.
+    env['EVALSCOPE_AGENTX_API_KEY'] = str(api_key or '')
+    env['EVALSCOPE_AGENTX_HEADERS'] = json.dumps(headers)
+    command[2] = 'evalscope.perf.scenarios._agentx_harness_cli'
+    return command, env
 
 
 def _run_one_agentx(
@@ -322,6 +312,7 @@ def _run_one_agentx(
     status: Literal['completed', 'failed', 'cancelled'] = 'failed'
     process: Optional[subprocess.Popen[str]] = None
     fallback_error: Optional[str] = None
+    secrets = [env.get('EVALSCOPE_AGENTX_API_KEY', ''), *json.loads(env.get('EVALSCOPE_AGENTX_HEADERS', '{}')).values()]
     previous_term_handler = None
     if threading.current_thread() is threading.main_thread():
         previous_term_handler = signal.signal(signal.SIGTERM, _handle_interrupt)
@@ -337,7 +328,7 @@ def _run_one_agentx(
                 start_new_session=True,
             )
             assert process.stdout is not None
-            for line in process.stdout:
+            for line in _redact_diagnostics(process.stdout, secrets):
                 print(line, end='')
                 log_file.write(line)
             return_code = process.wait()
@@ -357,6 +348,7 @@ def _run_one_agentx(
         if previous_term_handler is not None:
             signal.signal(signal.SIGTERM, previous_term_handler)
 
+    _sanitize_artifacts(artifacts_path, secrets)
     raw_summary = artifacts_path / _AIPERF_SUMMARY
     raw_data: Dict[str, Any] = {}
     try:
@@ -398,7 +390,7 @@ def _run_one_agentx(
         )
         fallback_error = f'Invalid AgentX Harness summary: {error}'
     if fallback_error and not summary.error_summary:
-        summary.error_summary = [{'message': fallback_error}]
+        summary.error_summary = [{'message': _redact_secrets(fallback_error, secrets)}]
     return summary
 
 
@@ -484,6 +476,74 @@ def _split_chat_url(url: str) -> tuple[str, str]:
     if not parsed.path.rstrip('/').endswith(expected):
         raise ValueError(f'AgentX Harness requires a URL ending with {expected}.')
     return urlunsplit((parsed.scheme, parsed.netloc, '', '', '')), parsed.path.rstrip('/')
+
+
+def _sanitize_artifacts(artifacts_path: Path, secrets: List[str]) -> None:
+    for path in artifacts_path.rglob('*'):
+        if path.suffix not in {'.json', '.jsonl', '.log', '.txt'} or not path.is_file():
+            continue
+        temporary = path.with_suffix(f'{path.suffix}.tmp')
+        try:
+            if path.suffix == '.json':
+                data = json.loads(path.read_text(encoding='utf-8'))
+                _write_json(temporary, _redact_export(data, secrets))
+            elif path.suffix == '.jsonl':
+                with path.open(encoding='utf-8') as source, temporary.open('w', encoding='utf-8') as target:
+                    for line in source:
+                        if line.strip():
+                            target.write(json.dumps(_redact_export(json.loads(line), secrets)) + '\n')
+            else:
+                with path.open(encoding='utf-8') as source, temporary.open('w', encoding='utf-8') as target:
+                    target.writelines(_redact_diagnostics(source, secrets))
+            temporary.replace(path)
+        except (OSError, ValueError):
+            # Partial or unsanitizable exports may retain credentials; discard rather than preserve them.
+            path.unlink(missing_ok=True)
+            temporary.unlink(missing_ok=True)
+
+
+def _redact_diagnostics(lines: Iterable[str], secrets: List[str]) -> Iterator[str]:
+    skipping_table = False
+    for line in lines:
+        if any(secrets) and 'NVIDIA AIPerf | Error Summary' in line:
+            # ponytail: omit truncated/wrapped error tables; redacted JSON retains complete diagnostics.
+            skipping_table = True
+            yield 'Native error table omitted; see redacted JSON diagnostics.\n'
+        elif skipping_table:
+            if re.match(r'^\s*(?:\x1b\[[0-9;]*m)*└', line):
+                skipping_table = False
+        else:
+            yield _redact_secrets(line, secrets)
+
+
+def _redact_export(value: Any, secrets: List[str]) -> Any:
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if key == 'api_key' and item is not None:
+                result[key] = '<redacted>'
+            elif key == 'headers' and isinstance(item, dict):
+                result[key] = {header: '<redacted>' for header in item}
+            elif key in {'error_summary', 'error', 'error_details', 'message', 'traceback'}:
+                result[key] = _redact_secrets(item, secrets)
+            else:
+                result[key] = _redact_export(item, secrets)
+        return result
+    if isinstance(value, list):
+        return [_redact_export(item, secrets) for item in value]
+    return value
+
+
+def _redact_secrets(value: Any, secrets: List[str]) -> Any:
+    if isinstance(value, dict):
+        return {key: _redact_secrets(item, secrets) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_secrets(item, secrets) for item in value]
+    if isinstance(value, str):
+        for secret in sorted(set(secrets) - {''}, key=len, reverse=True):
+            for text in (secret, repr(secret)[1:-1], json.dumps(secret)[1:-1]):
+                value = value.replace(text, '<redacted>')
+    return value
 
 
 def _redact_command(command: List[str]) -> List[str]:

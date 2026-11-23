@@ -83,7 +83,7 @@ smoke、取消、失败、缩短或哈希不符的运行，`submission_valid` �
 
 ## AgentX Harness
 
-`agentx_harness` 使用 `agentx-harness==1.0.13` 运行 **完整语料**；原有 `agentx` MVP 不变。要求 POSIX、Python 3.11--3.13、流式 Chat Completions、`ignore_eos=true` 和足够的上下文（可能超过 256K）。
+`agentx_harness` 让推理团队通过 EvalScope Perf CLI 及并发扫描、报告流程运行当前的 AgentX 完整语料方法，无需另行维护 runner。它使用 `agentx-harness==1.0.13`；原有 `agentx` MVP 不变，两种方法的结果不可直接比较。要求 POSIX、Python 3.11--3.13、流式 Chat Completions、`ignore_eos=true` 和足够的上下文（可能超过 256K）。
 
 **必须与 `evalscope[agentx]` 使用独立环境**：两个 runner 均安装 `aiperf` 包。混装会被拒绝，应重建干净环境。
 
@@ -95,6 +95,6 @@ python3 -m venv .venv/agentx_harness
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-默认：固定完整语料、seed 42、3600 秒（至少 900 秒）、会话树并发，harness 管理 warmup/drain。Smoke：`--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1`（60 秒、4 条 trace）。Python 使用 `Arguments`，远程 tokenizer 代码仍须显式开启。
+默认：完整语料的公开别名、seed 42、3600 秒（至少 900 秒）、会话树并发，harness 管理 warmup/drain。Smoke：`--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1`（60 秒、4 条 trace）。Python 使用 `Arguments`，远程 tokenizer 代码仍须显式开启。
 
-`--data-source modelscope` / `--dataset-path` 接受校验哈希的 JSONL 镜像。镜像和 smoke 均为无效提交，原生有效性为最终依据。Schema `2.0` 汇总和 `harness/` 文件与 MVP 结果分离，不可覆盖已有运行。仅完整语料，仅 CLI/Python。
+`--data-source huggingface` 使用 harness 的可变公开别名；EvalScope 无法确认实际加载的修订版本，因此即使原生 harness 报告有效，`dataset.verified` 和 EvalScope 的 `submission_valid` 仍为 false。`--data-source modelscope` / `--dataset-path` 接受校验哈希的 JSONL 镜像；镜像和 smoke 也不作为有效提交。密钥通过子进程环境变量在原生 CLI 解析后注入，不放入进程参数，也不通过配置文件插值。保留的原生 JSON/JSONL 导出中的密钥字段以及文本和日志诊断信息中的密钥值会被脱敏；无法脱敏的导出会被丢弃。使用凭据时省略格式化错误表，避免换行或截断泄露密钥片段；完整诊断信息保留在脱敏后的 JSON 中。Schema `2.0` 汇总和 `harness/` 文件与 MVP 结果分离，不可覆盖已有运行。仅完整语料，仅 CLI/Python。

@@ -96,7 +96,7 @@ This integration pins `aiperf==0.12.0` and its `inferencex-agentx-mvp` scenario.
 
 ## AgentX Harness
 
-`agentx_harness` adds the **full corpus** using `agentx-harness==1.0.13`; existing `agentx` MVP runs are unchanged. Requires POSIX, Python 3.11--3.13, streaming Chat Completions with `ignore_eos=true`, and sufficient context (potentially beyond 256K).
+`agentx_harness` lets inference teams run the current full-corpus AgentX methodology through EvalScope's Perf CLI and sweep/report workflow instead of maintaining a separate runner. It uses `agentx-harness==1.0.13`; existing `agentx` MVP runs are unchanged, and their results are not directly comparable. Requires POSIX, Python 3.11--3.13, streaming Chat Completions with `ignore_eos=true`, and sufficient context (potentially beyond 256K).
 
 **Install in a separate environment from `evalscope[agentx]`**: both runners own the `aiperf` package. Mixed installations are rejected; rebuild a clean environment.
 
@@ -108,9 +108,9 @@ python3 -m venv .venv/agentx_harness
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-Defaults: pinned full corpus, seed 42, 3600 seconds (minimum 900), session-tree concurrency. The harness owns warmup/drain. Smoke: `--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1` (60 seconds, four traces). Python uses `Arguments`; remote tokenizer code remains opt-in.
+Defaults: full-corpus public alias, seed 42, 3600 seconds (minimum 900), session-tree concurrency. The harness owns warmup/drain. Smoke: `--scenario '{"name":"agentx_harness","mode":"smoke"}' --parallel 1` (60 seconds, four traces). Python uses `Arguments`; remote tokenizer code remains opt-in.
 
-`--data-source modelscope` / `--dataset-path` accepts checksum-verified JSONL mirrors. Mirrors and smoke are submission-invalid; native validity is authoritative. Schema `2.0` summaries and `harness/` artifacts are separate from MVP results and cannot overwrite existing runs. Full corpus only; CLI/Python only.
+`--data-source huggingface` uses the harness's mutable public alias; EvalScope cannot verify which revision it loads, so `dataset.verified` and EvalScope's `submission_valid` remain false even if the native harness reports validity. `--data-source modelscope` / `--dataset-path` accepts checksum-verified JSONL mirrors; these and smoke runs are also submission-invalid. Credentials are injected from child environment variables after native CLI parsing, not placed in process arguments or interpolated through config files. Credential fields in retained native JSON/JSONL exports and credentials in text/log diagnostics are redacted; unsanitizable exports are discarded. Formatted error tables are omitted for authenticated runs because wrapping/truncation can expose credential fragments; full diagnostics remain in redacted JSON. Schema `2.0` summaries and `harness/` artifacts are separate from MVP results and cannot overwrite existing runs. Full corpus only; CLI/Python only.
 
 ## Custom tokenizers
 
