@@ -76,7 +76,7 @@ class _ReplacementBuffer:
             yield item
 
     def stop(self) -> None:
-        if self.worker is not None and not self.worker.cancelling():
+        if self.worker is not None:
             self.worker.cancel()
 
     async def close(self) -> None:
