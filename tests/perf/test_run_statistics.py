@@ -158,6 +158,20 @@ def test_under_sampling_warns_once(caplog):
     assert '--sla-num-runs' in messages[0]
 
 
+def test_two_runs_still_warn_despite_missing_interval(caplog):
+    """n = 2 has a spread but no interval; the warning must still fire."""
+    import logging
+
+    caplog.set_level(logging.WARNING)
+    stats = {'tps': summarize_runs([100.0, 104.0])}
+    warn_if_under_sampled(stats, logging.getLogger())
+
+    messages = [r.getMessage() for r in caplog.records]
+    assert len(messages) == 1
+    assert '2 runs' in messages[0]
+    assert 'not estimable' in messages[0]
+
+
 def test_enough_runs_do_not_warn(caplog):
     import logging
 

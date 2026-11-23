@@ -158,15 +158,16 @@ def warn_if_under_sampled(statistics_by_metric: dict, logger) -> None:
     ``n = 3`` gives a critical value of 4.303, so the 95% interval spans
     roughly ±2.5 standard deviations — wide enough that it usually cannot
     separate two configurations. Say so once instead of letting readers
-    over-read the bounds.
+    over-read the bounds. The check keys off the run count, not the presence
+    of an interval, so ``n = 2`` (spread known, interval not estimable) still
+    warns.
     """
     for metric, stats in statistics_by_metric.items():
-        if stats.ci_low is None:
-            continue
         if stats.n < RECOMMENDED_MIN_RUNS:
+            mdd = f'±{stats.mdd:.4g}' if stats.mdd is not None else 'not estimable (needs >= 3 runs)'
             logger.warning(
                 f'{metric}: {stats.n} runs (recommended >= {RECOMMENDED_MIN_RUNS}); '
-                f'the 95% interval is wide and the minimum detectable difference is '
-                f'±{stats.mdd:.4g}. Increase --sla-num-runs for a tighter bound.'
+                f'the 95% interval is wide and the minimum detectable difference is {mdd}. '
+                'Increase --sla-num-runs for a tighter bound.'
             )
         return  # one warning is enough; the sample size is shared across metrics
