@@ -329,13 +329,13 @@ def test_checked_behavior_is_shown_for_a_completed_clean_review(
     write_dsh_summary(
         tmp_path,
         candidates=candidates,
-        details=f'\n{limitation}Checked: Mixed-case HTTP(S) schemes are detected without rewriting the URL.\n',
+        details=f"\n{limitation}Checked: `is_http_url('HTTPS://example.test')` succeeds with the original URL preserved.\n",
     )
     actual, text = bot.review_result(dsh_result(0), {}, tmp_path)
     assert actual == outcome
     assert ('**What was checked**' in text) == (outcome == 'ai:no-findings')
     if outcome == 'ai:no-findings':
-        assert 'Mixed-case HTTP(S) schemes are detected without rewriting the URL.' in text
+        assert "`is_http_url('HTTPS://example.test')` succeeds with the original URL preserved." in text
         assert '[CI Lite passed](https://github.com/owner/repo/actions/runs/20)' in text
 
 

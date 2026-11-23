@@ -414,7 +414,8 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
             '',
         )
         if checked:
-            lines.append(f'**What was checked** · {html.escape(shorten(checked, width=300, placeholder="…"))}')
+            note = shorten(checked, width=300, placeholder='…')
+            lines.append(f'**What was checked** · {html.escape(note, quote=False)}')
     if selected:
         ratings = ', '.join(f'{severities.count(level)} {level}' for level in SEVERITIES if level in severities)
         lines.append(f'**{ratings}** · {selected - summary_only - omitted} inline · {summary_only} in summary.')
