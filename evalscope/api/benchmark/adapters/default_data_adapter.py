@@ -47,9 +47,6 @@ class DefaultDataAdapter(DataAdapter):
     logic for different benchmark datasets and evaluation scenarios.
     """
 
-    preserve_fewshot_choice_order: bool = False
-    """Whether authored few-shot text references option letters and must retain the original choice order."""
-
     # ####################
     # DATA LOADING METHODS
     # ####################
@@ -318,7 +315,7 @@ class DefaultDataAdapter(DataAdapter):
             if not self.reformat_subset
             else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
-            shuffle_choices=False if self.preserve_fewshot_choice_order else self.shuffle_choices,
+            shuffle_choices=False,
             seed=self.seed,
             data_source=self.dataset_hub,  # Data source configuration
             version=self.dataset_revision,  # Remote dataset revision when pinned

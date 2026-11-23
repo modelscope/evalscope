@@ -89,7 +89,7 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
     BenchmarkMeta(
         name='ceval',
         supports_choice=True,
-        evaluation_version='v1.2',
+        evaluation_version='v1.1',
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
         description="""
@@ -132,9 +132,6 @@ C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the kn
     )
 )
 class CEVALAdapter(MultiChoiceAdapter):
-    # Explanations can refer to the authored option letters.
-    preserve_fewshot_choice_order = True
-
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)

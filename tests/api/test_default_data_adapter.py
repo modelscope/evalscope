@@ -126,22 +126,20 @@ def test_shuffle_choices_configuration_survives_adapter_initialization() -> None
     assert user_configured_adapter.shuffle_choices is True
 
 
-def test_fewshot_choice_shuffle_preserves_only_opt_in_adapters() -> None:
-    for preserve, expected_fewshot in ((False, True), (True, False)):
-        meta = BenchmarkMeta(
-            name='choice_shuffle',
-            dataset_id='dummy',
-            eval_split='test',
-            train_split='train',
-            shuffle_choices=True,
-        )
-        adapter = DummyReformatAdapter(benchmark_meta=meta, task_config=TaskConfig(datasets=['choice_shuffle']))
-        adapter.preserve_fewshot_choice_order = preserve
+def test_fewshot_choices_keep_authored_order_when_evaluation_choices_shuffle() -> None:
+    meta = BenchmarkMeta(
+        name='choice_shuffle',
+        dataset_id='dummy',
+        eval_split='test',
+        train_split='train',
+        shuffle_choices=True,
+    )
+    adapter = DummyReformatAdapter(benchmark_meta=meta, task_config=TaskConfig(datasets=['choice_shuffle']))
 
-        adapter.load_subset(subset='subset-a', data_loader=CapturingDataLoader)
-        assert CapturingDataLoader.latest_shuffle_choices is True
-        adapter.load_fewshot_subset(subset='subset-a', data_loader=CapturingDataLoader)
-        assert CapturingDataLoader.latest_shuffle_choices is expected_fewshot
+    adapter.load_subset(subset='subset-a', data_loader=CapturingDataLoader)
+    assert CapturingDataLoader.latest_shuffle_choices is True
+    adapter.load_fewshot_subset(subset='subset-a', data_loader=CapturingDataLoader)
+    assert CapturingDataLoader.latest_shuffle_choices is False
 
 
 def test_auto_judge_strategy_uses_adapter_class_default() -> None:

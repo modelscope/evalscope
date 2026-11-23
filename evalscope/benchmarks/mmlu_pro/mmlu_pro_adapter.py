@@ -91,9 +91,6 @@ MMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning 
     )
 )
 class MMLUProAdapter(MultiChoiceAdapter):
-    # The supplied rationales can refer to option letters throughout the explanation.
-    preserve_fewshot_choice_order = True
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
