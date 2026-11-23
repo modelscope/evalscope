@@ -8,7 +8,8 @@ from urllib.parse import urlsplit
 
 
 def is_http_url(url: str) -> bool:
-    return url.startswith('http://') or url.startswith('https://')
+    """Return whether the URL starts with an HTTP(S) scheme, ignoring case."""
+    return url.lower().startswith(('http://', 'https://'))
 
 
 def sanitize_endpoint(url: Optional[str]) -> Optional[str]:
