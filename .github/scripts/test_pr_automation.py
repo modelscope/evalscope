@@ -11,7 +11,7 @@ PR = {
     'number': 42,
     'state': 'open',
     'draft': False,
-    'base': {'ref': 'main'},
+    'base': {'ref': 'main', 'sha': 'b' * 40},
     'head': {'sha': SHA, 'ref': 'updates', 'repo': {'id': 123}},
     'labels': [],
     'user': {'id': 1},
@@ -56,12 +56,12 @@ def test_ci_waits_for_frontend_and_ignores_push_runs(monkeypatch: pytest.MonkeyP
         return {'workflow_runs': runs[workflow]}
 
     monkeypatch.setattr(bot, 'get', get_runs)
-    assert bot.ci_passed(PR, ['evalscope/benchmarks/example.py'])
-    assert not bot.ci_passed(PR, ['evalscope/web/src/App.tsx'])
+    assert bot.ci_passed(bot.ci_runs(PR, ['evalscope/benchmarks/example.py']))
+    assert not bot.ci_passed(bot.ci_runs(PR, ['evalscope/web/src/App.tsx']))
     runs['frontend.yml'].append(RUN)
-    assert bot.ci_passed(PR, ['evalscope/web/src/App.tsx'])
+    assert bot.ci_passed(bot.ci_runs(PR, ['evalscope/web/src/App.tsx']))
     runs['lint.yml'].append(dict(RUN, id=11, conclusion='failure'))
-    assert not bot.ci_passed(PR, ['evalscope/web/src/App.tsx'])
+    assert not bot.ci_passed(bot.ci_runs(PR, ['evalscope/web/src/App.tsx']))
 
 
 def test_frontend_paths_match_workflow() -> None:
@@ -133,7 +133,13 @@ def test_failed_review_updates_comment_and_fails_the_job(monkeypatch: pytest.Mon
 
 @pytest.mark.parametrize(
     ('outcome', 'label'),
-    [('ai:no-findings', ''), ('ai:skipped', ''), ('ai:findings', 'ai:findings'), ('ai:failed', 'ai:failed')],
+    [
+        ('ai:no-findings', ''),
+        ('ai:limited', ''),
+        ('ai:skipped', ''),
+        ('ai:findings', 'ai:findings'),
+        ('ai:failed', 'ai:failed'),
+    ],
 )
 def test_review_label_only_restores_alerts(outcome: str, label: str) -> None:
     assert bot.review_label({'result_sha': SHA, 'outcome': outcome}, '', SHA) == label
@@ -174,8 +180,12 @@ def test_quiet_review_updates_comment_and_clears_labels(
 def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPatch) -> None:
     labels = ['area:core', 'needs-info', 'ai:findings']
     monkeypatch.setattr(bot, 'get', lambda _: dict(PR, labels=[{'name': label} for label in labels]))
-    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, {'result_sha': 'b' * 40, 'outcome': 'ai:findings'}, ''))
+    previous = '## EvalScope AI review\n\nOld finding'
+    state = {'result_sha': 'b' * 40, 'outcome': 'ai:findings'}
+    monkeypatch.setattr(bot, 'previous_review', lambda _: (17, state, previous))
     monkeypatch.setenv('PR_REQUEUE', 'true')
+    monkeypatch.setenv('GITHUB_SERVER_URL', 'https://github.com')
+    monkeypatch.setenv('GITHUB_REPOSITORY', 'owner/repo')
     calls = []
 
     def github(path: str, *args: str, body: dict | None = None) -> None:
@@ -183,10 +193,16 @@ def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(bot, 'github', github)
     bot.triage_pr(42, SHA)
-    assert calls == [
+    assert calls[:2] == [
         ('issues/42/labels/needs-info', ('-X', 'DELETE'), None),
         ('issues/42/labels/ai%3Afindings', ('-X', 'DELETE'), None),
     ]
+    path, args, payload = calls[2]
+    assert (path, args) == ('issues/comments/17', ('-X', 'PATCH'))
+    body = payload['body']
+    assert '**Review outdated**' in body
+    assert body.endswith(previous)
+    assert SHA in body and 'b' * 40 in body
 
 
 def test_triage_resolves_conflicting_states_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -219,29 +235,70 @@ def test_new_open_items_without_a_triage_status_keep_their_labels(monkeypatch: p
     bot.sync_triage(item)
 
 
-def write_dsh_summary(directory: Path) -> None:
+def write_dsh_summary(
+    directory: Path,
+    severities: tuple[str, ...] = (),
+    candidates: int | None = None,
+    details: str = '',
+) -> None:
     (directory / 'dsh-summary.md').write_text(
-        '<!-- dsh-action:v1 kind=summary -->\n## DeepSeek Harness review\n\n### Findings carried in the summary\n'
+        '<!-- dsh-action:v1 kind=summary -->\n## DeepSeek Harness review\n' + details
+    )
+    candidates = len(severities) if candidates is None else candidates
+    (directory / 'dsh-findings.json').write_text(json.dumps({'candidates': candidates, 'severities': severities}))
+    (directory / 'ci.json').write_text(
+        json.dumps(
+            {
+                'required_ci_passed': True,
+                'workflows': [
+                    {
+                        'workflow': 'ci_test.yaml',
+                        'status': 'completed',
+                        'conclusion': 'success',
+                        'html_url': 'https://github.com/owner/repo/actions/runs/20',
+                    },
+                ],
+            }
+        )
     )
 
 
-def dsh_result(selected: int, status: str = 'success') -> str:
+def dsh_result(selected: int, status: str = 'success', summary_only: int = 0) -> str:
     return json.dumps(
         {
             'schemaVersion': 1,
             'status': status,
             'operation': 'review',
-            'publication': {'selected': selected},
+            'summary': 'Static review complete.',
+            'publication': {'selected': selected, 'summaryOnly': summary_only},
         }
     )
 
 
 def test_dsh_summary_preserves_findings_without_an_inline_location(tmp_path: Path) -> None:
-    write_dsh_summary(tmp_path)
-    assert bot.review_result(dsh_result(1), {}, tmp_path) == ('ai:findings', '### Findings carried in the summary')
+    write_dsh_summary(tmp_path, ('medium',), details='\n### Findings carried in the summary\n\n- Preserve the value.')
+    outcome, text = bot.review_result(dsh_result(1, summary_only=1), {}, tmp_path)
+    assert outcome == 'ai:findings'
+    assert '**1 medium** · 0 inline · 1 in summary.' in text
+    assert '[CI Lite passed](https://github.com/owner/repo/actions/runs/20)' in text
+    assert '<details>' in text and '- Preserve the value.' in text
     assert bot.review_result(dsh_result(1, 'failed'), {}, tmp_path)[0] == 'ai:failed'
     (tmp_path / 'dsh-summary.md').unlink()
     assert bot.review_result(dsh_result(1), {}, tmp_path)[0] == 'ai:failed'
+
+
+def test_filtered_candidates_do_not_look_like_a_clean_review(tmp_path: Path) -> None:
+    write_dsh_summary(tmp_path, candidates=1)
+    outcome, text = bot.review_result(dsh_result(0), {}, tmp_path)
+    assert outcome == 'ai:limited'
+    assert '1 candidate(s) did not meet publication criteria.' in text
+
+
+def test_limited_review_uses_dsh_sanitized_text(tmp_path: Path) -> None:
+    write_dsh_summary(tmp_path, details='\nLimited: Official scorer source is unavailable.\n')
+    outcome, text = bot.review_result(dsh_result(0), {}, tmp_path)
+    assert outcome == 'ai:limited'
+    assert 'Limited: Official scorer source is unavailable.' in text
 
 
 def test_prepare_binds_dsh_review_to_the_checked_head(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -255,15 +312,17 @@ def test_prepare_binds_dsh_review_to_the_checked_head(monkeypatch: pytest.Monkey
     monkeypatch.setattr(bot, 'list_all', lambda _: files)
     monkeypatch.setattr(bot, 'github', lambda *_: b'+change')
     monkeypatch.setattr(bot, 'get', lambda _: pr)
+    monkeypatch.setattr(bot, 'ci_runs', lambda *_: {'ci_test.yaml': {}})
 
     bot.prepare(42, SHA, 2, tmp_path)
     event = json.loads((tmp_path / 'pull-request.json').read_text())
     assert event['repository'] == repository and event['pull_request']['head']['sha'] == SHA
     assert output.read_text() == 'decision=review\n'
     prompt = (tmp_path / 'prompt.txt').read_text()
-    assert 'critical' in prompt and 'def format_prompt_template(' in prompt
-    assert 'Write all user-facing review text in English' in prompt
-    assert 'verified required CI' not in prompt
+    assert 'critical' in prompt and '.evalscope-review/changes.diff' in prompt
+    assert 'Write all review text in English' in prompt
+    assert (tmp_path / 'changes.diff').read_bytes() == b'+change'
+    assert json.loads((tmp_path / 'ci.json').read_text())['required_ci_passed'] is False
 
     moved = dict(pr, head=dict(pr['head'], sha='b' * 40))
     snapshots = iter((pr, moved))
