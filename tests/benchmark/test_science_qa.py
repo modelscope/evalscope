@@ -34,4 +34,4 @@ def test_empty_context_is_omitted() -> None:
 
 
 def test_evaluation_version_bumped_for_prompt_change() -> None:
-    assert _adapter()._benchmark_meta.evaluation_version == 'v1.1'
+    assert _adapter()._benchmark_meta.evaluation_version == 'v1.2'
