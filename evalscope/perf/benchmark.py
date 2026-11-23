@@ -3,8 +3,6 @@ import threading
 from contextlib import aclosing
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple
 
-import numpy as np
-
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.http_client import AioHttpClient
 from evalscope.perf.core.metrics_consumer import connect_test
@@ -93,36 +91,29 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         dataset_index = 0
         num_messages = len(dataset_messages)
         replenish_random = args.exclude_warmup_overlap and warmup_count > 0 and args.dataset == 'random'
-        replacement_rng = None
-        if replenish_random:
-            # Derive a stream separate from the initial dataset's legacy RNG.
-            seed = np.random.SeedSequence(args.seed, spawn_key=(0,)).generate_state(4)
-            replacement_rng = np.random.RandomState(seed)
+        tail = None
+        stop = threading.Event()
         message_index = 0
 
         # Abort if the API plugin rejects every message in a batch.
         consecutive_skips = 0
         while count < total_count or (args.exclude_warmup_overlap and warmup_count > 0):
-            if replenish_random and count >= total_count and dataset_index == 0:
-                stop = threading.Event()
-                worker = asyncio.create_task(
-                    asyncio.to_thread(
-                        message_generator.build_messages_parallel,
-                        total_count=max(args.parallel, args.prefix_count),
-                        workers=1,
-                        rng=replacement_rng,
-                        start_index=message_index,
-                        stop=stop,
-                    )
-                )
+            if tail is None and replenish_random and count >= total_count and dataset_index == 0:
+                tail = message_generator.replacement_messages(message_index, stop)
+                dataset_messages = []  # The initial stream will never be replayed.
+                num_messages = max(args.parallel, args.prefix_count)
+            if tail is None:
+                messages = dataset_messages[dataset_index]
+            else:
+                worker = asyncio.create_task(asyncio.to_thread(next, tail, None))
                 try:
-                    dataset_messages = await asyncio.shield(worker)
+                    messages = await asyncio.shield(worker)
                 except asyncio.CancelledError:
                     stop.set()
                     await asyncio.gather(worker, return_exceptions=True)
                     raise
-                num_messages = len(dataset_messages)
-            messages = dataset_messages[dataset_index]
+                if messages is None:
+                    raise RuntimeError('Random replacement stream ended unexpectedly.')
             request = api_plugin.build_request(messages)
             if request is not None:
                 yield request, count < warmup_count
