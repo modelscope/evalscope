@@ -12,7 +12,7 @@ import pytest
 from evalscope import TaskConfig, run_task
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model.model import ModelCache
-from evalscope.metrics.aggregators import Mean, MeanPassHatK, aggregators
+from evalscope.metrics.aggregators import Mean, MeanPassAtK, MeanPassHatK, aggregators
 from evalscope.models.mockllm import MockLLM
 
 
@@ -109,25 +109,28 @@ class CountingSample(SampleScore):
         return super().__getattribute__(name)
 
 
+@pytest.mark.parametrize('cls', [MeanPassAtK, MeanPassHatK])
 @pytest.mark.parametrize('repeats', [32, 128])
-def test_each_score_is_read_a_bounded_number_of_times(repeats: int) -> None:
+def test_each_score_is_read_a_bounded_number_of_times(cls: type, repeats: int) -> None:
     samples = [CountingSample(sample_id=i, group_id=0, generation_index=i, score=Score(value={'acc': float(i % 2)}))
                for i in range(repeats)]
     CountingSample.score_reads = 0
-    assert len(MeanPassHatK()(samples)) == repeats + 1
+    assert len(cls()(samples)) == repeats + 1
     assert CountingSample.score_reads <= 6 * repeats
 
 
-def test_groups_without_an_eligible_prefix_do_not_rescan_outcomes() -> None:
+@pytest.mark.parametrize('cls', [MeanPassAtK, MeanPassHatK])
+def test_groups_without_an_eligible_prefix_do_not_rescan_outcomes(cls: type) -> None:
     samples = [CountingSample(sample_id=i, group_id=0, generation_index=i,
                               score=Score(value={'acc': 1} if i else {})) for i in range(128)]
     CountingSample.score_reads = 0
-    assert len(MeanPassHatK()(samples)) == 1
+    assert len(cls()(samples)) == 1
     assert CountingSample.score_reads <= 5 * len(samples)
 
 
+@pytest.mark.parametrize('cls', [MeanPassAtK, MeanPassHatK])
 @pytest.mark.parametrize('repeats', [32, 128])
-def test_prefix_eligibility_is_checked_in_linear_work(repeats: int, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_prefix_eligibility_is_checked_in_linear_work(cls: type, repeats: int, monkeypatch: pytest.MonkeyPatch) -> None:
     class CountingAttempts(dict):
         reads = 0
 
@@ -138,7 +141,7 @@ def test_prefix_eligibility_is_checked_in_linear_work(repeats: int, monkeypatch:
     collect = aggregators.collect_planned_attempts
     monkeypatch.setattr(aggregators, 'collect_planned_attempts', lambda *args: {
         key: CountingAttempts(value) for key, value in collect(*args).items()})
-    assert len(MeanPassHatK()([_sample(1, i) for i in range(repeats)])) == repeats + 1
+    assert len(cls()([_sample(1, i) for i in range(repeats)])) == repeats + 1
     assert CountingAttempts.reads <= 2 * repeats
 
 

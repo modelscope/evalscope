@@ -1,5 +1,6 @@
 """A sample may carry no value for a metric (an unparseable LLM judge is excluded rather
 than scored 0), so aggregators must never index every sample with ``scores[0]``' keys."""
+from math import comb
 from typing import Any, Dict, List, Optional
 
 import pytest
@@ -86,6 +87,29 @@ def test_pass_at_k_keeps_humaneval_estimator():
 
     assert find_agg(agg_scores, 'pass_at_k', 1).score == pytest.approx(0.5)
     assert find_agg(agg_scores, 'pass_at_k', 2).score == pytest.approx(5 / 6)
+
+
+@pytest.mark.parametrize('successes', [0, 1, 17, 96, 97])
+def test_pass_at_k_curve_matches_exact_combinations(successes: int) -> None:
+    trials = 97
+    scores = [
+        make_sample_score({'acc': float(i < successes)}, group_id='g0', generation_index=i) for i in range(trials)
+    ]
+    estimates = [agg for agg in MeanPassAtK()(scores) if agg.aggregation == 'pass_at_k']
+    assert [agg.dimensions['k'] for agg in estimates] == list(range(1, trials + 1))
+    for k, estimate in enumerate(estimates, start=1):
+        total = comb(trials, k)
+        expected = (total - comb(trials - successes, k)) / total
+        assert estimate.score == pytest.approx(expected, abs=1e-14, rel=1e-14)
+
+
+def test_pass_at_k_counts_successes_after_an_ineligible_position() -> None:
+    scores = [
+        make_sample_score(value, group_id='g0', generation_index=i)
+        for i, value in enumerate([{'acc': 0}, {}, {'acc': 1}])
+    ]
+    estimates = [agg for agg in MeanPassAtK()(scores) if agg.aggregation == 'pass_at_k']
+    assert [(agg.dimensions['k'], agg.score, agg.ids) for agg in estimates] == [(1, 0.5, ['g0'])]
 
 
 def test_pass_hat_k_keeps_estimator():
