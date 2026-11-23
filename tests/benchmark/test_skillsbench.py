@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import asyncio
+import json
+import shlex
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -9,10 +15,11 @@ from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult, NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import InferenceResult
+from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.model import ModelOutput
 from evalscope.api.model.model_output import ChatCompletionChoice
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.skillsbench.skillsbench_adapter import SkillsBenchAdapter
 from evalscope.benchmarks.skillsbench.utils import (
     SKILL_MODE_NO_SKILL,
@@ -21,6 +28,7 @@ from evalscope.benchmarks.skillsbench.utils import (
     stage_environment_context,
 )
 from evalscope.config import TaskConfig
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 def test_stage_no_skill_removes_skills_and_copy_lines(tmp_path: Path) -> None:
@@ -89,7 +97,7 @@ def test_select_task_dirs_ignores_hidden_directories(tmp_path: Path) -> None:
     assert adapter._select_task_dirs() == [visible]
 
 
-def test_run_verifier_records_timeout_before_reward_parsing(tmp_path: Path) -> None:
+def test_run_verifier_records_timeout_before_reward_parsing(tmp_path: Path, monkeypatch) -> None:
     task = tmp_path / 'task'
     (task / 'verifier').mkdir(parents=True)
     adapter = SkillsBenchAdapter(
@@ -102,7 +110,7 @@ def test_run_verifier_records_timeout_before_reward_parsing(tmp_path: Path) -> N
         ),
         task_config=TaskConfig(datasets=['skillsbench']),
     )
-    adapter._current_output_dir = str(tmp_path)
+    adapter.runner = 'oracle'
     sample = Sample(
         id=0,
         input='do task',
@@ -111,18 +119,91 @@ def test_run_verifier_records_timeout_before_reward_parsing(tmp_path: Path) -> N
             'task_id': 'task/one',
             'task_dir': str(task),
             'skill_mode': 'with-skill',
+            'agent_timeout_sec': 1,
             'verifier_timeout_sec': 1,
         },
     )
-    env = _TimeoutVerifierEnv()
-
-    import asyncio
-
-    asyncio.run(adapter._run_verifier(env, sample))
+    monkeypatch.setattr(adapter, '_build_environment', lambda _: _TimeoutVerifierEnv())
+    adapter.run_inference(None, sample, str(tmp_path))
 
     assert sample.metadata['verifier_timed_out'] is True
     assert sample.metadata['verifier_error'] == 'Verifier timed out'
     assert sample.metadata['reward'] == 0.0
+    assert Path(sample.metadata['verifier_stdout_path']).read_text(encoding='utf-8') == 'partial stdout'
+    assert 'ctrf_path' not in sample.metadata
+
+
+@pytest.mark.parametrize('shared_root', [True, False], ids=['same-output-dir', 'separate-output-dirs'])
+@pytest.mark.parametrize('finish_first', [0, 1], ids=['first-finishes-first', 'second-finishes-first'])
+def test_concurrent_oracle_runs_keep_verifier_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, shared_root: bool, finish_first: int
+) -> None:
+    config = TaskConfig(datasets=['skillsbench'], dataset_args={'skillsbench': {'extra_params': {'runner': 'oracle'}}})
+    adapter = get_benchmark('skillsbench', config)
+    started = [Event(), Event()]
+    release = [Event(), Event()]
+    roots = [tmp_path / 'first', tmp_path / ('first' if shared_root else 'second')]
+    rewards = [0.5, 1.0]
+
+    def build_environment(sample: Sample) -> AgentEnvironment:
+        async def exec_command(cmd: list[str], **kwargs) -> ExecResult:
+            if cmd[-1] == '/oracle/solve.sh':
+                started[sample.id].set()
+                assert await asyncio.to_thread(release[sample.id].wait, 10)
+            if cmd[-1].startswith('cat '):
+                filename = Path(shlex.split(cmd[-1])[1]).name
+                files = {
+                    'test-stdout.txt': f'log for task {sample.id}',
+                    'reward.txt': str(rewards[sample.id]),
+                    'ctrf.json': json.dumps({'task': sample.id}),
+                }
+                return ExecResult(stdout=files[filename])
+            return ExecResult()
+
+        env = AsyncMock(spec=AgentEnvironment)
+        env.exec.side_effect = exec_command
+        return env
+
+    def run(task_id: int) -> TaskState:
+        sample = Sample(
+            id=task_id,
+            input='run oracle',
+            metadata={
+                'task_id': f'task/{task_id}', 'task_dir': str(tmp_path), 'skill_mode': 'with-skill',
+                'agent_timeout_sec': 10, 'verifier_timeout_sec': 10,
+            },
+        )
+        try:
+            return adapter.run_inference(None, sample, str(roots[task_id]))
+        finally:
+            AsyncioLoopRunner.shutdown_for_thread()
+
+    monkeypatch.setattr(adapter, '_build_environment', build_environment)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        try:
+            futures = []
+            for i in range(2):
+                futures.append(pool.submit(run, i))
+                assert started[i].wait(10)
+            release[finish_first].set()
+            futures[finish_first].result(timeout=10)
+        finally:
+            for event in release:
+                event.set()
+
+    for i, future in enumerate(futures):
+        state = future.result()
+        score = adapter.match_score('', '', '', state)
+        assert score.value['normalized_score'] == rewards[i]
+        directory = roots[i] / 'artifacts' / 'skillsbench' / f'task-{i}' / 'with-skill'
+        assert score.metadata['artifact_dir'] == str(directory)
+        for key, name, contents in [
+            ('verifier_stdout_path', 'test-stdout.txt', f'log for task {i}'),
+            ('reward_path', 'reward.txt', str(rewards[i])),
+            ('ctrf_path', 'ctrf.json', json.dumps({'task': i})),
+        ]:
+            assert score.metadata[key] == str(directory / name)
+            assert (directory / name).read_text(encoding='utf-8') == contents
 
 
 def test_on_inference_accepts_native_agent_config(monkeypatch) -> None:
@@ -217,8 +298,6 @@ def test_on_inference_keeps_external_environment_open_until_verifier(monkeypatch
 
 
 def test_native_preparation_failure_skips_verifier(monkeypatch) -> None:
-    from unittest.mock import AsyncMock
-
     adapter = SkillsBenchAdapter(
         benchmark_meta=BenchmarkMeta(name='skillsbench', dataset_id='skillsbench', metric_list=['score']),
         task_config=TaskConfig(agent_config=NativeAgentConfig(tools=['bash'])),

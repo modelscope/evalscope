@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -48,6 +49,7 @@ _DEFAULT_SUBSET = 'default'
 _VERIFIER_DIR = '/verifier'
 _ORACLE_DIR = '/oracle'
 _LOGS_VERIFIER_DIR = '/logs/verifier'
+_output_dir: ContextVar[Optional[str]] = ContextVar('skillsbench_output_dir', default=None)
 
 _EXTRA_PARAMS: Dict[str, Any] = {
     'tasks_dir': {
@@ -160,7 +162,6 @@ class SkillsBenchAdapter(AgentAdapter):
         self.verifier_timeout_override = optional_float(self.extra_params.get('verifier_timeout_sec'))
         self.runner = str(self.extra_params.get('runner') or 'agent')
         self._build_contexts: List[str] = []
-        self._current_output_dir: Optional[str] = None
 
     def load(self) -> Tuple[DatasetDict, None]:
         require_docker_engine(self._task_config)
@@ -300,11 +301,12 @@ class SkillsBenchAdapter(AgentAdapter):
         raise RuntimeError('SkillsBench supports native/external agent_config or dataset_args.runner="oracle".')
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs: Any) -> TaskState:
-        self._current_output_dir = output_dir
+        # The verifier runs on an asyncio loop while other samples can share this adapter.
+        token = _output_dir.set(output_dir)
         try:
             return super().run_inference(model, sample, output_dir, **kwargs)
         finally:
-            self._current_output_dir = None
+            _output_dir.reset(token)
 
     async def _run_oracle(self, model: Model, sample: Sample) -> InferenceResult:
         env = self._build_environment(sample)
@@ -427,10 +429,11 @@ class SkillsBenchAdapter(AgentAdapter):
         reward_text: str,
         ctrf_text: str,
     ) -> None:
-        if not self._current_output_dir:
+        output_dir = _output_dir.get()
+        if not output_dir:
             return
         artifact_dir = (
-            Path(self._current_output_dir)
+            Path(output_dir)
             / 'artifacts'
             / 'skillsbench'
             / safe_path_part(str(sample.metadata.get('task_id') or sample.id))
