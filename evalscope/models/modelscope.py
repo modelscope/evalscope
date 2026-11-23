@@ -135,6 +135,7 @@ class ModelScopeAPI(ModelAPI):
 
         # create chat
         chat = self.ms_chat(input, tools)
+        chat = self._strip_duplicate_prefix(chat)
 
         assert isinstance(self.tokenizer_call_args, dict)
         # prepare tokenizer
@@ -264,6 +265,29 @@ class ModelScopeAPI(ModelAPI):
     def max_connections(self) -> int:
         """Effectively the batch size."""
         return 8
+
+    def _strip_duplicate_prefix(self, chat: str) -> str:
+        """Drop special tokens, such as BOS, that the rendered chat starts with and the tokenizer prepends again."""
+        if 'add_special_tokens' in self.tokenizer_call_args or self.tokenizer.chat_template is None:
+            return chat
+        with_special = self.tokenizer(chat)['input_ids']
+        without_special = self.tokenizer(chat, add_special_tokens=False)['input_ids']
+        added = len(with_special) - len(without_special)
+        prepended = next(
+            (k for k in range(1, added + 1) if with_special[k : k + len(without_special)] == without_special), 0
+        )
+        prefix = with_special[:prepended]
+        if not prefix or without_special[:prepended] != prefix:
+            return chat
+        prefix_text = self.tokenizer.decode(prefix)
+        if not chat.startswith(prefix_text):
+            return chat
+        stripped = chat[len(prefix_text) :]
+        if self.tokenizer(stripped)['input_ids'] != (
+            prefix + without_special[prepended:] + with_special[prepended + len(without_special) :]
+        ):
+            return chat
+        return stripped
 
     def ms_chat(self, messages: List[ChatMessage], tools: List[ToolInfo]) -> str:
         # convert to ms format
