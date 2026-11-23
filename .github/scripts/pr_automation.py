@@ -50,6 +50,7 @@ AI_SUCCESS = frozenset(('ai:no-findings', 'ai:findings', 'ai:limited'))
 PREVIOUS_REVIEW = '\n\n### Previous successful review\n\n'
 STALE_MARKER = '<!-- evalscope-pr-review-outdated -->'
 MARKER = re.compile(r'<!-- evalscope-pr-review (\{[^\n]*\}) -->\n')
+LEGACY_COMMIT = re.compile(r'^Commit ([0-9a-f]{12})$', re.MULTILINE)
 SHA = re.compile(r'[0-9a-f]{40}')
 SEVERITIES = ('critical', 'high', 'medium')
 CI_NAMES = {'ci_test.yaml': 'CI Lite', 'lint.yml': 'Lint', 'frontend.yml': 'Frontend'}
@@ -239,7 +240,7 @@ def review_label(state: dict, previous: str, sha: str) -> str:
             return state['outcome']
         return ''
     # Summaries published before review labels used a standalone Commit line.
-    if not re.search(rf'^Commit {sha[:12]}$', previous, re.MULTILINE):
+    if (legacy := LEGACY_COMMIT.search(previous)) is None or legacy[1] != sha[:12]:
         return ''
     if state.get('size_skip_sha') == sha and 'Review skipped' in previous:
         return ''
@@ -258,8 +259,11 @@ def triage_pr(number: int, sha: str) -> None:
     comment_id, state, previous = previous_review(number)
     labels = {label['name'] for label in pr['labels']}
     replace_family(number, labels, AI_LABELS, review_label(state, previous, sha))
-    reviewed = state.get('result_sha', '')
-    if comment_id is not None and previous and SHA.fullmatch(reviewed) and reviewed != sha:
+    reviewed = state.get('result_sha')
+    if not isinstance(reviewed, str) or not SHA.fullmatch(reviewed):
+        legacy = LEGACY_COMMIT.search(previous)
+        reviewed = legacy[1] if legacy else ''
+    if comment_id is not None and previous and reviewed and not sha.startswith(reviewed):
         _, separator, historical = previous.partition(f'{STALE_MARKER}\n\n')
         if not separator:
             historical = previous

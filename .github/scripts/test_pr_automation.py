@@ -177,11 +177,17 @@ def test_quiet_review_updates_comment_and_clears_labels(
     ]
 
 
-def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('legacy', [False, True])
+def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPatch, legacy: bool) -> None:
     labels = ['area:core', 'needs-info', 'ai:findings']
     monkeypatch.setattr(bot, 'get', lambda _: dict(PR, labels=[{'name': label} for label in labels]))
     previous = '## EvalScope AI review\n\nOld finding'
     state = {'result_sha': 'b' * 40, 'outcome': 'ai:findings'}
+    reviewed = 'b' * 40
+    if legacy:
+        reviewed = reviewed[:12]
+        previous = f'## EvalScope AI review\n\nCommit {reviewed}\n\n- **Old finding**'
+        state = {'reviewed': True}
     monkeypatch.setattr(bot, 'previous_review', lambda _: (17, state, previous))
     monkeypatch.setenv('PR_REQUEUE', 'true')
     monkeypatch.setenv('GITHUB_SERVER_URL', 'https://github.com')
@@ -202,7 +208,7 @@ def test_triage_pr_expires_status_for_an_old_commit(monkeypatch: pytest.MonkeyPa
     body = payload['body']
     assert '**Review outdated**' in body
     assert body.endswith(previous)
-    assert SHA in body and 'b' * 40 in body
+    assert SHA in body and reviewed in body
 
 
 def test_triage_resolves_conflicting_states_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
