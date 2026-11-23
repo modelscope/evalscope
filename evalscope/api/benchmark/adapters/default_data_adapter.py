@@ -48,6 +48,7 @@ class DefaultDataAdapter(DataAdapter):
     """
 
     preserve_fewshot_choice_order: bool = False
+    """Whether authored few-shot text references option letters and must retain the original choice order."""
 
     # ####################
     # DATA LOADING METHODS
