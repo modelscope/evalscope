@@ -77,7 +77,10 @@ value-or-default expression evaluates to 30 for the documented input 0.",
 "suggestion":"Default only when the value is None."}`
 Use only paths and lines verified in this PR. Do not copy the example.
 
-Set `summary` to a single short English sentence, at most 30 words. If essential evidence remains
-unavailable after using the tools, start the sentence with `Limited:` and name the specific gap.
-Otherwise use `Static review complete.` Do not recap the PR, list speculative concerns, or repeat
-findings in `summary`. The publisher displays verified CI metadata and findings separately.
+Set `summary` to one short English line. If essential evidence remains unavailable after using the
+tools, start with `Limited:` and name the specific gap. If you have findings, use
+`Static review complete.` Otherwise start with `Checked:` and state one concrete behavior you
+traced in the code, including the relevant branch or boundary and what it does. Keep the
+sentence after the prefix under 30 words. Describe your static inspection without claiming that
+tests executed, repeating the author's validation, or recapping the PR. CI evidence and findings
+are displayed separately.

@@ -9,6 +9,7 @@ import sys
 from datetime import datetime, timezone
 from fnmatch import fnmatchcase
 from pathlib import Path
+from textwrap import shorten
 from typing import Any
 from urllib.parse import quote, urlencode
 
@@ -407,6 +408,14 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
     limitation = next((line for line in overview.splitlines() if line.startswith('Limited: ')), '')
     if limitation:
         lines.append(html.escape(limitation[:200]))
+    elif candidates == 0:
+        checked = next(
+            (line.removeprefix('Checked: ').strip() for line in overview.splitlines() if line.startswith('Checked: ')),
+            '',
+        )
+        if checked:
+            note = shorten(checked, width=300, placeholder='…')
+            lines.append(f'**What was checked** · {html.escape(note, quote=False)}')
     if selected:
         ratings = ', '.join(f'{severities.count(level)} {level}' for level in SEVERITIES if level in severities)
         lines.append(f'**{ratings}** · {selected - summary_only - omitted} inline · {summary_only} in summary.')
