@@ -10,6 +10,7 @@ from evalscope.api.registry import get_aggregation
 from evalscope.utils.multi_choices import (
     CHINESE_FEW_SHOT_TEMPLATE,
     FEW_SHOT_TEMPLATE,
+    MULTI_CHOICE_ANSWER_PARSER_VERSION,
     MultipleChoiceTemplate,
     answer_character,
     answer_index,
@@ -37,6 +38,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     This adapter formats the input for multi-choice questions and handles few-shot examples.
     """
 
+    answer_parser_version = MULTI_CHOICE_ANSWER_PARSER_VERSION
     decision_noul_positive_choice: str | None = None
     """Choice text that represents yes for an audited Noul conversion."""
     decision_fixed_classes: bool = False
