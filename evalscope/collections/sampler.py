@@ -112,27 +112,40 @@ class StratifiedSampler(Sampler):
     Stratified sampler, sample data from each dataset according to the number of samples of each dataset.
     """
 
+    @staticmethod
+    def _allocate_counts(sizes: List[int], count: int) -> List[int]:
+        """Allocate the budget proportionally, covering as many nonempty datasets as possible."""
+        if count < 0:
+            raise ValueError('Sample count must be nonnegative')
+        budget = min(count, sum(sizes))
+        quotas = [0] * len(sizes)
+        # When coverage is limited, prefer larger datasets, breaking ties in schema order.
+        active = sorted((i for i, size in enumerate(sizes) if size), key=sizes.__getitem__, reverse=True)[:budget]
+        remaining = budget
+        population = sum(sizes[i] for i in active)
+
+        # Give one sample to each dataset whose proportional share would be below one.
+        while active and sizes[active[-1]] * remaining < population:
+            i = active.pop()
+            quotas[i] = 1
+            remaining -= 1
+            population -= sizes[i]
+
+        remainders = {}
+        for i in active:
+            quotas[i], remainders[i] = divmod(sizes[i] * remaining, population)
+        for i in sorted(active, key=remainders.__getitem__, reverse=True)[: budget - sum(quotas)]:
+            quotas[i] += 1
+        return quotas
+
     def sample(self, count: int) -> List[dict]:
         dataset_info_list = self.schema.flatten()
-
-        # Precompute sample counts per dataset once to avoid repeated get_data() calls
-        per_dataset_counts = [
-            sum(len(subset_data) for subset_data in dataset.get_data().values()) for dataset in dataset_info_list
-        ]
-        total_samples = sum(per_dataset_counts)
-
-        remaining_count = count
+        sizes = [sum(len(subset_data) for subset_data in dataset.get_data().values()) for dataset in dataset_info_list]
+        quotas = self._allocate_counts(sizes, count)
         sampled_data = []
-
-        for i, dataset in enumerate(tqdm(dataset_info_list, desc='Sampling data')):
-            if i == len(dataset_info_list) - 1:
-                dataset_sample_count = remaining_count
-            else:
-                ds_total = per_dataset_counts[i]
-                dataset_sample_count = int((ds_total / total_samples) * count) if total_samples > 0 else 0
-                remaining_count -= dataset_sample_count
-
-            sampled_data.extend(self._sample_dataset(dataset, dataset_sample_count))
+        for dataset, quota in zip(tqdm(dataset_info_list, desc='Sampling data'), quotas):
+            if quota:
+                sampled_data.extend(self._sample_dataset(dataset, quota))
         return self._update_index(sampled_data)
 
 
