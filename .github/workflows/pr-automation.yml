@@ -137,9 +137,16 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Stage immutable source and CI evidence
+        id: snapshot
+        if: steps.prepare.outputs.decision == 'review'
+        continue-on-error: true
+        run: python3 .github/scripts/dsh_review_snapshot.py
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Run DeepSeek Harness review
         id: dsh
-        if: steps.prepare.outputs.decision == 'review'
+        if: steps.prepare.outputs.decision == 'review' && steps.snapshot.outcome == 'success'
         # The publisher distinguishes failures on the current head from superseded reviews.
         continue-on-error: true
         run: node .github/scripts/dsh_review.mjs

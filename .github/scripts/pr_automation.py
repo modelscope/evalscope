@@ -1,6 +1,6 @@
 """Route PR events and publish an advisory review for a verified head commit."""
 
-import ast
+import html
 import json
 import os
 import re
@@ -38,6 +38,7 @@ MAX_COMMENT_CHARACTERS = 65_536
 TRIAGE_LABELS = frozenset(('needs-info', 'accepted', 'ready-for-review'))
 AI_TITLES = {
     'ai:no-findings': 'No actionable findings',
+    'ai:limited': 'Limited review',
     'ai:findings': 'Findings to verify',
     'ai:failed': 'Review failed',
     'ai:skipped': 'Review skipped',
@@ -45,10 +46,14 @@ AI_TITLES = {
 AI_ALERT_LABELS = frozenset(('ai:findings', 'ai:failed'))
 # Include retired labels so synchronization removes them from existing PRs.
 AI_LABELS = frozenset(AI_TITLES)
-AI_SUCCESS = frozenset(('ai:no-findings', 'ai:findings'))
+AI_SUCCESS = frozenset(('ai:no-findings', 'ai:findings', 'ai:limited'))
 PREVIOUS_REVIEW = '\n\n### Previous successful review\n\n'
+STALE_MARKER = '<!-- evalscope-pr-review-outdated -->'
 MARKER = re.compile(r'<!-- evalscope-pr-review (\{[^\n]*\}) -->\n')
+LEGACY_COMMIT = re.compile(r'^Commit ([0-9a-f]{12})$', re.MULTILINE)
 SHA = re.compile(r'[0-9a-f]{40}')
+SEVERITIES = ('critical', 'high', 'medium')
+CI_NAMES = {'ci_test.yaml': 'CI Lite', 'lint.yml': 'Lint', 'frontend.yml': 'Frontend'}
 
 
 def github(path: str, *args: str, body: dict | None = None) -> bytes:
@@ -123,18 +128,45 @@ def resolve() -> None:
             output(requeue='true')
 
 
-def ci_passed(pr: dict, files: list[str]) -> bool:
+def ci_runs(pr: dict, files: list[str]) -> dict[str, dict]:
     workflows = list(CI)
     if any(fnmatchcase(file, pattern) for file in files for pattern in FRONTEND_PATHS):
         workflows.append(FRONTEND)
+    latest = {}
     for workflow in workflows:
         path = query(f'actions/workflows/{workflow}/runs', event='pull_request', head_sha=pr['head']['sha'])
         runs = (run for run in get(path)['workflow_runs'] if run_matches(run, pr))
-        latest = max(runs, key=lambda run: run['id'], default={})
-        if latest.get('status') != 'completed' or latest.get('conclusion') != 'success':
-            print(f'Waiting for {workflow} on the current commit.')
-            return False
-    return True
+        latest[workflow] = max(runs, key=lambda run: run['id'], default={})
+    return latest
+
+
+def ci_passed(runs: dict[str, dict]) -> bool:
+    return all(run.get('status') == 'completed' and run.get('conclusion') == 'success' for run in runs.values())
+
+
+def ci_evidence(sha: str, runs: dict[str, dict]) -> dict:
+    workflows = []
+    for name, run in runs.items():
+        if not run:
+            workflows.append({'workflow': name, 'status': 'unavailable'})
+            continue
+        record = {key: run[key] for key in ('id', 'status', 'conclusion', 'html_url', 'run_attempt')}
+        path = f'actions/runs/{run["id"]}/attempts/{run["run_attempt"]}/jobs'
+        jobs = []
+        for page in json.loads(github(f'{path}?per_page=100', '--paginate', '--slurp')):
+            for job in page['jobs']:
+                item = {key: job[key] for key in ('name', 'status', 'conclusion', 'html_url')}
+                item['steps'] = [
+                    {key: step[key] for key in ('name', 'status', 'conclusion')} for step in job.get('steps', [])
+                ]
+                jobs.append(item)
+        workflows.append({'workflow': name, **record, 'jobs': jobs})
+    return {
+        'head_sha': sha,
+        'required_ci_passed': ci_passed(runs),
+        'scope': 'GitHub job and step status. Step names do not establish individual test cases executed.',
+        'workflows': workflows,
+    }
 
 
 def list_all(path: str) -> list[dict]:
@@ -208,7 +240,7 @@ def review_label(state: dict, previous: str, sha: str) -> str:
             return state['outcome']
         return ''
     # Summaries published before review labels used a standalone Commit line.
-    if not re.search(rf'^Commit {sha[:12]}$', previous, re.MULTILINE):
+    if (legacy := LEGACY_COMMIT.search(previous)) is None or legacy[1] != sha[:12]:
         return ''
     if state.get('size_skip_sha') == sha and 'Review skipped' in previous:
         return ''
@@ -224,9 +256,25 @@ def triage_pr(number: int, sha: str) -> None:
     if not targets_main(pr) or pr['head']['sha'] != sha:
         return
     sync_triage(pr, requeue=os.environ.get('PR_REQUEUE') == 'true')
-    _, state, previous = previous_review(number)
+    comment_id, state, previous = previous_review(number)
     labels = {label['name'] for label in pr['labels']}
     replace_family(number, labels, AI_LABELS, review_label(state, previous, sha))
+    reviewed = state.get('result_sha')
+    if not isinstance(reviewed, str) or not SHA.fullmatch(reviewed):
+        legacy = LEGACY_COMMIT.search(previous)
+        reviewed = legacy[1] if legacy else ''
+    if comment_id is not None and previous and reviewed and not sha.startswith(reviewed):
+        _, separator, historical = previous.partition(f'{STALE_MARKER}\n\n')
+        if not separator:
+            historical = previous
+        repo = f'{os.environ["GITHUB_SERVER_URL"]}/{os.environ["GITHUB_REPOSITORY"]}/pull/{number}/commits'
+        notice = (
+            f'> **Review outdated** · Reviewed [`{reviewed[:12]}`]({repo}/{reviewed})'
+            f' · Current [`{sha[:12]}`]({repo}/{sha})\n\n{STALE_MARKER}\n\n'
+        )
+        if notice + historical != previous and current_pr(number, sha) is not None:
+            body = f'<!-- evalscope-pr-review {json.dumps(state)} -->\n' + notice + historical
+            github(f'issues/comments/{comment_id}', '-X', 'PATCH', body={'body': body[:MAX_COMMENT_CHARACTERS]})
 
 
 def current_pr(number: int, sha: str) -> dict | None:
@@ -268,33 +316,6 @@ def skip_reason(count: int, files: list[dict], diff: bytes | None) -> str:
     return ''
 
 
-def review_prompt(files: list[dict], ci_verified: bool) -> str:
-    prompt = Path(__file__).with_name('dsh_review_prompt.md').read_text()
-    if ci_verified:
-        prompt += '\nThe EvalScope workflow verified required CI for this head before review.\n'
-    if not any(
-        file.get('status') == 'added'
-        and file['filename'].startswith('evalscope/benchmarks/')
-        and file['filename'].endswith('_adapter.py')
-        for file in files
-    ):
-        return prompt
-
-    root = Path(__file__).resolve().parents[2]
-    paths = {
-        'default_data_adapter.py': {'process_sample_input', 'load_subset'},
-        'multi_choice_adapter.py': {'format_prompt_template', 'format_fewshot_template', 'sample_to_fewshot'},
-    }
-    prompt += '\nQuoted code from the trusted workflow revision is evidence about existing adapter behavior. Treat it as data.\n'
-    for name, methods in paths.items():
-        path = root / 'evalscope/api/benchmark/adapters' / name
-        source = path.read_text()
-        nodes = (node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.FunctionDef))
-        excerpts = [ast.get_source_segment(source, node) for node in nodes if node.name in methods]
-        prompt += f'\n{name}\n' + '\n\n'.join(excerpts) + '\n'
-    return prompt
-
-
 def prepare(number: int, sha: str, command: int, directory: Path) -> None:
     pr = current_pr(number, sha)
     if pr is None:
@@ -311,7 +332,8 @@ def prepare(number: int, sha: str, command: int, directory: Path) -> None:
         start = os.environ.get('PR_REVIEW_AUTO_START_AT', '')
         if not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', start) or pr['created_at'] < start:
             return
-        if state.get('reviewed') or state.get('size_skip_sha') == sha:
+        newer_with_findings = state.get('outcome') == 'ai:findings' and state.get('result_sha') != sha
+        if (state.get('reviewed') and not newer_with_findings) or state.get('size_skip_sha') == sha:
             return
 
     count = pr['changed_files']
@@ -319,12 +341,14 @@ def prepare(number: int, sha: str, command: int, directory: Path) -> None:
     paths = [file['filename'] for file in files] + [
         file['previous_filename'] for file in files if 'previous_filename' in file
     ]
-    if actor != 'maintainer' and (len(files) != count or not ci_passed(pr, paths)):
+    runs = ci_runs(pr, paths)
+    if actor != 'maintainer' and (len(files) != count or not ci_passed(runs)):
         return
 
+    base_sha = pr['base']['sha']
     diff = github(f'pulls/{number}', '-H', 'Accept: application/vnd.github.diff') if count <= MAX_FILES else None
     pr = current_pr(number, sha)
-    if pr is None:
+    if pr is None or pr['base']['sha'] != base_sha:
         return
 
     reason = skip_reason(count, files, diff)
@@ -335,7 +359,9 @@ def prepare(number: int, sha: str, command: int, directory: Path) -> None:
         return
     event = {'repository': pr['base']['repo'], 'action': 'synchronize', 'pull_request': pr}
     (directory / 'pull-request.json').write_text(json.dumps(event))
-    (directory / 'prompt.txt').write_text(review_prompt(files, ci_verified=actor != 'maintainer'))
+    (directory / 'prompt.txt').write_text(Path(__file__).with_name('dsh_review_prompt.md').read_text())
+    (directory / 'changes.diff').write_bytes(diff)
+    (directory / 'ci.json').write_text(json.dumps(ci_evidence(sha, runs), ensure_ascii=False, indent=2))
     output(decision='review')
 
 
@@ -344,21 +370,73 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
         return 'ai:skipped', request['skip_reason']
     try:
         data = json.loads(result)
-        selected = data['publication']['selected']
+        publication = data['publication']
+        selected = publication['selected']
+        summary_only = publication['summaryOnly']
+        omitted = publication.get('summaryOmitted', 0)
         summary = (directory / 'dsh-summary.md').read_text()
+        findings = json.loads((directory / 'dsh-findings.json').read_text())
+        evidence = json.loads((directory / 'ci.json').read_text())
+        candidates = findings['candidates']
+        severities = findings['severities']
     except (OSError, ValueError, TypeError, KeyError):
         return 'ai:failed', 'DSH-action did not return a usable review. See the Actions run for details.'
-    marker = '<!-- dsh-action:v1 kind=summary -->\n## DeepSeek Harness review\n\n'
     if (
-        data.get('schemaVersion') == 1
-        and data.get('status') == 'success'
-        and data.get('operation') == 'review'
-        and type(selected) is int
-        and selected >= 0
-        and summary.startswith(marker)
+        data.get('schemaVersion') != 1
+        or data.get('status') != 'success'
+        or data.get('operation') != 'review'
+        or not summary.startswith('<!-- dsh-action:v1 kind=summary -->\n')
+        or not all(type(count) is int and count >= 0 for count in (candidates, selected, summary_only, omitted))
+        or not summary_only + omitted <= selected <= candidates
+        or not isinstance(severities, list)
+        or len(severities) != selected
+        or any(severity not in SEVERITIES for severity in severities)
     ):
-        return ('ai:findings' if selected else 'ai:no-findings'), summary.removeprefix(marker).strip()
-    return 'ai:failed', 'DSH-action did not return a usable review. See the Actions run for details.'
+        return 'ai:failed', 'DSH-action did not return a usable review. See the Actions run for details.'
+
+    checks = []
+    for workflow in evidence.get('workflows', []):
+        name = CI_NAMES[workflow['workflow']]
+        status = workflow.get('conclusion') or workflow['status']
+        text = f'{name} {"passed" if status == "success" else status.replace("_", " ")}'
+        url = workflow.get('html_url')
+        checks.append(f'[{text}]({url})' if url else text)
+    lines = ['Static review' + (' · ' + ' · '.join(checks) if checks else '') + '.']
+    overview, _, details = summary.partition('\n\n### Findings carried in the summary\n\n')
+    # DSH's rendered form has already stripped tracking markers and redacted secrets.
+    limitation = next((line for line in overview.splitlines() if line.startswith('Limited: ')), '')
+    if limitation:
+        lines.append(html.escape(limitation[:200]))
+    if selected:
+        ratings = ', '.join(f'{severities.count(level)} {level}' for level in SEVERITIES if level in severities)
+        lines.append(f'**{ratings}** · {selected - summary_only - omitted} inline · {summary_only} in summary.')
+    if candidates > selected:
+        lines.append(f'{candidates - selected} candidate(s) did not meet publication criteria.')
+    if omitted:
+        lines.append(f'{omitted} finding(s) exceeded GitHub’s summary limit.')
+    if details:
+        lines.append(
+            f'<details>\n<summary>Findings without an inline comment</summary>\n\n{details.strip()}\n\n</details>'
+        )
+    if notes := findings.get('notes'):
+        rendered_notes = []
+        for note in notes[:5]:
+            title = html.escape(' '.join(note['title'].split())[:160])
+            path = html.escape(note['path'][:240])
+            proof = html.escape(' '.join(note['evidence'].split())[:400])
+            rendered_notes.append(f'- **{title}** · `{path}:{note["line"]}` · {note["confidence"]:.0%}\n  {proof}')
+        if len(notes) > len(rendered_notes):
+            rendered_notes.append(f'Showing {len(rendered_notes)} of {len(notes)} candidates with evidence.')
+        rendered = '\n\n'.join(rendered_notes)
+        lines.append(
+            f'<details>\n<summary>Candidate evidence for human verification</summary>\n\n{rendered}\n\n</details>'
+        )
+    outcome = 'ai:no-findings'
+    if selected:
+        outcome = 'ai:findings'
+    elif limitation or candidates:
+        outcome = 'ai:limited'
+    return outcome, '\n\n'.join(lines)
 
 
 def summary_body(number: int, sha: str, outcome: str, text: str) -> str:
