@@ -418,6 +418,19 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
         lines.append(
             f'<details>\n<summary>Findings without an inline comment</summary>\n\n{details.strip()}\n\n</details>'
         )
+    if notes := findings.get('notes'):
+        rendered_notes = []
+        for note in notes[:5]:
+            title = html.escape(' '.join(note['title'].split())[:160])
+            path = html.escape(note['path'][:240])
+            proof = html.escape(' '.join(note['evidence'].split())[:400])
+            rendered_notes.append(f'- **{title}** · `{path}:{note["line"]}` · {note["confidence"]:.0%}\n  {proof}')
+        if len(notes) > len(rendered_notes):
+            rendered_notes.append(f'Showing {len(rendered_notes)} of {len(notes)} candidates with evidence.')
+        rendered = '\n\n'.join(rendered_notes)
+        lines.append(
+            f'<details>\n<summary>Candidate evidence for human verification</summary>\n\n{rendered}\n\n</details>'
+        )
     outcome = 'ai:no-findings'
     if selected:
         outcome = 'ai:findings'

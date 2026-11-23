@@ -72,11 +72,15 @@ source = replaceOnce(
   'const g=selectPublicationFindings(h,u.findings,d);let A=0',
   'const g=selectPublicationFindings(h,u.findings,d);' +
     'const eligible=new Set(filterHighPrecisionFindings(u.findings));' +
-    'const filtered=u.findings.filter(f=>!eligible.has(f)).map(({severity,category,confidence,evidence})=>' +
+    'const rejected=u.findings.filter(f=>!eligible.has(f));' +
+    'const filtered=rejected.map(({severity,category,confidence,evidence})=>' +
     '({severity,category,confidence,hasEvidence:evidence!==undefined}));' +
+    'const notes=rejected.filter(f=>f.evidence!==undefined).map(f=>({' +
+    'title:safeBody(f.title),path:(0,ae.oR)(f.path),line:f.line,confidence:f.confidence,evidence:safeBody(f.evidence)}));' +
     'const selection={candidates:u.findings.length,severities:g.map(({finding})=>finding.severity)};' +
     'console.log("EvalScope finding selection",JSON.stringify({...selection,filtered,duplicatesOrLimit:eligible.size-g.length}));' +
-    'await (await import("node:fs/promises")).writeFile(process.env.EVALSCOPE_DSH_FINDINGS_PATH,JSON.stringify(selection));let A=0',
+    'await (await import("node:fs/promises")).writeFile(process.env.EVALSCOPE_DSH_FINDINGS_PATH,' +
+    'JSON.stringify({...selection,notes}));let A=0',
 );
 // Use the same explicit severity names in inline and summary-only headings.
 source = replaceOnce(

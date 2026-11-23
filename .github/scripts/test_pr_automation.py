@@ -295,9 +295,21 @@ def test_dsh_summary_preserves_findings_without_an_inline_location(tmp_path: Pat
 
 def test_filtered_candidates_do_not_look_like_a_clean_review(tmp_path: Path) -> None:
     write_dsh_summary(tmp_path, candidates=1)
+    notes = [
+        {
+            'title': 'Preserve the value',
+            'path': 'example.py',
+            'line': 17,
+            'confidence': 0.75,
+            'evidence': 'A 0 becomes 1.',
+        }
+    ]
+    (tmp_path / 'dsh-findings.json').write_text(json.dumps({'candidates': 1, 'severities': [], 'notes': notes}))
     outcome, text = bot.review_result(dsh_result(0), {}, tmp_path)
     assert outcome == 'ai:limited'
     assert '1 candidate(s) did not meet publication criteria.' in text
+    assert '<summary>Candidate evidence for human verification</summary>' in text
+    assert '`example.py:17` · 75%' in text and 'A 0 becomes 1.' in text
 
 
 def test_limited_review_uses_dsh_sanitized_text(tmp_path: Path) -> None:
