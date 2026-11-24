@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -37,6 +38,7 @@ logger = get_logger()
 
 _DATASET_ID = 'openai-mirror/gdpval'
 _DEFAULT_DOCKER_IMAGE = 'evalscope/gdpval:latest'
+_output_dir: ContextVar[Optional[str]] = ContextVar('gdpval_output_dir', default=None)
 
 _GDPVAL_EXTRA_PARAMS: Dict[str, Any] = {
     'auto_build_docker_image': {
@@ -139,7 +141,6 @@ class GDPvalAdapter(AgentLoopAdapter):
         self.docker_image = user_sandbox_config.get('image') or _DEFAULT_DOCKER_IMAGE
         self.auto_build_docker_image = bool(self.extra_params.get('auto_build_docker_image', True))
         self.download_reference_files = bool(self.extra_params.get('download_reference_files', True))
-        self._current_output_dir: Optional[str] = None
         self._docker_image_checked = False
         self._submission_records: List[Dict[str, Any]] = []
 
@@ -189,11 +190,11 @@ class GDPvalAdapter(AgentLoopAdapter):
         super()._post_process_samples()
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs: Any) -> TaskState:
-        self._current_output_dir = output_dir
+        token = _output_dir.set(output_dir)
         try:
             return super().run_inference(model, sample, output_dir, **kwargs)
         finally:
-            self._current_output_dir = None
+            _output_dir.reset(token)
 
     def build_tools(self, sample: Sample) -> Dict[str, Any]:
         return {
@@ -230,7 +231,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
         return GDPvalArtifactEnvironment(
             env=env,
-            artifact_dir=artifact_dir(sample, self._current_output_dir, self.name),
+            artifact_dir=artifact_dir(sample, _output_dir.get(), self.name),
             metadata=sample.metadata,
         )
 
