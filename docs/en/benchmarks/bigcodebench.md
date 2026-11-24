@@ -26,6 +26,7 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
 - Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)
 - Default timeout is 240 seconds per problem
 - `calibrate` option prepends code_prompt to align function signatures
+- Supports official E2B through `TaskConfig.sandbox.engine='e2b'`; Aliyun Agent Sandbox requires a suitable evaluation template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
 
 
@@ -45,7 +46,11 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 1,140 |
+| Prompt Length (Mean) | 662.78 chars |
+| Prompt Length (Min/Max) | 232 / 3464 chars |
 
 ## Sample Example
 
@@ -55,7 +60,7 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
 {
   "input": [
     {
-      "id": "657d2473",
+      "id": "02419373",
       "content": "Calculates the average of the sums of absolute differences between each pair of consecutive numbers for all permutations of a given list. Each permutation is shuffled before calculating the differences. Args: - numbers (list): A list of numbe ... [TRUNCATED 75 chars] ... loat: The average of the sums of absolute differences for each shuffled permutation of the list.\nYou should write self-contained code starting with:\n```\nimport itertools\nfrom random import shuffle\ndef task_func(numbers=list(range(1, 3))):\n```"
     }
   ],
@@ -71,6 +76,8 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

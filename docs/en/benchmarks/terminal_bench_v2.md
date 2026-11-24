@@ -24,6 +24,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 
 - Requires **Python>=3.12** and `pip install evalscope[terminal_bench]`
 - Environment options: docker, daytona, e2b, modal
+- Supports E2B through Harbor: install `harbor[e2b]` and set `extra_params.environment_type='e2b'` to run without local Docker or local task-image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Configurable agent types and timeout settings
 - Maximum turns configurable (default: 200)
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
@@ -44,11 +45,38 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 89 |
+| Prompt Length (Mean) | 0 chars |
+| Prompt Length (Min/Max) | 0 / 0 chars |
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `test`
+
+```json
+{
+  "input": [
+    {
+      "id": "7ad1ab7e",
+      "content": ""
+    }
+  ],
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "path": null,
+    "git_url": null,
+    "git_commit_id": null,
+    "name": "terminal-bench/make-mips-interpreter",
+    "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
+    "overwrite": false,
+    "download_dir": "~/.cache/evalscope/terminal_bench_v2",
+    "source": "terminal-bench/terminal-bench-2"
+  }
+}
+```
 
 ## Prompt Template
 

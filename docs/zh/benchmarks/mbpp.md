@@ -1,65 +1,68 @@
 # MBPP
 
 
-## Overview
+## 概述
 
-MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 编程问题的基准测试，专为入门级程序员设计。它用于评估模型理解问题描述并生成正确 Python 代码的能力。
+MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 编程问题的基准测试，专为初级程序员设计。它评估模型理解问题描述并生成正确 Python 代码的能力。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Code Generation (Python)
-- **Input**: 自然语言任务描述及测试用例
-- **Output**: Python 函数实现
-- **Difficulty**: 入门级编程问题
+- **任务类型**：代码生成（Python）
+- **输入**：带有测试用例的自然语言任务描述
+- **输出**：Python 函数实现
+- **难度**：入门级编程问题
 
-## Key Features
+## 主要特点
 
-- 约 1,000 个众包编程问题
-- 涵盖编程基础和标准库使用
-- 每个问题包含任务描述、参考答案和 3 个测试用例
-- 问题设计为入门级程序员可解决
+- ~1,000 个众包编程问题
+- 涵盖编程基础知识和标准库的使用
+- 每个问题包括任务描述、解决方案和 3 个测试用例
+- 问题设计为可由初级程序员解决
 - 通过执行测试用例进行自动评估
 
-## Evaluation Notes
+## 评估说明
 
+- 支持官方 E2B 和阿里云 Agent Sandbox，通过 `TaskConfig.sandbox.engine='e2b'` 配置，避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **3-shot** 示例
-- **安全警告**：需要沙箱环境以安全执行代码。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- **安全警告**：需要沙箱环境以确保代码执行的安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
-- 每个问题默认超时时间为 20 秒
-- 若存在 `[BEGIN]...[DONE]` 块，则从中提取代码
+- 默认每个问题的超时时间为 20 秒
+- 如果存在 `[BEGIN]...[DONE]` 块，则从中提取代码
 
-## Properties
 
-| Property | Value |
+## 属性
+
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `mbpp` |
-| **Dataset ID** | [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary) |
-| **Paper** | N/A |
-| **Tags** | `Coding` |
-| **Metrics** | `accuracy` |
-| **Default Shots** | 3-shot |
-| **Evaluation Split** | `test` |
-| **Train Split** | `prompt` |
-| **Aggregation** | `mean_and_pass_at_k` |
+| **基准测试名称** | `mbpp` |
+| **数据集ID** | [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary) |
+| **论文** | N/A |
+| **标签** | `Coding` |
+| **指标** | `accuracy` |
+| **默认 Shots** | 3-shot |
+| **评估划分** | `test` |
+| **训练划分** | `prompt` |
+| **聚合方式** | `mean_and_pass_at_k` |
 
-## Data Statistics
 
-| Metric | Value |
+## 数据统计
+
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 500 |
-| Prompt Length (Mean) | 1872.34 chars |
-| Prompt Length (Min/Max) | 1727 / 5896 chars |
+| 总样本数 | 500 |
+| 提示词长度（平均值） | 1872.34 字符 |
+| 提示词长度（最小/最大值） | 1727 / 5896 字符 |
 
-## Sample Example
+## 样例示例
 
-**Subset**: `full`
+**子集**: `full`
 
 ```json
 {
   "input": [
     {
-      "id": "f9c5e33a",
-      "content": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert ... [TRUNCATED] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\n\nassert remove_Occ(\"hello\",\"l\") == \"heo\"\nassert remove_Occ(\"abcda\",\"a\") == \"bcd\"\nassert remove_Occ(\"PHP\",\"P\") == \"H\"\n[BEGIN]\n"
+      "id": "6e16be36",
+      "content": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert ... [TRUNCATED 1332 chars] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\n\nassert remove_Occ(\"hello\",\"l\") == \"heo\"\nassert remove_Occ(\"abcda\",\"a\") == \"bcd\"\nassert remove_Occ(\"PHP\",\"P\") == \"H\"\n[BEGIN]\n"
     }
   ],
   "target": "def remove_Occ(s,ch): \r\n    for i in range(len(s)): \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    for i in range(len(s) - 1,-1,-1):  \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    return s ",
@@ -77,11 +80,11 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注意：部分内容为显示目的已截断。*
 
-## Prompt Template
+## 提示模板
 
-**Prompt Template:**
+**提示模板：**
 ```text
 You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
 
@@ -89,7 +92,7 @@ You are an expert Python programmer, and here is your task: {question} Your code
 ```
 
 <details>
-<summary>Few-shot Template</summary>
+<summary>Few-shot 模板</summary>
 
 ```text
 You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:
@@ -136,7 +139,7 @@ You are an expert Python programmer, and here is your task: {question} Your code
 
 </details>
 
-## Sandbox Configuration
+## 沙箱配置
 
 此基准测试需要沙箱环境来执行代码。
 
@@ -150,7 +153,7 @@ You are an expert Python programmer, and here is your task: {question} Your code
 }
 ```
 
-## Usage
+## 使用方法
 
 ### 使用 CLI
 

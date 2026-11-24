@@ -3,26 +3,28 @@
 
 ## 概述
 
-WideSearch 用于评估搜索智能体在广泛的网络信息检索任务上的表现。每个任务要求智能体收集多个原子事实，并返回一个结构化的 Markdown 表格。EvalScope 使用 ModelScope 上的 `bytedance-community/WideSearch` 数据集。
+WideSearch 评估搜索智能体在广泛网络信息检索任务上的表现。每个任务要求智能体收集许多原子事实并返回一个结构化的 Markdown 表格。EvalScope 使用 ModelScope 的 `bytedance-community/WideSearch` 数据集。
 
 ## 任务描述
 
 - **任务类型**：多轮搜索智能体
-- **输入**：包含明确表格结构的自然语言信息收集请求
+- **输入**：带有明确表格架构的自然语言收集请求
 - **输出**：完整的 Markdown 表格
-- **数据集**：`full` 划分中共有 200 个任务；其中 100 个为英文，100 个为中文
+- **数据集**：``full`` 划分中的 200 个任务；100 个英文和 100 个中文
 
-## 核心特性
+## 主要特点
 
-- 官方单智能体协议：支持语言特定的系统提示词、``function_calling``，以及默认最多 50 步。
-- 默认在每个样本的临时本地目录中提供 Bash 环境；Docker 沙箱和 MCP 服务器为可选项。
-- 单次完整运行即可生成 ``all``、``en`` 和 ``zh`` 三份报告，无需重复推理。
+- 官方单智能体协议：特定语言的系统提示、``function_calling`` 以及默认 50 步。
+- Bash 默认在每个样本的临时本地目录中可用；Docker 沙箱和 MCP 服务器为可选项。
+- 单次完整运行即可生成 ``all``、``en`` 和 ``zh`` 报告，无需重复推理。
 
 ## 评估说明
 
-- 使用官方的 Markdown 表格对齐方式及混合规则/LLM 评分语义。
-- 要求设置 ``judge.strategy='auto'`` 或 ``'llm'``，并至少指定一个 ``judge.models`` 条目；不支持仅使用规则评分。
-- 运行示例及论文风格的重复实验设置，请参阅 [WideSearch 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/wide_search.html)。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 使用官方的 Markdown 表格对齐方式以及混合规则/LLM 评分语义。
+- 需要设置 ``judge.strategy='auto'`` 或 ``'llm'`` 且至少包含一个 ``judge.models`` 条目；不支持仅基于规则的评分。
+- 有关运行时示例和论文风格的重复设置，请参阅 [WideSearch 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/wide_search.html)。
+
 
 ## 属性
 
@@ -33,7 +35,7 @@ WideSearch 用于评估搜索智能体在广泛的网络信息检索任务上的
 | **论文** | [Paper](https://arxiv.org/abs/2508.07999) |
 | **标签** | `Agent`, `MultiTurn`, `Retrieval` |
 | **指标** | `success_rate`, `row_precision`, `row_recall`, `row_f1`, `item_precision`, `item_recall`, `item_f1` |
-| **默认示例数** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估划分** | `full` |
 
 
@@ -42,7 +44,7 @@ WideSearch 用于评估搜索智能体在广泛的网络信息检索任务上的
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 200 |
-| 提示词长度（平均） | 631.01 字符 |
+| 提示词长度（平均值） | 631.01 字符 |
 | 提示词长度（最小/最大） | 182 / 1807 字符 |
 
 ## 样例示例
@@ -53,7 +55,7 @@ WideSearch 用于评估搜索智能体在广泛的网络信息检索任务上的
 {
   "input": [
     {
-      "id": "59f736f6",
+      "id": "d9e44682",
       "content": "My son is about to start his university applications in 2025 for postgraduates but he’s still uncertain about both his major and which universities to apply to. Could you help me find the top five universities in each of the five broad subjec ... [TRUNCATED 691 chars] ... names in English. \nUse only Arabic numerals in the ranking, for example: 1.\nDon't ask me any questions, just output the results according to the columns without omitting cells arbitrarily. The output format is \n```markdown\n{data_content}\n```."
     }
   ],
@@ -173,7 +175,7 @@ WideSearch 用于评估搜索智能体在广泛的网络信息检索任务上的
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注意：部分内容为显示目的已截断。*
 
 ## 提示模板
 

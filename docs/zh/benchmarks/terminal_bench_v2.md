@@ -3,29 +3,30 @@
 
 ## 概述
 
-Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能体在 89 个真实世界的多步骤终端任务上的表现。这些任务涵盖编译、调试到系统管理等多个领域，并在隔离的容器环境中运行，配有严格的验证机制。
+Terminal-Bench v2 是一个命令行基准测试套件，用于评估 AI 智能体在 89 个真实世界的多步骤终端任务上的表现。任务范围涵盖编译、调试、系统管理等，并在隔离的容器环境中运行，具有严格的验证机制。
 
 ## 任务描述
 
 - **任务类型**：命令行智能体评估
-- **输入**：终端任务描述
+- **输入**：终端任务规范
 - **输出**：通过智能体操作完成任务
 - **领域**：系统管理、编译、调试、文件操作
 
-## 主要特性
+## 主要特点
 
-- 包含 89 个真实世界的终端任务
-- 要求完成多步骤任务
-- 在隔离的容器环境中执行
-- 采用二元评分（0/1）并自动验证
-- 支持多种智能体类型（terminus-2、claude-code、codex 等）
+- 89 个真实世界终端任务
+- 多步骤任务完成要求
+- 隔离的容器执行环境
+- 二元评分（0/1）并支持自动验证
+- 支持多种智能体类型（terminus-2, claude-code, codex 等）
 
 ## 评估说明
 
-- 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`
-- 支持的环境选项：docker、daytona、e2b、modal
-- 可配置智能体类型和超时设置
-- 最大交互轮次可配置（默认：200）
+- 需要 **Python>=3.12** 和 `pip install evalscope[terminal_bench]`
+- 环境选项：docker, daytona, e2b, modal
+- 通过 Harbor 支持 E2B：安装 `harbor[e2b]` 并设置 `extra_params.environment_type='e2b'`，即可在无本地 Docker 或无需下载本地任务镜像的情况下运行。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 可配置的智能体类型和超时设置
+- 最大轮数可配置（默认值：200）
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
 
 
@@ -38,21 +39,48 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估划分** | `test` |
 
 
 ## 数据统计
 
-*统计数据不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 89 |
+| 提示词长度（平均值） | 0 chars |
+| 提示词长度（最小/最大值） | 0 / 0 chars |
 
 ## 样例示例
 
-*样例示例不可用。*
+**子集**: `test`
+
+```json
+{
+  "input": [
+    {
+      "id": "7ad1ab7e",
+      "content": ""
+    }
+  ],
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "path": null,
+    "git_url": null,
+    "git_commit_id": null,
+    "name": "terminal-bench/make-mips-interpreter",
+    "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
+    "overwrite": false,
+    "download_dir": "~/.cache/evalscope/terminal_bench_v2",
+    "source": "terminal-bench/terminal-bench-2"
+  }
+}
+```
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 {question}
 ```
@@ -62,14 +90,14 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |
-| `agent_name` | `str` | `terminus-2` | Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
-| `timeout_multiplier` | `float` | `1.0` | 超时倍率。若出现超时错误，可考虑增大此值。 |
-| `agent_timeout_sec` | `float` | `None` | 智能体阶段最终超时时间（秒）。不能与 agent_timeout_multiplier 同时使用。 |
-| `verifier_timeout_sec` | `float` | `None` | 验证器阶段最终超时时间（秒）。不能与 verifier_timeout_multiplier 同时使用。 |
-| `agent_timeout_multiplier` | `float` | `None` | 智能体阶段超时倍率。会覆盖 timeout_multiplier 在智能体阶段的设置。 |
-| `verifier_timeout_multiplier` | `float` | `None` | 验证器阶段超时倍率。会覆盖 timeout_multiplier 在验证器阶段的设置。 |
-| `max_turns` | `int` | `200` | 智能体完成任务的最大交互轮次。 |
-| `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外参数。支持的键包括：override_cpus、override_memory_mb、override_storage_mb、override_gpus、force_build、delete、env 等。 |
+| `agent_name` | `str` | `terminus-2` | 在 Harbor 中使用的智能体类型。只有 terminus-2 使用 evalscope 模型进行推理；其他智能体（claude-code, codex 等）作为独立的 CLI 工具运行，并使用其自身的 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
+| `timeout_multiplier` | `float` | `1.0` | 超时乘数。如果出现超时错误，请考虑增加此值。 |
+| `agent_timeout_sec` | `float` | `None` | 最终智能体超时时间（秒）。不能与 agent_timeout_multiplier 结合使用。 |
+| `verifier_timeout_sec` | `float` | `None` | 最终验证器超时时间（秒）。不能与 verifier_timeout_multiplier 结合使用。 |
+| `agent_timeout_multiplier` | `float` | `None` | 智能体超时乘数。覆盖 timeout_multiplier 以应用于智能体阶段。 |
+| `verifier_timeout_multiplier` | `float` | `None` | 验证器超时乘数。覆盖 timeout_multiplier 以应用于验证器阶段。 |
+| `max_turns` | `int` | `200` | 智能体完成任务的最大轮数。 |
+| `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外 kwargs。支持的键包括：override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env 等。 |
 
 ## 使用方法
 
@@ -97,7 +125,7 @@ task_cfg = TaskConfig(
     datasets=['terminal_bench_v2'],
     dataset_args={
         'terminal_bench_v2': {
-            # extra_params: {}  # 使用默认额外参数
+            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # 正式评估时请删除此行

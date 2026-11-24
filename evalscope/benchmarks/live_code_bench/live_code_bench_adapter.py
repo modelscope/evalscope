@@ -46,6 +46,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Default configuration uses **0-shot** evaluation
 - Prompts follow the official LiveCodeBench runner: a generic "expert Python programmer" system message plus the `### Question` / `### Format` user message
 - **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.

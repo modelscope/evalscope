@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import evalscope.utils.doc_utils.translate_description as translate_description
 from evalscope.utils.doc_utils.translate_description import _protect_code_blocks, _restore_code_blocks, translate_readme
 
 ENGLISH_MD = """# AI2D
@@ -23,9 +24,17 @@ evalscope eval --datasets ai2d
 """
 
 
+def _completion(content: str):
+    return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+
+def _client_sequence(contents: list[str]):
+    create = Mock(side_effect=[_completion(content) for content in contents])
+    return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+
+
 def _client_returning(content: str):
-    completion = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
-    return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=Mock(return_value=completion))))
+    return _client_sequence([content])
 
 
 class TestTranslateReadme:
@@ -80,6 +89,43 @@ config = {
         result = translate_readme(ENGLISH_MD, 'ai2d', client=_client_returning(mangled))
 
         assert result == ''
+
+    def test_preserves_inline_code_with_nested_backticks(self):
+        inline_code = '` ```mswea_bash_command ``` `'
+        english = f'# Example\n\nExpect one {inline_code} block per turn.\n'
+        translated = '# Example\n\n每轮输出一个 [CODE_BLOCK_0] 代码块。\n'
+
+        result = translate_readme(english, 'example', client=_client_returning(translated))
+
+        assert result == '# Example\n\n每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。'
+
+    def test_localizes_standard_headings(self):
+        english = '# Example\n\n## Overview\n\nOverview text.\n\n## Agentic Mode\n\nAgent instructions.\n'
+        translated = '# Example\n\n## Overview\n\n概述文本。\n\n## Agentic Mode\n\n代理说明。\n'
+
+        result = translate_readme(english, 'example', client=_client_returning(translated))
+
+        assert result == '# Example\n\n## 概述\n\n概述文本。\n\n## Agentic 模式\n\n代理说明。'
+
+    def test_splits_long_documents_by_section(self, monkeypatch):
+        monkeypatch.setattr(translate_description, '_MAX_TRANSLATION_CHARS', 1)
+        english = '# Example\n\n## Overview\n\nEnglish overview.\n\n## Usage\n\nUse English.\n'
+        client = _client_sequence(['# Example', '## 概述\n\n概述。', '## 使用方法\n\n使用。'])
+
+        result = translate_readme(english, 'example', client=client)
+
+        assert result == '# Example\n\n## 概述\n\n概述。\n\n## 使用方法\n\n使用。'
+        assert client.chat.completions.create.call_count == 3
+
+    def test_does_not_split_headings_inside_code_blocks(self, monkeypatch):
+        monkeypatch.setattr(translate_description, '_MAX_TRANSLATION_CHARS', 1)
+        english = '# Example\n\n## Overview\n\n```text\n## not a section\n```\n\n## Usage\n\nUse English.\n'
+        client = _client_sequence(['# Example', '## 概述\n\n[CODE_BLOCK_0]', '## 使用方法\n\n使用。'])
+
+        result = translate_readme(english, 'example', client=client)
+
+        assert result == '# Example\n\n## 概述\n\n```text\n## not a section\n```\n\n## 使用方法\n\n使用。'
+        assert client.chat.completions.create.call_count == 3
 
 
 class TestProtectCodeBlocks:

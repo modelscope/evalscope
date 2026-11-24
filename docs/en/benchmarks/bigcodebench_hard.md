@@ -26,6 +26,7 @@ BigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that 
 - Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)
 - Default timeout is 240 seconds per problem
 - `calibrate` option prepends code_prompt to align function signatures
+- Supports official E2B through `TaskConfig.sandbox.engine='e2b'`; Aliyun Agent Sandbox requires a suitable evaluation template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
 
 
@@ -59,7 +60,7 @@ BigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that 
 {
   "input": [
     {
-      "id": "207adc46",
+      "id": "183d2906",
       "content": "Download all files from a specific directory on an FTP server using wget in a subprocess. Args: ftp_server (str): The FTP server address. Default is 'ftp.dlptest.com'. ftp_user (str): The FTP server username. Default is 'dlpuser'. ftp_passwor ... [TRUNCATED 798 chars] ...  FTP server.\nYou should write self-contained code starting with:\n```\nimport subprocess\nimport ftplib\nimport os\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\n```"
     }
   ],
@@ -75,6 +76,8 @@ BigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that 
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

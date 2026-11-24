@@ -53,6 +53,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
 
 ## Evaluation Notes
 
+- Supports E2B with an image or template containing the benchmark dependencies and test data; provider-specific template requirements are described in the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - **Sandbox environment required** for code execution
 - Refer to [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html)
 - Two metrics tracked:

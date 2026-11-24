@@ -164,9 +164,10 @@ SWE-bench_Pro is a challenging benchmark from Scale AI evaluating LLMs/Agents on
 
 ## Evaluation Notes
 
-- Requires `pip install evalscope[sandbox]` (provides Docker SDK via ms-enclave)
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
+- Requires `pip install evalscope[sandbox]` (provides sandbox runtimes via ms-enclave)
 - Requires the `scaleapi/SWE-bench_Pro-os` repository for per-instance run scripts and Dockerfiles. By default this is auto-cloned to `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` and pinned to commit `ca10a60`. To use an existing clone, set `extra_params.swe_bench_pro_repo_path`.
-- Both the agent loop and the per-instance evaluation share a single sandbox configuration via `TaskConfig.sandbox.default_config` (passed straight to ms_enclave `DockerSandboxConfig`). Set `memory_limit` / `cpu_limit` there to avoid OOM-Killed test runs (e.g. NodeBB); `platform` defaults to `linux/amd64` so amd64-only sweap-images work on Apple Silicon out of the box.
+- Both the agent loop and the per-instance evaluation share a single sandbox configuration via `TaskConfig.sandbox.default_config`, passed to ms-enclave for the selected engine. For Docker, set `memory_limit` / `cpu_limit` there to avoid OOM-Killed test runs (e.g. NodeBB); `platform` defaults to `linux/amd64` so amd64-only sweap-images work on Apple Silicon out of the box.
 
 See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench_pro.html) for setup, parameters, and troubleshooting.
 """

@@ -49,17 +49,43 @@ def _get_client():
 
 
 _CODE_BLOCK_PATTERN = re.compile(r'```[^\n]*\n.*?\n```', re.DOTALL)
+_INLINE_CODE_PATTERN = re.compile(r'(?<!`)(`+)(?!`)([^\n]+?)(?<!`)\1(?!`)')
+_HEADING_TRANSLATIONS = {
+    'Overview': '概述',
+    'Task Description': '任务描述',
+    'Key Features': '主要特点',
+    'Evaluation Notes': '评估说明',
+    'Agentic Mode': 'Agentic 模式',
+    'Properties': '属性',
+    'Data Statistics': '数据统计',
+    'Subsets': '子集',
+    'Sample Example': '样例示例',
+    'Prompt Template': '提示模板',
+    'Extra Parameters': '额外参数',
+    'Sandbox Configuration': '沙箱配置',
+    'Usage': '使用方法',
+    'Using CLI': '使用 CLI',
+    'Using Python': '使用 Python',
+}
+
+
+def _localize_headings(text: str) -> str:
+    for english, chinese in _HEADING_TRANSLATIONS.items():
+        text = re.sub(rf'(?m)^(##+) {re.escape(english)}$', rf'\1 {chinese}', text)
+    return text
 
 
 def _protect_code_blocks(text: str) -> Tuple[str, List[str]]:
-    """Replace fenced code blocks with placeholders so they are not translated."""
+    """Replace code blocks and inline code spans with placeholders so they are not translated."""
     blocks: List[str] = []
 
     def _collect(match):
         blocks.append(match.group(0))
         return f'[CODE_BLOCK_{len(blocks) - 1}]'
 
-    return _CODE_BLOCK_PATTERN.sub(_collect, text), blocks
+    protected = _CODE_BLOCK_PATTERN.sub(_collect, text)
+    protected = _INLINE_CODE_PATTERN.sub(_collect, protected)
+    return protected, blocks
 
 
 def _restore_code_blocks(text: str, blocks: List[str]) -> str:
@@ -98,21 +124,42 @@ def _localize_usage_comments(block: str) -> str:
     return ''.join(lines)
 
 
+_MAX_TRANSLATION_CHARS = 6000
+
+
 def translate_readme(readme_content: str, benchmark_name: str, client=None) -> str:
-    """
-    Translate English README content to Chinese.
-
-    Args:
-        readme_content: English README markdown content
-        benchmark_name: Name of the benchmark (for context)
-        client: Optional pre-created OpenAI client
-
-    Returns:
-        Chinese README markdown content
-    """
+    """Translate English README content to Chinese, splitting long documents by section."""
     if client is None:
         client = _get_client()
 
+    sections = _split_readme_sections(readme_content)
+    if len(readme_content) <= _MAX_TRANSLATION_CHARS or len(sections) <= 1:
+        return _translate_readme_chunk(readme_content, benchmark_name, client)
+
+    translated_sections = [_translate_readme_chunk(section, benchmark_name, client) for section in sections]
+    if any(not section for section in translated_sections):
+        return ''
+    return '\n\n'.join(translated_sections).strip()
+
+
+def _split_readme_sections(readme_content: str) -> List[str]:
+    """Split on level-two headings outside fenced code blocks."""
+    sections: List[str] = []
+    current: List[str] = []
+    in_code_block = False
+    for line in readme_content.splitlines(keepends=True):
+        if line.startswith('```'):
+            in_code_block = not in_code_block
+        if not in_code_block and line.startswith('## ') and current:
+            sections.append(''.join(current))
+            current = []
+        current.append(line)
+    if current:
+        sections.append(''.join(current))
+    return [section for section in sections if section.strip()]
+
+
+def _translate_readme_chunk(readme_content: str, benchmark_name: str, client) -> str:
     system_prompt = """You are a professional technical translator.
 Translate the following English benchmark documentation to Chinese.
 
@@ -160,6 +207,7 @@ Example translations:
         )
         translated = completion.choices[0].message.content.strip()
         translated = _restore_code_blocks(translated, [_localize_usage_comments(block) for block in code_blocks])
+        translated = _localize_headings(translated)
 
         # Convert documentation links from English to Chinese
         translated = convert_doc_links(translated)

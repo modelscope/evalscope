@@ -22,6 +22,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
 - Requires ``judge.strategy='auto'`` or ``'llm'`` with at least one ``judge.models`` entry; rule-only scoring is unsupported.
 - See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime
@@ -57,7 +58,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 {
   "input": [
     {
-      "id": "59f736f6",
+      "id": "d9e44682",
       "content": "My son is about to start his university applications in 2025 for postgraduates but he’s still uncertain about both his major and which universities to apply to. Could you help me find the top five universities in each of the five broad subjec ... [TRUNCATED 691 chars] ... names in English. \nUse only Arabic numerals in the ranking, for example: 1.\nDon't ask me any questions, just output the results according to the columns without omitting cells arbitrarily. The output format is \n```markdown\n{data_content}\n```."
     }
   ],
