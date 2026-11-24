@@ -13,9 +13,6 @@ from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.text2image.corpus_aggregation import CorpusAggregationMixin
 from evalscope.constants import HubType, Tags
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
 
 
 def convert_dpg_csv(csv_path: str) -> List[Dict[str, Any]]:
