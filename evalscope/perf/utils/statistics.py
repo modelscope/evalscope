@@ -92,9 +92,6 @@ class RunStatistics:
     ci_high: Optional[float] = None
     """Upper bound of the two-sided 95% interval for the mean; ``None`` when ``n < 3``."""
 
-    mdd: Optional[float] = None
-    """Descriptive minimum detectable difference (``t * std / sqrt(n)``); ``None`` when ``n < 3``."""
-
     @property
     def ci_half_width(self) -> Optional[float]:
         """Half-width of the confidence interval, when defined."""
@@ -123,8 +120,8 @@ def summarize_runs(values: Sequence[float]) -> Optional[RunStatistics]:
 
     Returns:
         ``None`` when there are no values; otherwise a :class:`RunStatistics`
-        with ``std`` from ``n >= 2`` and the interval / MDD from ``n >= 3``
-        (a two-run interval is degenerate enough that reporting it invites
+        with ``std`` from ``n >= 2`` and the interval from ``n >= 3`` (a
+        two-run interval is degenerate enough that reporting it invites
         over-reading).
     """
     clean: List[float] = [float(v) for v in values]
@@ -148,7 +145,6 @@ def summarize_runs(values: Sequence[float]) -> Optional[RunStatistics]:
         std=std,
         ci_low=mean - half_width,
         ci_high=mean + half_width,
-        mdd=half_width,
     )
 
 
@@ -164,10 +160,9 @@ def warn_if_under_sampled(statistics_by_metric: dict, logger) -> None:
     """
     for metric, stats in statistics_by_metric.items():
         if stats.n < RECOMMENDED_MIN_RUNS:
-            mdd = f'±{stats.mdd:.4g}' if stats.mdd is not None else 'not estimable (needs >= 3 runs)'
             logger.warning(
                 f'{metric}: {stats.n} runs (recommended >= {RECOMMENDED_MIN_RUNS}); '
-                f'the 95% interval is wide and the minimum detectable difference is {mdd}. '
-                'Increase --sla-num-runs for a tighter bound.'
+                'the 95% interval is wide enough that it usually cannot separate two '
+                'configurations. Increase --sla-num-runs for a tighter bound.'
             )
         return  # one warning is enough; the sample size is shared across metrics

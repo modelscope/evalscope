@@ -19,7 +19,7 @@ class SLAProbe(BaseModel):
     metric_values: Dict[str, float] = Field(default_factory=dict)
     group_passes: Dict[str, bool] = Field(default_factory=dict)
     statistics: Dict[str, RunStatistics] = Field(default_factory=dict)
-    """Per-metric run-to-run summary (mean, std, 95% CI, MDD) across the repeated runs."""
+    """Per-metric run-to-run summary (mean, std, 95% CI) across the repeated runs."""
 
 
 class SLASelection(BaseModel):

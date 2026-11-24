@@ -711,7 +711,6 @@ def format_run_statistics(result: SLAResult, tablefmt: str = 'pipe') -> str:
                     metric,
                     f'{stats.mean:.4g} ± {stats.std:.4g}',
                     f'[{stats.ci_low:.4g}, {stats.ci_high:.4g}]' if stats.ci_low is not None else '-',
-                    f'±{stats.mdd:.4g}' if stats.mdd is not None else '-',
                     stats.n,
                 ]
             )
@@ -719,7 +718,7 @@ def format_run_statistics(result: SLAResult, tablefmt: str = 'pipe') -> str:
         return ''
     return tabulate(
         rows,
-        headers=['Pressure', 'Metric', 'Mean ± std', '95% CI', 'MDD', 'Runs'],
+        headers=['Pressure', 'Metric', 'Mean ± std', '95% CI', 'Runs'],
         tablefmt=tablefmt,
     )
 

@@ -30,7 +30,7 @@ def test_single_run_reports_only_the_mean():
     assert stats == RunStatistics(n=1, mean=1240.5)
     assert stats.std is None
     assert stats.ci_low is None
-    assert stats.mdd is None
+    assert stats.ci_half_width is None
 
 
 def test_two_runs_report_std_but_no_interval():
@@ -42,7 +42,7 @@ def test_two_runs_report_std_but_no_interval():
     assert stats.mean == pytest.approx(102.0)
     assert stats.std == pytest.approx(stdlib_statistics.stdev([100.0, 104.0]))
     assert stats.ci_low is None and stats.ci_high is None
-    assert stats.mdd is None
+    assert stats.ci_half_width is None
 
 
 def test_three_runs_report_mean_std_and_interval():
@@ -57,7 +57,6 @@ def test_three_runs_report_mean_std_and_interval():
     assert stats.std == pytest.approx(expected_std)
     assert stats.ci_low == pytest.approx(expected_mean - half_width)
     assert stats.ci_high == pytest.approx(expected_mean + half_width)
-    assert stats.mdd == pytest.approx(half_width)
     assert stats.ci_half_width == pytest.approx(half_width)
 
 
@@ -96,23 +95,21 @@ def test_t_critical_table_and_normal_fallback():
         t_critical(0)
 
 
-def test_mdd_is_monotonic_in_sample_size():
-    """More runs of the same distribution resolve a smaller difference."""
+def test_interval_half_width_shrinks_with_more_runs():
+    """More runs of the same distribution give a tighter interval."""
     import random
 
     rng = random.Random(7)
     base = [rng.gauss(1000.0, 20.0) for _ in range(64)]
 
-    mdd_small = summarize_runs(base[:5]).mdd
-    mdd_large = summarize_runs(base).mdd
-    assert mdd_large < mdd_small
+    assert summarize_runs(base).ci_half_width < summarize_runs(base[:5]).ci_half_width
 
 
-def test_zero_variance_series_reports_zero_mdd():
+def test_zero_variance_series_has_zero_width_interval():
     stats = summarize_runs([100.0, 100.0, 100.0, 100.0])
     assert stats.std == 0.0
     assert stats.ci_low == stats.ci_high == 100.0
-    assert stats.mdd == 0.0
+    assert stats.ci_half_width == 0.0
 
 
 def test_format_renders_gracefully_across_sample_sizes():
@@ -169,7 +166,7 @@ def test_two_runs_still_warn_despite_missing_interval(caplog):
     messages = [r.getMessage() for r in caplog.records]
     assert len(messages) == 1
     assert '2 runs' in messages[0]
-    assert 'not estimable' in messages[0]
+    assert 'usually cannot separate two configurations' in messages[0]
 
 
 def test_enough_runs_do_not_warn(caplog):
