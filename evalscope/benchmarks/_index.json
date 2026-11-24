@@ -118,6 +118,7 @@
  "hellaswag_hi": "evalscope.benchmarks.hellaswag_hi.hellaswag_hi_adapter",
  "hipho": "evalscope.benchmarks.hipho.hipho_adapter",
  "hle": "evalscope.benchmarks.hle.hle_adapter",
+ "hle_diamond": "evalscope.benchmarks.hle_diamond.hle_diamond_adapter",
  "hmmt25": "evalscope.benchmarks.hmmt.hmmt25_adapter",
  "hmmt26": "evalscope.benchmarks.hmmt.hmmt26_adapter",
  "hmmt_nov25": "evalscope.benchmarks.hmmt.hmmt_nov25_adapter",
