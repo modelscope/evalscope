@@ -252,6 +252,8 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
 
     # Map entities to tokens based on character positions
     for entity_type, entity_text, start_pos, end_pos in entities:
+        if not entity_text.strip():
+            continue
         # Text-preserving annotations give an exact offset, even for repeated names.
         if preserves_text and not _TAG_PATTERN.search(entity_text):
             entity_start = len(_TAG_PATTERN.sub('', xml_text[:start_pos]))
