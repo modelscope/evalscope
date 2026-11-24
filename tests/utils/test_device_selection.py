@@ -7,9 +7,12 @@ exposes, plus the small NPU-aware branches added to ``update_gpu_usage`` and
 ``transformers.utils.is_torch_*_available`` probes that ``get_device`` reads.
 """
 
+import sys
+from types import SimpleNamespace
+
 import pytest
 
-from evalscope.utils.model_utils import get_device, seed_everything  # noqa: E402
+from evalscope.utils.model_utils import get_device  # noqa: E402
 
 
 def _patch_probes(monkeypatch, *, npu=False, mps=False, cuda=False):
@@ -18,6 +21,22 @@ def _patch_probes(monkeypatch, *, npu=False, mps=False, cuda=False):
     monkeypatch.setattr(tutils, 'is_torch_npu_available', lambda: npu, raising=False)
     monkeypatch.setattr(tutils, 'is_torch_mps_available', lambda: mps, raising=False)
     monkeypatch.setattr(tutils, 'is_torch_cuda_available', lambda: cuda, raising=False)
+
+
+def _install_fake_torch(monkeypatch):
+    """Provide just enough of torch for device-branch unit tests.
+
+    PyTorch is intentionally not a base or development dependency.  Keeping
+    these tests self-contained lets the CPU-only test suite exercise the NPU
+    branches without requiring a real torch installation.
+    """
+    fake_torch = SimpleNamespace(
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(cudnn=SimpleNamespace(deterministic=False, benchmark=False)),
+        manual_seed=lambda seed: None,
+    )
+    monkeypatch.setitem(sys.modules, 'torch', fake_torch)
+    return fake_torch
 
 
 def test_get_device_prefers_npu(monkeypatch):
@@ -53,9 +72,10 @@ def test_update_gpu_usage_handles_cpu_only(monkeypatch):
 def test_update_gpu_usage_reads_npu_when_available(monkeypatch):
     """When NPU is available, update_gpu_usage should query torch.npu,
     not torch.cuda."""
-    import torch
+    from evalscope.perf.utils import benchmark_util
 
-    from evalscope.perf.utils.benchmark_util import BenchmarkData
+    monkeypatch.setattr(benchmark_util, 'check_import', lambda *args, **kwargs: True)
+    torch = _install_fake_torch(monkeypatch)
 
     _patch_probes(monkeypatch, npu=True, mps=False, cuda=False)
 
@@ -65,7 +85,7 @@ def test_update_gpu_usage_reads_npu_when_available(monkeypatch):
     fake_npu.max_memory_allocated = lambda i: float(i + 1) * 1024**3  # 1 GiB, 2 GiB
     monkeypatch.setattr(torch, 'npu', fake_npu, raising=False)
 
-    m = BenchmarkData()
+    m = benchmark_util.BenchmarkData()
     m.update_gpu_usage()
     # 1 + 2 = 3 GiB
     assert m.max_gpu_memory_cost == pytest.approx(3.0)
@@ -73,14 +93,16 @@ def test_update_gpu_usage_reads_npu_when_available(monkeypatch):
 
 def test_seed_everything_sets_npu_seed_when_available(monkeypatch):
     """seed_everything should call torch.npu.manual_seed_all on NPU."""
-    import torch
+    from evalscope.utils import model_utils
 
     calls = {'npu_seed': None}
 
     fake_npu = type('fake_npu', (), {})()
     fake_npu.is_available = lambda: True
     fake_npu.manual_seed_all = lambda seed: calls.__setitem__('npu_seed', seed)
+    torch = _install_fake_torch(monkeypatch)
     monkeypatch.setattr(torch, 'npu', fake_npu, raising=False)
+    monkeypatch.setattr(model_utils, 'check_import', lambda *args, **kwargs: True)
 
-    seed_everything(1234)
+    model_utils.seed_everything(1234)
     assert calls['npu_seed'] == 1234
