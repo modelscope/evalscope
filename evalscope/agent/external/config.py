@@ -59,6 +59,24 @@ class BridgeConfig(BaseModel):
     recommended unless you need a stable URL."""
 
 
+class OTelTraceConfig(BaseAgentConfig):
+    """Carried by ``TaskConfig.agent_config`` when ``mode == 'otel_trace'``.
+
+    Imports an existing OpenTelemetry GenAI trace export as a scorable sample
+    instead of running an agent: the importer reconstructs the ``AgentTrace``
+    and message history the external-agent bridge would have produced.
+    """
+
+    mode: Literal['otel_trace'] = Field(default='otel_trace')
+    """Union discriminator — imports a trace rather than executing an agent."""
+
+    trace_path: str
+    """Path to an OTLP JSON export, or a directory of ``<sample_id>.otlp.json`` files."""
+
+    sample_id_attribute: str = Field(default='evalscope.sample_id')
+    """Span attribute carrying the eval sample id when several samples share one export."""
+
+
 class ExternalAgentConfig(BaseAgentConfig):
     """Carried by ``TaskConfig.agent_config`` when ``mode == 'external'``.
 

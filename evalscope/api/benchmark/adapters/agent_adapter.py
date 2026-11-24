@@ -147,8 +147,13 @@ class AgentLoopAdapter(AgentAdapter):
         # Local import to keep the bridge stack out of the adapter's
         # module-load-time imports (no aiohttp dependency for non-external
         # benchmark runs).
+        from evalscope.agent.external.config import ExternalAgentConfig, OTelTraceConfig
+
+        # Third producer: an existing OTel trace becomes the inference result.
+        if isinstance(ac, OTelTraceConfig):
+            return self._import_otel_trace(ac, model, sample)
+
         from evalscope.agent.external.adapter import run_external_agent
-        from evalscope.agent.external.config import ExternalAgentConfig
 
         if not isinstance(ac, ExternalAgentConfig):
             return None
@@ -163,6 +168,48 @@ class AgentLoopAdapter(AgentAdapter):
             instruction_override=instruction,
             post_run_hook=self._external_extract_prediction,
         )
+
+    def _import_otel_trace(self, config: Any, model: Any, sample: Any) -> InferenceResult:
+        """Import an OTLP GenAI export as this sample's inference result.
+
+        ``trace_path`` may be one OTLP JSON file (one export per sample) or a
+        directory containing ``<sample_id>.otlp.json``. Missing content,
+        unknown operation names, or an unresolvable sample id raise
+        :class:`~evalscope.api.agent.otel.OTLPImportError` with the offending
+        span id — the importer never produces an empty trace that scores 0.
+        """
+        import json
+        from pathlib import Path
+
+        from evalscope.api.agent.otel import import_otlp_trace
+        from evalscope.api.messages import ChatMessageAssistant
+        from evalscope.api.model import ModelOutput
+
+        path = Path(config.trace_path)
+        if path.is_dir():
+            candidate = path / f'{sample.id}.otlp.json'
+            if not candidate.exists():
+                raise FileNotFoundError(
+                    f'No OTLP export for sample {sample.id!r} in {path} (expected {candidate.name})'
+                )
+            path = candidate
+
+        payload = json.loads(path.read_text(encoding='utf-8'))
+        # One export per sample: the file (or its name in directory mode) is the
+        # association, so the importer does not need a span attribute.
+        trace, messages = import_otlp_trace(payload, sample_id_attribute=config.sample_id_attribute)
+
+        # The prediction artifact is the last assistant text; the message
+        # history and trace ride along for scorers that require them.
+        prediction = ''
+        for message in reversed(messages):
+            text = getattr(message, 'text', None)
+            if isinstance(message, ChatMessageAssistant) and text:
+                prediction = text
+                break
+
+        output = ModelOutput.from_content(model=f'{model.name}-otel-import', content=prediction)
+        return InferenceResult(output=output, messages=messages, trace=trace)
 
     def _resolve_strategy(self, sample: Any, ac: Any) -> Any:
         strategy = self.build_strategy(sample)
