@@ -68,14 +68,22 @@ function fullRunLabel(run: PerfDetailResponse): string {
 }
 
 function workloadLabel(group: WorkloadGroup, t: (key: string) => string): string {
-  return group.config.map((entry) => {
-    if (entry.key === 'concurrency') return `${t('perf.archive.concurrency')} ${entry.value || '—'}`
-    if (entry.key === 'request_rate') {
-      return Number(entry.value) === -1
-        ? t('perf.archive.closedLoop')
-        : `${t('perf.archive.requestRate')} ${entry.value || '—'}`
+  const concurrency = group.config.find((entry) => entry.key === 'concurrency')?.value
+  const openLoop = concurrency !== undefined && Number(concurrency) <= 0
+  return group.config.flatMap((entry) => {
+    if (entry.key === 'concurrency') {
+      return openLoop ? [] : [`${t('perf.archive.concurrency')} ${entry.value || '—'}`]
     }
-    return `${entry.label}=${entry.value || '—'}`
+    if (entry.key === 'request_rate') {
+      if (openLoop) {
+        const rate = Number(entry.value) === -1 ? '' : ` · ${t('perf.archive.requestRate')} ${entry.value || '—'}`
+        return [`${t('perf.archive.openLoop')}${rate}`]
+      }
+      return [Number(entry.value) === -1
+        ? t('perf.archive.closedLoop')
+        : `${t('perf.archive.requestRate')} ${entry.value || '—'}`]
+    }
+    return [`${entry.label}=${entry.value || '—'}`]
   }).join(' · ')
 }
 
@@ -95,7 +103,6 @@ function configurationLabel(key: string, fallback: string, t: (key: string) => s
     dataset: 'perf.task.dataset',
     parallel: 'perf.archive.concurrency',
     number: 'perf.archive.numberOfRequests',
-    number_of_requests: 'perf.archive.numberOfRequests',
     rate: 'perf.archive.requestRate',
     max_tokens: 'perf.task.maxTokens',
     min_tokens: 'perf.task.minTokens',

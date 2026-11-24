@@ -178,21 +178,21 @@ describe('buildCompareModel', () => {
 
   it('reports configuration differences across every run', () => {
     const first = makeRun('a', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1, 1.2, 100], {
-      configuration: { dataset: 'openqa', parallel: '8' },
+      configuration: { dataset: 'openqa', parallel: '8', number: '50' },
     })
     const second = makeRun('b', '2026-06-02T00:00:00Z', ['8', 'INF', 11, 0.9, 1.1, 100], {
-      configuration: { dataset: 'openqa', parallel: '8' },
+      configuration: { dataset: 'openqa', parallel: '8', number: '60' },
       total_requests: 120,
     })
     const third = makeRun('c', '2026-06-03T00:00:00Z', ['8', 'INF', 12, 0.8, 1, 100], {
-      configuration: { dataset: 'random', parallel: '8' },
+      configuration: { dataset: 'random', parallel: '8', number: '70' },
     })
 
     const diff = buildCompareModel([first, second, third], 'a').configDiff
 
     expect(diff).toEqual([
       { key: 'dataset', label: 'Dataset', values: { a: 'openqa', b: 'openqa', c: 'random' } },
-      { key: 'number_of_requests', label: 'Number of requests', values: { a: '100', b: '120', c: '100' } },
+      { key: 'number', label: 'Number of requests', values: { a: '50', b: '60', c: '70' } },
     ])
   })
 })
@@ -246,7 +246,9 @@ describe('input length eligibility', () => {
   it.each([
     ['missingConfiguration', { configuration: undefined }],
     ['notRandom', { configuration: { dataset: 'openqa', min_prompt_length: '1024', max_prompt_length: '1024', rate: '-1' } }],
+    ['notRandom', { configuration: { dataset: 'random, openqa', min_prompt_length: '1024', max_prompt_length: '1024', rate: '-1' } }],
     ['variableLength', { configuration: { dataset: 'random', min_prompt_length: '1024', max_prompt_length: '2048', rate: '-1' } }],
+    ['variableLength', { configuration: { dataset: 'random', min_prompt_length: '1024, 2048', max_prompt_length: '1024, 2048', rate: '-1' } }],
     ['openLoop', {
       configuration: { dataset: 'random', min_prompt_length: '1024', max_prompt_length: '1024', rate: '10' },
       summary_rows: [makeRow(['0', 10, 10, 1, 1.2, 100], 100)] as SummaryRow[],

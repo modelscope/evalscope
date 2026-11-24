@@ -483,6 +483,26 @@ class TestPerfArchive(unittest.TestCase):
                 response = self._compare(['valid-input', name], x_axis='input_length')
                 self.assertEqual(response.status_code, 400)
 
+    def test_detail_exposes_mixed_sub_run_input_length_configuration(self):
+        self._make_input_length_run('mixed-config', 1024)
+        self._make_input_length_run('mixed-config', 2048, sub_name='parallel_2_number_2', args={'dataset': 'openqa'})
+        response = self.client.get(
+            '/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': 'mixed-config'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        configuration = response.get_json()['configuration']
+        self.assertEqual(configuration['dataset'], 'random, openqa')
+        self.assertEqual(configuration['min_prompt_length'], '1024, 2048')
+        self.assertEqual(configuration['max_prompt_length'], '1024, 2048')
+
+        self._make_input_length_run('consistent-config', 1024)
+        self._make_input_length_run('consistent-config', 1024, sub_name='parallel_2_number_2')
+        response = self.client.get(
+            '/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': 'consistent-config'}
+        )
+        self.assertEqual(response.get_json()['configuration']['min_prompt_length'], '1024')
+
     def test_compare_chart_input_length_rejects_duplicate_and_inconsistent_points(self):
         self._make_input_length_run('duplicate-a', 1024)
         self._make_input_length_run('duplicate-b', 1024)

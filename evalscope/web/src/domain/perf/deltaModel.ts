@@ -108,7 +108,6 @@ const CONFIG_LABELS: Record<string, string> = {
   dataset: 'Dataset',
   parallel: 'Concurrency',
   number: 'Number of requests',
-  number_of_requests: 'Number of requests',
   rate: 'Request rate',
   max_tokens: 'Max tokens',
   min_tokens: 'Min tokens',
@@ -160,7 +159,7 @@ function finiteNumber(value: unknown): number | null {
 function buildConfigDiff(runs: PerfDetailResponse[]): ConfigDiffEntry[] {
   const configs: Record<string, string>[] = runs.map((run) => ({
     ...run.configuration,
-    number_of_requests: String(run.total_requests),
+    number: run.configuration?.number ?? String(run.total_requests),
   }))
   const keys = [...new Set(configs.flatMap((config) => Object.keys(config)))]
   return keys.flatMap((key) => {

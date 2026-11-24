@@ -290,6 +290,30 @@ describe('PerfComparePage', () => {
     expect(screen.getByTestId('summary-cell-0-avg_latency-2')).toHaveAttribute('data-deemphasized', 'true')
   })
 
+  it('labels open-loop workloads without rendering a negative concurrency', async () => {
+    const openLoop = (path: string, rate: number) => {
+      const base = makePerfDetail({
+        path,
+        generated_at: path === 'run-a' ? '2026-06-01T00:00:00Z' : '2026-06-02T00:00:00Z',
+      })
+      return {
+        ...base,
+        configuration: { ...base.configuration, parallel: '-1', rate: String(rate) },
+        summary_rows: [{
+          ...base.summary_rows[0],
+          values: { ...base.summary_rows[0].values, concurrency: -1, request_rate: rate },
+        }],
+      }
+    }
+    mockDetails({ 'run-a': openLoop('run-a', -1), 'run-b': openLoop('run-b', 10) })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+
+    const summary = within(screen.getByTestId('performance-summary-table'))
+    expect(summary.getByText('open-loop')).toBeInTheDocument()
+    expect(summary.getByText('open-loop · Request rate 10')).toBeInTheDocument()
+    expect(summary.queryByText(/Concurrency -1|closed-loop/)).not.toBeInTheDocument()
+  })
+
   it('disables input-length trends for non-random runs and keeps default chart URLs unchanged', async () => {
     mockDetails({
       'run-a': makePerfDetail({ path: 'run-a' }),
@@ -346,6 +370,17 @@ describe('PerfComparePage', () => {
     expect(fallback.getByText('Configured input length')).toBeInTheDocument()
     expect(fallback.getByText('1024')).toBeInTheDocument()
     expect(fallback.getByText('8192')).toBeInTheDocument()
+  })
+
+  it('describes sparse trends without prescribing marker rendering', async () => {
+    mockDetails({
+      'run-a': makeRandomDetail('run-a', 1024),
+      'run-b': makeRandomDetail('run-b', 2048),
+    })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+
+    expect(screen.getByTestId('sparse-hint')).toHaveTextContent('interpret the trend with caution')
+    expect(screen.getByTestId('sparse-hint')).not.toHaveTextContent('discrete point markers')
   })
 
   it('uses actual summary points for the sparse hint', async () => {
