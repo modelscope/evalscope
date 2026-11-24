@@ -42,7 +42,7 @@ SUBSET_ENTITIES = {'ai': ai, 'literature': literature, 'music': music, 'politics
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='cross_ner',
         pretty_name='CrossNER',
         dataset_id='extraordinarylab/cross-ner',
