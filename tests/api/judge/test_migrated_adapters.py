@@ -340,6 +340,35 @@ def test_three_way_judge_transport_failure_excludes_the_sample(benchmark_name: s
 
 
 @pytest.mark.parametrize(
+    ('reply', 'expected_status', 'expected'),
+    [
+        ('{"reasoning": "The answers match.", "verdict": "C"}', ScoreStatus.SUCCESS, 1.0),
+        ('not JSON', ScoreStatus.EXCLUDED, None),
+        ('[ERROR] judge transport unavailable', ScoreStatus.EXCLUDED, None),
+    ],
+)
+def test_hle_diamond_judge_contract(reply: str, expected_status: ScoreStatus, expected: float | None) -> None:
+    config = TaskConfig(model='m', datasets=['hle_diamond'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('hle_diamond', config)
+    judge = ScriptedJudge([reply])
+    adapter.llm_judge = judge
+    state = make_state('Explanation: concise\nExact Answer: A\nConfidence: 87%', 'A')
+
+    sample_score = adapter.calculate_metrics(state)
+    score = sample_score.score
+
+    assert score.status is expected_status
+    assert len(judge.calls) == 1
+    if expected is None:
+        assert score.value == {}
+        assert adapter.aggregate_scores([sample_score]) == []
+    else:
+        assert score.value == {'acc': expected}
+        assert score.metadata['confidence'] == 87
+        assert adapter.aggregate_scores([sample_score])[0].score == expected
+
+
+@pytest.mark.parametrize(
     'benchmark_name',
     ['baby_vision', 'imo_answerbench', 'math_verse', 'minerva_math', 'world_vqa', 'zerobench'],
 )

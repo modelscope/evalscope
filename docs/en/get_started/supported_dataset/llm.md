@@ -80,6 +80,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hellaswag_hi` | [HellaSwag-Hindi](../../benchmarks/hellaswag_hi.md) | `MCQ`, `Reasoning` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
+| `hle_diamond` | [Humanity's-Last-Exam-Diamond](../../benchmarks/hle_diamond.md) | `Knowledge`, `QA`, `Reasoning` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
 | `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `hmmt_nov25` | [HMMT-Nov-2025](../../benchmarks/hmmt_nov25.md) | `Math`, `Reasoning` |
@@ -254,6 +255,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hellaswag_hi.md
 ../../benchmarks/hle.md
+../../benchmarks/hle_diamond.md
 ../../benchmarks/hmmt25.md
 ../../benchmarks/hmmt26.md
 ../../benchmarks/hmmt_nov25.md
