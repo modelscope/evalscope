@@ -79,6 +79,7 @@
  "deepsearchqa": "evalscope.benchmarks.deepsearchqa.deepsearchqa_adapter",
  "docmath": "evalscope.benchmarks.docmath.docmath_adapter",
  "docvqa": "evalscope.benchmarks.docvqa.docvqa_adapter",
+ "dpg_bench": "evalscope.benchmarks.text2image.dpg_bench_adapter",
  "drivel_binary": "evalscope.benchmarks.drivelology.drivelology_binary_adapter",
  "drivel_multilabel": "evalscope.benchmarks.drivelology.drivelology_multilabel_adapter",
  "drivel_selection": "evalscope.benchmarks.drivelology.drivelology_selection_adapter",

@@ -251,6 +251,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'text_score',
         'cvtg_ned',
         'cvtg_word_accuracy',
+        'dpg_score',
         'unit_acc',
         'xl_puzzle_acc',
     ),
