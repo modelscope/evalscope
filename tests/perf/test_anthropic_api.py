@@ -192,7 +192,13 @@ def provider() -> Iterator[tuple[str, dict]]:
                     ]
                     if mode == 'missing_stream_usage':
                         del events[0]['message']['usage']
-                    if mode == 'tool':
+                    if mode == 'empty_tool':
+                        events[1] = {
+                            'type': 'content_block_start',
+                            'index': 0,
+                            'content_block': {'type': 'tool_use', 'name': 'get_current_time', 'input': {}},
+                        }
+                    elif mode == 'tool':
                         events.extend([
                             {
                                 'type': 'content_block_delta',
@@ -347,6 +353,17 @@ def test_tool_argument_deltas_drive_timing(provider: tuple[str, dict]) -> None:
     assert output.generated_text == ''
     assert output.first_chunk_latency > 0
     assert len(output.inter_chunk_latency) == 1
+
+
+def test_empty_tool_call_start_drives_timing(provider: tuple[str, dict]) -> None:
+    url, _ = provider
+    args = Arguments(model='empty_tool', api='anthropic', url=url, stream=True)
+    output = _request(args, AnthropicMessagesPlugin(args))
+
+    assert output.success is True
+    assert output.generated_text == ''
+    assert output.first_chunk_latency > 0
+    assert output.inter_chunk_latency == []
 
 
 @pytest.mark.parametrize('mode', ['incomplete', 'error', 'malformed', 'missing_start', 'missing_stop'])

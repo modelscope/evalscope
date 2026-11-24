@@ -182,7 +182,12 @@ class AnthropicMessagesPlugin(ApiPluginBase):
         is_start = payload['type'] == 'content_block_start'
         block = payload.get('content_block' if is_start else 'delta')
         text = _block_text(block)
-        has_output = block.get('type') == 'redacted_thinking' if is_start else bool(block.get('partial_json'))
+        if is_start:
+            has_output = block.get('type') == 'redacted_thinking' or (
+                block.get('type') in ('tool_use', 'server_tool_use') and bool(block.get('name'))
+            )
+        else:
+            has_output = bool(block.get('partial_json'))
         return text, bool(text or has_output)
 
 
