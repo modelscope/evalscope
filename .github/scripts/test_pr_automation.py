@@ -92,8 +92,8 @@ def test_command_actor(monkeypatch: pytest.MonkeyPatch, permission: str, user_id
 
 
 def test_skip_reason_explains_the_actual_diff_limit() -> None:
-    assert bot.skip_reason(15, [], b'x' * 62068) == (
-        'The PR changes 15 files and the raw diff is 62,068 bytes (60.6 KiB). The diff limit is 49,152 bytes (48 KiB).'
+    assert bot.skip_reason(15, [], b'x' * 270_336) == (
+        'The PR changes 15 files and the raw diff is 270,336 bytes (264.0 KiB). The diff limit is 262,144 bytes (256 KiB).'
     )
     assert bot.skip_reason(51, [], None) == 'The PR changes 51 files. The review limit is 50.'
     assert bot.skip_reason(1, [{}], b'x') == 'GitHub did not supply a text patch for 1 of 1 changed files.'

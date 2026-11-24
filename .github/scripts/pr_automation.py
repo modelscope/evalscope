@@ -34,7 +34,7 @@ FRONTEND_PATHS = (
     '.github/workflows/frontend.yml',
 )
 MAX_FILES = 50
-MAX_DIFF_BYTES = 48 * 1024
+MAX_DIFF_BYTES = 256 * 1024
 MAX_COMMENT_CHARACTERS = 65_536
 TRIAGE_LABELS = frozenset(('needs-info', 'accepted', 'ready-for-review'))
 AI_TITLES = {

@@ -15,7 +15,7 @@ Thank you for considering contributing to EvalScope! This guide covers everythin
 The AI reviewer posts a summary after Lint, CI Lite and any applicable frontend checks pass for
 a new PR. It posts actionable findings on the relevant lines in **Files changed** and keeps
 findings without a valid line in the summary. Each finding includes a severity of Critical,
-High, Medium or Low when provided by the model. Diffs over 50 changed files or 48 KiB go to
+High, Medium or Low when provided by the model. Diffs over 50 changed files or 256 KiB go to
 manual review. To request another review, leave
 `/review` on its own line in a PR comment. The author can request it once per commit after CI passes.
 Maintainers can also request a review while CI is pending or failing. The bot updates its summary
