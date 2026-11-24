@@ -147,13 +147,8 @@ class AgentLoopAdapter(AgentAdapter):
         # Local import to keep the bridge stack out of the adapter's
         # module-load-time imports (no aiohttp dependency for non-external
         # benchmark runs).
-        from evalscope.agent.external.config import ExternalAgentConfig, OTelTraceConfig
-
-        # Third producer: an existing OTel trace becomes the inference result.
-        if isinstance(ac, OTelTraceConfig):
-            return self._import_otel_trace(ac, model, sample)
-
         from evalscope.agent.external.adapter import run_external_agent
+        from evalscope.agent.external.config import ExternalAgentConfig
 
         if not isinstance(ac, ExternalAgentConfig):
             return None
@@ -169,22 +164,30 @@ class AgentLoopAdapter(AgentAdapter):
             post_run_hook=self._external_extract_prediction,
         )
 
-    def _import_otel_trace(self, config: Any, model: Any, sample: Any) -> InferenceResult:
+    def _maybe_import_otel_trace(self, ac: Any, model: Any, sample: Any) -> Optional[InferenceResult]:
         """Import an OTLP GenAI export as this sample's inference result.
 
-        ``trace_path`` may be one OTLP JSON file (one export per sample) or a
-        directory containing ``<sample_id>.otlp.json``. Missing content,
-        unknown operation names, or an unresolvable sample id raise
-        :class:`~evalscope.api.agent.otel.OTLPImportError` with the offending
-        span id — the importer never produces an empty trace that scores 0.
+        A sibling of :meth:`_maybe_run_external_agent` rather than a branch in
+        it: importing a trace executes nothing, so it must not share the
+        external-CLI gate. ``trace_path`` may be one OTLP JSON file (one export
+        per sample) or a directory containing ``<sample_id>.otlp.json``.
+        Missing content, unknown operation names, or an unresolvable sample id
+        raise :class:`~evalscope.api.agent.otel.OTLPImportError` with the
+        offending span id — the importer never produces an empty trace that
+        scores 0.
         """
         import json
         from pathlib import Path
 
         from evalscope.api.agent.otel import import_otlp_trace
+        from evalscope.api.agent.otel_config import OTelTraceConfig
         from evalscope.api.messages import ChatMessageAssistant
         from evalscope.api.model import ModelOutput
 
+        if not isinstance(ac, OTelTraceConfig):
+            return None
+
+        config = ac
         path = Path(config.trace_path)
         if path.is_dir():
             candidate = path / f'{sample.id}.otlp.json'
@@ -281,6 +284,10 @@ class AgentLoopAdapter(AgentAdapter):
         the prediction artifact before the env closes.
         """
         ac = self._task_config.agent_config if self._task_config is not None else None
+        otel_result = self._maybe_import_otel_trace(ac, model, sample)
+        if otel_result is not None:
+            return otel_result
+
         external_result = self._maybe_run_external_agent(ac, model, sample)
         if external_result is not None:
             return external_result

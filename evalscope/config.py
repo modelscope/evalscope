@@ -11,6 +11,7 @@ from pydantic import ConfigDict, Field, SecretStr, field_validator, model_valida
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.agent.otel_config import OTelTraceConfig
 from evalscope.api.analysis import AnalysisReportConfig
 from evalscope.api.dataset.dataset import _LIMIT_ERROR, validate_dataset_limit, validate_dataset_repeats
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
@@ -31,7 +32,7 @@ from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
 
 AgentConfigUnion = Annotated[
-    Union[NativeAgentConfig, ExternalAgentConfig],
+    Union[NativeAgentConfig, ExternalAgentConfig, OTelTraceConfig],
     Field(discriminator='mode'),
 ]
 
@@ -382,6 +383,9 @@ class TaskConfig(BaseArgument):
     * ``mode='external'`` → :class:`ExternalAgentConfig`; inference is
       delegated to a third-party CLI (claude-code, mock, ...) and the
       bridge captures the LLM traffic into the same :class:`AgentTrace`.
+    * ``mode='otel_trace'`` → :class:`OTelTraceConfig`; an existing
+      OpenTelemetry GenAI export is imported as a scorable sample instead of
+      running anything (the pull side of the bridge).
 
     AgentLoopAdapter subclasses keep benchmark defaults and consume supported
     explicit overrides from this field; adapters with bespoke loops may ignore
@@ -439,17 +443,20 @@ class TaskConfig(BaseArgument):
 
     @staticmethod
     def _coerce_agent_config(v: Any) -> Any:
-        if v is None or isinstance(v, (NativeAgentConfig, ExternalAgentConfig)):
+        if v is None or isinstance(v, (NativeAgentConfig, ExternalAgentConfig, OTelTraceConfig)):
             return v
         if isinstance(v, dict):
             mode = v.get('mode', 'native')
             if mode == 'external':
                 return ExternalAgentConfig.model_validate(v)
+            if mode == 'otel_trace':
+                return OTelTraceConfig.model_validate(v)
             if mode == 'native':
                 return NativeAgentConfig.model_validate(v)
-            raise ValueError(f'`agent_config.mode` must be "native" or "external", got {mode!r}.')
+            raise ValueError(f'`agent_config.mode` must be "native", "external" or "otel_trace", got {mode!r}.')
         raise ValueError(
-            f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig or None, got {type(v).__name__}.'
+            f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig, OTelTraceConfig '
+            f'or None, got {type(v).__name__}.'
         )
 
     @model_validator(mode='before')
@@ -799,8 +806,8 @@ class TaskConfig(BaseArgument):
 
     def _dump_agent_config(
         self, mode: Optional[str] = None
-    ) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
-        if not isinstance(self.agent_config, (NativeAgentConfig, ExternalAgentConfig)):
+    ) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, OTelTraceConfig, None]:
+        if not isinstance(self.agent_config, (NativeAgentConfig, ExternalAgentConfig, OTelTraceConfig)):
             return self.agent_config
         fields = set(self.agent_config.model_fields_set)
         fields.add('mode')

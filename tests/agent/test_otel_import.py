@@ -2,7 +2,8 @@
 
 Covers the mapping matrix from the feature issue: operation → EventType,
 ``gen_ai.usage.*`` → token_usage, ``gen_ai.*.messages`` → ChatMessage,
-unknown attributes preserved in payload, and the fail-loud paths (missing
+``step`` as the turn index (not span depth), ``create_agent`` without a run
+boundary, skipped-but-counted operations, and the fail-loud paths (missing
 operation name, missing message content, unresolvable sample id).
 """
 import pytest
@@ -28,8 +29,10 @@ def _span(
     start: int = 0,
     end: int = 0,
     attributes: list | None = None,
+    status: dict | None = None,
+    events: list | None = None,
 ) -> dict:
-    return {
+    span = {
         'spanId': span_id,
         'parentSpanId': parent,
         'name': name,
@@ -37,21 +40,15 @@ def _span(
         'endTimeUnixNano': str(end),
         'attributes': attributes or [],
     }
+    if status is not None:
+        span['status'] = status
+    if events is not None:
+        span['events'] = events
+    return span
 
 
 def _export(*spans: dict) -> dict:
     return {'resourceSpans': [{'scopeSpans': [{'spans': list(spans)}]}]}
-
-
-def _chat_attributes(prompt: int = 10, completion: int = 5, **extra) -> list:
-    attrs = [
-        {'key': 'gen_ai.operation.name', 'value': _str('chat')},
-        {'key': 'gen_ai.request.model', 'value': _str('some-model')},
-        {'key': 'gen_ai.usage.input_tokens', 'value': _int(prompt)},
-        {'key': 'gen_ai.usage.output_tokens', 'value': _int(completion)},
-    ]
-    attrs.extend({'key': key, 'value': value} for key, value in extra.items())
-    return attrs
 
 
 def _any_value(value):
@@ -81,23 +78,31 @@ def _text_part(content: str) -> dict:
     return {'type': 'text', 'content': content}
 
 
+def _chat_attributes(prompt: int = 10, completion: int = 5, **extra) -> list:
+    attrs = [
+        {'key': 'gen_ai.operation.name', 'value': _str('chat')},
+        {'key': 'gen_ai.request.model', 'value': _str('some-model')},
+        {'key': 'gen_ai.usage.input_tokens', 'value': _int(prompt)},
+        {'key': 'gen_ai.usage.output_tokens', 'value': _int(completion)},
+    ]
+    attrs.extend({'key': key, 'value': value} for key, value in extra.items())
+    return attrs
+
+
+def _chat_span(span_id: str, *, parent: str = '', start: int = 0, end: int = 1_000_000, **extra) -> dict:
+    return _span(span_id, 'chat', parent=parent, start=start, end=end, attributes=_chat_attributes(**extra))
+
+
 def test_single_chat_span_maps_to_model_generate_with_usage():
     payload = _export(
-        _span(
+        _chat_span(
             's1',
-            'chat',
             start=1,
             end=1_500_000,
-            attributes=_chat_attributes(
-                prompt=12,
-                completion=8,
-                **{
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part('hello')]}
-                    ),
-                },
-            ),
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('hello')]}),
+            },
         )
     )
 
@@ -105,47 +110,66 @@ def test_single_chat_span_maps_to_model_generate_with_usage():
 
     assert trace.framework == FRAMEWORK
     assert [e.type for e in trace.events] == [EventType.MODEL_GENERATE]
-    assert trace.events[0].token_usage == {'input': 12, 'output': 8, 'total': 20}
+    assert trace.events[0].token_usage == {'input': 10, 'output': 5, 'total': 15}
     assert trace.events[0].latency_ms == pytest.approx(1.5)
-    assert isinstance(messages[0], ChatMessageUser)
-    assert messages[0].text == 'hi'
-    assert isinstance(messages[1], ChatMessageAssistant)
-    assert messages[1].text == 'hello'
+    assert isinstance(messages[0], ChatMessageUser) and messages[0].text == 'hi'
+    assert isinstance(messages[1], ChatMessageAssistant) and messages[1].text == 'hello'
 
 
-def test_tool_span_maps_to_tool_call_and_result():
+def test_step_is_turn_index_not_span_depth():
+    """Two chat turns both nested under invoke_agent must yield steps 0 and 1."""
     payload = _export(
-        _span(
-            'root',
-            'invoke_agent',
-            start=0,
-            end=3_000_000,
-            attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}],
-        ),
-        _span(
-            'chat1',
-            'chat',
+        _span('root', 'invoke_agent', start=0, end=10_000_000, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}]),
+        _chat_span(
+            'c1',
             parent='root',
             start=1,
-            end=1_000_000,
-            attributes=_chat_attributes(
-                **{
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('do it')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {
-                            'role': 'assistant',
-                            'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {'q': 'x'}}],
-                        }
-                    ),
-                }
-            ),
+            end=2_000_000,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q1')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a1')]}),
+            },
+        ),
+        _chat_span(
+            'c2',
+            parent='root',
+            start=3,
+            end=4_000_000,
+            **{
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a2')]}),
+            },
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    chat_steps = [e.step for e in trace.events if e.type is EventType.MODEL_GENERATE]
+
+    assert chat_steps == [0, 1]
+    assert trace.step_count == 2, 'step_count must count turns, not nesting depth'
+
+
+def test_tool_span_inherits_its_turn_and_dedups_against_messages():
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2_000_000,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('do it')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {
+                        'role': 'assistant',
+                        'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {'q': 'x'}}],
+                    }
+                ),
+            },
         ),
         _span(
             'tool1',
             'search',
-            parent='chat1',
-            start=1_100_000,
-            end=1_200_000,
+            parent='c1',
+            start=2_100_000,
+            end=2_200_000,
             attributes=[
                 {'key': 'gen_ai.operation.name', 'value': _str('execute_tool')},
                 {'key': 'gen_ai.tool.name', 'value': _str('search')},
@@ -156,37 +180,189 @@ def test_tool_span_maps_to_tool_call_and_result():
     )
 
     trace, messages = import_otlp_trace(payload)
-    types = [e.type for e in trace.events]
+    tool_calls = [e for e in trace.events if e.type is EventType.TOOL_CALL]
+    tool_results = [e for e in trace.events if e.type is EventType.TOOL_RESULT]
 
-    assert EventType.RUN_START in types and EventType.RUN_END in types
-    tool_call = next(e for e in trace.events if e.type is EventType.TOOL_CALL)
-    assert tool_call.payload['name'] == 'search'
-    assert tool_call.payload['tool_call_id'] == 'call_1'
-    assert tool_call.step == 2  # nested under chat1 under root
-    tool_result = next(e for e in trace.events if e.type is EventType.TOOL_RESULT)
-    assert tool_result.payload['tool_call_id'] == 'call_1'
+    # The tool_call part in messages owns the TOOL_CALL event; the span only adds
+    # the result (no duplicate event).
+    assert len(tool_calls) == 0
+    assert len(tool_results) == 1
+    assert tool_results[0].step == 0  # same turn as c1
+    assert tool_results[0].payload['tool_call_id'] == 'call_1'
 
     assistant = next(m for m in messages if isinstance(m, ChatMessageAssistant) and m.tool_calls)
     assert assistant.tool_calls[0].function.name == 'search'
     assert assistant.tool_calls[0].function.arguments == {'q': 'x'}
 
 
-def test_unknown_attribute_survives_in_payload():
+def test_tool_span_without_message_part_synthesises_tool_call():
+    """A tool span with no matching message part must still produce TOOL_CALL."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2_000_000,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span(
+            'tool1',
+            'search',
+            parent='c1',
+            start=2_100_000,
+            end=2_200_000,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('execute_tool')},
+                {'key': 'gen_ai.tool.name', 'value': _str('search')},
+                {'key': 'gen_ai.tool.call.id', 'value': _str('call_9')},
+            ],
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    tool_calls = [e for e in trace.events if e.type is EventType.TOOL_CALL]
+    assert len(tool_calls) == 1
+    assert tool_calls[0].payload['tool_call_id'] == 'call_9'
+
+
+def test_create_agent_does_not_open_a_run_boundary():
+    payload = _export(
+        _span('create', 'create_agent', start=0, end=1, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('create_agent')}]),
+        _span('invoke', 'invoke_agent', start=2, end=3, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}]),
+        _chat_span(
+            'c1',
+            parent='invoke',
+            start=4,
+            end=5,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    run_starts = [e for e in trace.events if e.type is EventType.RUN_START]
+    run_ends = [e for e in trace.events if e.type is EventType.RUN_END]
+
+    assert len(run_starts) == 1 and len(run_ends) == 1
+    assert run_starts[0].payload['span_id'] == 'invoke'
+
+
+def test_valid_but_uninteresting_operation_is_skipped_and_counted():
+    """embeddings is a legal operation; a RAG trace must not be marked as an error."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span('e1', 'embed', start=3, end=4, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('embeddings')}]),
+        _span('e2', 'embed', start=5, end=6, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('embeddings')}]),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+
+    assert not [e for e in trace.events if e.type is EventType.ERROR]
+    skipped = [e for e in trace.events if 'skipped_operations' in e.payload]
+    assert skipped and skipped[0].payload['skipped_operations'] == {'embeddings': 2}
+
+
+def test_span_error_status_becomes_error_event():
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span(
+            'bad',
+            'tool',
+            start=3,
+            end=4,
+            attributes=[{'key': 'gen_ai.operation.name', 'value': _str('execute_tool')}],
+            status={'code': 2, 'message': 'tool crashed'},
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    errors = [e for e in trace.events if e.type is EventType.ERROR]
+    assert len(errors) == 1
+    assert errors[0].payload['message'] == 'tool crashed'
+
+
+def test_span_exception_event_becomes_error_event():
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span(
+            'bad',
+            'tool',
+            start=3,
+            end=4,
+            attributes=[{'key': 'gen_ai.operation.name', 'value': _str('execute_tool')}],
+            events=[{'name': 'exception', 'attributes': [{'key': 'exception.message', 'value': _str('boom')}]}],
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    errors = [e for e in trace.events if e.type is EventType.ERROR]
+    assert errors and errors[0].payload['message'] == 'boom'
+
+
+def test_legacy_flat_messages_are_accepted():
+    """Pre-v1.36 exports use flat gen_ai.prompts / gen_ai.completions."""
     payload = _export(
         _span(
-            's1',
+            'c1',
             'chat',
             start=1,
             end=2,
-            attributes=_chat_attributes(
-                **{
-                    'vendor.custom.flag': _str('kept'),
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part('yo')]}
-                    ),
-                }
-            ),
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('chat')},
+                {'key': 'gen_ai.usage.prompt_tokens', 'value': _int(3)},
+                {'key': 'gen_ai.usage.completion_tokens', 'value': _int(4)},
+                {'key': 'gen_ai.prompts', 'value': _str('legacy question')},
+                {'key': 'gen_ai.completions', 'value': _str('legacy answer')},
+            ],
+        )
+    )
+
+    trace, messages = import_otlp_trace(payload)
+
+    assert trace.events[0].token_usage == {'input': 3, 'output': 4, 'total': 7}
+    assert messages[0].text == 'legacy question'
+    assert messages[1].text == 'legacy answer'
+
+
+def test_unknown_attribute_survives_in_payload():
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'vendor.custom.flag': _str('kept'),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
         )
     )
 
@@ -194,39 +370,7 @@ def test_unknown_attribute_survives_in_payload():
     assert trace.events[0].payload['vendor.custom.flag'] == 'kept'
 
 
-def test_unknown_operation_is_kept_visible_not_silently_dropped():
-    payload = _export(
-        _span(
-            's1',
-            'chat',
-            start=1,
-            end=2,
-            attributes=_chat_attributes(
-                **{
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part('yo')]}
-                    ),
-                }
-            ),
-        ),
-        _span(
-            's2',
-            'weird',
-            start=3,
-            end=4,
-            attributes=[{'key': 'gen_ai.operation.name', 'value': _str('embedding_v2')}],
-        ),
-    )
-
-    trace, _ = import_otlp_trace(payload)
-    unsupported = [e for e in trace.events if e.payload.get('unsupported_operation')]
-    assert len(unsupported) == 1
-    assert unsupported[0].payload['operation'] == 'embedding_v2'
-
-
-def test_missing_message_content_is_rejected_with_span_id():
-    # Metadata-only export (content capture disabled) must not import as an empty trace.
+def test_missing_message_content_is_rejected_with_content_capture_hint():
     payload = _export(_span('span-42', 'chat', start=1, end=2, attributes=_chat_attributes()))
 
     with pytest.raises(OTLPImportError, match='content capture'):
@@ -264,47 +408,37 @@ def test_no_chat_span_is_rejected():
 
 
 def test_sample_association_by_attribute():
-    def chat(span_id: str, sample_id: str) -> dict:
-        return _span(
+    def chat(span_id: str, sample_id: str, start: int) -> dict:
+        return _chat_span(
             span_id,
-            'chat',
-            start=1,
-            end=2,
-            attributes=_chat_attributes(
-                **{
-                    'evalscope.sample_id': _str(sample_id),
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{sample_id}')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part(f'a-{sample_id}')]}
-                    ),
-                }
-            ),
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _str(sample_id),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{sample_id}')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(f'a-{sample_id}')]}),
+            },
         )
 
-    payload = _export(chat('s1', 'sample-a'), chat('s2', 'sample-b'))
+    payload = _export(chat('s1', 'sample-a', 1), chat('s2', 'sample-b', 3))
 
     trace, messages = import_otlp_trace(payload, expected_sample_id='sample-b')
 
-    assert len(trace.events) == 1
+    assert len([e for e in trace.events if e.type is EventType.MODEL_GENERATE]) == 1
     assert messages[0].text == 'q-sample-b'
 
 
 def test_unresolvable_sample_id_names_the_missing_value():
     payload = _export(
-        _span(
+        _chat_span(
             's1',
-            'chat',
             start=1,
             end=2,
-            attributes=_chat_attributes(
-                **{
-                    'evalscope.sample_id': _str('sample-a'),
-                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]}),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part('yo')]}
-                    ),
-                }
-            ),
+            **{
+                'evalscope.sample_id': _str('sample-a'),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
         )
     )
 
@@ -314,23 +448,18 @@ def test_unresolvable_sample_id_names_the_missing_value():
 
 def test_tool_result_message_is_reconstructed():
     payload = _export(
-        _span(
-            's1',
-            'chat',
+        _chat_span(
+            'c1',
             start=1,
             end=2,
-            attributes=_chat_attributes(
-                **{
-                    'gen_ai.input.messages': _messages_attr(
-                        {'role': 'user', 'parts': [_text_part('search')]},
-                        {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'c1', 'name': 'search', 'arguments': {}}]},
-                        {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'c1', 'content': 'result'}]},
-                    ),
-                    'gen_ai.output.messages': _messages_attr(
-                        {'role': 'assistant', 'parts': [_text_part('done')]}
-                    ),
-                }
-            ),
+            **{
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('search')]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'c1', 'name': 'search', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'c1', 'content': 'result'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('done')]}),
+            },
         )
     )
 
@@ -340,28 +469,3 @@ def test_tool_result_message_is_reconstructed():
     assert len(tool_messages) == 1
     assert tool_messages[0].text == 'result'
     assert tool_messages[0].tool_call_id == 'c1'
-
-
-def test_legacy_usage_aliases_are_accepted():
-    """Pre-2025 exports used prompt_tokens / completion_tokens."""
-    payload = _export(
-        _span(
-            's1',
-            'chat',
-            start=1,
-            end=2,
-            attributes=[
-                {'key': 'gen_ai.operation.name', 'value': _str('chat')},
-                {'key': 'gen_ai.usage.prompt_tokens', 'value': _int(3)},
-                {'key': 'gen_ai.usage.completion_tokens', 'value': _int(4)},
-                {'key': 'gen_ai.input.messages', 'value': _messages_attr({'role': 'user', 'parts': [_text_part('hi')]})},
-                {
-                    'key': 'gen_ai.output.messages',
-                    'value': _messages_attr({'role': 'assistant', 'parts': [_text_part('yo')]}),
-                },
-            ],
-        )
-    )
-
-    trace, _ = import_otlp_trace(payload)
-    assert trace.events[0].token_usage == {'input': 3, 'output': 4, 'total': 7}

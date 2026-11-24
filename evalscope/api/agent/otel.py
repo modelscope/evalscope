@@ -10,17 +10,27 @@ without re-running the agent under EvalScope.
 Design notes:
 
 * **Third producer, not a new mode.** The result feeds the existing
-  ``_maybe_run_external_agent`` extension point; ``AgentTrace.framework`` is a
-  free-form string, so ``'otel-import'`` needs no contract change.
+  ``_maybe_import_otel_trace`` extension point; ``AgentTrace.framework`` is a
+  free-form string, so ``'otel-import'`` needs no ``EventType`` /
+  ``AgentTrace`` / ``ReviewResult`` change (``TaskConfig`` gains a third
+  ``agent_config`` mode, which is the public contract for that field).
 * **Fail loudly.** GenAI semantic conventions make message content opt-in, so
   an export can carry metadata only. Such an export cannot reconstruct the
   trajectory and is rejected with the offending span id rather than imported as
-  an empty trace that silently scores 0.
+  an empty trace that silently scores 0. A final assistant turn that carries a
+  tool call and no text is an error, not an empty prediction.
 * **Unknown attributes survive.** Vendor-specific and future-semconv attributes
   are preserved in ``AgentTraceEvent.payload`` so the importer does not need a
   release per OTel version.
+
+Semantic-convention baseline: GenAI conventions are still at Development status
+(https://opentelemetry.io/docs/specs/semconv/gen-ai/). The importer is written
+against attribute names that have been stable across the v1.36-v1.43 line, and
+accepts the pre-v1.36 flat names (``gen_ai.prompts`` / ``gen_ai.completions``
+and ``gen_ai.usage.prompt_tokens`` / ``completion_tokens``) as a fallback.
 """
 
+from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.agent.trace import AgentTrace, AgentTraceEvent, EventType
@@ -42,24 +52,51 @@ FRAMEWORK = 'otel-import'
 #: share one export. Absent means "one export per sample" (the default).
 DEFAULT_SAMPLE_ID_ATTRIBUTE = 'evalscope.sample_id'
 
-# GenAI semantic-convention attribute names (2026-11 baseline; pre-2025
-# names are accepted through ``_USAGE_FALLBACK``).
+# GenAI semantic-convention attribute names (stable across v1.36-v1.43).
 _OP_NAME = 'gen_ai.operation.name'
 _USAGE_INPUT = 'gen_ai.usage.input_tokens'
 _USAGE_OUTPUT = 'gen_ai.usage.output_tokens'
-_USAGE_FALLBACK = {
-    'gen_ai.usage.prompt_tokens': _USAGE_INPUT,
-    'gen_ai.usage.completion_tokens': _USAGE_OUTPUT,
-}
 _INPUT_MESSAGES = 'gen_ai.input.messages'
 _OUTPUT_MESSAGES = 'gen_ai.output.messages'
 
-#: ``gen_ai.operation.name`` values this importer understands.
+#: Pre-v1.36 flat names, still emitted by default by existing instrumentations.
+_LEGACY_PROMPTS = 'gen_ai.prompts'
+_LEGACY_COMPLETIONS = 'gen_ai.completions'
+_LEGACY_ALIASES = {
+    'gen_ai.usage.prompt_tokens': _USAGE_INPUT,
+    'gen_ai.usage.completion_tokens': _USAGE_OUTPUT,
+}
+
+#: ``gen_ai.operation.name`` values this importer maps onto events.
 _OP_CHAT = 'chat'
 _OP_TEXT_COMPLETION = 'text_completion'
 _OP_EXECUTE_TOOL = 'execute_tool'
 _OP_INVOKE_AGENT = 'invoke_agent'
 _OP_CREATE_AGENT = 'create_agent'
+
+#: Attributes read directly by the importer; everything else is preserved
+#: verbatim in the event payload.
+_KNOWN_ATTRIBUTES = {
+    _OP_NAME,
+    _USAGE_INPUT,
+    _USAGE_OUTPUT,
+    *_LEGACY_ALIASES,
+    _INPUT_MESSAGES,
+    _OUTPUT_MESSAGES,
+    _LEGACY_PROMPTS,
+    _LEGACY_COMPLETIONS,
+    'gen_ai.request.model',
+    'gen_ai.response.model',
+    'gen_ai.tool.name',
+    'gen_ai.tool.call.arguments',
+    'gen_ai.tool.call.result',
+    'gen_ai.tool.call.id',
+    'gen_ai.agent.name',
+    'gen_ai.agent.id',
+}
+
+#: OTel span status codes (``status.code``).
+_STATUS_ERROR = 2
 
 
 class OTLPImportError(ValueError):
@@ -68,6 +105,11 @@ class OTLPImportError(ValueError):
     Every instance names the offending span so the user can find it in the
     export; the importer never degrades to an empty trace.
     """
+
+
+# ---------------------------------------------------------------------------
+# OTLP decoding helpers
+# ---------------------------------------------------------------------------
 
 
 def _attr_value(value: Dict[str, Any]) -> Any:
@@ -90,13 +132,13 @@ def _attr_value(value: Dict[str, Any]) -> Any:
 
 
 def _span_attributes(span: Dict[str, Any]) -> Dict[str, Any]:
-    """Flatten a span's attribute list, applying the pre-2025 usage aliases."""
+    """Flatten a span's attribute list, applying the pre-v1.36 aliases."""
     attrs: Dict[str, Any] = {}
     for item in span.get('attributes', []):
         key = item.get('key')
         if not key:
             continue
-        attrs[_USAGE_FALLBACK.get(key, key)] = _attr_value(item.get('value', {}))
+        attrs[_LEGACY_ALIASES.get(key, key)] = _attr_value(item.get('value', {}))
     return attrs
 
 
@@ -120,50 +162,62 @@ def _start_ns(span: Dict[str, Any]) -> int:
         return 0
 
 
-def _step_depths(spans: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Map span id → nesting depth (root spans are 0)."""
-    by_id = {_span_id(span): span for span in spans}
-    depths: Dict[str, int] = {}
+def _latency_ms(span: Dict[str, Any]) -> Optional[float]:
+    """Span duration in milliseconds, when start/end timestamps are present."""
+    try:
+        start = int(span.get('startTimeUnixNano') or 0)
+        end = int(span.get('endTimeUnixNano') or 0)
+    except (TypeError, ValueError):
+        return None
+    if not start or not end or end < start:
+        return None
+    return (end - start) / 1e6
 
-    def depth(span_id: str, seen: Optional[set] = None) -> int:
-        if span_id in depths:
-            return depths[span_id]
-        seen = seen or set()
-        if span_id in seen:  # cycle guard — malformed export
-            return 0
-        seen.add(span_id)
-        span = by_id.get(span_id)
-        parent = (span or {}).get('parentSpanId')
-        value = 0 if not parent or parent not in by_id else depth(parent, seen) + 1
-        depths[span_id] = value
-        return value
 
-    for span in spans:
-        depth(_span_id(span))
-    return depths
+def _json_dumps(value: Any) -> str:
+    import json
+
+    return json.dumps(value, ensure_ascii=False, default=str)
 
 
 def _usage(attrs: Dict[str, Any]) -> Optional[Dict[str, int]]:
-    """Build ``token_usage`` from ``gen_ai.usage.*`` when both counts exist."""
+    """Build ``token_usage`` from ``gen_ai.usage.*`` when any count exists."""
     prompt = attrs.get(_USAGE_INPUT)
     completion = attrs.get(_USAGE_OUTPUT)
     if prompt is None and completion is None:
         return None
-    usage = {
-        'input': int(prompt or 0),
-        'output': int(completion or 0),
-    }
+    usage = {'input': int(prompt or 0), 'output': int(completion or 0)}
     usage['total'] = usage['input'] + usage['output']
     return usage
 
 
-def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str] = None) -> Optional[ChatMessage]:
-    """Convert one ``gen_ai.*.messages[].parts[]`` entry into a ChatMessage.
+def _span_error_message(span: Dict[str, Any]) -> Optional[str]:
+    """Return a message when the span records an error, else ``None``.
 
-    The ``parts[].type`` discriminator follows the GenAI semantic conventions:
-    ``text`` for content, ``tool_call`` for a function call, and
-    ``tool_call_response`` for a tool result.
+    Two sources: ``status.code == ERROR`` (with ``status.message`` when set)
+    and span ``events`` whose ``name`` is ``exception``.
     """
+    status = span.get('status') or {}
+    try:
+        code = int(status.get('code') or 0)
+    except (TypeError, ValueError):
+        code = 0
+    if code == _STATUS_ERROR:
+        return str(status.get('message') or 'span status is ERROR')
+    for event in span.get('events', []):
+        if event.get('name') == 'exception':
+            attrs = {item.get('key'): _attr_value(item.get('value', {})) for item in event.get('attributes', [])}
+            return str(attrs.get('exception.message') or attrs.get('exception.type') or 'span exception')
+    return None
+
+
+# ---------------------------------------------------------------------------
+# ChatMessage reconstruction
+# ---------------------------------------------------------------------------
+
+
+def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str]) -> Optional[ChatMessage]:
+    """Convert one ``gen_ai.*.messages[].parts[]`` entry into a ChatMessage."""
     part_type = part.get('type', 'text')
     if part_type == 'text':
         content = part.get('content', '')
@@ -175,7 +229,6 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str] = Non
             return ChatMessageTool(content=content, tool_call_id=part.get('id'))
         return ChatMessageAssistant(content=content, model=model)
     if part_type == 'tool_call':
-        # ``ToolFunction.arguments`` is a dict; its validator parses JSON strings too.
         arguments = part.get('arguments')
         if not isinstance(arguments, (dict, str)):
             arguments = _json_dumps(arguments)
@@ -194,14 +247,9 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str] = Non
         if not isinstance(content, str):
             content = _json_dumps(content)
         return ChatMessageTool(content=content, tool_call_id=part.get('id'))
-    # Unknown part type: keep it visible rather than dropping content silently.
+    # Unknown part type (blob / uri / vendor extension): keep it visible in a
+    # system message instead of dropping content silently.
     return ChatMessageSystem(content=_json_dumps({'type': part_type, 'raw': part}))
-
-
-def _json_dumps(value: Any) -> str:
-    import json
-
-    return json.dumps(value, ensure_ascii=False, default=str)
 
 
 def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
@@ -215,24 +263,40 @@ def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
         role = entry.get('role', 'user')
         parts = entry.get('parts')
         if not isinstance(parts, list) or not parts:
-            # Some instrumentations put a plain ``content`` on the entry.
             content = entry.get('content')
             if content is None:
                 continue
             parts = [{'type': 'text', 'content': content}]
         for part in parts:
-            message = _part_to_message(role, part, model=model)
+            message = _part_to_message(role, part, model)
             if message is not None:
                 messages.append(message)
     return messages
 
 
-def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage]:
-    """Fold consecutive assistant tool-call messages into one assistant turn.
+def _legacy_messages(attrs: Dict[str, Any], model: Optional[str]) -> List[ChatMessage]:
+    """Reconstruct messages from the pre-v1.36 flat ``gen_ai.prompts`` / ``completions``.
 
-    ``parts[]`` produces one message per part; a single assistant turn with two
-    tool calls should stay one assistant message with two ``tool_calls``.
+    Existing instrumentations keep emitting these by default, so accepting them
+    avoids telling users to enable content capture when the real problem is a
+    naming change.
     """
+    messages: List[ChatMessage] = []
+    prompts = attrs.get(_LEGACY_PROMPTS)
+    if isinstance(prompts, str):
+        messages.append(ChatMessageUser(content=prompts))
+    elif isinstance(prompts, list):
+        messages.extend(ChatMessageUser(content=str(item)) for item in prompts)
+    completions = attrs.get(_LEGACY_COMPLETIONS)
+    if isinstance(completions, str):
+        messages.append(ChatMessageAssistant(content=completions, model=model))
+    elif isinstance(completions, list):
+        messages.extend(ChatMessageAssistant(content=str(item), model=model) for item in completions)
+    return messages
+
+
+def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage]:
+    """Fold consecutive assistant tool-call messages into one assistant turn."""
     merged: List[ChatMessage] = []
     for message in messages:
         last = merged[-1] if merged else None
@@ -248,6 +312,51 @@ def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage
     return merged
 
 
+# ---------------------------------------------------------------------------
+# Step resolution
+# ---------------------------------------------------------------------------
+
+
+def _chat_steps(ordered: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Map span id → turn index.
+
+    ``AgentTraceEvent.step`` is documented as the "0-based loop iteration", not
+    the span nesting depth: the i-th ``chat`` span (in start-time order) is
+    turn ``i``. Tool spans inherit the turn of their nearest ``chat`` ancestor;
+    agent-level spans use 0.
+    """
+    by_id = {_span_id(span): span for span in ordered}
+    step_of: Dict[str, int] = {}
+    turn = 0
+    for span in ordered:
+        if _span_attributes(span).get(_OP_NAME) in (_OP_CHAT, _OP_TEXT_COMPLETION):
+            step_of[_span_id(span)] = turn
+            turn += 1
+
+    def resolve(span: Dict[str, Any]) -> int:
+        span_id = _span_id(span)
+        if span_id in step_of:
+            return step_of[span_id]
+        seen = {span_id}
+        current = span
+        while True:
+            parent = by_id.get(current.get('parentSpanId') or '')
+            if parent is None or _span_id(parent) in seen:
+                return 0
+            parent_id = _span_id(parent)
+            if parent_id in step_of:
+                return step_of[parent_id]
+            seen.add(parent_id)
+            current = parent
+
+    return {_span_id(span): resolve(span) for span in ordered}
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
 def import_otlp_trace(
     payload: Dict[str, Any],
     *,
@@ -261,67 +370,97 @@ def import_otlp_trace(
             ``scopeSpans`` → ``spans``).
         sample_id_attribute: Attribute carrying the eval sample id when several
             samples share one export.
-        expected_sample_id: When set, the export must contain a span whose
-            ``sample_id_attribute`` equals this value (one export per sample
-            keeps the id optional; multi-sample exports require it).
+        expected_sample_id: When set, the export must contain at least one span
+            whose ``sample_id_attribute`` equals this value; spans for other
+            samples are dropped.
 
     Returns:
         The ``AgentTrace`` (``framework='otel-import'``) and the reconstructed
         message history, in the shape ``InferenceResult`` expects.
 
     Raises:
-        OTLPImportError: The export is empty, has no GenAI operation spans, is
+        OTLPImportError: The export is empty, has no GenAI chat spans, is
             missing message content, or cannot be associated with a sample.
     """
     spans = _iter_spans(payload)
     if not spans:
         raise OTLPImportError('OTLP export contains no spans')
 
-    # Sample association: a declared attribute wins; otherwise one export per sample.
+    # --- Sample association -------------------------------------------------
     if expected_sample_id is not None:
-        matched = [span for span in spans if _span_attributes(span).get(sample_id_attribute) == expected_sample_id]
-        if not matched:
+        span_ids = {_span_attributes(span).get(sample_id_attribute) for span in spans}
+        span_ids.discard(None)
+        if not span_ids:
             raise OTLPImportError(
-                f'No span carries {sample_id_attribute}={expected_sample_id!r}; '
-                f'found sample ids: {sorted({_span_attributes(s).get(sample_id_attribute) for s in spans})}'
+                f'No span carries {sample_id_attribute!r}; cannot associate the export with '
+                f'sample {expected_sample_id!r}'
             )
-        spans = matched
+        if expected_sample_id not in span_ids:
+            raise OTLPImportError(
+                f'No span carries {sample_id_attribute}={expected_sample_id!r}; found sample ids: {sorted(span_ids)}'
+            )
+        spans = [span for span in spans if _span_attributes(span).get(sample_id_attribute) == expected_sample_id]
 
-    depths = _step_depths(spans)
     ordered = sorted(spans, key=_start_ns)
+    steps = _chat_steps(ordered)
 
     trace = AgentTrace(framework=FRAMEWORK)
     messages: List[ChatMessage] = []
+    skipped_operations: Counter = Counter()
     chat_turns = 0
     saw_content = False
-    tool_results: Dict[str, ChatMessage] = {}
+    tool_calls_from_messages: set = set()
+    emitted_tool_results: set = set()
 
+    # First pass: reconstruct messages, so TOOL_CALL dedup knows which ids the
+    # message history already carries.
+    for span in ordered:
+        attrs = _span_attributes(span)
+        if attrs.get(_OP_NAME) not in (_OP_CHAT, _OP_TEXT_COMPLETION):
+            continue
+        if chat_turns == 0:
+            input_messages = _messages_from_attr(
+                attrs.get(_INPUT_MESSAGES), attrs.get('gen_ai.request.model')
+            ) or _legacy_messages(attrs, attrs.get('gen_ai.request.model'))
+            if input_messages:
+                messages.extend(input_messages)
+                saw_content = True
+        output_messages = _messages_from_attr(
+            attrs.get(_OUTPUT_MESSAGES), attrs.get('gen_ai.response.model')
+        ) or _legacy_messages({_LEGACY_COMPLETIONS: attrs.get(_LEGACY_COMPLETIONS)}, attrs.get('gen_ai.response.model'))
+        if output_messages:
+            messages.extend(output_messages)
+            saw_content = True
+        chat_turns += 1
+
+    for message in messages:
+        if isinstance(message, ChatMessageAssistant) and message.tool_calls:
+            for call in message.tool_calls:
+                if call.id:
+                    tool_calls_from_messages.add(call.id)
+
+    # Second pass: events.
     for span in ordered:
         span_id = _span_id(span)
         attrs = _span_attributes(span)
         operation = attrs.get(_OP_NAME)
         if operation is None:
             raise OTLPImportError(f'Span {span_id!r} has no {_OP_NAME!r}; only GenAI operation spans can be imported')
-        depth = depths.get(span_id, 0)
-        model = attrs.get('gen_ai.request.model') or attrs.get('gen_ai.response.model')
+        step = steps.get(span_id, 0)
         payload_extra = {k: v for k, v in attrs.items() if k not in _KNOWN_ATTRIBUTES}
-        if payload_extra:
-            # Unknown/vendor attributes survive instead of being dropped.
-            pass
+
+        error_message = _span_error_message(span)
+        if error_message is not None:
+            trace.add_event(
+                step=step,
+                type=EventType.ERROR,
+                latency_ms=_latency_ms(span),
+                payload={'span_id': span_id, 'operation': operation, 'message': error_message, **payload_extra},
+            )
 
         if operation in (_OP_CHAT, _OP_TEXT_COMPLETION):
-            turn = chat_turns
-            chat_turns += 1
-            input_messages = _messages_from_attr(attrs.get(_INPUT_MESSAGES), model)
-            if turn == 0 and input_messages:
-                messages.extend(input_messages)
-                saw_content = True
-            output_messages = _messages_from_attr(attrs.get(_OUTPUT_MESSAGES), model)
-            if output_messages:
-                messages.extend(output_messages)
-                saw_content = True
             trace.add_event(
-                step=turn,
+                step=step,
                 type=EventType.MODEL_GENERATE,
                 latency_ms=_latency_ms(span),
                 token_usage=_usage(attrs),
@@ -334,51 +473,59 @@ def import_otlp_trace(
             tool_args = attrs.get('gen_ai.tool.call.arguments')
             tool_result = attrs.get('gen_ai.tool.call.result')
             call_id = str(attrs.get('gen_ai.tool.call.id') or span_id)
-            trace.add_event(
-                step=depth,
-                type=EventType.TOOL_CALL,
-                latency_ms=_latency_ms(span),
-                payload={
-                    'span_id': span_id,
-                    'operation': operation,
-                    'tool_call_id': call_id,
-                    'name': tool_name,
-                    'arguments': tool_args,
-                    **payload_extra,
-                },
-            )
-            if tool_result is not None:
-                tool_results[call_id] = ChatMessageTool(
-                    content=tool_result if isinstance(tool_result, str) else _json_dumps(tool_result),
-                    tool_call_id=call_id,
+            # Messages are the source of truth for TOOL_CALL; synthesise one only
+            # when the message history has no matching part.
+            if call_id not in tool_calls_from_messages:
+                trace.add_event(
+                    step=step,
+                    type=EventType.TOOL_CALL,
+                    payload={
+                        'span_id': span_id,
+                        'operation': operation,
+                        'tool_call_id': call_id,
+                        'name': tool_name,
+                        'arguments': tool_args,
+                        **payload_extra,
+                    },
                 )
-            trace.add_event(
-                step=depth,
-                type=EventType.TOOL_RESULT,
-                payload={'span_id': span_id, 'operation': operation, 'tool_call_id': call_id, **payload_extra},
-            )
+            if call_id not in emitted_tool_results:
+                trace.add_event(
+                    step=step,
+                    type=EventType.TOOL_RESULT,
+                    latency_ms=_latency_ms(span),
+                    payload={
+                        'span_id': span_id,
+                        'operation': operation,
+                        'tool_call_id': call_id,
+                        'result': tool_result,
+                        **payload_extra,
+                    },
+                )
+                emitted_tool_results.add(call_id)
             continue
 
-        if operation in (_OP_INVOKE_AGENT, _OP_CREATE_AGENT):
+        if operation == _OP_INVOKE_AGENT:
             trace.add_event(
-                step=depth,
+                step=step,
                 type=EventType.RUN_START,
                 payload={'span_id': span_id, 'operation': operation, **payload_extra},
             )
             trace.add_event(
-                step=depth,
+                step=step,
                 type=EventType.RUN_END,
                 latency_ms=_latency_ms(span),
-                payload={'span_id': span_id, 'operation': operation, **payload_extra},
+                payload={'span_id': span_id, 'operation': operation},
             )
             continue
 
-        # Unknown operation name: keep it visible, do not invent an EventType.
-        trace.add_event(
-            step=depth,
-            type=EventType.ERROR,
-            payload={'span_id': span_id, 'operation': operation, 'unsupported_operation': True, **payload_extra},
-        )
+        if operation == _OP_CREATE_AGENT:
+            # Constructing an agent is setup, not an invocation: no run boundary.
+            # Its identifying attributes ride along on the invoke_agent payload.
+            continue
+
+        # Valid-but-uninteresting (embeddings / generate_content) or vendor op:
+        # skip and count, so a healthy RAG trace is not marked as an error.
+        skipped_operations[operation] += 1
 
     if chat_turns == 0:
         raise OTLPImportError(
@@ -389,37 +536,16 @@ def import_otlp_trace(
         raise OTLPImportError(
             f'No message content found in {chat_turns} chat span(s). GenAI semantic conventions make '
             f'content capture opt-in; enable it on the exporter so {_INPUT_MESSAGES!r} / '
-            f'{_OUTPUT_MESSAGES!r} are emitted'
+            f'{_OUTPUT_MESSAGES!r} (or the legacy {_LEGACY_PROMPTS!r} / {_LEGACY_COMPLETIONS!r}) '
+            f'are emitted'
+        )
+
+    if skipped_operations:
+        # Record what was skipped so nothing disappears without a trace.
+        trace.add_event(
+            step=0,
+            type=EventType.RUN_END,
+            payload={'skipped_operations': dict(skipped_operations)},
         )
 
     return trace, _merge_assistant_tool_calls(messages)
-
-
-def _latency_ms(span: Dict[str, Any]) -> Optional[float]:
-    """Span duration in milliseconds, when start/end timestamps are present."""
-    try:
-        start = int(span.get('startTimeUnixNano') or 0)
-        end = int(span.get('endTimeUnixNano') or 0)
-    except (TypeError, ValueError):
-        return None
-    if not start or not end or end < start:
-        return None
-    return (end - start) / 1e6
-
-
-#: Attributes read directly by the importer; everything else is preserved verbatim
-#: in the event payload.
-_KNOWN_ATTRIBUTES = {
-    _OP_NAME,
-    _USAGE_INPUT,
-    _USAGE_OUTPUT,
-    *_USAGE_FALLBACK,
-    _INPUT_MESSAGES,
-    _OUTPUT_MESSAGES,
-    'gen_ai.request.model',
-    'gen_ai.response.model',
-    'gen_ai.tool.name',
-    'gen_ai.tool.call.arguments',
-    'gen_ai.tool.call.result',
-    'gen_ai.tool.call.id',
-}
