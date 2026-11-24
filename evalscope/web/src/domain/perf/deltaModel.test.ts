@@ -227,11 +227,30 @@ describe('input length eligibility', () => {
     expect(getFixedInputLength(runs[0])).toBe(1024)
   })
 
+  it('accepts a finite request rate when the report has a fixed concurrency limit', () => {
+    const run = randomRun('rated-closed-loop', 1024, 8)
+    const ratedRun = {
+      ...run,
+      configuration: { ...run.configuration, parallel: '8', rate: '10' },
+      summary_rows: [makeRow(['8', 10, 10, 1, 1.2, 100], 100)],
+    }
+
+    const result = getInputLengthEligibility([ratedRun])
+
+    expect(result.eligible).toBe(true)
+    expect(result.points).toEqual([
+      { runPath: 'rated-closed-loop', inputLength: 1024, concurrency: 8, requests: 100 },
+    ])
+  })
+
   it.each([
     ['missingConfiguration', { configuration: undefined }],
     ['notRandom', { configuration: { dataset: 'openqa', min_prompt_length: '1024', max_prompt_length: '1024', rate: '-1' } }],
     ['variableLength', { configuration: { dataset: 'random', min_prompt_length: '1024', max_prompt_length: '2048', rate: '-1' } }],
-    ['openLoop', { configuration: { dataset: 'random', min_prompt_length: '1024', max_prompt_length: '1024', rate: '10' } }],
+    ['openLoop', {
+      configuration: { dataset: 'random', min_prompt_length: '1024', max_prompt_length: '1024', rate: '10' },
+      summary_rows: [makeRow(['0', 10, 10, 1, 1.2, 100], 100)] as SummaryRow[],
+    }],
     ['missingWorkload', { summary_rows: [] as SummaryRow[] }],
   ] as const)('rejects %s', (code, overrides) => {
     const run = randomRun('a', 1024)

@@ -456,6 +456,19 @@ class TestPerfArchive(unittest.TestCase):
         self.assertIn(b'C=1', response.data)
         self.assertNotIn(b'R1 \xc2\xb7 my-model', response.data)
 
+    def test_compare_chart_input_length_accepts_rate_limited_concurrency_run(self):
+        self._make_input_length_run(
+            'rated-closed-loop',
+            1024,
+            sub_name='parallel_8_number_16',
+            args={'parallel': 8, 'rate': 10},
+        )
+
+        response = self._compare(['rated-closed-loop'], x_axis='input_length')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'C=8', response.data)
+
     def test_compare_chart_input_length_rejects_ineligible_runs(self):
         self._make_input_length_run('valid-input', 2048)
         cases = (

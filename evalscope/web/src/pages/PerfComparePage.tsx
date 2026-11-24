@@ -111,7 +111,7 @@ function chartMetricKey(run: PerfDetailResponse, chart: string): string {
   if (chart === 'tpot') return 'avg_tpot'
   if (chart === 'rps') return 'request_throughput'
   if (chart === 'success') return 'success_rate'
-  return run.is_embedding ? 'input_token_throughput' : 'output_token_throughput'
+  return perfRunMode(run) === 'generation' ? 'output_token_throughput' : 'input_token_throughput'
 }
 
 export default function PerfComparePage() {

@@ -295,11 +295,6 @@ function parsePositiveInteger(value: string | undefined): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 }
 
-function closedLoop(run: PerfDetailResponse): boolean {
-  const rates = run.configuration?.rate?.split(',').map((value) => Number(value.trim()))
-  return rates !== undefined && rates.length > 0 && rates.every((rate) => rate === -1)
-}
-
 export function getFixedInputLength(run: PerfDetailResponse): number | null {
   if (run.configuration?.dataset?.trim().toLowerCase() !== 'random') return null
   const min = parsePositiveInteger(run.configuration?.min_prompt_length)
@@ -319,7 +314,6 @@ export function getInputLengthEligibility(runs: PerfDetailResponse[]): InputLeng
     if (inputLength === null) {
       return { eligible: false, issue: { code: 'variableLength', runPath: run.path }, points }
     }
-    if (!closedLoop(run)) return { eligible: false, issue: { code: 'openLoop', runPath: run.path }, points }
     if (run.summary_rows.length === 0) {
       return { eligible: false, issue: { code: 'missingWorkload', runPath: run.path }, points }
     }
@@ -327,9 +321,8 @@ export function getInputLengthEligibility(runs: PerfDetailResponse[]): InputLeng
     for (const row of run.summary_rows) {
       const config = workloadConfig(run, row)
       const concurrency = parsePositiveInteger(config.find((entry) => entry.key === 'concurrency')?.value)
-      const rate = Number(config.find((entry) => entry.key === 'request_rate')?.value)
-      if (concurrency === null || rate !== -1) {
-        return { eligible: false, issue: { code: 'missingWorkload', runPath: run.path }, points }
+      if (concurrency === null) {
+        return { eligible: false, issue: { code: 'openLoop', runPath: run.path }, points }
       }
       const key = `${inputLength}:${concurrency}`
       if (pointKeys.has(key)) return { eligible: false, issue: { code: 'duplicatePoint', runPath: run.path }, points }

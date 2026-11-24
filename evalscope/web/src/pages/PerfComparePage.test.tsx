@@ -302,6 +302,31 @@ describe('PerfComparePage', () => {
     expect(screen.getByTestId('chart-Latency (s)')).toHaveAttribute('data-src', expect.not.stringContaining('x_axis='))
   })
 
+  it('enables input-length trends for concurrency runs with a finite configured rate', async () => {
+    const ratedClosedLoop = (path: string, inputLength: number) => {
+      const base = makeRandomDetail(path, inputLength)
+      return {
+        ...base,
+        configuration: { ...base.configuration, parallel: '8', rate: '10' },
+        summary_rows: [{
+          ...base.summary_rows[0],
+          values: { ...base.summary_rows[0].values, concurrency: 8, request_rate: 10 },
+        }],
+      }
+    }
+    mockDetails({
+      'run-a': ratedClosedLoop('run-a', 1024),
+      'run-b': ratedClosedLoop('run-b', 2048),
+    })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+
+    const inputLength = screen.getByRole('button', { name: 'Input length' })
+    expect(inputLength).toBeEnabled()
+    expect(screen.queryByTestId('input-length-unavailable')).not.toBeInTheDocument()
+    fireEvent.click(inputLength)
+    expect(screen.getByTestId('chart-Latency (s)')).toHaveAttribute('data-src', expect.stringContaining('x_axis=input_length'))
+  })
+
   it('shows reliable input labels and switches every chart to the input-length axis', async () => {
     mockDetails(Object.fromEntries([1024, 2048, 4096, 8192].map((length, index) => [
       `run-${index}`,
@@ -350,5 +375,32 @@ describe('PerfComparePage', () => {
     expect(chart.getAllByText('1.2 s')).toHaveLength(2)
     expect(chart.queryByText('Absolute delta')).not.toBeInTheDocument()
     expect(chart.queryByText('Candidate')).not.toBeInTheDocument()
+  })
+
+  it('uses input throughput in Tokens/sec fallback tables for SystemOne and AutoTrust', async () => {
+    const decision = (path: string, apiType: 'systemone' | 'autotrust', inputThroughput: number) => {
+      const base = makePerfDetail({ path, api_type: apiType, dataset: 'line_by_line', is_embedding: false })
+      const columns = base.summary_columns.map((column) => column.key === 'output_token_throughput'
+        ? { ...column, key: 'input_token_throughput', label: 'Input throughput (tokens/s)' }
+        : column)
+      const values: Record<string, number | null> = { ...base.summary_rows[0].values, input_token_throughput: inputThroughput }
+      const sampleCounts: Record<string, number> = { ...base.summary_rows[0].sample_counts, input_token_throughput: 200 }
+      delete values.output_token_throughput
+      delete sampleCounts.output_token_throughput
+      return {
+        ...base,
+        summary_columns: columns,
+        summary_rows: [{ values, sample_counts: sampleCounts }],
+      }
+    }
+    mockDetails({
+      'run-a': decision('run-a', 'systemone', 500),
+      'run-b': decision('run-b', 'autotrust', 700),
+    })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+
+    const chart = within(screen.getByTestId('chart-Tokens/sec'))
+    expect(chart.getByText('500 tok/s')).toBeInTheDocument()
+    expect(chart.getByText('700 tok/s')).toBeInTheDocument()
   })
 })
