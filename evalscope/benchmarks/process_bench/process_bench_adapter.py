@@ -9,6 +9,8 @@ from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.report import Report
+from evalscope.report.report import normalize_score
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -32,6 +34,7 @@ Please put your final answer (i.e., the index) in \boxed{{}}.
 @register_benchmark(
     BenchmarkMeta(
         name='process_bench',
+        evaluation_version='v1.1',
         pretty_name='ProcessBench',
         tags=[Tags.MATH, Tags.REASONING],
         description="""
@@ -192,6 +195,18 @@ class ProcessBenchAdapter(DefaultDataAdapter):
             )
 
         return agg_list
+
+    def _on_generate_report(self, scores: Dict[str, List[AggScore]], model_name: str) -> Report:
+        report = super()._on_generate_report(scores, model_name)
+        for metric in report.metrics:
+            if metric.identity.name == 'simple_f1_score':
+                # ProcessBench Table 3 gives each subset with a defined F1 equal weight.
+                values = [
+                    s.score for subset in scores.values() for s in subset if s.identity == metric.identity and s.num
+                ]
+                if values:
+                    metric.score = normalize_score(sum(values) / len(values))
+        return report
 
     @staticmethod
     def _extract_answer_from_text(solution_text: str):
