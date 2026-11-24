@@ -80,14 +80,20 @@ def test_all_perf_fields_survive_actual_config_parsing(client, monkeypatch: pyte
     assert body['max_tokens'] == 32 and body['min_tokens'] == 0
 
 
-@pytest.mark.parametrize('api', ['openai', 'local'])
+@pytest.mark.parametrize('api', ['openai', 'openai_responses', 'anthropic', 'local'])
 def test_every_perf_ui_option_has_http_and_request_implementation(api: str) -> None:
+    if api == 'anthropic':
+        pytest.importorskip('anthropic')
     args = Arguments(model='same-model', api=api, number=1)
     plugin = ApiRegistry.get_class(api)
     assert plugin.process_request is not ApiPluginBase.process_request
     assert plugin(args).build_request([{'role': 'user', 'content': '2+2?'}]) is not None
     if api == 'local':
         assert args.url == 'http://127.0.0.1:8877/v1/chat/completions'
+    elif api == 'openai_responses':
+        assert args.url == 'http://127.0.0.1:8877/v1/responses'
+    elif api == 'anthropic':
+        assert args.url == 'http://127.0.0.1:8877/v1/messages'
 
 
 @pytest.mark.parametrize('overrides', [

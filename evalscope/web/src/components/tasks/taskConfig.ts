@@ -9,12 +9,29 @@ import {
   validateRequestRate,
 } from '@/domain/form/validation'
 
+export const CONNECTION_APIS = {
+  openai: 'OpenAI-compatible',
+  openai_responses: 'OpenAI Responses',
+  anthropic: 'Anthropic Messages',
+  local: 'Local Transformers',
+} as const
+
+export type ConnectionApi = keyof typeof CONNECTION_APIS
+
+export function isConnectionApi(api: string): api is ConnectionApi {
+  return Object.hasOwn(CONNECTION_APIS, api)
+}
+
+export function isRemoteApi(api: ConnectionApi): boolean {
+  return api !== 'local'
+}
+
 export interface ModelConnection {
   model: string
   url: string
   apiKey: string
   alias: string
-  api: 'openai' | 'local'
+  api: ConnectionApi
 }
 
 export interface EvalDraft {
@@ -102,7 +119,7 @@ export type FieldErrors = Record<string, string>
 export function validateConnection(connection: ModelConnection): FieldErrors {
   const errors: FieldErrors = {}
   if (!connection.model.trim()) errors.model = FORM_MESSAGE_KEYS.required
-  if (connection.api === 'openai') {
+  if (isRemoteApi(connection.api)) {
     const error = validateApiUrl(connection.url, true)
     if (error) errors.url = error
   }
@@ -202,11 +219,24 @@ export function validatePerfDraft(draft: PerfDraft): FieldErrors {
   return errors
 }
 
+/**
+ * Eval-side `eval_type` value for each remote API. `openai` is omitted so the
+ * backend applies its default (EvalType.OPENAI_API); the others must be sent
+ * explicitly so TaskConfig picks the right model api.
+ */
+const EVAL_TYPE_BY_API: Partial<Record<ConnectionApi, string>> = {
+  openai_responses: 'openai_responses_api',
+  anthropic: 'anthropic_api',
+}
+
 /** Only explicit connection fields can become transport parameters. */
 export function connectionPayload(connection: ModelConnection, kind: 'eval' | 'perf'): Record<string, unknown> {
   const payload: Record<string, unknown> = { model: connection.model.trim() }
   if (kind === 'perf') payload.api = connection.api
-  if (connection.api === 'openai') {
+  if (kind === 'eval' && connection.api in EVAL_TYPE_BY_API) {
+    payload.eval_type = EVAL_TYPE_BY_API[connection.api]
+  }
+  if (isRemoteApi(connection.api)) {
     payload[kind === 'eval' ? 'api_url' : 'url'] = connection.url.trim()
     if (connection.apiKey) payload.api_key = connection.apiKey
   }

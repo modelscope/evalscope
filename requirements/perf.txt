@@ -1,5 +1,6 @@
 # http requests
 aiohttp
+anthropic>=0.119.0
 fastapi
 jinja2
 # for calc result.

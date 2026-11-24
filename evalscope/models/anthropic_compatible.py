@@ -81,13 +81,13 @@ class AnthropicCompatibleAPI(ModelAPI):
             base_url or os.environ.get('ANTHROPIC_BASE_URL', None) or os.environ.get('EVALSCOPE_BASE_URL', None)
         )
 
-        # Remove trailing slash from base_url if present
+        # The SDK appends /v1/messages to the base URL, including any proxy prefix.
         if self.base_url:
             self.base_url = self.base_url.rstrip('/')
-            # Anthropic SDK automatically appends /v1/messages, so we need to remove /v1 suffix
-            # to avoid double /v1 in the URL (e.g., /v1/v1/messages)
-            if self.base_url.endswith('/v1'):
-                self.base_url = self.base_url[:-3]
+            if self.base_url.endswith('/v1/messages'):
+                self.base_url = self.base_url.removesuffix('/v1/messages')
+            else:
+                self.base_url = self.base_url.removesuffix('/v1')
 
         # Create Anthropic client
         client_kwargs: Dict[str, Any] = {
