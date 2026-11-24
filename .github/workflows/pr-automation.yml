@@ -102,7 +102,7 @@ jobs:
                 github.event.workflow_run.display_title) &&
       (needs.resolve.outputs.command != '0' || vars.PR_REVIEW_AUTO_START_AT != '')
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 37
     permissions:
       actions: read
       contents: read

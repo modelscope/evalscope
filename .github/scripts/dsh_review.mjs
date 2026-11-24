@@ -118,7 +118,7 @@ const inputs = {
   'progress-comment': 'false',
   prompt: readFileSync(join(review, 'prompt.txt'), 'utf8'),
   'reasoning-effort': PR_REVIEW_REASONING_EFFORT || 'high',
-  'timeout-minutes': '15',
+  'timeout-minutes': '30',
   'worker-network': 'false',
 };
 const actionInputs = Object.fromEntries(Object.entries(inputs).map(([key, value]) => [`INPUT_${key.toUpperCase()}`, value]));
