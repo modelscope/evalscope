@@ -11,6 +11,8 @@ export interface SegmentedOption<T extends string> {
   icon?: ReactNode
   /** Optional trailing count, rendered de-emphasized. */
   count?: number
+  disabled?: boolean
+  title?: string
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -66,6 +68,8 @@ export default function SegmentedControl<T extends string>({
             type="button"
             aria-label={option.accessibleLabel ?? option.label}
             aria-pressed={isActive}
+            disabled={option.disabled}
+            title={option.title}
             onClick={() => onChange(option.value)}
             className={cn(
               'flex min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap transition-colors',
@@ -74,6 +78,7 @@ export default function SegmentedControl<T extends string>({
               isActive
                 ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
                 : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
+              option.disabled && 'cursor-not-allowed opacity-40 hover:text-[var(--text-muted)]',
               index < options.length - 1 && 'border-r border-[var(--border)]',
             )}
           >
