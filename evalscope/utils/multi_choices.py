@@ -4,6 +4,8 @@ from typing import List, Optional, Union
 
 from evalscope.api.evaluator import Choices, Target, TaskState
 
+MULTI_CHOICE_ANSWER_PARSER_VERSION = 'v1.1'
+
 FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar questions:
 
 {fewshot}
@@ -208,13 +210,9 @@ def extract_answer_line(text: str) -> Optional[str]:
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
-    # Fallback to find the last upper case letter
-    for letter in reversed(completion):
-        if letter.isupper():
-            # A letter that is not one of the sample's labels cannot be the model's choice, and
-            # returning it would record an answer the model never gave.  Reporting no answer
-            # scores the same (an invalid label never equals the target) and stays diagnosable.
-            return {letter} if letter in allowed_options else None
+    stripped = completion.strip()
+    if stripped in allowed_options:
+        return {stripped}
     return None
 
 
@@ -227,8 +225,8 @@ def _label_prefix(capture: str, allowed_options: set[str]) -> str:
 
     Models routinely justify the choice in the same breath ('ANSWER: B, not C'), and a
     capture rejected as a whole loses the label with the prose: the reply then reaches
-    `_fallback_parse_answer`, which answers with the last capital - typically a distractor
-    named in that justification.  A connector between two labels ('A and B', 'A or B')
+    `_fallback_parse_answer`, which only accepts an unambiguous single-letter output
+    and otherwise reports no answer.  A connector between two labels ('A and B', 'A or B')
     separates list items and is stepped over; a connector anywhere else ends the answer.
     """
     tokens = list(_LABEL_TOKEN_RE.finditer(capture))

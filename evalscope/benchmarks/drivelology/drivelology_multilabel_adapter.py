@@ -7,7 +7,7 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import parse_answers, prompt
+from evalscope.utils.multi_choices import MULTI_CHOICE_ANSWER_PARSER_VERSION, parse_answers, prompt
 
 DESCRIPTION = """
 ## Overview
@@ -75,6 +75,8 @@ The entire content of your response should be of the following format: 'ANSWER: 
     )
 )
 class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
+    answer_parser_version = MULTI_CHOICE_ANSWER_PARSER_VERSION
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.categories = ['inversion', 'wordplay', 'switchbait', 'paradox', 'misdirection']

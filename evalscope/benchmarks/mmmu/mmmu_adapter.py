@@ -8,7 +8,13 @@ from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, extract_answer_line, parse_answers, prompt
+from evalscope.utils.multi_choices import (
+    MULTI_CHOICE_ANSWER_PARSER_VERSION,
+    MultipleChoiceTemplate,
+    extract_answer_line,
+    parse_answers,
+    prompt,
+)
 
 SUBSET_LIST = [
     'Accounting',
@@ -126,6 +132,7 @@ class MMMUAdapter(VisionLanguageAdapter):
     }
     """  # noqa: E501
 
+    answer_parser_version = MULTI_CHOICE_ANSWER_PARSER_VERSION
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):

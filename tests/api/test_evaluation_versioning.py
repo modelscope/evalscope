@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter, MultiChoiceAdapter
 from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config
 from evalscope.constants import HubType
 from evalscope.evaluation_versioning import (
@@ -20,6 +20,7 @@ from evalscope.evaluation_versioning import (
 from evalscope.report import Report, build_analysis_context
 from evalscope.run import run_task
 from evalscope.utils.io_utils import dict_to_yaml, yaml_to_dict
+from evalscope.utils.multi_choices import MULTI_CHOICE_ANSWER_PARSER_VERSION
 
 
 def _task_config(**kwargs) -> TaskConfig:
@@ -111,6 +112,28 @@ def test_identity_changes_only_for_evaluation_semantics() -> None:
     assert first.fingerprint != build_benchmark_identity(changed_image_limit, 'v1.0', config).fingerprint
     agent_config = _task_config(agent_config={'mode': 'native', 'max_steps': 3})
     assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', agent_config).fingerprint
+
+
+def test_multi_choice_answer_parser_version_is_scoped_to_consumers() -> None:
+    config = _task_config()
+    meta = _meta()
+    plain_spec = ResolvedBenchmarkSpec.from_adapter(
+        DefaultDataAdapter(benchmark_meta=meta, task_config=config), config
+    )
+    multi_choice_spec = ResolvedBenchmarkSpec.from_adapter(
+        MultiChoiceAdapter(benchmark_meta=meta, task_config=config), config
+    )
+
+    assert plain_spec.answer_parser_version is None
+    assert multi_choice_spec.answer_parser_version == MULTI_CHOICE_ANSWER_PARSER_VERSION
+    assert build_benchmark_identity(plain_spec, 'v1.0', config).fingerprint == build_benchmark_identity(
+        ResolvedBenchmarkSpec.from_meta(meta, config), 'v1.0', config
+    ).fingerprint
+
+    previous_multi_choice_spec = multi_choice_spec.model_copy(update={'answer_parser_version': None})
+    assert build_benchmark_identity(
+        previous_multi_choice_spec, 'v1.0', config
+    ).fingerprint != build_benchmark_identity(multi_choice_spec, 'v1.0', config).fingerprint
 
 
 def test_identity_ignores_eval_batch_size() -> None:

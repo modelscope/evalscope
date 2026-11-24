@@ -7,7 +7,12 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import (
+    MULTI_CHOICE_ANSWER_PARSER_VERSION,
+    MultipleChoiceTemplate,
+    parse_answers,
+    prompt,
+)
 
 logger = get_logger()
 
@@ -57,6 +62,8 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
     )
 )
 class Ai2dAdapter(VisionLanguageAdapter):
+    answer_parser_version = MULTI_CHOICE_ANSWER_PARSER_VERSION
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
