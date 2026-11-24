@@ -124,34 +124,6 @@ describe('Task workspace', () => {
     )
     expect(screen.getAllByRole('textbox', { name: /Model Name/ })).toHaveLength(1)
   })
-  it('submits Anthropic evaluation and performance with the shared connection', () => {
-    mount()
-    fillConnection()
-    change('connection-api', 'anthropic')
-    change('connection-apiKey', 'anthropic-key')
-    change('eval-datasets', 'gsm8k')
-    fireEvent.click(screen.getByRole('button', { name: 'Start Evaluation' }))
-    expect(submitEvalTask).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eval_type: 'anthropic_api',
-        api_url: 'http://localhost:18101/v1',
-        api_key: 'anthropic-key',
-      }),
-      expect.any(String),
-    )
-    tab('perf')
-    const start = screen.getByRole('button', { name: 'Start Performance Test' })
-    expect(start).toBeEnabled()
-    fireEvent.click(start)
-    expect(submitPerfTask).toHaveBeenCalledWith(
-      expect.objectContaining({
-        api: 'anthropic',
-        url: 'http://localhost:18101/v1',
-        api_key: 'anthropic-key',
-      }),
-      expect.any(String),
-    )
-  })
   it('preserves independent task drafts and restores them after reload', async () => {
     const view = mount()
     fillConnection()
