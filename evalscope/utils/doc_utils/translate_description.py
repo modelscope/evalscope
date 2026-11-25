@@ -87,8 +87,10 @@ _GENERATED_TEXT_TRANSLATIONS = {
     '| **Evaluation Split Version** |': '| **评估划分版本** |',
     '| **Aggregation** |': '| **聚合方式** |',
     '[sandbox guide]': '[沙箱指南]',
+    '[sandbox documentation]': '[沙箱文档]',
     '[usage documentation]': '[使用文档]',
     '[Usage Example]': '[使用示例]',
+    'Few-shot Template': '少样本模板',
 }
 
 

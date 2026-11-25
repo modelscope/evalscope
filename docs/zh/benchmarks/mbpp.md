@@ -2,7 +2,7 @@
 
 ## 概述
 
-MBPP（Mostly Basic Python Problems）是一个包含约 1,000 道众包 Python 编程问题的基准测试，专为入门级程序员设计。它用于评估模型理解问题描述并生成正确 Python 代码的能力。
+MBPP（Mostly Basic Python Problems）是一个包含约 1,000 道众包 Python 编程问题的基准测试，专为初级程序员设计。它用于评估模型理解问题描述并生成正确 Python 代码的能力。
 
 ## 任务描述
 
@@ -13,17 +13,17 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 道众包 Python 
 
 ## 主要特点
 
-- ~1,000 个众包编程问题
-- 涵盖编程基础和标准库使用
-- 每个问题包含任务描述、解决方案和 3 个测试用例
-- 问题设计为初级程序员可解决
-- 通过执行测试用例进行自动评估
+- 约 1,000 道众包编程题目
+- 涵盖编程基础知识和标准库的使用
+- 每道题目包含任务描述、解决方案和 3 个测试用例
+- 题目设计面向初级程序员，确保其可解性
+- 通过执行测试用例实现自动评估
 
 ## 评估说明
 
 - 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **3-shot** 示例
-- **安全警告**：需要 Sandbox 环境以确保代码执行的安全性。详情请参阅 [sandbox documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- **安全警告**：需要沙箱环境以确保代码执行的安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
 - 每个问题的默认超时时间为 20 秒
 - 如果存在 `[BEGIN]...[DONE]` 块，则从中提取代码
@@ -77,7 +77,7 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 道众包 Python 
 }
 ```
 
-*注：为便于显示，部分内容已截断。*
+*注意：为便于显示，部分内容已被截断。*
 
 ## 提示模板
 
@@ -89,7 +89,7 @@ You are an expert Python programmer, and here is your task: {question} Your code
 ```
 
 <details>
-<summary>Few-shot Template</summary>
+<summary>少样本模板</summary>
 
 ```text
 You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:

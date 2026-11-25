@@ -114,12 +114,14 @@ config = {
             '# Example\n\n| Metric | Value |\n| Total Samples | 300 |\n'
             '| Prompt Length (Mean) | 10 chars |\n| Prompt Length (Min/Max) | 1 / 20 chars |\n'
             '| **Default Shots** | 0-shot |\n| **默认 Shots** | 0-shot |\n\n[sandbox guide](https://example.com)\n'
-            '[usage documentation](https://example.com)\n'
+            '[sandbox documentation](https://example.com)\n'
+            '[usage documentation](https://example.com)\n<summary>Few-shot Template</summary>\n'
         )
         expected = (
             '# Example\n\n| 指标 | 值 |\n| 总样本数 | 300 |\n'
             '| 提示词长度（平均值） | 10 字符 |\n| 提示词长度（最小/最大值） | 1 / 20 字符 |\n'
-            '| **默认示例数** | 0-shot |\n| **默认示例数** | 0-shot |\n\n[沙箱指南](https://example.com)\n[使用文档](https://example.com)'
+            '| **默认示例数** | 0-shot |\n| **默认示例数** | 0-shot |\n\n[沙箱指南](https://example.com)\n'
+            '[沙箱文档](https://example.com)\n[使用文档](https://example.com)\n<summary>少样本模板</summary>'
         )
 
         result = translate_readme('# Example\n', 'example', client=_client_returning(translated))
@@ -127,7 +129,7 @@ config = {
         assert result == expected
 
     def test_preserves_generated_labels_inside_code_blocks(self):
-        english = '# Example\n\n```markdown\n## Overview\n\n| Metric | Value |\n[sandbox guide](https://example.com)\n```\n'
+        english = '# Example\n\n```markdown\n## Overview\n\n| Metric | Value |\n[sandbox guide](https://example.com)\n<summary>Few-shot Template</summary>\n```\n'
         translated = '# Example\n\n[CODE_BLOCK_0]\n'
 
         result = translate_readme(english, 'example', client=_client_returning(translated))

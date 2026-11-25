@@ -2,31 +2,31 @@
 
 ## 概述
 
-BigCodeBench 是一个易于使用的基准测试，用于通过代码解决具有挑战性的实际任务。它在更真实的场景下评估大型语言模型（LLMs）的真实编程能力，涵盖了来自 139 个流行库的多样化函数调用，共计 723 个 API 调用。
+BigCodeBench 是一个易于使用的基准测试，用于通过代码解决具有实际意义且富有挑战性的任务。它在更真实的场景下评估大语言模型（LLMs）的实际编程能力，涵盖来自 139 个流行库的多样化函数调用，共计 723 个 API 调用。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
 - **输入**：编程任务描述（文档字符串或自然语言指令）
 - **输出**：完整的 Python 函数实现
-- **库**：139 个流行的 Python 库（numpy、pandas、sklearn 等）
+- **库**：139 个流行的 Python 库（numpy, pandas, sklearn 等）
 
 ## 主要特点
 
 - 1,140 个具有丰富上下文的 Python 编程任务
-- 两种评估模式：Complete（基于 docstring）和 Instruct（基于自然语言）
+- 两种评估模式：Complete（文档字符串）和 Instruct（自然语言）
 - 涵盖来自 139 个流行库的多样化函数调用
 - 使用 `unittest.TestCase` 进行彻底的正确性验证
 - 支持 pass@k 指标计算
 
 ## 评估说明
 
-- **需要沙箱环境**：要求预装 70+ 个 Python 库的沙箱环境
-- 通过 `split` 参数提供两种模式：`complete`（docstring 补全）或 `instruct`（自然语言指令）
+- **需要沙箱环境**：需要预装了 70+ 个 Python 库的沙箱环境
+- 通过 `split` 参数提供两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
 - 默认每个问题的超时时间为 240 秒
-- `calibrate` 选项会在前面添加 code_prompt 以对齐函数签名
+- `calibrate` 选项会在代码前添加 code_prompt，以对齐函数签名
 - 支持通过 `TaskConfig.sandbox.engine='e2b'` 使用官方 E2B；阿里云 Agent Sandbox 需要合适的评估模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 有关设置信息，请参阅 [sandbox documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- 有关设置信息，请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -43,11 +43,11 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决具�
 
 ## 数据统计
 
-| 指标 | 数值 |
+| 指标 | 值 |
 |--------|-------|
 | 总样本数 | 1,140 |
 | 提示词长度（平均值） | 662.78 字符 |
-| 提示词长度（最小/最大） | 232 / 3464 字符 |
+| 提示词长度（最小/最大值） | 232 / 3464 字符 |
 
 ## 样例示例
 
@@ -91,7 +91,7 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决具�
 | `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
 | `calibrate` | `bool` | `True` | 是否在解决方案前添加 code_prompt 以对齐函数签名。 |
 | `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后，将覆盖默认的沙箱镜像。 |
-| `dockerfile` | `str` | `Dockerfile` | docker_build_context 内的 Dockerfile 路径。 |
+| `dockerfile` | `str` | `Dockerfile` | docker_build_context 中的 Dockerfile 路径。 |
 | `force_rebuild` | `bool` | `False` | 强制重新构建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
