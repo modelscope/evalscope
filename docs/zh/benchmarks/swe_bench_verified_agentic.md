@@ -2,37 +2,37 @@
 
 ## 概述
 
-SWE-bench Verified Agentic 是 SWE-bench Verified 的 agentic-mode 评估，后者是来自 SWE-bench 的经过人工验证的 500 个样本子集。与 oracle single-turn 变体不同，模型必须自主探索代码仓库、运行 shell 命令、编辑源文件，并在每个实例独立的 Docker 容器中通过多轮 agent loop 提交补丁。
+SWE-bench Verified Agentic 是 SWE-bench Verified 的 agentic-mode 评估，后者是从 SWE-bench 中经过人工验证的 500 个样本子集。与 oracle single-turn 变体不同，模型必须在每个实例专属的 Docker 容器内，通过多轮 agent loop 自主探索代码仓库、运行 shell 命令、编辑源文件并提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复（智能体式）
-- **输入**：GitHub issue 描述（不包含 oracle 文件上下文）
+- **输入**：GitHub issue 描述（无 oracle 文件上下文）
 - **输出**：从 `git diff` 中收集的代码补丁（diff 格式），该补丁是在自主编辑后生成的
-- **仓库**：12 个流行的 Python 项目（Django、Flask、Requests 等）
+- **代码仓库**：12 个流行的 Python 项目（Django、Flask、Requests 等）
 
 ## 主要特点
 
-- 500 组经人工验证的 Issue-Pull Request 配对
+- 500 个经人工验证的 Issue-Pull Request 配对
 - 多轮代理循环（兼容 mini-swe-agent `swebench.yaml`）
-- 每个实例使用独立的 SWE-bench Docker 容器作为执行沙箱
+- 每个实例使用 SWE-bench Docker 容器作为执行沙箱
 - 基于哨兵标记的补丁提交协议 (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
-- 支持函数调用 (`toolcall`) 和基于文本 (`backticks`) 两种动作协议
+- 支持函数调用 (`toolcall`) 和基于文本 (`backticks`) 的动作协议
 
 ## 评估说明
 
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 在评估前需要 `pip install swebench==4.1.0`
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 在评估前需要执行 `pip install swebench==4.1.0`
 - 为每个代码仓库自动构建/拉取 Docker 镜像
 - 每个实例的最终补丁验证超时时间为 1800 秒（30 分钟）
-- 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 支持本地镜像构建和远程镜像拉取
+- 详细设置说明请参阅[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 同时支持本地镜像构建和远程镜像拉取
 
 ## Agentic 模式
 
-该基准测试在针对每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（镜像了 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
+该基准测试在针对每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（镜像 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用以及单个 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮包含一个 ` ```mswea_bash_command ``` ` 块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并包含一个单一的 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮对话中包含一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -123,7 +123,7 @@ SWE-bench Verified Agentic 是 SWE-bench Verified 的 agentic-mode 评估，后�
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
@@ -139,7 +139,7 @@ SWE-bench Verified Agentic 是 SWE-bench Verified 的 agentic-mode 评估，后�
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
 | `force_arch` | `str` | `` | 可选地强制指定用于镜像构建/拉取的架构。选项：['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 用于远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
+| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 
@@ -172,7 +172,7 @@ task_cfg = TaskConfig(
     ),
     dataset_args={
         'swe_bench_verified_agentic': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

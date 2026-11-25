@@ -1,36 +1,34 @@
 # SciCode
 
-
 ## 概述
 
-SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生成代码以解决真实科学研究问题方面的能力。它涵盖了来自物理、数学、材料科学、生物学和化学这 5 个主要领域的 16 个子领域。
+SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生成代码以解决真实科学研究问题方面的能力。它涵盖了来自物理学、数学、材料科学、生物学和化学这 5 个主要领域的 16 个子领域。
 
 ## 任务描述
 
-- **任务类型**：科学代码生成
-- **输入**：包含子问题的多步科学问题
-- **输出**：解决每个子问题的 Python 代码
-- **领域**：物理、数学、材料科学、生物学、化学
+- **任务类型**: 科学代码生成
+- **输入**: 包含子问题的多步骤科学问题
+- **输出**: 解决每个子问题的 Python 代码
+- **领域**: 物理学、数学、材料科学、生物学、化学
 
 ## 主要特点
 
-- 问题源自真实的研究场景
-- 涵盖 5 个科学领域的 16 个子领域
-- 涉及知识回忆、推理和综合的多步骤问题
+- 问题源自真实科研场景
+- 涵盖5个科学领域下的16个子领域
+- 多步骤问题，涉及知识回忆、推理与综合
 - 可选提供科学背景信息
 - 需要沙箱环境以安全执行代码
 
 ## 评估说明
 
-- 支持 E2B，需使用包含基准依赖项和测试数据的镜像或模板；特定于提供商的模板要求详见 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- **需要沙箱环境**来执行代码
+- 支持 E2B，需使用包含基准测试依赖项和测试数据的镜像或模板；特定于提供商的模板要求详见 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- **需要沙箱环境**以执行代码
 - 请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
-- 跟踪两个指标：
-  - `main_problem_pass_rate`：完整问题解决率
-  - `subproblem_pass_rate`：单个子问题成功率
+- 跟踪两项指标：
+  - `main_problem_pass_rate`：完整问题已解决
+  - `subproblem_pass_rate`：单个子问题的成功率
 - 配置 `provide_background` 以包含科学上下文
-- 使用自定义 Docker 镜像 `scicode-benchmark:latest`（首次运行时从捆绑的 Dockerfile 自动本地构建）
-
+- 使用自定义 Docker 镜像 `scicode-benchmark:latest`（首次运行时从捆绑的 Dockerfile 在本地自动构建）
 
 ## 属性
 
@@ -44,10 +42,9 @@ SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
-| 指标 | 值 |
+| 指标 | 数值 |
 |--------|-------|
 | 总样本数 | 65 |
 | 提示词长度（平均值） | 1055.94 字符 |
@@ -249,11 +246,11 @@ The response must be formatted as ```python```
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `provide_background` | `bool` | `False` | 在模型的提示中包含科学家为该问题编写的科学背景信息。 |
+| `provide_background` | `bool` | `False` | 在模型的提示词中包含由科学家为问题撰写的科学背景信息。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要一个用于代码执行的沙箱环境。
 
 ```json
 {
@@ -293,7 +290,7 @@ task_cfg = TaskConfig(
     sandbox={'enabled': True},
     dataset_args={
         'scicode': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

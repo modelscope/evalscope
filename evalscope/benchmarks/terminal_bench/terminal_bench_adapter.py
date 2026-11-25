@@ -134,6 +134,8 @@ class _TerminalBenchBase(AgentAdapter):
     """Shared logic for Terminal-Bench adapters."""
 
     hub_dataset_name: str = ''
+    _suppress_doc_sample_example = True
+    _suppress_doc_prompt_statistics = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

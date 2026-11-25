@@ -3,7 +3,7 @@
 
 ## 概述
 
-LiveCodeBench 是一个无数据污染基准测试，用于在真实世界的竞赛编程问题上评估代码生成模型。它持续从编程平台收集新问题，以确保模型在训练期间未见过测试数据。
+LiveCodeBench 是一个无数据污染的基准测试，用于在真实世界的竞赛编程问题上评估代码生成模型。它持续从编程平台收集新问题，以确保模型在训练期间未见过测试数据。
 
 ## 任务描述
 
@@ -22,11 +22,11 @@ LiveCodeBench 是一个无数据污染基准测试，用于在真实世界的竞
 
 ## 评估说明
 
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **0-shot** 评估
-- 提示词遵循官方 LiveCodeBench 运行器规范：一个通用的“专家 Python 程序员”系统消息加上 `### Question` / `### Format` 用户消息
-- **安全警告**：默认情况下，代码在本地环境中执行。我们建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
-- 使用 `start_date` 和 `end_date` 参数按日期筛选问题
+- 提示词遵循官方 LiveCodeBench 运行器：一个通用的“专家 Python 程序员”系统消息加上 `### Question` / `### Format` 用户消息
+- **安全警告**：默认情况下，代码在本地环境中执行。我们建议使用沙箱执行。有关详细信息，请参阅[沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- 使用 `start_date` 和 `end_date` 参数按日期过滤问题
 - 默认超时时间为每个测试用例 6 秒
 - 支持 `pass@k` 指标计算
 
@@ -40,7 +40,7 @@ LiveCodeBench 是一个无数据污染基准测试，用于在真实世界的竞
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
@@ -75,7 +75,7 @@ LiveCodeBench 是一个无数据污染基准测试，用于在真实世界的竞
 }
 ```
 
-*注意：为显示目的，部分内容已被截断。*
+*注意：为显示目的，部分内容已截断。*
 
 ## 提示模板
 
@@ -98,13 +98,13 @@ You are an expert Python programmer. You will be given a question (problem speci
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `start_date` | `str | null` | `None` | 从此日期开始筛选问题 (YYYY-MM-DD)。Null 表示保留所有。 |
-| `end_date` | `str | null` | `None` | 筛选至该日期为止的问题 (YYYY-MM-DD)。Null 表示保留所有。 |
-| `debug` | `bool` | `False` | 启用详细调试日志并绕过某些安全检查。 |
+| `start_date` | `str | null` | `None` | 从此日期开始过滤问题 (YYYY-MM-DD)。Null 保留所有。 |
+| `end_date` | `str | null` | `None` | 过滤直到此日期的问题 (YYYY-MM-DD)。Null 保留所有。 |
+| `debug` | `bool` | `False` | 启用详细调试日志记录并绕过某些安全检查。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要沙箱环境进行代码执行。
 
 ```json
 {
@@ -144,7 +144,7 @@ task_cfg = TaskConfig(
     sandbox={'enabled': True},
     dataset_args={
         'live_code_bench': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

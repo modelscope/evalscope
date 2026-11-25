@@ -69,10 +69,39 @@ _HEADING_TRANSLATIONS = {
 }
 
 
+_GENERATED_TEXT_TRANSLATIONS = {
+    '| Metric | Value |': '| 指标 | 值 |',
+    '| Total Samples |': '| 总样本数 |',
+    '| Prompt Length (Mean) |': '| 提示词长度（平均值） |',
+    '| Prompt Length (Min/Max) |': '| 提示词长度（最小/最大值） |',
+    '| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |': '| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |',
+    '**Per-Subset Statistics:**': '**各子集统计：**',
+    '| **Benchmark Name** |': '| **基准测试名称** |',
+    '| **Dataset ID** |': '| **数据集ID** |',
+    '| **Paper** |': '| **论文** |',
+    '| **Tags** |': '| **标签** |',
+    '| **Metrics** |': '| **指标** |',
+    '| **Default Shots** |': '| **默认示例数** |',
+    '| **默认 Shots** |': '| **默认示例数** |',
+    '| **Evaluation Split** |': '| **评估划分** |',
+    '| **Evaluation Split Version** |': '| **评估划分版本** |',
+    '| **Aggregation** |': '| **聚合方式** |',
+    '[sandbox guide]': '[沙箱指南]',
+    '[usage documentation]': '[使用文档]',
+    '[Usage Example]': '[使用示例]',
+}
+
+
 def _localize_headings(text: str) -> str:
     for english, chinese in _HEADING_TRANSLATIONS.items():
         text = re.sub(rf'(?m)^(##+) {re.escape(english)}$', rf'\1 {chinese}', text)
     return text
+
+
+def _localize_generated_text(text: str) -> str:
+    for english, chinese in _GENERATED_TEXT_TRANSLATIONS.items():
+        text = text.replace(english, chinese)
+    return re.sub(r'(?m)^(\| 提示词长度（[^|]+） \|.*?) chars( \|)$', r'\1 字符\2', text)
 
 
 def _protect_code_blocks(text: str) -> Tuple[str, List[str]]:
@@ -107,6 +136,7 @@ def _localize_usage_comments(block: str) -> str:
     replacements = {
         '# Remove this line for formal evaluation': '# 正式评估时请删除此行',
         '# optional, evaluate specific subsets': '# 可选，用于评估特定子集',
+        '# uses default extra parameters': '# 使用默认额外参数',
     }
     try:
         comments = [
@@ -136,9 +166,12 @@ def translate_readme(readme_content: str, benchmark_name: str, client=None) -> s
     if len(readme_content) <= _MAX_TRANSLATION_CHARS or len(sections) <= 1:
         return _translate_readme_chunk(readme_content, benchmark_name, client)
 
-    translated_sections = [_translate_readme_chunk(section, benchmark_name, client) for section in sections]
-    if any(not section for section in translated_sections):
-        return ''
+    translated_sections = []
+    for section in sections:
+        translated = _translate_readme_chunk(section, benchmark_name, client)
+        if not translated:
+            return ''
+        translated_sections.append(translated)
     return '\n\n'.join(translated_sections).strip()
 
 
@@ -206,8 +239,9 @@ Example translations:
             extra_body={'enable_thinking': False},
         )
         translated = completion.choices[0].message.content.strip()
-        translated = _restore_code_blocks(translated, [_localize_usage_comments(block) for block in code_blocks])
         translated = _localize_headings(translated)
+        translated = _localize_generated_text(translated)
+        translated = _restore_code_blocks(translated, [_localize_usage_comments(block) for block in code_blocks])
 
         # Convert documentation links from English to Chinese
         translated = convert_doc_links(translated)

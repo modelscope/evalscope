@@ -1,14 +1,13 @@
 # SWE-bench_Verified_mini
 
-
 ## 概述
 
-SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50 个精心挑选的样本。该子集在保持与完整数据集相同的性能分布、测试通过率和难度级别的同时，仅需 5GB 存储空间（而非 130GB）。
+SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50 个精心挑选的样本。它在保持与完整数据集相同的性能分布、测试通过率和难度水平的同时，仅需 5GB 存储空间，而非 130GB。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复
-- **输入**：带有仓库上下文的 GitHub issue 描述
+- **输入**：包含仓库上下文的 GitHub issue 描述
 - **输出**：解决该问题的代码补丁（diff 格式）
 - **规模**：50 个样本（完整 Verified 数据集为 500 个样本）
 
@@ -22,12 +21,11 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50
 
 ## 评估说明
 
-- 支持通过 `TaskConfig.sandbox.engine='e2b'` 使用官方 E2B 和阿里云 Agent Sandbox，避免本地 Docker 和本地镜像下载。请参阅 [sandbox guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 评估前需要执行 `pip install swebench==4.1.0`
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 评估前需要 `pip install swebench==4.1.0`
 - Docker 镜像会自动构建/拉取
-- 详细设置请参阅 [usage documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 适合快速原型设计和初步模型评估
-
+- 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 适用于快速原型开发和初步模型评估
 
 ## 属性
 
@@ -38,17 +36,16 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
-
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 50 |
-| 提示词长度 (平均值) | 69595.46 chars |
-| 提示词长度 (最小/最大值) | 7182 / 500669 chars |
+| 提示词长度（平均值） | 69595.46 字符 |
+| 提示词长度（最小/最大值） | 7182 / 500669 字符 |
 
 ## 样例示例
 
@@ -101,7 +98,7 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 {question}
 ```
@@ -112,9 +109,9 @@ SWE-bench Verified Mini 是 SWE-bench Verified 的一个精简子集，包含 50
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
-| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于从所选数据集中心获取推理上下文的 Oracle 数据集 ID。 |
-| `inference_dataset_revision` | `str \| null` | `None` | Oracle 推理数据集的可选修订版本。 |
-| `force_arch` | `str` | `` | 可选强制拉取/构建特定架构的 docker 镜像。选项: ['', 'arm64', 'x86_64'] |
+| `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于从选定的数据集中心获取推理上下文的 Oracle 数据集 ID。 |
+| `inference_dataset_revision` | `str | null` | `None` | Oracle 推理数据集的可选修订版本。 |
+| `force_arch` | `str` | `` | 可选地，强制针对特定架构拉取/构建 Docker 镜像。选项：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
@@ -143,7 +140,7 @@ task_cfg = TaskConfig(
     datasets=['swe_bench_verified_mini'],
     dataset_args={
         'swe_bench_verified_mini': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

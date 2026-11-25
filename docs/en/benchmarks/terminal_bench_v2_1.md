@@ -48,35 +48,10 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
 | Metric | Value |
 |--------|-------|
 | Total Samples | 89 |
-| Prompt Length (Mean) | 0 chars |
-| Prompt Length (Min/Max) | 0 / 0 chars |
 
 ## Sample Example
 
-**Subset**: `test`
-
-```json
-{
-  "input": [
-    {
-      "id": "b10b3c37",
-      "content": ""
-    }
-  ],
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "path": null,
-    "git_url": null,
-    "git_commit_id": null,
-    "name": "terminal-bench/write-compressor",
-    "ref": "sha256:d9ddd9a8e925e2c566b37b2492cbf995afecefe58874e4043ef78d7f3c892c7e",
-    "overwrite": false,
-    "download_dir": "~/.cache/evalscope/terminal_bench_v2_1",
-    "source": "terminal-bench/terminal-bench-2-1"
-  }
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 

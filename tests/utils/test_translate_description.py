@@ -51,6 +51,7 @@ evalscope eval \\
 text = '# Remove this line for formal evaluation'
 config = {
     # subset_list: ['test']  # optional, evaluate specific subsets
+    # extra_params: {}  # uses default extra parameters
     'limit': 10,  # Remove this line for formal evaluation
 }
 ```
@@ -66,6 +67,7 @@ config = {
         assert client.chat.completions.create.call_args.kwargs['model'] == 'qwen3.8-flash'
         assert '--limit 10  # 正式评估时请删除此行' in result
         assert "# subset_list: ['test']  # 可选，用于评估特定子集" in result
+        assert '# extra_params: {}  # 使用默认额外参数' in result
         assert "'limit': 10,  # 正式评估时请删除此行" in result
         assert "text = '# Remove this line for formal evaluation'" in result
         assert '{"comment": "# Remove this line for formal evaluation"}' in result
@@ -106,6 +108,41 @@ config = {
         result = translate_readme(english, 'example', client=_client_returning(translated))
 
         assert result == '# Example\n\n## 概述\n\n概述文本。\n\n## Agentic 模式\n\n代理说明。'
+
+    def test_localizes_generated_labels(self):
+        translated = (
+            '# Example\n\n| Metric | Value |\n| Total Samples | 300 |\n'
+            '| Prompt Length (Mean) | 10 chars |\n| Prompt Length (Min/Max) | 1 / 20 chars |\n'
+            '| **Default Shots** | 0-shot |\n| **默认 Shots** | 0-shot |\n\n[sandbox guide](https://example.com)\n'
+            '[usage documentation](https://example.com)\n'
+        )
+        expected = (
+            '# Example\n\n| 指标 | 值 |\n| 总样本数 | 300 |\n'
+            '| 提示词长度（平均值） | 10 字符 |\n| 提示词长度（最小/最大值） | 1 / 20 字符 |\n'
+            '| **默认示例数** | 0-shot |\n| **默认示例数** | 0-shot |\n\n[沙箱指南](https://example.com)\n[使用文档](https://example.com)'
+        )
+
+        result = translate_readme('# Example\n', 'example', client=_client_returning(translated))
+
+        assert result == expected
+
+    def test_preserves_generated_labels_inside_code_blocks(self):
+        english = '# Example\n\n```markdown\n## Overview\n\n| Metric | Value |\n[sandbox guide](https://example.com)\n```\n'
+        translated = '# Example\n\n[CODE_BLOCK_0]\n'
+
+        result = translate_readme(english, 'example', client=_client_returning(translated))
+
+        assert result == english.strip()
+
+    def test_stops_split_translation_after_failed_section(self, monkeypatch):
+        monkeypatch.setattr(translate_description, '_MAX_TRANSLATION_CHARS', 1)
+        english = '# Example\n\n## Overview\n\nEnglish overview.\n\n## Usage\n\nUse English.\n'
+        client = _client_sequence(['# Example', '', '## 使用方法\n\n使用。'])
+
+        result = translate_readme(english, 'example', client=client)
+
+        assert result == ''
+        assert client.chat.completions.create.call_count == 2
 
     def test_splits_long_documents_by_section(self, monkeypatch):
         monkeypatch.setattr(translate_description, '_MAX_TRANSLATION_CHARS', 1)

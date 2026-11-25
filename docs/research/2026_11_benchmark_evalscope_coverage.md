@@ -1,6 +1,6 @@
 # Benchmark 使用次数反向索引与 EvalScope 覆盖核查
 
-> 核查日期：2026-11-24。数据来自配套文档 `2026_11_model_benchmark_official_scores.md` 的结构化表格；EvalScope 状态基于当前工作分支 `feat/agent-trace-analysis` 的注册索引与 adapter 元数据。
+> 核查日期：2026-11-24。数据来自[配套文档](2026_11_model_benchmark_official_scores.md)的结构化表格；EvalScope 状态基于 2026-11-24 的 `main` 分支注册索引与 adapter 元数据。
 
 ## 统计口径
 
@@ -19,7 +19,7 @@
 | --- | ---: | --- | --- | --- |
 | AutomationBench | 7 | GPT、Claude[3P]、Gemini、Qwen[3P]、Kimi、MiniMax、DeepSeek | 支持 | `automation_bench`：官方公开 600 题并 pin commit；不覆盖 private/AA，adapter 未声明公开集与 v1.0.6 的精确映射 |
 | Agents’ Last Exam | 6 | GPT、Gemini、Qwen、Kimi、MiniMax、DeepSeek | 不支持 | 未找到等价注册 adapter；v1.1 与未标版本不能混为精确复现 |
-| HLE | 6 | Claude、Gemini、Qwen、Kimi、MiniMax、DeepSeek | 支持 | `hle`：公开 Full 2,500 题，可过滤 text-only；HLE-Diamond 是另一套公开 1,000 题数据，当前未接入；工具有无是运行设置 |
+| HLE | 6 | Claude、Gemini、Qwen、Kimi、MiniMax、DeepSeek | 支持 | `hle`：公开 Full 2,500 题，可过滤 text-only；`hle_diamond`：另一套公开 1,000 题数据；工具有无是运行设置 |
 | Terminal-Bench | 6 | Claude、Gemini、Qwen、Kimi、MiniMax、DeepSeek | 支持 | `terminal_bench_v4`：dataset_revision `4.0.0`；Gemini 4.1 未找到 |
 | Terminal-Bench-Science | 6 | GPT、Claude、Gemini、Kimi、MiniMax[3P]、DeepSeek[3P] | 不支持 | `terminal_bench_v4` 不是 Terminal-Bench-Science 0.1 |
 | Chartography | 5 | Claude、Gemini、Qwen、Kimi、DeepSeek | 不支持 | 未找到等价 adapter；with/without tools 分数不可直接比较 |
@@ -108,7 +108,7 @@
 | SWE-Marathon | 1 | Kimi | 不支持 | v1.1 未找到等价 adapter |
 | SWE-bench Multilingual | 1 | Claude | 支持 | `swe_bench_multilingual_agentic`：使用 `SWE-bench/SWE-bench_Multilingual` test |
 | SWE-bench Multimodal | 1 | Claude | 不支持 | 多语言 adapter 不等于 Multimodal |
-| SWE-bench Pro | 1 | Claude | 支持 | `swe_bench_pro`：使用 `ScaleAI/SWE-bench_Pro` test，agentic Docker 流程 |
+| SWE-bench Pro | 1 | Claude | 支持 | `swe_bench_pro`：使用 `ScaleAI/SWE-bench_Pro` test，agentic Docker/E2B 流程 |
 | SWE-sweep | 1 | Gemini | 不支持 | provider 与 Mini-SWE 两个 harness 均未找到等价 adapter |
 | SecureSWE | 1 | GPT | 不支持 | 内部安全编码任务 |
 | ToolCall bench | 1 | Kimi | 不支持 | `tool_bench` 不能据此认定等价 |
@@ -141,7 +141,7 @@
 2. 精确版本的关键证据包括：
    - `terminal_bench_v4` 明确使用 Terminal-Bench 4.0.0；Gemini 的 4.1 不在覆盖内。
    - `automation_bench` 固定官方仓库 commit 并运行公开 600 题；官方 leaderboard private set 与本地公开分数方向性可比但不相同。
-   - `hle` 是公开的 2,500 题 Full 数据，支持排除多模态题；HLE-Diamond 是另一套公开的 1,000 题数据，外部浏览工具则属于运行设置。
+   - `hle` 是公开的 2,500 题 Full 数据，支持排除多模态题；`hle_diamond` 是另一套公开的 1,000 题数据；外部浏览工具属于运行设置。
    - `health_bench` 只有 All/Consensus/Hard；Qwen 的 HealthBench Professional 不能标为精确覆盖。
    - `officeqa` 当前默认且仅暴露 `officeqa_pro`；Kimi Pro v2 和 Claude 完整 OfficeQA 需要另核数据版本。
    - `gdpval` 是公开 220 题 gold 的 submission 导出流程，不内置官方质量评分；GDPval 内部 v2、GDPval-AA v2.1 均不能由它替代。

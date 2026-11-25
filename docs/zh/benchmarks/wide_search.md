@@ -1,30 +1,28 @@
 # WideSearch
 
-
 ## 概述
 
-WideSearch 评估搜索智能体在广泛网络信息检索任务上的表现。每个任务要求智能体收集许多原子事实并返回一个结构化的 Markdown 表格。EvalScope 使用 ModelScope 的 `bytedance-community/WideSearch` 数据集。
+WideSearch 评估搜索智能体在广泛网络信息检索任务中的表现。每个任务要求智能体收集大量原子事实，并返回一个结构化的 Markdown 表格。EvalScope 使用 ModelScope `bytedance-community/WideSearch` 数据集。
 
 ## 任务描述
 
 - **任务类型**：多轮搜索智能体
-- **输入**：带有明确表格架构的自然语言收集请求
+- **输入**：带有明确表格结构的自然语言收集请求
 - **输出**：完整的 Markdown 表格
-- **数据集**：``full`` 划分中的 200 个任务；100 个英文和 100 个中文
+- **数据集**：``full`` 划分中的 200 个任务；100 个英文任务和 100 个中文任务
 
 ## 主要特点
 
-- 官方单智能体协议：特定语言的系统提示、``function_calling`` 以及默认 50 步。
-- Bash 默认在每个样本的临时本地目录中可用；Docker 沙箱和 MCP 服务器为可选项。
+- 官方单智能体协议：特定语言的系统提示词、``function_calling``，以及默认的50个步骤。
+- Bash默认在每个样本的临时本地目录中可用；Docker沙箱和MCP服务器为可选配置。
 - 单次完整运行即可生成 ``all``、``en`` 和 ``zh`` 报告，无需重复推理。
 
 ## 评估说明
 
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 使用官方的 Markdown 表格对齐方式以及混合规则/LLM 评分语义。
-- 需要设置 ``judge.strategy='auto'`` 或 ``'llm'`` 且至少包含一个 ``judge.models`` 条目；不支持仅基于规则的评分。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 采用官方 Markdown 表格对齐方式以及规则/LLM 混合评分语义。
+- 需要包含至少一个 ``judge.models`` 条目的 ``judge.strategy='auto'`` 或 ``'llm'``；不支持仅基于规则的评分。
 - 有关运行时示例和论文风格的重复设置，请参阅 [WideSearch 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/wide_search.html)。
-
 
 ## 属性
 
@@ -35,9 +33,8 @@ WideSearch 评估搜索智能体在广泛网络信息检索任务上的表现。
 | **论文** | [Paper](https://arxiv.org/abs/2508.07999) |
 | **标签** | `Agent`, `MultiTurn`, `Retrieval` |
 | **指标** | `success_rate`, `row_precision`, `row_recall`, `row_f1`, `item_precision`, `item_recall`, `item_f1` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `full` |
-
 
 ## 数据统计
 
@@ -175,7 +172,7 @@ WideSearch 评估搜索智能体在广泛网络信息检索任务上的表现。
 }
 ```
 
-*注意：部分内容为显示目的已截断。*
+*注：为便于显示，部分内容已截断。*
 
 ## 提示模板
 

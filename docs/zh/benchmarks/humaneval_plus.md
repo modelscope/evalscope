@@ -3,31 +3,31 @@
 
 ## 概述
 
-HumanEval Plus 是 OpenAI HumanEval 基准测试的严格扩展版，旨在解决代码生成评估中较高的假阳性率问题。它通过自动生成的数万个输入用例来增强原始测试集，从而暴露边缘情况错误和功能缺陷。
+HumanEval Plus 是对 OpenAI HumanEval 基准测试的严格扩展，旨在解决代码生成评估中的高假阳性率问题。它通过自动生成的数万个输入来增强原始测试用例，以暴露边缘情况 bug 和功能错误。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
-- **输入**：包含函数签名及描述预期行为的文档字符串
+- **输入**：带有 docstring 的函数签名，描述预期行为
 - **输出**：完整的 Python 函数实现
-- **测试覆盖率**：相比原始 HumanEval 大幅扩展
+- **测试覆盖率**：与原始 HumanEval 相比大幅扩展
 
 ## 主要特点
 
-- 源自原始 HumanEval 的 164 道题目，并配备了增强的测试套件
-- 每道题目增加了数万个额外的测试用例
-- 基于大语言模型（LLM）和变异策略的测试输入生成
-- 能够发现原始 HumanEval 遗漏的边缘情况和 Bug
+- 包含来自原始 HumanEval 的 164 个问题，并配有增强的测试套件
+- 每个问题额外增加数万个测试用例
+- 基于 LLM 和基于变异的测试输入生成
+- 暴露原始 HumanEval 遗漏的边缘情况和 bug
 - 更严格、更准确的正确性评估
 
 ## 评估说明
 
-- 支持使用包含 NumPy 镜像或模板的 E2B；阿里云 Agent Sandbox 需要合适的模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 默认配置采用 **0-shot** 评估模式
-- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱执行环境。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- 支持 E2B，需使用包含 NumPy 的镜像或模板；阿里云 Agent Sandbox 需要合适的模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 默认配置使用 **0-shot** 评估
+- **安全警告**：默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行。详细信息请参阅 [sandbox documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
-- 默认超时时间为 300 秒，以适应庞大的测试套件
-- 使用预装了 numpy 的自定义 Docker 镜像
+- 默认超时时间为 300 秒，以适应广泛的测试套件
+- 使用预安装 numpy 的自定义 Docker 镜像
 
 
 ## 属性
@@ -39,7 +39,7 @@ HumanEval Plus 是 OpenAI HumanEval 基准测试的严格扩展版，旨在解�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
@@ -50,7 +50,7 @@ HumanEval Plus 是 OpenAI HumanEval 基准测试的严格扩展版，旨在解�
 |--------|-------|
 | 总样本数 | 164 |
 | 提示词长度（平均值） | 609.57 字符 |
-| 提示词长度（最小/最大） | 274 / 1519 字符 |
+| 提示词长度（最小/最大值） | 274 / 1519 字符 |
 
 ## 样例示例
 
@@ -76,7 +76,7 @@ HumanEval Plus 是 OpenAI HumanEval 基准测试的严格扩展版，旨在解�
 }
 ```
 
-*注：部分显示内容已截断。*
+*注意：为显示目的，部分内容已截断。*
 
 ## 提示模板
 
@@ -88,7 +88,7 @@ Read the following function signature and docstring, and fully implement the fun
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要一个用于代码执行的沙箱环境。
 
 ```json
 {

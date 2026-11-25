@@ -49,35 +49,10 @@ Terminal-Bench 4.0 evaluates agents on 66 challenging terminal tasks using the o
 | Metric | Value |
 |--------|-------|
 | Total Samples | 66 |
-| Prompt Length (Mean) | 0 chars |
-| Prompt Length (Min/Max) | 0 / 0 chars |
 
 ## Sample Example
 
-**Subset**: `test`
-
-```json
-{
-  "input": [
-    {
-      "id": "5706a469",
-      "content": ""
-    }
-  ],
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "path": null,
-    "git_url": null,
-    "git_commit_id": null,
-    "name": "terminal-bench/layout-config-recreation2",
-    "ref": "sha256:193312b14b1dcb6ef551efff691cbb708b2032f58879b0b19efe88a2cddc9deb",
-    "overwrite": false,
-    "download_dir": "~/.cache/evalscope/terminal_bench_v4",
-    "source": "terminal-bench/terminal-bench"
-  }
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 

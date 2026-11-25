@@ -48,35 +48,10 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 | Metric | Value |
 |--------|-------|
 | Total Samples | 89 |
-| Prompt Length (Mean) | 0 chars |
-| Prompt Length (Min/Max) | 0 / 0 chars |
 
 ## Sample Example
 
-**Subset**: `test`
-
-```json
-{
-  "input": [
-    {
-      "id": "7ad1ab7e",
-      "content": ""
-    }
-  ],
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "path": null,
-    "git_url": null,
-    "git_commit_id": null,
-    "name": "terminal-bench/make-mips-interpreter",
-    "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
-    "overwrite": false,
-    "download_dir": "~/.cache/evalscope/terminal_bench_v2",
-    "source": "terminal-bench/terminal-bench-2"
-  }
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 

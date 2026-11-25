@@ -7,7 +7,7 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 
 ## 任务描述
 
-- **任务类型**：代码生成 (Python)
+- **任务类型**：代码生成（Python）
 - **输入**：包含测试断言的编程任务描述
 - **输出**：Python 函数实现
 - **改进点**：经过清洗的数据以及扩展后的测试套件
@@ -16,18 +16,18 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 
 - 修正了参考代码并澄清了问题陈述
 - 大幅扩展了每个问题的测试用例（通过自动化生成）
-- 采用基于 LLM 和基于变异的测试生成策略
-- 暴露了原始 MBPP 遗漏的边缘情况错误
+- 采用基于大语言模型（LLM）和基于变异的测试生成策略
+- 能够发现原始 MBPP 中遗漏的边缘情况错误
 - 提供更严格、更准确的代码正确性评估
 
 ## 评估说明
 
-- 支持 E2B，需使用包含 NumPy 的镜像或模板；阿里云 Agent Sandbox 需要合适的模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 支持使用包含 NumPy 镜像或模板的 E2B；阿里云 Agent Sandbox 需要合适的模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **0-shot** 评估
 - **安全警告**：默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行。详细信息请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
-- 默认超时时间为每个问题 60 秒，以适应扩展后的测试套件
-- 相比原始 MBPP 基准测试，评估标准更为严格
+- 为了适应扩展后的测试套件，每个问题的默认超时时间为 60 秒
+- 比原始 MBPP 基准测试具有更严格的评估标准
 
 
 ## 属性
@@ -39,7 +39,7 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
@@ -49,8 +49,8 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 378 |
-| 提示词长度 (平均值) | 375.53 字符 |
-| 提示词长度 (最小/最大值) | 222 / 2801 字符 |
+| 提示词长度（平均值） | 375.53 字符 |
+| 提示词长度（最小/最大值） | 222 / 2801 字符 |
 
 ## 样例示例
 
@@ -81,11 +81,11 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 }
 ```
 
-*注：为便于显示，部分内容已截断。*
+*注意：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
 

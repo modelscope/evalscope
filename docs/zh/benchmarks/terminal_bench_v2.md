@@ -14,17 +14,17 @@ Terminal-Bench v2 是一个命令行基准测试套件，用于评估 AI 智能�
 
 ## 主要特点
 
-- 89 个真实世界终端任务
+- 89 个真实世界的终端任务
 - 多步骤任务完成要求
 - 隔离的容器执行环境
-- 二元评分（0/1）并支持自动验证
+- 二进制评分（0/1）并支持自动验证
 - 支持多种智能体类型（terminus-2, claude-code, codex 等）
 
 ## 评估说明
 
 - 需要 **Python>=3.12** 和 `pip install evalscope[terminal_bench]`
 - 环境选项：docker, daytona, e2b, modal
-- 通过 Harbor 支持 E2B：安装 `harbor[e2b]` 并设置 `extra_params.environment_type='e2b'`，即可在无本地 Docker 或无需下载本地任务镜像的情况下运行。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 通过 Harbor 支持 E2B：安装 `harbor[e2b]` 并设置 `extra_params.environment_type='e2b'` 即可在不使用本地 Docker 或下载本地任务镜像的情况下运行。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 可配置的智能体类型和超时设置
 - 最大轮数可配置（默认值：200）
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
@@ -39,7 +39,7 @@ Terminal-Bench v2 是一个命令行基准测试套件，用于评估 AI 智能�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -48,39 +48,14 @@ Terminal-Bench v2 是一个命令行基准测试套件，用于评估 AI 智能�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 89 |
-| 提示词长度（平均值） | 0 chars |
-| 提示词长度（最小/最大值） | 0 / 0 chars |
 
 ## 样例示例
 
-**子集**: `test`
-
-```json
-{
-  "input": [
-    {
-      "id": "7ad1ab7e",
-      "content": ""
-    }
-  ],
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "path": null,
-    "git_url": null,
-    "git_commit_id": null,
-    "name": "terminal-bench/make-mips-interpreter",
-    "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
-    "overwrite": false,
-    "download_dir": "~/.cache/evalscope/terminal_bench_v2",
-    "source": "terminal-bench/terminal-bench-2"
-  }
-}
-```
+*暂无样例示例。*
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 {question}
 ```
@@ -91,11 +66,11 @@ Terminal-Bench v2 是一个命令行基准测试套件，用于评估 AI 智能�
 |-----------|------|---------|-------------|
 | `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |
 | `agent_name` | `str` | `terminus-2` | 在 Harbor 中使用的智能体类型。只有 terminus-2 使用 evalscope 模型进行推理；其他智能体（claude-code, codex 等）作为独立的 CLI 工具运行，并使用其自身的 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
-| `timeout_multiplier` | `float` | `1.0` | 超时乘数。如果出现超时错误，请考虑增加此值。 |
-| `agent_timeout_sec` | `float` | `None` | 最终智能体超时时间（秒）。不能与 agent_timeout_multiplier 结合使用。 |
-| `verifier_timeout_sec` | `float` | `None` | 最终验证器超时时间（秒）。不能与 verifier_timeout_multiplier 结合使用。 |
-| `agent_timeout_multiplier` | `float` | `None` | 智能体超时乘数。覆盖 timeout_multiplier 以应用于智能体阶段。 |
-| `verifier_timeout_multiplier` | `float` | `None` | 验证器超时乘数。覆盖 timeout_multiplier 以应用于验证器阶段。 |
+| `timeout_multiplier` | `float` | `1.0` | 超时乘数。如果发生超时错误，请考虑增加此值。 |
+| `agent_timeout_sec` | `float` | `None` | 最终智能体超时时间（秒）。不能与 agent_timeout_multiplier 组合使用。 |
+| `verifier_timeout_sec` | `float` | `None` | 最终验证器超时时间（秒）。不能与 verifier_timeout_multiplier 组合使用。 |
+| `agent_timeout_multiplier` | `float` | `None` | 智能体超时乘数。覆盖智能体阶段的 timeout_multiplier。 |
+| `verifier_timeout_multiplier` | `float` | `None` | 验证器超时乘数。覆盖验证器阶段的 timeout_multiplier。 |
 | `max_turns` | `int` | `200` | 智能体完成任务的最大轮数。 |
 | `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外 kwargs。支持的键包括：override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env 等。 |
 
@@ -125,7 +100,7 @@ task_cfg = TaskConfig(
     datasets=['terminal_bench_v2'],
     dataset_args={
         'terminal_bench_v2': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

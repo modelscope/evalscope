@@ -3,30 +3,30 @@
 
 ## 概述
 
-HumanEval 是一个用于评估语言模型代码生成能力的基准测试。它包含 164 个手写的 Python 编程问题，每个问题都提供了函数签名、文档字符串（docstrings）以及全面的测试用例。
+HumanEval 是一个用于评估语言模型代码生成能力的基准测试。它包含 164 个手写的 Python 编程问题，每个问题都提供了函数签名、文档字符串以及全面的测试用例。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
-- **输入**：带有文档字符串的函数签名，描述预期行为
+- **输入**：带有描述预期行为的文档字符串的函数签名
 - **输出**：完整的 Python 函数实现
 - **语言**：仅限 Python
 
 ## 主要特点
 
-- 164 个手工设计的编程问题
-- 每个问题包含函数签名、文档字符串和测试用例
-- 问题难度涵盖从简单的字符串操作到复杂的算法
+- 164 个精心设计的编程问题
+- 每个问题包括函数签名、文档字符串和测试用例
+- 问题范围从简单的字符串操作到复杂的算法
 - 提供标准解决方案以供参考
 - 通过执行测试用例自动验证正确性
 
 ## 评估说明
 
-- 支持通过 `TaskConfig.sandbox.engine='e2b'` 使用官方 E2B 和阿里云 Agent Sandbox，从而避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- **安全警告**：默认情况下，代码在本地环境中执行。为了安全起见，我们强烈建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
-- 支持 `pass@k` 指标计算，以衡量生成质量
-- 每个问题的默认超时时间为 4 秒
-- 如果存在 markdown 代码块，将从中提取代码
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- **安全警告**：默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行以确保安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- 支持 `pass@k` 指标计算以衡量生成质量
+- 默认每个问题的超时时间为 4 秒
+- 如果存在 markdown 代码块，则从中提取代码
 
 
 ## 属性
@@ -75,7 +75,7 @@ HumanEval 是一个用于评估语言模型代码生成能力的基准测试。�
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注意：为显示目的，部分内容已截断。*
 
 ## 提示模板
 

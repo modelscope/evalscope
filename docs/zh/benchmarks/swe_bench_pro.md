@@ -1,33 +1,31 @@
 # SWE-bench_Pro
 
-
 ## 概述
 
-SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评估大语言模型（LLM）/智能体（Agent）在跨多种编程语言的长周期软件工程任务上的表现。给定一个代码库和一个问题描述，模型必须在每个实例独立的 Docker 容器内，通过多轮智能体循环自主探索仓库、编辑源文件并提交补丁。
+SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评估大语言模型（LLM）/智能体（Agent）在跨多种编程语言的长周期软件工程任务中的表现。给定一个代码库和一个问题描述，模型必须自主探索仓库、编辑源文件，并在每个实例独立的 Docker 容器内通过多轮智能体循环提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复（智能体式）
-- **输入**：GitHub Issue 描述
+- **输入**：GitHub issue 描述
 - **输出**：代码补丁（diff 格式），在自主编辑后收集
-- **语言**：多种（`repo_language` 字段；例如 JavaScript/TypeScript, Python, Go）
+- **语言**：多种（`repo_language` 字段；例如 JavaScript/TypeScript、Python、Go）
 
 ## 主要特点
 
-- 多轮智能体循环，使用每个实例对应的 DockerHub 镜像 (`jefzda/sweap-images:{tag}`)
-- 基于哨兵机制的补丁提交协议 (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
-- 容器端评估流程：使用 `git apply` 应用补丁，运行实例的 `run_script.sh`，通过 `parser.py` 解析结果，然后检查 `(fail_to_pass | pass_to_pass) ⊆ PASSED`
-- 支持 `toolcall`（函数调用）和 `backticks`（基于文本）两种动作协议
+- 多轮代理循环，每个实例使用独立的 DockerHub 镜像 (`jefzda/sweap-images:{tag}`)
+- 基于哨兵标记的补丁提交协议 (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
+- 容器端评估流程：应用 `git apply` 补丁，运行实例的 `run_script.sh`，使用 `parser.py` 进行解析，然后检查 `(fail_to_pass | pass_to_pass) ⊆ PASSED`
+- 支持两种动作协议：`toolcall`（函数调用）和 `backticks`（基于文本）
 
 ## 评估说明
 
-- 通过设置 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，从而避免本地 Docker 环境和本地镜像下载的需求。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 需要执行 `pip install evalscope[sandbox]`（通过 ms-enclave 提供沙箱运行时）
-- 需要 `scaleapi/SWE-bench_Pro-os` 仓库以获取每个实例的运行脚本和 Dockerfile。默认情况下，该仓库会自动克隆到 `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` 并锁定至 commit `ca10a60`。若要使用已有的克隆副本，请设置 `extra_params.swe_bench_pro_repo_path`。
-- 智能体循环和每个实例的评估共享单个沙箱配置，通过 `TaskConfig.sandbox.default_config` 传递给所选引擎的 ms-enclave。对于 Docker，请在此处设置 `memory_limit` / `cpu_limit` 以避免测试运行因内存溢出被终止（OOM-Killed）（例如 NodeBB）；`platform` 默认为 `linux/amd64`，因此仅限 amd64 架构的 sweap-images 可以在 Apple Silicon 芯片上开箱即用。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 需要 `pip install evalscope[sandbox]`（通过 ms-enclave 提供沙箱运行时）
+- 需要 `scaleapi/SWE-bench_Pro-os` 仓库以获取每个实例的运行脚本和 Dockerfiles。默认情况下，该仓库会自动克隆到 `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` 并固定到 commit `ca10a60`。若要使用现有的克隆副本，请设置 `extra_params.swe_bench_pro_repo_path`。
+- agent loop 和每个实例的评估通过 `TaskConfig.sandbox.default_config` 共享单个沙箱配置，并将其传递给所选引擎的 ms-enclave。对于 Docker，请在此处设置 `memory_limit` / `cpu_limit` 以避免测试运行被 OOM-Killed（例如 NodeBB）；`platform` 默认为 `linux/amd64`，因此仅限 amd64 的 sweap-images 可以在 Apple Silicon 上开箱即用。
 
-有关设置、参数和故障排除，请参阅[用户指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html)。
-
+有关设置、参数和故障排除，请参阅 [user guide](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html)。
 
 ## 属性
 
@@ -41,10 +39,9 @@ SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评�
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
-| 指标 | 值 |
+| 指标 | 数值 |
 |--------|-------|
 | 总样本数 | 642 |
 | 提示词长度（平均值） | 1013.12 字符 |
@@ -108,7 +105,7 @@ SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评�
 }
 ```
 
-*注意：为显示目的，部分内容已截断。*
+*注意：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
@@ -121,7 +118,7 @@ SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `swe_bench_pro_repo_path` | `str` | `` | scaleapi/SWE-bench_Pro-os 克隆副本的本地路径。如果为空，则自动克隆到 ~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os 并锁定至 commit ca10a60。 |
+| `swe_bench_pro_repo_path` | `str` | `` | scaleapi/SWE-bench_Pro-os 克隆的本地路径。如果为空，则自动克隆到 ~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os 并固定到提交 ca10a60。 |
 | `dockerhub_username` | `str` | `jefzda` | 托管 sweap-images 仓库的 DockerHub 用户/组织。 |
 | `eval_timeout` | `int` | `3600` | 每个实例评估的超时时间（秒）。 |
 
@@ -156,7 +153,7 @@ task_cfg = TaskConfig(
     ),
     dataset_args={
         'swe_bench_pro': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

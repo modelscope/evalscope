@@ -2,12 +2,12 @@
 
 ## 概述
 
-SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 Python 仓库的 300 对 Issue-Pull Request 数据。模型在针对每个实例的 Docker 容器内自主驱动多轮 agent loop，以解决真实的 GitHub issue。
+SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 Python 仓库的 300 组 Issue-Pull Request 配对数据。在该模式下，模型会在每个实例专属的 Docker 容器中自主驱动多轮 agent 循环，以解决真实的 GitHub issue。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复（智能体模式）
-- **输入**：GitHub issue 描述（无 oracle 文件上下文）
+- **输入**：GitHub issue 描述（不包含 oracle 文件上下文）
 - **输出**：从 `git diff` 中收集的代码补丁（diff 格式），由自主编辑生成
 - **规模**：精心挑选的 300 个测试实例
 
@@ -15,23 +15,23 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-b
 
 - 包含 300 个 Issue-Pull Request 测试对
 - 覆盖 11 个流行的 Python 代码仓库
-- 具有已验证解决方案的真实世界缺陷
-- 多轮智能体循环，每个实例配备独立的 Docker 沙箱环境
-- 相比完整的 SWE-bench 更易于管理，但仍具挑战性
+- 具有已验证解决方案的真实世界 Bug
+- 支持多轮 Agent 循环，并为每个实例提供独立的 Docker 沙箱环境
+- 相比完整的 SWE-bench 更易于管理，但仍具有挑战性
 
 ## 评估说明
 
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 及下载本地镜像。请参阅 [sandbox guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 评估前需要执行 `pip install swebench==4.1.0`
-- 针对每个代码仓库自动构建或拉取 Docker 镜像
-- 详细设置说明请参阅 [usage documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 适用于 agentic 模型初步对比的流行基准测试变体
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 评估前需要 `pip install swebench==4.1.0`
+- 每个仓库的 Docker 镜像会自动构建或拉取
+- 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 用于初步 agentic 模型对比的流行基准测试变体
 
 ## Agentic 模式
 
-该基准测试在针对每个实例的 SWE-bench Docker 容器中驱动一个多轮代理循环（镜像了 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
+该基准测试在每个实例的 SWE-bench Docker 容器中驱动一个多轮代理循环（模拟 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交其 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并配备单个 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮包含一个 ` ```mswea_bash_command ``` ` 块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并配备单个 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮包含一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -47,11 +47,11 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-b
 
 ## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 300 |
-| Prompt Length (Mean) | 1661.18 chars |
-| Prompt Length (Min/Max) | 230 / 24770 chars |
+| 总样本数 | 300 |
+| 提示词长度（平均值） | 1661.18 字符 |
+| 提示词长度（最小/最大） | 230 / 24770 字符 |
 
 ## 样例示例
 
@@ -122,7 +122,7 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-b
 }
 ```
 
-*注：为便于显示，部分内容已截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -137,7 +137,7 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-b
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定用于镜像构建/拉取的架构。选项：['', 'arm64', 'x86_64'] |
+| `force_arch` | `str` | `` | 可选地强制指定用于镜像构建/拉取的特定架构。选项：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 用于远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
@@ -171,7 +171,7 @@ task_cfg = TaskConfig(
     ),
     dataset_args={
         'swe_bench_lite_agentic': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

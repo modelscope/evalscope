@@ -1,9 +1,8 @@
 # BigCodeBench-Hard
 
-
 ## 概述
 
-BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴近真实世界编程场景的任务。这些任务需要更复杂的推理能力和多步骤问题解决能力。
+BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴近真实世界编程场景的任务。这些任务需要更复杂的推理能力和多步骤的问题解决能力。
 
 ## 任务描述
 
@@ -14,21 +13,20 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 
 ## 主要特点
 
-- 从 BigCodeBench 中筛选出的 148 个高难度任务
-- 需要复杂推理和多工具使用
-- 两种评估模式：Complete（文档字符串补全）和 Instruct（自然语言指令）
-- 使用 `unittest.TestCase` 进行彻底的 correctness verification
+- 从 BigCodeBench 中精选的 148 个高难度任务
+- 需要复杂推理和多工具协同使用
+- 支持两种评估模式：Complete（基于 docstring）和 Instruct（基于自然语言指令）
+- 采用 `unittest.TestCase` 进行严格正确性验证
 - 支持 pass@k 指标计算
 
 ## 评估说明
 
-- **需要沙箱环境**：需要预装 70+ Python 库的沙箱环境
+- **需要沙箱环境**：要求预装 70+ Python 库的沙箱环境
 - 通过 `split` 参数提供两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
 - 默认每个问题的超时时间为 240 秒
 - `calibrate` 选项会在代码前添加 code_prompt 以对齐函数签名
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B；阿里云 Agent Sandbox 需要合适的评估模板。请参阅 [sandbox guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B；阿里云 Agent Sandbox 需要合适的评估模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 有关设置信息，请参阅 [sandbox documentation](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
-
 
 ## 属性
 
@@ -39,14 +37,13 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
-| **评估 Split** | `v0.1.4` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `v0.1.4` |
 | **聚合方式** | `mean_and_pass_at_k` |
-
 
 ## 数据统计
 
-| 指标 | 值 |
+| 指标 | 数值 |
 |--------|-------|
 | 总样本数 | 148 |
 | 提示词长度（平均值） | 777.94 字符 |
@@ -77,7 +74,7 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 }
 ```
 
-*注意：为显示目的，部分内容已截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -90,16 +87,16 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。可选值：['complete', 'instruct'] |
-| `version` | `str` | `default` | 数据集版本。使用 "default" 获取最新可用版本。 |
+| `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。选项：['complete', 'instruct'] |
+| `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
 | `calibrate` | `bool` | `True` | 是否在解决方案前添加 code_prompt 以对齐函数签名。 |
-| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后，将覆盖默认的 sandbox image。 |
+| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后，将覆盖默认的沙箱镜像。 |
 | `dockerfile` | `str` | `Dockerfile` | docker_build_context 内的 Dockerfile 路径。 |
 | `force_rebuild` | `bool` | `False` | 强制重新构建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要一个用于代码执行的沙箱环境。
 
 ```json
 {
@@ -140,7 +137,7 @@ task_cfg = TaskConfig(
     sandbox={'enabled': True},
     dataset_args={
         'bigcodebench_hard': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

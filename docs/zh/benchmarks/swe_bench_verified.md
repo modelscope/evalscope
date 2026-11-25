@@ -1,34 +1,32 @@
 # SWE-bench_Verified
 
-
 ## 概述
 
-SWE-bench Verified 是 SWE-bench 的一个经过人工验证的子集，包含 500 个样本，旨在测试系统自动解决真实世界 GitHub issue 的能力。每个样本代表来自流行 Python 仓库的真实 bug 修复或功能实现。
+SWE-bench Verified 是 SWE-bench 中经过人工验证的 500 个样本子集，旨在测试系统自动解决真实世界 GitHub issue 的能力。每个样本都代表了来自热门 Python 仓库的真实 bug 修复或功能实现。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复
-- **输入**：带有仓库上下文的 GitHub issue 描述
-- **输出**：解决该 issue 的代码补丁（diff 格式）
-- **仓库**：12 个流行的 Python 项目（Django, Flask, Requests 等）
+- **输入**：包含仓库上下文的 GitHub issue 描述
+- **输出**：解决该问题的代码补丁（diff 格式）
+- **仓库**：12 个流行的 Python 项目（Django、Flask、Requests 等）
 
 ## 主要特点
 
-- 500 对经过人工验证的 Issue-Pull Request 配对
-- 源自生产环境 Python 仓库的真实 bug
+- 500 个经人工验证的 Issue-Pull Request 配对
+- 源自生产环境 Python 仓库的真实世界 Bug
 - 通过单元测试验证进行评估
 - 基于 Docker 的隔离执行环境
-- 同时测试 bug 理解和代码修改能力
+- 同时测试 Bug 理解能力和代码修改技能
 
 ## 评估说明
 
-- 支持通过 `TaskConfig.sandbox.engine='e2b'` 使用官方 E2B 和阿里云 Agent Sandbox，避免本地 Docker 和本地镜像下载。请参阅 [sandbox guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 评估前需要运行 `pip install swebench==4.1.0`
-- 为每个仓库自动构建/拉取 Docker 镜像
-- 每个实例超时时间为 1800 秒（30 分钟）
-- 详细设置说明请参阅 [usage documentation](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 支持本地镜像构建和远程镜像拉取
-
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 在评估前需要 `pip install swebench==4.1.0`
+- 为每个代码仓库自动构建/拉取 Docker 镜像
+- 每个实例的超时时间为 1800 秒（30 分钟）
+- 详细设置说明请参阅[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 同时支持本地镜像构建和远程镜像拉取
 
 ## 属性
 
@@ -38,18 +36,17 @@ SWE-bench Verified 是 SWE-bench 的一个经过人工验证的子集，包含 5
 | **数据集ID** | [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
+| **评估指标** | `accuracy` |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
-
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 500 |
-| 提示词长度 (平均值) | 69295.81 chars |
-| 提示词长度 (最小/最大) | 4437 / 962006 chars |
+| 提示词长度（平均值） | 69295.81 字符 |
+| 提示词长度（最小/最大值） | 4437 / 962006 字符 |
 
 ## 样例示例
 
@@ -98,7 +95,7 @@ SWE-bench Verified 是 SWE-bench 的一个经过人工验证的子集，包含 5
 }
 ```
 
-*注意：部分内容为显示目的已截断。*
+*注：为便于展示，部分内容已截断。*
 
 ## 提示模板
 
@@ -115,8 +112,8 @@ SWE-bench Verified 是 SWE-bench 的一个经过人工验证的子集，包含 5
 | `inference_dataset_revision` | `str | null` | `None` | Oracle 推理数据集的可选修订版本。 |
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制拉取/构建特定架构的 docker 镜像。选项: ['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
+| `force_arch` | `str` | `` | 可选地强制针对特定架构拉取/构建 docker 镜像。选项：['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | 用于远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 
@@ -144,7 +141,7 @@ task_cfg = TaskConfig(
     datasets=['swe_bench_verified'],
     dataset_args={
         'swe_bench_verified': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

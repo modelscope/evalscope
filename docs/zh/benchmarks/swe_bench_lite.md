@@ -1,33 +1,31 @@
 # SWE-bench_Lite
 
-
 ## 概述
 
-SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 Python 代码仓库的 300 个 Issue-Pull Request 配对。它为评估自动化软件工程能力提供了一个更易上手的切入点。
+SWE-bench Lite 是 SWE-bench 的一个精选子集，包含来自 11 个热门 Python 代码仓库的 300 个 Issue-Pull Request 配对。它为评估自动化软件工程能力提供了一个更易上手的切入点。
 
 ## 任务描述
 
-- **任务类型**：自动化软件工程 / Bug 修复
-- **输入**：带有仓库上下文的 GitHub issue 描述
-- **输出**：解决该问题的代码补丁（diff 格式）
-- **规模**：精心挑选的 300 个测试实例
+- **任务类型**：自动化软件工程 / Bug修复
+- **输入**：包含仓库上下文的GitHub问题描述
+- **输出**：解决该问题的代码补丁（diff格式）
+- **规模**：精心挑选的300个测试实例
 
 ## 主要特点
 
-- 300 个测试用的 Issue-Pull Request 配对
-- 涵盖 11 个热门的 Python 代码仓库
+- 包含 300 个 Issue-Pull Request 测试对
+- 覆盖 11 个流行的 Python 代码仓库
 - 具有已验证解决方案的真实世界 Bug
 - 通过单元测试进行验证评估
 - 比完整的 SWE-bench 更易于管理，但仍具挑战性
 
 ## 评估说明
 
-- 支持官方 E2B 和阿里云 Agent Sandbox，通过 `TaskConfig.sandbox.engine='e2b'` 配置即可使用，避免本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 评估前需要执行 `pip install swebench==4.1.0`
-- 每个代码仓库的 Docker 镜像会自动构建/拉取
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 在评估前需要执行 `pip install swebench==4.1.0`
+- 针对每个代码仓库自动构建/拉取 Docker 镜像
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 用于初步模型对比的流行基准变体
-
+- 适用于初步模型对比的流行基准测试变体
 
 ## 属性
 
@@ -41,14 +39,13 @@ SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 P
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 300 |
 | 提示词长度（平均值） | 57725.21 字符 |
-| 提示词长度（最小/最大） | 5169 / 372080 字符 |
+| 提示词长度（最小/最大值） | 5169 / 372080 字符 |
 
 ## 样例示例
 
@@ -97,7 +94,7 @@ SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 P
 }
 ```
 
-*注：部分显示内容已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -114,7 +111,7 @@ SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 P
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
 | `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于从选定的数据集中心获取推理上下文的 Oracle 数据集 ID。 |
 | `inference_dataset_revision` | `str | null` | `None` | Oracle 推理数据集的可选修订版本。 |
-| `force_arch` | `str` | `` | 可选地强制拉取/构建特定架构的 Docker 镜像。选项：['', 'arm64', 'x86_64'] |
+| `force_arch` | `str` | `` | 可选地强制针对特定架构拉取/构建 docker 镜像。选项：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
@@ -143,7 +140,7 @@ task_cfg = TaskConfig(
     datasets=['swe_bench_lite'],
     dataset_args={
         'swe_bench_lite': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

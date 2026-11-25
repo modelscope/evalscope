@@ -2,34 +2,34 @@
 
 ## 概述
 
-SWE-bench Verified Mini Agentic 是 SWE-bench Verified Mini 的 agentic 模式评估版本。SWE-bench Verified Mini 是一个包含 50 个样本的精简子集，它在保持与完整 Verified 数据集相同的性能分布、测试通过率和难度水平的同时，将存储需求从 130GB 降低至仅 5GB。在该模式下，模型必须通过多轮 agent 循环自主探索、编辑并提交补丁。
+SWE-bench Verified Mini Agentic 是 SWE-bench Verified Mini 的 agentic 模式评估。SWE-bench Verified Mini 是一个包含 50 个样本的精简子集，它在保持与完整 Verified 数据集相同的性能分布、测试通过率和难度水平的同时，仅需 5GB 存储空间（而非 130GB）。模型必须通过多轮 agent 循环自主探索、编辑并提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / Bug 修复（智能体式）
-- **输入**：GitHub issue 描述（不包含 oracle 文件上下文）
-- **输出**：代码补丁（diff 格式），在自主编辑后从 `git diff` 中收集
+- **输入**：GitHub issue 描述（无 oracle 文件上下文）
+- **输出**：从 `git diff` 中收集的代码补丁（diff 格式），通过自主编辑生成
 - **规模**：50 个样本（完整 Verified 数据集为 500 个样本）
 
 ## 主要特点
 
 - SWE-bench Verified 的代表性 50 样本子集
-- 与完整数据集具有相同的难度分布
+- 与完整数据集相同的难度分布
 - 显著降低存储需求（5GB vs 130GB）
 - 支持多轮代理循环，每个实例配备独立的 Docker 沙箱
 - 适用于快速代理评估和开发迭代
 
 ## 评估说明
 
-- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 及下载本地镜像。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
-- 评估前需要 `pip install swebench==4.1.0`
-- Docker 镜像会自动构建或拉取
-- 详细设置请参阅[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 适用于快速原型开发智能体策略以及初步的模型评估
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 在评估前需要 `pip install swebench==4.1.0`
+- Docker 镜像会自动构建/拉取
+- 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 适用于快速原型开发 agent 策略和初步模型评估
 
 ## Agentic 模式
 
-该基准测试在针对每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（镜像了 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
+该基准测试在针对每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（镜像 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交其 `git diff` 补丁。
 
 默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并配备单个 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮包含一个 ` ```mswea_bash_command ``` ` 代码块。
 
@@ -47,7 +47,7 @@ SWE-bench Verified Mini Agentic 是 SWE-bench Verified Mini 的 agentic 模式�
 
 ## 数据统计
 
-| 指标 | 值 |
+| 指标 | 数值 |
 |--------|-------|
 | 总样本数 | 50 |
 | 提示词长度（平均值） | 1268.5 字符 |
@@ -171,7 +171,7 @@ task_cfg = TaskConfig(
     ),
     dataset_args={
         'swe_bench_verified_mini_agentic': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行
