@@ -625,3 +625,35 @@ def _json(payload) -> str:
     import json
 
     return json.dumps(payload)
+
+
+def test_high_level_loader_accepts_integer_sample_ids(tmp_path):
+    """Production Sample.id is an int; OTLP attributes decode to str."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def chat(span_id: str, sample_id: str, start: int) -> dict:
+        return _chat_span(
+            span_id,
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _str(sample_id),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{sample_id}')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(f'a-{sample_id}')]}),
+            },
+        )
+
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(_export(chat('s1', '7', 1), chat('s2', '9', 3))))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id=9),  # int, as a production Sample carries
+    )
+
+    assert [m.text for m in result.messages] == ['q-9', 'a-9']
+    assert result.output.completion == 'a-9'

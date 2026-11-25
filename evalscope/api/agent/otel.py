@@ -635,8 +635,10 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
     except json.JSONDecodeError as exc:
         raise OTLPImportError(f'OTLP export at {path} is not valid JSON: {exc}') from exc
     expected = None
-    if any(_span_attributes(span).get(config.sample_id_attribute) is not None for span in _iter_spans(payload)):
-        expected = sample.id
+    if sample.id is not None and any(
+        _span_attributes(span).get(config.sample_id_attribute) is not None for span in _iter_spans(payload)
+    ):
+        expected = str(sample.id)
     trace, messages = import_otlp_trace(
         payload,
         sample_id_attribute=config.sample_id_attribute,
