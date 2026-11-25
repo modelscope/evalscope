@@ -509,6 +509,33 @@ class TestDPGScoringCore:
         )
         assert raw == {1: 1.0, 2: 0.0, 3: 1.0}
 
+    def test_raw_strict_case(self):
+        # A capitalized 'Yes' must not count: the reply is matched exactly.
+        raw, adjusted = dpg_scoring.raw_and_adjusted(
+            dpg_scoring.parse_questions(json.dumps(self.QUESTIONS)),
+            {1: 'Yes', 2: 'YES', 3: 'yes'},
+        )
+        assert raw == {1: 0.0, 2: 0.0, 3: 1.0}
+
+    def test_judge_reply_keeps_original_case(self, tmp_path, monkeypatch):
+        # The judge path must not lowercase the reply; normalize_answer owns the rule.
+        from PIL import Image
+
+        from evalscope.metrics.vision.metrics import DPGScore
+
+        image_path = tmp_path / 'image.png'
+        Image.new('RGB', (4, 4)).save(image_path)
+        target = json.dumps([
+            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
+        ])
+        metric = DPGScore()
+        monkeypatch.setattr(metric, '_api_model', type('M', (), {'generate': lambda self, **k: type('O', (), {
+            'error': None, 'empty': False, 'completion': 'Yes', 'stop_reason': 'stop'})()})())
+        result = metric(str(image_path), target)
+        # 'Yes' is not an exact 'yes': the sample scores 0.
+        assert result.main_value == 0.0
+        assert result.metadata['corpus_counts']['components']['entity'] == {'numerator': 0, 'denominator': 1}
+
     def test_dependency_propagation(self):
         # Parent adjusted to 0 forces the child to 0 (q2 depends on q1).
         raw, adjusted = dpg_scoring.raw_and_adjusted(

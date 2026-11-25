@@ -627,7 +627,9 @@ class DPGScore(_TextRenderingMetric):
             raise RuntimeError(output.error or 'VLM API scoring failed.')
         if output.stop_reason == 'max_tokens':
             raise ValueError('VLM answer reached max_tokens; increase the scorer generation_config.max_tokens.')
-        return output.completion.strip().lower()
+        # Keep the raw reply: normalize_answer applies the official strict 'yes' rule, so a
+        # capitalized 'Yes' scores 0 just like any non-exact answer.
+        return output.completion.strip()
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Score]:
         from evalscope.metrics.vision.dpg_scoring import (
