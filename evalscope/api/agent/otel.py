@@ -254,7 +254,14 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str]) -> O
 
 
 def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
-    """Expand one ``gen_ai.*.messages`` attribute into ChatMessage objects."""
+    """Expand one ``gen_ai.*.messages`` attribute into ChatMessage objects.
+
+    An assistant entry becomes **one** message carrying both its text and its
+    tool calls, mirroring the bridge (``trace_recorder._build_assistant_message``).
+    Emitting one message per part would turn ``[text, tool_call]`` into two
+    consecutive assistant turns, and a prediction scan would mistake the
+    trailing tool-call fragment for a missing final answer.
+    """
     if not isinstance(value, list):
         return []
     messages: List[ChatMessage] = []
@@ -268,11 +275,63 @@ def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
             if content is None:
                 continue
             parts = [{'type': 'text', 'content': content}]
+
+        if role == 'assistant':
+            texts: List[str] = []
+            tool_calls: List[ToolCall] = []
+            for part in parts:
+                part_type = part.get('type', 'text')
+                if part_type == 'text':
+                    texts.append(str(part.get('content', '')))
+                elif part_type == 'tool_call':
+                    tool_calls.append(_tool_call_from_part(part))
+                # Unknown assistant parts (blob/uri/vendor) are not text and not
+                # tool calls: skip rather than split the turn.
+            messages.append(
+                ChatMessageAssistant(
+                    content='\n'.join(t for t in texts if t),
+                    model=model,
+                    tool_calls=tool_calls or None,
+                )
+            )
+            continue
+
         for part in parts:
+            part_type = part.get('type', 'text')
+            if part_type == 'tool_call':
+                # A tool_call part under a non-assistant role is malformed; keep
+                # it visible as an assistant turn rather than dropping it.
+                messages.append(ChatMessageAssistant(content='', model=model, tool_calls=[_tool_call_from_part(part)]))
+                continue
             message = _part_to_message(role, part, model)
             if message is not None:
                 messages.append(message)
     return messages
+
+
+def _tool_call_from_part(part: Dict[str, Any]) -> ToolCall:
+    """Build a ``ToolCall`` from one ``parts[]`` entry."""
+    arguments = part.get('arguments')
+    if not isinstance(arguments, (dict, str)):
+        arguments = _json_dumps(arguments)
+    return ToolCall(
+        id=str(part.get('id') or ''),
+        function=ToolFunction(name=str(part.get('name') or ''), arguments=arguments),
+    )
+
+
+def _tool_calls_in_messages_attr(value: Any) -> List[ToolCall]:
+    """Extract ``tool_call`` parts from one ``gen_ai.*.messages`` attribute."""
+    if not isinstance(value, list):
+        return []
+    calls: List[ToolCall] = []
+    for entry in value:
+        if not isinstance(entry, dict):
+            continue
+        for part in entry.get('parts') or []:
+            if isinstance(part, dict) and part.get('type') == 'tool_call':
+                calls.append(_tool_call_from_part(part))
+    return calls
 
 
 def _legacy_input_messages(attrs: Dict[str, Any]) -> List[ChatMessage]:
@@ -353,6 +412,26 @@ def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage
 # ---------------------------------------------------------------------------
 
 
+def _owning_sample_id(span: Dict[str, Any], by_id: Dict[str, Dict[str, Any]], attribute: str) -> Optional[str]:
+    """Resolve the sample id for ``span``, walking up to the nearest tagged ancestor.
+
+    A multi-sample export usually tags only the trace root; resolving by
+    ancestry keeps its chat / tool children in the same sample.
+    """
+    current: Optional[Dict[str, Any]] = span
+    seen = set()
+    while current is not None:
+        span_id = _span_id(current)
+        if span_id in seen:
+            return None
+        seen.add(span_id)
+        value = _span_attributes(current).get(attribute)
+        if value is not None:
+            return str(value)
+        current = by_id.get(current.get('parentSpanId') or '')
+    return None
+
+
 def _chat_steps(ordered: List[Dict[str, Any]]) -> Dict[str, int]:
     """Map span id → turn index.
 
@@ -425,20 +504,23 @@ def import_otlp_trace(
     # --- Sample association -------------------------------------------------
     if expected_sample_id is not None:
         # Sample ids are integers in the dataset but may be int or str in OTLP
-        # attributes; compare their string forms so both spellings associate.
+        # attributes. Compare string forms, and resolve the owning id by
+        # walking to the trace root: a multi-sample export normally tags only
+        # the invoke_agent root, so a per-span check would drop its children.
         expected = str(expected_sample_id)
-        span_ids = {str(_span_attributes(span).get(sample_id_attribute)) for span in spans}
-        span_ids.discard('None')
-        if not span_ids:
+        by_id = {_span_id(span): span for span in spans}
+        resolved = {_span_id(span): _owning_sample_id(span, by_id, sample_id_attribute) for span in spans}
+        tagged = {value for value in resolved.values() if value is not None}
+        if not tagged:
             raise OTLPImportError(
                 f'No span carries {sample_id_attribute!r}; cannot associate the export with '
                 f'sample {expected_sample_id!r}'
             )
-        if expected not in span_ids:
+        if expected not in tagged:
             raise OTLPImportError(
-                f'No span carries {sample_id_attribute}={expected_sample_id!r}; found sample ids: {sorted(span_ids)}'
+                f'No span carries {sample_id_attribute}={expected_sample_id!r}; found sample ids: {sorted(tagged)}'
             )
-        spans = [span for span in spans if str(_span_attributes(span).get(sample_id_attribute)) == expected]
+        spans = [span for span in spans if resolved.get(_span_id(span)) == expected]
 
     ordered = sorted(spans, key=_start_ns)
     steps = _chat_steps(ordered)
@@ -525,6 +607,21 @@ def import_otlp_trace(
                 token_usage=_usage(attrs),
                 payload={'span_id': span_id, 'operation': operation, **payload_extra},
             )
+            # A tool call encoded as a ``tool_call`` part belongs to this turn;
+            # the bridge and native loop record one TOOL_CALL per assistant
+            # tool call, so emit it here rather than relying on the tool span.
+            for call in _tool_calls_in_messages_attr(attrs.get(_OUTPUT_MESSAGES)):
+                trace.add_event(
+                    step=step,
+                    type=EventType.TOOL_CALL,
+                    payload={
+                        'span_id': span_id,
+                        'operation': operation,
+                        'tool_call_id': call.id,
+                        'name': call.function.name,
+                        'arguments': call.function.arguments,
+                    },
+                )
             continue
 
         if operation == _OP_EXECUTE_TOOL:

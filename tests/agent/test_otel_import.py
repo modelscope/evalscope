@@ -183,9 +183,13 @@ def test_tool_span_inherits_its_turn_and_dedups_against_messages():
     tool_calls = [e for e in trace.events if e.type is EventType.TOOL_CALL]
     tool_results = [e for e in trace.events if e.type is EventType.TOOL_RESULT]
 
-    # The tool_call part in messages owns the TOOL_CALL event; the span only adds
-    # the result (no duplicate event).
-    assert len(tool_calls) == 0
+    # The tool_call part in messages emits TOOL_CALL on its own chat turn; the
+    # tool span only adds TOOL_RESULT (no duplicate TOOL_CALL).
+    assert len(tool_calls) == 1
+    assert tool_calls[0].step == 0  # the chat turn that made the call
+    assert tool_calls[0].payload['span_id'] == 'c1'
+    assert tool_calls[0].payload['tool_call_id'] == 'call_1'
+    assert tool_calls[0].payload['name'] == 'search'
     assert len(tool_results) == 1
     assert tool_results[0].step == 0  # same turn as c1
     assert tool_results[0].payload['tool_call_id'] == 'call_1'
@@ -838,3 +842,124 @@ def test_skipped_operations_do_not_add_a_second_run_boundary():
 
     assert len(run_ends) == 1, 'skipped operations must not add a run boundary'
     assert run_ends[0].payload['skipped_operations'] == {'embeddings': 1}
+
+
+def test_assistant_entry_with_text_and_tool_call_is_one_message():
+    """[text, tool_call] parts must stay one assistant turn, not two."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {
+                        'role': 'assistant',
+                        'parts': [
+                            _text_part('Let me search'),
+                            {'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {'q': 'x'}},
+                        ],
+                    }
+                ),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+
+    assert len(messages) == 2  # user + one assistant turn
+    assistant = messages[1]
+    assert isinstance(assistant, ChatMessageAssistant)
+    assert assistant.text == 'Let me search'
+    assert assistant.tool_calls and assistant.tool_calls[0].id == 'call_1'
+
+
+def test_intermediate_text_with_tool_call_is_not_treated_as_missing_answer(tmp_path):
+    """A turn with both text and a tool call can still be the prediction."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {
+                        'role': 'assistant',
+                        'parts': [
+                            _text_part('Working on it'),
+                            {'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {}},
+                        ],
+                    }
+                ),
+            },
+        )
+    )
+    (tmp_path / 'sample-1.otlp.json').write_text(_json(payload))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(tmp_path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id='sample-1'),
+    )
+
+    assert result.output.completion == 'Working on it'
+
+
+def test_sample_id_on_root_keeps_untagged_children():
+    """A multi-sample export tags only the invoke_agent root; children inherit it."""
+    payload = _export(
+        _span(
+            'root',
+            'invoke_agent',
+            start=0,
+            end=9,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')},
+                {'key': 'evalscope.sample_id', 'value': _str('sample-a')},
+            ],
+        ),
+        _chat_span(
+            'c1',
+            parent='root',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span(
+            'other-root',
+            'invoke_agent',
+            start=10,
+            end=19,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')},
+                {'key': 'evalscope.sample_id', 'value': _str('sample-b')},
+            ],
+        ),
+        _chat_span(
+            'c2',
+            parent='other-root',
+            start=11,
+            end=12,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q-b')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a-b')]}),
+            },
+        ),
+    )
+
+    trace, messages = import_otlp_trace(payload, expected_sample_id='sample-a')
+    chat_spans = [e for e in trace.events if e.type is EventType.MODEL_GENERATE]
+
+    # Both the tagged root and its untagged chat child belong to sample-a.
+    assert len(chat_spans) == 1
+    assert messages[0].text == 'q'
