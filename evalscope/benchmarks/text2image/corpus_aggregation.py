@@ -26,10 +26,6 @@ class CorpusAggregationMixin:
             return self.corpus_metrics.get(metric_name, '')
         return 'all' if metric_name in self.corpus_metrics else ''
 
-    def _component_counts(self, counts: Dict[str, Any], component: str) -> Dict[str, Any]:
-        components = counts.get('components') or {}
-        return components.get(component, {'numerator': 0, 'denominator': 0})
-
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         aggregates = super().aggregate_scores(sample_scores)
         grouped: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
@@ -95,20 +91,11 @@ class CorpusAggregationMixin:
             if not mode:
                 continue
             if mode == 'components':
-                # Component rows are separate identities; re-aggregate each from the
-                # corpus counts its aggregate rows already carry.
-                component_counts: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-                for subset_aggregates in scores.values():
-                    for aggregate in subset_aggregates:
-                        if aggregate.metric_name != metric.identity.name or 'component' not in (
-                            aggregate.dimensions or {}
-                        ):
-                            continue
-                        component_counts[aggregate.dimensions['component']].append(aggregate.metadata['corpus_counts'])
-                for category in metric.categories:
-                    for subset in category.subsets:
-                        continue
-                continue
+                # Component identities re-aggregate through the standard flow below (their
+                # aggregate rows already carry the final corpus counts); the overall
+                # identity keeps the inherited mean of per-image ratios.
+                if 'component' not in metric.identity.dimensions:
+                    continue
             all_counts = []
             for category in metric.categories:
                 counts = [

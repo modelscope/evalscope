@@ -5,6 +5,7 @@
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
 | `cvtg_2k` | [CVTG-2K](../../benchmarks/cvtg_2k.md) | `TextToImage` |
+| `dpg_bench` | [DPG-Bench](../../benchmarks/dpg_bench.md) | `TextToImage` |
 | `evalmuse` | [EvalMuse](../../benchmarks/evalmuse.md) | `TextToImage` |
 | `gedit` | [GEdit-Bench](../../benchmarks/gedit.md) | `ImageEditing` |
 | `genai_bench` | [GenAI-Bench](../../benchmarks/genai_bench.md) | `TextToImage` |
@@ -19,6 +20,7 @@
 :maxdepth: 1
 
 ../../benchmarks/cvtg_2k.md
+../../benchmarks/dpg_bench.md
 ../../benchmarks/evalmuse.md
 ../../benchmarks/gedit.md
 ../../benchmarks/genai_bench.md

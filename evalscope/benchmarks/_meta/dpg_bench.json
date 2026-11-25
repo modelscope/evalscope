@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "pretty_name": "DPG-Bench",
+    "dataset_id": "evalscope/DPG-Bench",
+    "paper_url": "https://arxiv.org/abs/2403.12915",
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "DPGScore"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nDPG-Bench (ELLA) evaluates semantic alignment on 1,065 dense prompts describing multiple\nobjects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Object365.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Dense prompt describing a multi-object scene\n- **Output**: Image scored through atomic yes/no questions decomposed from the prompt\n- **Domain**: Dense prompt semantic alignment\n\n## Key Features\n\n- 1,065 dense prompts decomposed into ~14k atomic questions with dependency structure,\n  following the DSG scoring pipeline of the official evaluator.\n- Loads the ModelScope mirror by default; the official metadata CSV from the\n  diffusionbench-evals packaging is also supported.\n\n## Evaluation Notes\n\n- A vision API answers each atomic question. An answer scores 1.0 only when it is exactly\n  'yes'; a question whose parent is adjusted to 0 is forced to 0. The overall score is the\n  mean of adjusted per-image ratios; the five L1 category scores (Global / Entity /\n  Attribute / Relation / Other) aggregate RAW answers corpus-level, as in the official\n  evaluator.\n- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are\n  needed. The official evaluator uses mPLUG, so results from different judges are not\n  directly comparable. API failures are excluded rather than scored zero.\n- A prompt-level category without questions emits no report row; use repeats=4 for the\n  official repeated-image protocol.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc",
+    "primary_metric": {
+      "name": "dpg_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
+    "eval_type": "text2image",
+    "requires_local_dataset": false
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# DPG-Bench\n\n\n## Overview\n\nDPG-Bench (ELLA) evaluates semantic alignment on 1,065 dense prompts describing multiple\nobjects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Object365.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Dense prompt describing a multi-object scene\n- **Output**: Image scored through atomic yes/no questions decomposed from the prompt\n- **Domain**: Dense prompt semantic alignment\n\n## Key Features\n\n- 1,065 dense prompts decomposed into ~14k atomic questions with dependency structure,\n  following the DSG scoring pipeline of the official evaluator.\n- Loads the ModelScope mirror by default; the official metadata CSV from the\n  diffusionbench-evals packaging is also supported.\n\n## Evaluation Notes\n\n- A vision API answers each atomic question. An answer scores 1.0 only when it is exactly\n  'yes'; a question whose parent is adjusted to 0 is forced to 0. The overall score is the\n  mean of adjusted per-image ratios; the five L1 category scores (Global / Entity /\n  Attribute / Relation / Other) aggregate RAW answers corpus-level, as in the official\n  evaluator.\n- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are\n  needed. The official evaluator uses mPLUG, so results from different judges are not\n  directly comparable. API failures are excluded rather than scored zero.\n- A prompt-level category without questions emits no report row; use repeats=4 for the\n  official repeated-image protocol.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `dpg_bench` |\n| **Dataset ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2403.12915) |\n| **Tags** | `TextToImage` |\n| **Metrics** | `DPGScore` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets dpg_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['dpg_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "735889b2697609f3ffe61d32db0a5fba",
+    "needs_translation": true
+  },
+  "updated_at": "2026-11-25T10:07:53.516502"
+}

@@ -100,11 +100,25 @@ class DPGBenchAdapter(CorpusAggregationMixin, Text2ImageAdapter):
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """Load the official metadata CSV and convert it into prompt-level records.
 
-        A local prompt-level JSONL path loads directly; the ModelScope mirror loads through
-        the standard flow; any other hub resolves the official metadata CSV and converts it.
+        Local directories (the documented local-dataset form) and the ModelScope mirror
+        load through the standard flow; a local CSV converts first; any other hub resolves
+        the official metadata CSV and converts it.
         """
+        if os.path.isdir(self.dataset_id):
+            # Local directory dataset: the standard loader resolves default_test.jsonl.
+            return super().load_subset(subset, data_loader)
         if os.path.isfile(self.dataset_id):
-            data_path = self.dataset_id
+            if self.dataset_id.lower().endswith('.csv'):
+                # A local official CSV: convert it before the standard loader parses
+                # per-question rows that record_to_sample cannot consume.
+                records = convert_dpg_csv(self.dataset_id)
+                converted = Path(self.dataset_id).with_suffix('.prompts.jsonl')
+                with open(converted, 'w', encoding='utf-8', newline='\n') as f:
+                    for record in records:
+                        f.write(json.dumps(record, ensure_ascii=False) + '\n')
+                data_path = str(converted)
+            else:
+                data_path = self.dataset_id
         elif self.dataset_hub == HubType.MODELSCOPE and self.dataset_id == 'evalscope/DPG-Bench':
             return super().load_subset(subset, data_loader)
         else:

@@ -556,6 +556,32 @@ class TestDPGAdapter:
         assert target[0]['category_broad'] == 'global'
         assert data[0].input[0].content == data[0].metadata['prompt']
 
+    def test_local_directory_and_csv_dataset_ids(self, tmp_path, monkeypatch):
+        import shutil
+
+        import evalscope.benchmarks.text2image.dpg_bench_adapter as module
+
+        # Local directory form: standard loader resolves default_test.jsonl.
+        local_dir = tmp_path / 'dpg_local'
+        local_dir.mkdir()
+        shutil.copy(FIXTURES / 'dpg_bench_prompts.jsonl', local_dir / 'default_test.jsonl')
+        monkeypatch.setattr(module, 'download_dataset_file', lambda *a, **k: (_ for _ in ()).throw(AssertionError('must not download')))
+        adapter = get_benchmark('dpg_bench', TaskConfig(
+            model='test', eval_type='mock_llm',
+            dataset_args={'dpg_bench': {'dataset_id': str(local_dir)}}))
+        data = adapter.load_dataset()['default']
+        assert len(data) == 2
+
+        # Local official CSV form: converted before loading.
+        local_csv = tmp_path / 'dpg_official.csv'
+        shutil.copy(FIXTURES / 'dpg_bench.csv', local_csv)
+        adapter_csv = get_benchmark('dpg_bench', TaskConfig(
+            model='test', eval_type='mock_llm',
+            dataset_args={'dpg_bench': {'dataset_id': str(local_csv)}}))
+        data_csv = adapter_csv.load_dataset()['default']
+        assert len(data_csv) == 2
+        assert json.loads(data_csv[0].target)[0]['category_broad'] == 'global'
+
     def test_record_to_sample_serializes_questions(self):
         adapter = get_benchmark('dpg_bench')
         questions = [{'proposition_id': 1, 'question': 'q?', 'dependency': [], 'category_broad': 'entity', 'category_detailed': 'whole'}]
