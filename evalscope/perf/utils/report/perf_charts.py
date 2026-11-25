@@ -465,35 +465,55 @@ def build_compare_chart(
     theme: str = 'dark',
     series_details: Optional[List[str]] = None,
 ) -> str:
-    """Overlay one sweep metric with one trace per run directory."""
+    """Compare a sweep metric using a separate horizontal axis for each workload mode."""
     y_title = _COMPARE_Y_TITLE.get(metric, metric)
-    x_title = 'Concurrency'
+    mixed_modes = len({run.is_open_loop for _, runs in series for run in runs}) > 1
+    axis_titles = {'x': 'Concurrency'}
     traces = []
     for i, (label, runs) in enumerate(series):
-        if not runs:
-            continue
-        xs, x_title = _x_axis(runs)
-        ys = [_finite_metric(_compare_y(metric, run, is_embedding)) for run in runs]
         detail = series_details[i] if series_details and i < len(series_details) else label
         color = _COMPARE_PALETTE[i % len(_COMPARE_PALETTE)]
-        traces.append(
-            dict(
+        runs_by_mode: dict[bool, list[RunData]] = {}
+        for run in runs:
+            runs_by_mode.setdefault(run.is_open_loop, []).append(run)
+
+        for mode_index, (is_open, mode_runs) in enumerate(runs_by_mode.items()):
+            xs, x_title = _x_axis(mode_runs)
+            axis = 'x2' if mixed_modes and is_open else 'x'
+            axis_titles[axis] = x_title
+            trace = dict(
                 x=xs,
-                y=ys,
+                y=[_finite_metric(_compare_y(metric, run, is_embedding)) for run in mode_runs],
                 mode='markers' if len(xs) <= 1 else 'lines+markers',
                 name=label,
                 line=dict(color=color, width=2),
                 marker=dict(size=8),
                 connectgaps=False,
-                customdata=[[detail, run.name, run.number] for run in runs],
+                customdata=[[detail, run.name, run.number] for run in mode_runs],
                 hovertemplate=(
                     f'{x_title}=%{{x}}<br>{y_title}=%{{y}}'
                     '<br>Run=%{customdata[0]}<br>Workload=%{customdata[1]}'
                     '<br>Requests=%{customdata[2]}<extra>%{fullData.name}</extra>'
                 ),
             )
-        )
-    return ChartBuilder.line(traces, x_title=x_title, y_title=y_title, div_id=f'chart-compare-{metric}', theme=theme)
+            if mixed_modes:
+                trace.update(xaxis=axis, legendgroup=label, showlegend=mode_index == 0)
+            traces.append(trace)
+
+    extra_layout = None
+    if mixed_modes:
+        extra_layout = {
+            'xaxis': dict(domain=[0, 0.46], dtick=1, **_GRID),
+            'xaxis2': dict(domain=[0.54, 1], title=axis_titles['x2'], anchor='y', **_GRID),
+        }
+    return ChartBuilder.line(
+        traces,
+        x_title=axis_titles['x'],
+        y_title=y_title,
+        div_id=f'chart-compare-{metric}',
+        extra_layout=extra_layout,
+        theme=theme,
+    )
 
 
 def build_input_length_compare_chart(

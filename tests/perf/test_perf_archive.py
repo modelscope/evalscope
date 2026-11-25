@@ -436,12 +436,49 @@ class TestPerfArchive(unittest.TestCase):
         explicit = self._compare([self.cli_rel, self.svc_rel], x_axis='workload')
         self.assertEqual(default.status_code, 200)
         self.assertEqual(default.data, explicit.data)
-        self.assertIn(b'R1 \xc2\xb7 my-model', default.data)
         self.assertIn(b'connectgaps', default.data)
+        self.assertIn(b'Concurrency', default.data)
+        self.assertNotIn(b'xaxis2', default.data)
 
         invalid = self._compare([self.cli_rel, self.svc_rel], x_axis='tokens')
         self.assertEqual(invalid.status_code, 400)
         self.assertIn('Unknown x_axis', invalid.get_json()['error'])
+
+    def test_compare_chart_keeps_concurrency_and_request_rate_on_separate_axes(self) -> None:
+        from unittest import mock
+
+        from evalscope.perf.utils.report.perf_charts import ChartBuilder
+
+        _make_run(os.path.join(self.tmp, 'concurrency'), with_html=False, sub_name='parallel_8_number_2')
+        _make_run(
+            os.path.join(self.tmp, 'request-rate'),
+            with_html=False,
+            sub_name='rate_20_number_2',
+            summary_values={'Request Rate (req/s)': 20},
+        )
+
+        with mock.patch.object(ChartBuilder, 'to_div', wraps=ChartBuilder.to_div) as to_div:
+            for paths in (['concurrency', 'request-rate'], ['request-rate', 'concurrency']):
+                with self.subTest(paths=paths):
+                    response = self._compare(paths)
+                    self.assertEqual(response.status_code, 200)
+                    figure = to_div.call_args.args[0]
+                    axes_by_workload = {'concurrency': ('x', 8), 'request-rate': ('x2', 20)}
+                    self.assertEqual(
+                        [(trace.xaxis or 'x', trace.x[0]) for trace in figure.data],
+                        [axes_by_workload[path] for path in paths],
+                    )
+                    self.assertEqual([trace.name for trace in figure.data], ['R1 · my-model', 'R2 · my-model'])
+                    self.assertEqual(figure.layout.xaxis.title.text, 'Concurrency')
+                    self.assertEqual(figure.layout.xaxis2.title.text, 'Rate (req/s)')
+                    self.assertLess(figure.layout.xaxis.domain[-1], figure.layout.xaxis2.domain[0])
+                    self.assertTrue(all((trace.yaxis or 'y') == 'y' for trace in figure.data))
+
+            response = self._compare(['request-rate'])
+            self.assertEqual(response.status_code, 200)
+            figure = to_div.call_args.args[0]
+            self.assertEqual(figure.layout.xaxis.title.text, 'Rate (req/s)')
+            self.assertNotIn('xaxis2', figure.layout.to_plotly_json())
 
     def test_compare_chart_input_length_mode(self):
         rels = []
