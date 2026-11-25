@@ -274,6 +274,9 @@ class JsonlWriter:
     OS page cache immediately — readable by other processes and
     recoverable after a Python-level crash.
 
+    An existing non-empty file without a final line separator gets one
+    before appending, so new records cannot merge with its last row.
+
     Example::
 
         writer = JsonlWriter('/tmp/out.jsonl')
@@ -290,7 +293,17 @@ class JsonlWriter:
             parent = os.path.dirname(self._path)
             if parent:
                 os.makedirs(parent, exist_ok=True)
-            self._file = open(self._path, mode='a', encoding='utf-8')
+            existing = open(self._path, mode='a+b')
+            try:
+                # Inspect bytes so a trailing multibyte UTF-8 character is safe.
+                if existing.tell():
+                    existing.seek(-1, os.SEEK_END)
+                    if existing.read(1) not in (b'\n', b'\r'):
+                        existing.write(b'\n')
+                self._file = io.TextIOWrapper(existing, encoding='utf-8')
+            except Exception:
+                existing.close()
+                raise
         return self._file
 
     def write(self, record: Any) -> None:
