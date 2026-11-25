@@ -44,8 +44,8 @@ def test_from_dataset_no_limit_keeps_all_samples() -> None:
     assert len(dataset_dict['large']) == 10
 
 
-@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf])
-def test_from_dataset_rejects_invalid_limits(limit: float | int) -> None:
+@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf, True, False])
+def test_from_dataset_rejects_invalid_limits(limit: float | int | bool) -> None:
     dataset = _build_dataset({'small': 4})
 
     with pytest.raises(ValueError, match='Limit must'):
