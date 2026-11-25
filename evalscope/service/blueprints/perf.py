@@ -402,15 +402,19 @@ def get_perf_compare_chart():
         paths      (str): ';'-separated run directory paths (relative to root)
         chart_type (str): sweep metric (latency|ttft|tpot|rps|throughput|success)
         theme      (str): 'dark' (default) or 'light'
+        x_axis     (str): 'workload' (default) or 'input_length'
     """
     paths_raw = request.args.get('paths', '')
     chart_type = request.args.get('chart_type', 'rps')
     theme = 'light' if request.args.get('theme') == 'light' else 'dark'
+    x_axis = request.args.get('x_axis', 'workload')
+    if x_axis not in ('workload', 'input_length'):
+        return jsonify({'error': f'Unknown x_axis: {x_axis}'}), 400
     rel_paths = [p for p in paths_raw.split(';') if p.strip()]
     if not rel_paths:
         return jsonify({'error': 'paths is required'}), 400
     try:
-        html = perf_archive.render_compare_chart(_root_path(), rel_paths, chart_type, theme)
+        html = perf_archive.render_compare_chart(_root_path(), rel_paths, chart_type, theme, x_axis=x_axis)
         return html, 200, {'Content-Type': 'text/html'}
     except PerfArchiveError as e:
         return jsonify({'error': e.message}), e.status

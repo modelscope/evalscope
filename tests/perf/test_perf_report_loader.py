@@ -78,6 +78,47 @@ class TestPerfReportLoader(unittest.TestCase):
         _, x_title = perf_charts._x_axis([run])
         self.assertEqual(x_title, 'Concurrency')
 
+    def test_compare_chart_uses_per_trace_markers_and_full_hover_identity(self):
+        from unittest import mock
+
+        from evalscope.perf.utils.report import perf_charts
+        run = self._by_dir()['parallel_2_number_5']
+        with mock.patch.object(perf_charts.ChartBuilder, 'line', return_value='chart') as line:
+            perf_charts.build_compare_chart(
+                [('R1 · model', [run])],
+                'latency',
+                series_details=['model · dataset · path'],
+            )
+
+        trace = line.call_args.args[0][0]
+        self.assertEqual(trace['mode'], 'markers')
+        self.assertFalse(trace['connectgaps'])
+        self.assertEqual(trace['customdata'][0][0], 'model · dataset · path')
+        self.assertIn('Requests=%{customdata[2]}', trace['hovertemplate'])
+
+    def test_input_length_compare_chart_sorts_and_preserves_gaps(self):
+        from unittest import mock
+
+        from evalscope.perf.utils.report import perf_charts
+        run = self._by_dir()['parallel_2_number_5']
+        points = [
+            (2048, 1, run, 'R2'),
+            (1024, 1, run, 'R1'),
+            (4096, 2, run, 'R3'),
+        ]
+        with mock.patch.object(perf_charts.ChartBuilder, 'line', return_value='chart') as line:
+            perf_charts.build_input_length_compare_chart(points, 'latency')
+
+        traces = line.call_args.args[0]
+        self.assertEqual([trace['name'] for trace in traces], ['C=1', 'C=2'])
+        self.assertEqual(traces[0]['x'], [1024, 2048, 4096])
+        self.assertEqual(traces[0]['y'][2], None)
+        self.assertEqual(traces[1]['y'][:2], [None, None])
+        self.assertEqual(traces[0]['mode'], 'lines+markers')
+        self.assertEqual(traces[1]['mode'], 'markers')
+        self.assertTrue(all(trace['connectgaps'] is False for trace in traces))
+        self.assertNotIn('dtick', line.call_args.kwargs['extra_layout']['xaxis'])
+
     def test_html_percentiles_distinguish_missing_values_from_zero(self) -> None:
         from evalscope.perf.utils.report.generate_report import gen_perf_html_report
 

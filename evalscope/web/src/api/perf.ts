@@ -104,8 +104,10 @@ export function getPerfCompareChartUrl(
   paths: string[],
   chartType: string,
   theme?: string,
+  xAxis?: 'workload' | 'input_length',
 ): string {
   const params = new URLSearchParams({ root_path: rootPath, paths: paths.join(';'), chart_type: chartType })
   if (theme) params.set('theme', theme)
+  if (xAxis) params.set('x_axis', xAxis)
   return `/api/v1/perf/compare/chart?${params.toString()}`
 }

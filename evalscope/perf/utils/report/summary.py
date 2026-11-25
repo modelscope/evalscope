@@ -116,6 +116,10 @@ def build_run_config(args_dict: dict, runs: list | None = None) -> dict[str, str
         configuration['parallel'] = ', '.join(str(run.parallel) for run in runs)
         configuration['number'] = ', '.join(str(run.number) for run in runs)
         configuration['rate'] = ', '.join(str(run.summary.request_rate) for run in runs)
+        for key in ('dataset', 'max_prompt_length', 'min_prompt_length'):
+            values = list(dict.fromkeys(str((getattr(run, 'args', None) or {}).get(key)) for run in runs))
+            if len(values) > 1:
+                configuration[key] = ', '.join(values)
     return configuration
 
 
