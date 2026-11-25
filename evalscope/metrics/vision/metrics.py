@@ -618,7 +618,12 @@ class DPGScore(_TextRenderingMetric):
                 ChatMessageUser(
                     content=[
                         ContentImage(image=image_path),
-                        ContentText(text=f'{question} Answer with a single word: yes or no.'),
+                        ContentText(
+                            text=(
+                                f'{question} Answer with exactly one lowercase word: yes or no. '
+                                'Lowercase only, no punctuation, no other words.'
+                            )
+                        ),
                     ]
                 )
             ]

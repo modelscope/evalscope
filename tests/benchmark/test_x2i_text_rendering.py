@@ -322,9 +322,9 @@ def test_longtext_incomplete_language_is_not_a_bilingual_result(tmp_path, monkey
 
     dataset_dir = tmp_path / 'dataset'
     dataset_dir.mkdir()
-    for line in (FIXTURES / 'longtext.jsonl').read_text().splitlines():
+    for line in (FIXTURES / 'longtext.jsonl').read_text(encoding='utf-8').splitlines():
         row = json.loads(line)
-        (dataset_dir / f"{row['language']}_test.jsonl").write_text(line + '\n')
+        (dataset_dir / f"{row['language']}_test.jsonl").write_text(line + '\n', encoding='utf-8')
 
     def score_counts(self: LongTextScore, image: str, text: str) -> tuple[float, int, int]:
         if text_render.detect_language(text) == 'zh':
@@ -457,7 +457,7 @@ def test_vlm_api_backend_without_local_weights(tmp_path, monkeypatch, status, fi
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
             assert self.path == '/v1/chat/completions'
-            body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+            body = json.loads(self.rfile.read(int(self.headers['Content-Length'])).decode('utf-8'))
             calls.append(body)
             assert body['messages'][0]['content'][0]['image_url']['url'].startswith('data:image/png;base64,')
             assert body['messages'][0]['content'][1]['text'] == LongTextScore.RECOGNIZE_PROMPT
@@ -516,6 +516,33 @@ class TestDPGScoringCore:
             {1: 'Yes', 2: 'YES', 3: 'yes'},
         )
         assert raw == {1: 0.0, 2: 0.0, 3: 1.0}
+
+    def test_judge_prompt_pins_the_accepted_form(self, tmp_path, monkeypatch):
+        # The prompt must demand the exact accepted token (lowercase 'yes'), so the strict
+        # matching rule and the judge instruction cannot drift apart again.
+        from PIL import Image
+
+        from evalscope.metrics.vision.metrics import DPGScore
+
+        image_path = tmp_path / 'image.png'
+        Image.new('RGB', (4, 4)).save(image_path)
+        target = json.dumps([
+            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
+        ])
+        metric = DPGScore()
+        prompts = []
+
+        class FakeModel:
+
+            def generate(self, **kwargs):
+                prompts.append(kwargs['input'][0].content[1].text)
+                return type('O', (), {'error': None, 'empty': False, 'completion': 'yes', 'stop_reason': 'stop'})()
+
+        monkeypatch.setattr(metric, '_api_model', FakeModel())
+        metric(str(image_path), target)
+        assert len(prompts) == 1
+        assert 'yes or no' in prompts[0]
+        assert 'lowercase' in prompts[0] and 'no punctuation' in prompts[0]
 
     def test_judge_reply_keeps_original_case(self, tmp_path, monkeypatch):
         # The judge path must not lowercase the reply; normalize_answer owns the rule.

@@ -17,8 +17,9 @@ objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Obj
 
 - 1,065 dense prompts decomposed into ~14k atomic questions with dependency structure,
   following the DSG scoring pipeline of the official evaluator.
-- Loads the ModelScope mirror by default; the official metadata CSV from the
-  diffusionbench-evals packaging is also supported.
+- Loads the ModelScope mirror by default; the official metadata CSV (from the
+  diffusionbench-evals packaging of the ELLA evaluator) can be used through a local
+  ``dataset_id`` while the Hugging Face mirror is being published.
 
 ## Evaluation Notes
 
@@ -29,7 +30,9 @@ objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Obj
   evaluator.
 - Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are
   needed. The official evaluator uses mPLUG, so results from different judges are not
-  directly comparable. API failures are excluded rather than scored zero.
+  directly comparable. API failures are excluded rather than scored zero. The judge prompt
+  pins the accepted token (lowercase 'yes'/'no', no punctuation), matching the strict
+  exact-match rule.
 - A prompt-level category without questions emits no report row; use repeats=4 for the
   official repeated-image protocol.
 
