@@ -91,9 +91,10 @@ _KNOWN_ATTRIBUTES = {
     'gen_ai.tool.call.arguments',
     'gen_ai.tool.call.result',
     'gen_ai.tool.call.id',
-    'gen_ai.agent.name',
-    'gen_ai.agent.id',
 }
+
+#: Attributes naming the agent that produced the trace; carried on RUN_START.
+_AGENT_IDENTITY_KEYS = ('gen_ai.agent.name', 'gen_ai.agent.id')
 
 #: OTel span status codes (``status.code``).
 _STATUS_ERROR = 2
@@ -440,6 +441,15 @@ def import_otlp_trace(
     steps = _chat_steps(ordered)
 
     trace = AgentTrace(framework=FRAMEWORK)
+    # ``create_agent`` is setup, not an invocation, so it emits no event; its
+    # identifying attributes ride along on the invoke_agent RUN_START payload.
+    agent_identity: Dict[str, Any] = {
+        key: value
+        for span in ordered
+        if _span_attributes(span).get(_OP_NAME) == _OP_CREATE_AGENT
+        for key, value in _span_attributes(span).items()
+        if key in _AGENT_IDENTITY_KEYS
+    }
     messages: List[ChatMessage] = []
     skipped_operations: Counter = Counter()
     chat_turns = 0
@@ -549,10 +559,12 @@ def import_otlp_trace(
             continue
 
         if operation == _OP_INVOKE_AGENT:
+            # The span's own identity wins over the create_agent association.
+            identity = {**agent_identity, **{k: v for k, v in payload_extra.items() if k in _AGENT_IDENTITY_KEYS}}
             trace.add_event(
                 step=step,
                 type=EventType.RUN_START,
-                payload={'span_id': span_id, 'operation': operation, **payload_extra},
+                payload={'span_id': span_id, 'operation': operation, **payload_extra, **identity},
             )
             trace.add_event(
                 step=step,

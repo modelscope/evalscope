@@ -657,3 +657,82 @@ def test_high_level_loader_accepts_integer_sample_ids(tmp_path):
 
     assert [m.text for m in result.messages] == ['q-9', 'a-9']
     assert result.output.completion == 'a-9'
+
+
+def test_agent_identity_rides_on_run_start_payload():
+    """gen_ai.agent.name/id must survive on the RUN_START payload.
+
+    A create_agent span sets up the agent (no event); an invoke_agent span runs
+    it. The identity may appear on either, and must not be filtered out.
+    """
+    payload = _export(
+        _span(
+            'create',
+            'create_agent',
+            start=0,
+            end=1,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('create_agent')},
+                {'key': 'gen_ai.agent.name', 'value': _str('planner')},
+                {'key': 'gen_ai.agent.id', 'value': _str('agent-42')},
+            ],
+        ),
+        _span('invoke', 'invoke_agent', start=2, end=3, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}]),
+        _chat_span(
+            'c1',
+            parent='invoke',
+            start=4,
+            end=5,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    run_start = next(e for e in trace.events if e.type is EventType.RUN_START)
+
+    assert run_start.payload['gen_ai.agent.name'] == 'planner'
+    assert run_start.payload['gen_ai.agent.id'] == 'agent-42'
+
+
+def test_invoke_agent_identity_wins_over_create_agent():
+    """An identity on the invoke_agent span takes precedence over create_agent."""
+    payload = _export(
+        _span(
+            'create',
+            'create_agent',
+            start=0,
+            end=1,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('create_agent')},
+                {'key': 'gen_ai.agent.name', 'value': _str('template')},
+            ],
+        ),
+        _span(
+            'invoke',
+            'invoke_agent',
+            start=2,
+            end=3,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')},
+                {'key': 'gen_ai.agent.name', 'value': _str('instance')},
+            ],
+        ),
+        _chat_span(
+            'c1',
+            parent='invoke',
+            start=4,
+            end=5,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    run_start = next(e for e in trace.events if e.type is EventType.RUN_START)
+
+    assert run_start.payload['gen_ai.agent.name'] == 'instance'
