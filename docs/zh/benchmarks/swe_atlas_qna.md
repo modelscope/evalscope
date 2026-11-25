@@ -2,28 +2,29 @@
 
 ## 概述
 
-SWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数据集包含 124 个只读代码理解任务，涵盖 Go、Python、C 和 TypeScript 语言的 11 个生产级仓库。
+SWE-Atlas QnA 是由 Scale AI 推出的代码库问答基准测试。公开数据集包含 124 个只读代码理解任务，涵盖 Go、Python、C 和 TypeScript 语言的 11 个生产级代码仓库。
 
 ## 任务描述
 
 - **任务类型**：多轮代码库探索与问答
-- **输入**：一个自然语言问题以及针对特定任务的仓库镜像
-- **输出**：基于仓库证据支持的文本答案
+- **输入**：一个自然语言问题以及一个特定任务的仓库镜像
+- **输出**：基于仓库证据支持的散文式回答
 - **领域**：软件工程与代码理解
 
 ## 主要特点
 
-- 在每个任务的 Docker 镜像中运行 EvalScope 原生的 AgentLoop 并配备 bash 工具。
-- 在评估前将仓库重置到固定的基础提交（base commit），并拒绝伴随源代码修改的答案。
-- 支持正面和负面的专家编写评分标准项（rubric items）。
-- 报告任务解决率（resolve rate）和平均评分标准通过率（mean rubric pass rate）。
+- 在每个任务的 Docker 镜像中运行 EvalScope 原生的 AgentLoop，并配备 bash 工具。
+- 在评估前将代码仓库重置到其固定的基础提交（base commit），并拒绝伴随源代码修改的答案。
+- 支持正向和负向的专家编写评分标准项（rubric items）。
+- 报告任务解决率（task resolve rate）和平均评分标准通过率（mean rubric pass rate）。
 
 ## 评估说明
 
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - `resolve_rate` 是主要指标；当任务的评分标准通过率达到 `pass_threshold`（默认为 1.0）且仓库保持干净状态时，视为任务已解决。
-- 每个评分标准项由 LLM 裁判使用官方输出模式独立评分。无效的裁判回复、仓库设置失败以及源树检查失败会导致该样本被排除，而不是赋予零分。
-- 实际运行需要 Docker、`ms-enclave` 以及数据集中引用的任务镜像。镜像总共可能需要约 20-35 GB 的磁盘空间。
-- 此适配器使用 EvalScope 的 AgentLoop，而非官方的 SWE-agent 和 Modal 脚手架，因此在没有单独对比的情况下，不声称结果具有排行榜等效性。
+- 每个评分标准项均由 LLM 评审员根据官方输出模式独立评分。无效的评审回复、仓库设置失败以及源代码树检查失败会导致该样本被排除，而不是赋予零分。
+- 实际运行需要 Docker 或 E2B、`ms-enclave` 以及数据集引用的任务镜像。在使用本地 Docker 时，镜像总共可能需要约 20-35 GB 的磁盘空间。
+- 此适配器使用 EvalScope 的 AgentLoop，而非官方的 SWE-agent 和 Modal 脚手架，因此在没有单独对比的情况下，不声称结果与排行榜等效。
 
 ## 属性
 
@@ -37,14 +38,13 @@ SWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数�
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 124 |
-| 提示词长度 (平均值) | 1367.56 字符 |
-| 提示词长度 (最小/最大值) | 745 / 3137 字符 |
+| 提示词长度（平均值） | 1367.56 字符 |
+| 提示词长度（最小/最大值） | 745 / 3137 字符 |
 
 ## 样例示例
 
@@ -54,7 +54,7 @@ SWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数�
 {
   "input": [
     {
-      "id": "75d7e494",
+      "id": "7454a07d",
       "content": "I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\n\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\n\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion."
     }
   ],
@@ -133,7 +133,7 @@ SWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数�
 }
 ```
 
-*注意：部分显示内容已被截断。*
+*注：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
@@ -147,10 +147,10 @@ SWE-Atlas QnA 是由 Scale AI 提供的代码库问答基准测试。公开数�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `working_dir` | `str` | `/app` | 每个任务镜像中的仓库路径。 |
-| `reset_to_base_commit` | `bool` | `True` | 在代理启动前将仓库重置到 repository_base_commit。 |
+| `reset_to_base_commit` | `bool` | `True` | 在代理启动前将仓库重置为 repository_base_commit。 |
 | `fail_on_source_modification` | `bool` | `True` | 如果代理运行后仓库包含未提交的更改，则使任务失败。 |
-| `command_timeout` | `float` | `900.0` | 当未配置原生超时时，每个沙箱命令的超时时间（秒）。 |
-| `pass_threshold` | `float` | `1.0` | 解决任务所需的最低评分标准通过率。 |
+| `command_timeout` | `float` | `900.0` | 当未配置原生超时时间时，每个沙箱命令的超时秒数。 |
+| `pass_threshold` | `float` | `1.0` | 解决任务所需的最小评分标准通过率。 |
 
 ## 使用方法
 
@@ -185,7 +185,7 @@ task_cfg = TaskConfig(
     judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'swe_atlas_qna': {
-            # extra_params: {}  # uses default extra parameters
+            # extra_params: {}  # 使用默认额外参数
         }
     },
     limit=10,  # 正式评估时请删除此行

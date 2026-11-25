@@ -44,6 +44,7 @@ HumanEval is a benchmark for evaluating the code generation capabilities of lang
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution for safety. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation for measuring generation quality
 - Default timeout is 4 seconds per problem

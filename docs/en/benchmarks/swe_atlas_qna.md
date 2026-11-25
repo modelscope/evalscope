@@ -21,12 +21,13 @@ code-comprehension tasks over 11 production repositories in Go, Python, C, and T
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - `resolve_rate` is the primary metric; a task is resolved when its rubric pass rate reaches `pass_threshold`, which
   defaults to 1.0, and the repository remains clean.
 - Each rubric item is graded independently by an LLM judge using the official output schema. Invalid judge replies,
   repository setup failures, and source-tree check failures exclude the sample rather than assigning a zero score.
-- A real run requires Docker, `ms-enclave`, and the task images referenced by the dataset. Images can require
-  approximately 20-35 GB of disk space in total.
+- A real run requires Docker or E2B, `ms-enclave`, and the task images referenced by the dataset. With local Docker,
+  images can require approximately 20-35 GB of disk space in total.
 - This adapter uses EvalScope's AgentLoop rather than the official SWE-agent and Modal scaffold, so results are not
   claimed to be leaderboard-equivalent without a separate comparison.
 
@@ -59,7 +60,7 @@ code-comprehension tasks over 11 production repositories in Go, Python, C, and T
 {
   "input": [
     {
-      "id": "75d7e494",
+      "id": "7454a07d",
       "content": "I'm  trying to wrap my head around kitty's remote control system because I want to eventually add a new command to it. I've been reading through the code but I'm getting lost in how all the pieces connect.\n\nSo here's what's confusing me. When ... [TRUNCATED 1455 chars] ... ow for a new command.\n\nDon't modify any files in the repository. If you need to create temporary scripts for testing, that's fine. but don't change the actual codebase files. And delete all those temporary scripts/files after task completion."
     }
   ],

@@ -22,6 +22,7 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Default configuration uses **3-shot** examples
 - **Security Warning**: Sandbox environment is required for safe code execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation
@@ -60,8 +61,8 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
 {
   "input": [
     {
-      "id": "f9c5e33a",
-      "content": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert ... [TRUNCATED] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\n\nassert remove_Occ(\"hello\",\"l\") == \"heo\"\nassert remove_Occ(\"abcda\",\"a\") == \"bcd\"\nassert remove_Occ(\"PHP\",\"P\") == \"H\"\n[BEGIN]\n"
+      "id": "6e16be36",
+      "content": "You are an expert Python programmer, and here is your task: Write a function to find the similar elements from the given two tuple lists. Your code should pass these tests:\n\nassert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)\nassert ... [TRUNCATED 1332 chars] ... unction to remove first and last occurrence of a given character from the string. Your code should pass these tests:\n\nassert remove_Occ(\"hello\",\"l\") == \"heo\"\nassert remove_Occ(\"abcda\",\"a\") == \"bcd\"\nassert remove_Occ(\"PHP\",\"P\") == \"H\"\n[BEGIN]\n"
     }
   ],
   "target": "def remove_Occ(s,ch): \r\n    for i in range(len(s)): \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    for i in range(len(s) - 1,-1,-1):  \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    return s ",

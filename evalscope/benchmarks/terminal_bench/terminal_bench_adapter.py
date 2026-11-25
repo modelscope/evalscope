@@ -134,6 +134,8 @@ class _TerminalBenchBase(AgentAdapter):
     """Shared logic for Terminal-Bench adapters."""
 
     hub_dataset_name: str = ''
+    _suppress_doc_sample_example = True
+    _suppress_doc_prompt_statistics = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -505,6 +507,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 
 - Requires **Python>=3.12** and `pip install evalscope[terminal_bench]`
 - Environment options: docker, daytona, e2b, modal
+- Supports E2B through Harbor: install `harbor[e2b]` and set `extra_params.environment_type='e2b'` to run without local Docker or local task-image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Configurable agent types and timeout settings
 - Maximum turns configurable (default: 200)
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
@@ -550,6 +553,7 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
 
 - Requires **Python>=3.12** and `pip install evalscope[terminal_bench]`
 - Environment options: docker, daytona, e2b, modal
+- Supports E2B through Harbor: install `harbor[e2b]` and set `extra_params.environment_type='e2b'` to run without local Docker or local task-image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Configurable agent types and timeout settings
 - Maximum turns configurable (default: 200)
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)

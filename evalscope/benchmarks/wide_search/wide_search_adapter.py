@@ -81,6 +81,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
 - Requires ``judge.strategy='auto'`` or ``'llm'`` with at least one ``judge.models`` entry; rule-only scoring is unsupported.
 - See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime

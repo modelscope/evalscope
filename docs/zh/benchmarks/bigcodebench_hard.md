@@ -1,32 +1,32 @@
 # BigCodeBench-Hard
 
-
 ## 概述
 
-BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴近真实编程场景的任务。这些任务需要更复杂的推理能力和多步骤的问题解决能力。
+BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴近真实世界编程场景的任务。这些任务需要更复杂的推理能力和多步骤的问题解决能力。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
 - **输入**：编程任务描述（文档字符串或自然语言指令）
 - **输出**：完整的 Python 函数实现
-- **难度**：高于 BigCodeBench-Full，更接近真实世界的复杂度
+- **难度**：高于 BigCodeBench-Full，更接近真实世界的复杂性
 
-## 主要特性
+## 主要特点
 
-- 从 BigCodeBench 中精选出的 148 个具有挑战性的任务
-- 要求复杂的推理能力和多工具协同使用
-- 提供两种评估模式：Complete（文档字符串补全）和 Instruct（自然语言指令）
-- 使用 `unittest.TestCase` 进行全面的正确性验证
+- 从 BigCodeBench 中精选的 148 个高难度任务
+- 需要复杂的推理能力和多工具协同使用
+- 支持两种评估模式：Complete（基于 docstring）和 Instruct（基于自然语言指令）
+- 采用 `unittest.TestCase` 进行严格的功能正确性验证
 - 支持 pass@k 指标计算
 
 ## 评估说明
 
-- **需要沙箱环境**：要求预装 70 多个 Python 库的沙箱环境
-- 通过 `split` 参数可选择两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
-- 每个问题默认超时时间为 240 秒
-- 启用 `calibrate` 选项会在生成代码前添加 `code_prompt`，以对齐函数签名
-- 沙箱环境设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- **需要沙箱环境**：要求预装 70+ Python 库的沙箱环境
+- 通过 `split` 参数提供两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
+- 默认每个问题的超时时间为 240 秒
+- `calibrate` 选项会在前面添加 code_prompt，以对齐函数签名
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B；阿里云 Agent Sandbox 需要使用合适的评估模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 有关设置信息，请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -38,16 +38,15 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分版本** | `v0.1.4` |
+| **评估划分** | `v0.1.4` |
 | **聚合方式** | `mean_and_pass_at_k` |
-
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 148 |
-| 提示词长度（平均） | 777.94 字符 |
+| 提示词长度（平均值） | 777.94 字符 |
 | 提示词长度（最小/最大） | 274 / 1816 字符 |
 
 ## 样例示例
@@ -58,7 +57,7 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 {
   "input": [
     {
-      "id": "207adc46",
+      "id": "183d2906",
       "content": "Download all files from a specific directory on an FTP server using wget in a subprocess. Args: ftp_server (str): The FTP server address. Default is 'ftp.dlptest.com'. ftp_user (str): The FTP server username. Default is 'dlpuser'. ftp_passwor ... [TRUNCATED 798 chars] ...  FTP server.\nYou should write self-contained code starting with:\n```\nimport subprocess\nimport ftplib\nimport os\ndef task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rNrKYTX9g7z3RgJRmxWuGHbeu', ftp_dir='/ftp/test'):\n```"
     }
   ],
@@ -75,6 +74,8 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 }
 ```
 
+*注：部分内容为显示目的已截断。*
+
 ## 提示模板
 
 **提示模板：**
@@ -88,14 +89,14 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 |-----------|------|---------|-------------|
 | `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。可选值：['complete', 'instruct'] |
 | `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
-| `calibrate` | `bool` | `True` | 是否在解决方案前添加 `code_prompt` 以对齐函数签名。 |
-| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后将覆盖默认沙箱镜像。 |
-| `dockerfile` | `str` | `Dockerfile` | `docker_build_context` 内的 Dockerfile 路径。 |
-| `force_rebuild` | `bool` | `False` | 是否强制重建可选的本地 Docker 镜像。 |
+| `calibrate` | `bool` | `True` | 是否在解决方案前添加 code_prompt 以对齐函数签名。 |
+| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后，将覆盖默认的沙箱镜像。 |
+| `dockerfile` | `str` | `Dockerfile` | docker_build_context 中的 Dockerfile 路径。 |
+| `force_rebuild` | `bool` | `False` | 强制重新构建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要一个用于代码执行的沙箱环境。
 
 ```json
 {

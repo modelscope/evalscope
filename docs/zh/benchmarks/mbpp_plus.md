@@ -3,30 +3,32 @@
 
 ## 概述
 
-MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编程合成的评估可靠性。它解决了原始数据集中的质量问题，并显著增加了每个问题的测试覆盖率。
+MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编程合成评估的可靠性。它解决了原始数据集中的质量问题，并显著增加了每个问题的测试覆盖率。
 
 ## 任务描述
 
-- **任务类型**: 代码生成（Python）
-- **输入**: 包含测试断言的编程任务描述
-- **输出**: Python 函数实现
-- **改进**: 清理后的数据和扩展的测试套件
+- **任务类型**：代码生成（Python）
+- **输入**：包含测试断言的编程任务描述
+- **输出**：Python 函数实现
+- **改进点**：经过清洗的数据以及扩展后的测试套件
 
 ## 主要特点
 
 - 修正了参考代码并澄清了问题陈述
-- 大幅增加了每个问题的测试用例（自动化生成）
-- 使用基于大语言模型和变异的测试生成策略
-- 暴露了原始 MBPP 未发现的边缘情况错误
-- 更严格和准确的代码正确性评估
+- 大幅扩展了每个问题的测试用例（通过自动化生成）
+- 采用基于大语言模型（LLM）和基于变异的测试生成策略
+- 能够发现原始 MBPP 中遗漏的边缘情况错误
+- 提供更严格、更准确的代码正确性评估
 
 ## 评估说明
 
+- 支持使用包含 NumPy 镜像或模板的 E2B；阿里云 Agent Sandbox 需要合适的模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **0-shot** 评估
-- **安全警告**: 默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行。请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html) 以获取详细信息。
+- **安全警告**：默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行。详细信息请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
-- 每个问题的默认超时时间为 60 秒，以适应扩展的测试套件
-- 比原始 MBPP 基准测试更严格的评估
+- 为了适应扩展后的测试套件，每个问题的默认超时时间为 60 秒
+- 比原始 MBPP 基准测试具有更严格的评估标准
+
 
 ## 属性
 
@@ -38,8 +40,8 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估拆分** | `test` |
-| **聚合** | `mean_and_pass_at_k` |
+| **评估划分** | `test` |
+| **聚合方式** | `mean_and_pass_at_k` |
 
 
 ## 数据统计
@@ -47,8 +49,8 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 378 |
-| 提示词长度（平均） | 375.53 字符 |
-| 提示词长度（最小/最大） | 222 / 2801 字符 |
+| 提示词长度（平均值） | 375.53 字符 |
+| 提示词长度（最小/最大值） | 222 / 2801 字符 |
 
 ## 样例示例
 
@@ -58,7 +60,7 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 {
   "input": [
     {
-      "id": "be634cb0",
+      "id": "8e9b380c",
       "content": "You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\n\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     }
   ],
@@ -79,11 +81,11 @@ MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编�
 }
 ```
 
-*注: 部分内容为了显示而被截断。*
+*注意：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
 
@@ -115,7 +117,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets mbpp_plus \
     --sandbox '{"enabled": true}' \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -130,7 +132,7 @@ task_cfg = TaskConfig(
     api_key='EMPTY_TOKEN',
     datasets=['mbpp_plus'],
     sandbox={'enabled': True},
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

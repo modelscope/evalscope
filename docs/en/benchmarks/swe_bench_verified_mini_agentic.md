@@ -22,6 +22,7 @@ SWE-bench Verified Mini Agentic is the agentic-mode evaluation of SWE-bench Veri
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
@@ -70,7 +71,7 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
 {
   "input": [
     {
-      "id": "363bb967",
+      "id": "1150d5f7",
       "content": "AuthenticationForm's username field doesn't set maxlength HTML attribute.\nDescription\n\t\nAuthenticationForm's username field doesn't render with maxlength HTML attribute anymore.\nRegression introduced in #27515 and 5ceaf14686ce626404afb6a5fbd3d8286410bf13.\n​https://groups.google.com/forum/?utm_source=digest&utm_medium=email#!topic/django-developers/qnfSqro0DlA\n​https://forum.djangoproject.com/t/possible-authenticationform-max-length-regression-in-django-2-1/241\n"
     }
   ],
@@ -130,6 +131,8 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

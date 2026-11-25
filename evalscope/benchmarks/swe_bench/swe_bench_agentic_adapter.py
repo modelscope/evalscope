@@ -501,6 +501,7 @@ SWE-bench Verified Agentic is the agentic-mode evaluation of SWE-bench Verified,
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically for each repository
 - Timeout of 1800 seconds (30 min) per instance for final patch validation
@@ -533,6 +534,7 @@ SWE-bench Verified Mini Agentic is the agentic-mode evaluation of SWE-bench Veri
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
@@ -564,6 +566,7 @@ SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focus
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically for each repository
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
@@ -594,6 +597,7 @@ SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multi
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Uses the official SWE-bench Multilingual x86_64 instance images and sets Docker platform to `linux/amd64` automatically
 - Docker images are built/pulled automatically for each instance

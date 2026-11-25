@@ -1,38 +1,37 @@
 # SWE-bench_Lite_Agentic
 
-
 ## 概述
 
-SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评估版本。SWE-bench Lite 是 SWE-bench 的一个精选子集，包含来自 11 个热门 Python 仓库的 300 个 Issue-Pull Request 对。模型在每个实例独立的 Docker 容器中自主驱动多轮代理循环，以解决真实的 GitHub 问题。
+SWE-bench Lite Agentic 是 SWE-bench Lite 的 agentic 模式评估版本。SWE-bench Lite 是 SWE-bench 的一个精简子集，包含来自 11 个热门 Python 仓库的 300 组 Issue-Pull Request 配对数据。在该模式下，模型会在每个实例专属的 Docker 容器中自主驱动多轮 agent 循环，以解决真实的 GitHub issue。
 
 ## 任务描述
 
-- **任务类型**：自动化软件工程 / 缺陷修复（代理模式）
+- **任务类型**：自动化软件工程 / Bug 修复（智能体模式）
 - **输入**：GitHub issue 描述（不包含 oracle 文件上下文）
-- **输出**：通过 `git diff` 收集的代码补丁（diff 格式），由模型自主编辑后生成
-- **规模**：300 个精心挑选的测试实例
+- **输出**：从 `git diff` 中收集的代码补丁（diff 格式），由自主编辑生成
+- **规模**：精心挑选的 300 个测试实例
 
-## 主要特性
+## 主要特点
 
-- 包含 300 个测试用的 Issue-Pull Request 对
-- 覆盖 11 个热门 Python 仓库
-- 真实世界中的缺陷，且已有验证过的解决方案
-- 每个实例均在独立的 Docker 沙箱中运行多轮代理循环
-- 相比完整版 SWE-bench 更易管理，但仍具挑战性
+- 包含 300 个 Issue-Pull Request 测试对
+- 覆盖 11 个流行的 Python 代码仓库
+- 具有已验证解决方案的真实世界 Bug
+- 支持多轮 Agent 循环，并为每个实例提供独立的 Docker 沙箱环境
+- 相比完整的 SWE-bench 更易于管理，但仍具有挑战性
 
 ## 评估说明
 
-- 评估前需先执行 `pip install swebench==4.1.0`
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 评估前需要 `pip install swebench==4.1.0`
 - 每个仓库的 Docker 镜像会自动构建或拉取
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 是用于初步比较代理模型性能的常用基准变体
+- 用于初步 agentic 模型对比的流行基准测试变体
 
-## 代理模式
+## Agentic 模式
 
-该基准在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+该基准测试在每个实例的 SWE-bench Docker 容器中驱动一个多轮代理循环（模拟 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交其 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。对于不支持函数调用的模型，可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出中包含一个 ` ```mswea_bash_command ``` ` 代码块。
-
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并配备单个 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮包含一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -44,15 +43,14 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
-
+| **评估划分** | `test` |
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 300 |
-| 提示词长度（平均） | 1661.18 字符 |
+| 提示词长度（平均值） | 1661.18 字符 |
 | 提示词长度（最小/最大） | 230 / 24770 字符 |
 
 ## 样例示例
@@ -63,7 +61,7 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评�
 {
   "input": [
     {
-      "id": "c8f45390",
+      "id": "8af72cb4",
       "content": "Modeling's `separability_matrix` does not compute separability correctly for nested CompoundModels\nConsider the following model:\r\n\r\n```python\r\nfrom astropy.modeling import models as m\r\nfrom astropy.modeling.separable import separability_matri ... [TRUNCATED 762 chars] ...       [ True,  True, False, False],\r\n       [False, False,  True,  True],\r\n       [False, False,  True,  True]])\r\n```\r\nSuddenly the inputs and outputs are no longer separable?\r\n\r\nThis feels like a bug to me, but I might be missing something?\n"
     }
   ],
@@ -124,6 +122,8 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评�
 }
 ```
 
+*注：部分内容为显示目的已截断。*
+
 ## 提示模板
 
 **提示模板：**
@@ -136,9 +136,9 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
-| `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。选项：['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
+| `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
+| `force_arch` | `str` | `` | 可选地强制指定用于镜像构建/拉取的特定架构。选项：['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | 用于远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 
@@ -151,7 +151,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets swe_bench_lite_agentic \
     --agent-config '{"mode":"native","strategy":"swe_bench_toolcall","max_steps":250}' \
-    --limit 10  # 正式评估时请移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -174,7 +174,7 @@ task_cfg = TaskConfig(
             # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

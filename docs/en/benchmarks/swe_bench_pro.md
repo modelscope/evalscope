@@ -21,9 +21,10 @@ SWE-bench_Pro is a challenging benchmark from Scale AI evaluating LLMs/Agents on
 
 ## Evaluation Notes
 
-- Requires `pip install evalscope[sandbox]` (provides Docker SDK via ms-enclave)
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
+- Requires `pip install evalscope[sandbox]` (provides sandbox runtimes via ms-enclave)
 - Requires the `scaleapi/SWE-bench_Pro-os` repository for per-instance run scripts and Dockerfiles. By default this is auto-cloned to `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` and pinned to commit `ca10a60`. To use an existing clone, set `extra_params.swe_bench_pro_repo_path`.
-- Both the agent loop and the per-instance evaluation share a single sandbox configuration via `TaskConfig.sandbox.default_config` (passed straight to ms_enclave `DockerSandboxConfig`). Set `memory_limit` / `cpu_limit` there to avoid OOM-Killed test runs (e.g. NodeBB); `platform` defaults to `linux/amd64` so amd64-only sweap-images work on Apple Silicon out of the box.
+- Both the agent loop and the per-instance evaluation share a single sandbox configuration via `TaskConfig.sandbox.default_config`, passed to ms-enclave for the selected engine. For Docker, set `memory_limit` / `cpu_limit` there to avoid OOM-Killed test runs (e.g. NodeBB); `platform` defaults to `linux/amd64` so amd64-only sweap-images work on Apple Silicon out of the box.
 
 See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench_pro.html) for setup, parameters, and troubleshooting.
 
@@ -45,9 +46,9 @@ See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_
 
 | Metric | Value |
 |--------|-------|
-| Total Samples | 731 |
-| Prompt Length (Mean) | 1297.47 chars |
-| Prompt Length (Min/Max) | 419 / 8036 chars |
+| Total Samples | 642 |
+| Prompt Length (Mean) | 1013.12 chars |
+| Prompt Length (Min/Max) | 191 / 8010 chars |
 
 ## Sample Example
 
@@ -57,8 +58,8 @@ See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_
 {
   "input": [
     {
-      "id": "3874fd29",
-      "content": "\"**Title: Email Validation Status Not Handled Correctly in ACP and Confirmation Logic**\\n\\n**Description:**\\n\\nThe Admin Control Panel (ACP) does not accurately reflect the email validation status of users. Also, validation and confirmation p ... [TRUNCATED 846 chars] ... mail validation.\\n\\nThe email status was unclear or incorrect in ACP.\\n\\n\\\"Validate\\\" and \\\"Send validation email\\\" actions failed when the expected data was missing.\\n\\n**Labels:**\\n\\nbug, back-end, authentication, ui/ux, email-confirmation\""
+      "id": "10506721",
+      "content": "## Title: Post cache access and slug existence checks behave inconsistently\n\n\n### Description\nPost cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.\nSlug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently."
     }
   ],
   "id": 0,
@@ -86,26 +87,28 @@ See the [user guide](https://evalscope.readthedocs.io/en/latest/third_party/swe_
     }
   ],
   "metadata": {
-    "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+    "instance_id": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
     "repo": "NodeBB/NodeBB",
-    "base_commit": "1e137b07052bc3ea0da44ed201702c94055b8ad2",
-    "problem_statement": "\"**Title: Email Validation Status Not Handled Correctly in ACP and Confirmation Logic**\\n\\n**Description:**\\n\\nThe Admin Control Panel (ACP) does not accurately reflect the email validation status of users. Also, validation and confirmation p ... [TRUNCATED 846 chars] ... mail validation.\\n\\nThe email status was unclear or incorrect in ACP.\\n\\n\\\"Validate\\\" and \\\"Send validation email\\\" actions failed when the expected data was missing.\\n\\n**Labels:**\\n\\nbug, back-end, authentication, ui/ux, email-confirmation\"",
-    "patch": "diff --git a/public/language/en-GB/admin/manage/users.json b/public/language/en-GB/admin/manage/users.json\nindex 6b668a31ef8e..9486295bc3ef 100644\n--- a/public/language/en-GB/admin/manage/users.json\n+++ b/public/language/en-GB/admin/manage/us ... [TRUNCATED 12136 chars] ... class=\"notvalidated fa fa-check text-muted\" title=\"not validated\"></i>\n+\t\t\t\t\t\t\t\t<i class=\"noemail fa fa-fw fa-ban text-muted\"\"></i>\n \t\t\t\t\t\t\t\t<em class=\"text-muted\">[[admin/manage/users:users.no-email]]</em>\n \t\t\t\t\t\t\t\t{{{ end }}}\n \t\t\t\t\t\t\t</td>\n",
-    "test_patch": "diff --git a/test/database/keys.js b/test/database/keys.js\nindex 3941edb65a93..fde4bbc442cf 100644\n--- a/test/database/keys.js\n+++ b/test/database/keys.js\n@@ -35,6 +35,17 @@ describe('Key methods', () => {\n \t\t});\n \t});\n \n+\tit('should return m ... [TRUNCATED 952 chars] ... {uid}`, 1000);\n+\t\t\tconst code = await db.get(`confirm:byUid:${uid}`);\n+\t\t\tawait db.setObjectField(`confirm:${code}`, 'expires', Date.now() + 1000);\n \t\t\tconst ok = await user.email.canSendValidation(uid, email);\n-\n \t\t\tassert(ok);\n \t\t});\n \t});\n",
-    "fail_to_pass": "[\"test/database.js | Test database test/database/keys.js::Key methods should return multiple keys and null if key doesn't exist\", 'test/database.js | Test database test/database/keys.js::Key methods should return empty array if keys is empty array or falsy', 'test/user/emails.js | email confirmation (library methods) canSendValidation should return true if it has been long enough to re-send confirmation']",
-    "pass_to_pass": "[\"test/database.js | Test database should work\", \"test/database.js | Test database info should return info about database\", \"test/database.js | Test database info should not error and return info if client is falsy\", \"test/database.js | Test  ... [TRUNCATED 45280 chars] ... pending or set\", \"test/user/emails.js | email confirmation (v3 api) should confirm their email (using the pending validation)\", \"test/user/emails.js | email confirmation (v3 api) should still confirm the email (as email is set in user hash)\"]",
-    "before_repo_set_cmd": "git reset --hard 1e137b07052bc3ea0da44ed201702c94055b8ad2\ngit clean -fd \ngit checkout 1e137b07052bc3ea0da44ed201702c94055b8ad2 \ngit checkout 04998908ba6721d64eba79ae3b65a351dcfbc5b5 -- test/database/keys.js test/user/emails.js",
-    "selected_test_files_to_run": "[\"test/database.js\", \"test/database/keys.js\", \"test/user/emails.js\"]",
+    "base_commit": "ae3fa85f40db0dca83d19dda1afb96064dffcc83",
+    "problem_statement": "## Title: Post cache access and slug existence checks behave inconsistently\n\n\n### Description\nPost cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.\nSlug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently.",
+    "patch": "diff --git a/src/controllers/admin/cache.js b/src/controllers/admin/cache.js\nindex 43d6f4ddcab4..2faad03fc2bb 100644\n--- a/src/controllers/admin/cache.js\n+++ b/src/controllers/admin/cache.js\n@@ -6,7 +6,7 @@ const utils = require('../../utils' ... [TRUNCATED 7281 chars] ... ess-useragent');\n const favicon = require('serve-favicon');\n-const detector = require('spider-detector');\n+const detector = require('@nodebb/spider-detector');\n const helmet = require('helmet');\n \n const Benchpress = require('benchpressjs');\n",
+    "test_patch": "diff --git a/test/mocks/databasemock.js b/test/mocks/databasemock.js\nindex 5cb8af1d34..507f29d6fc 100644\n--- a/test/mocks/databasemock.js\n+++ b/test/mocks/databasemock.js\n@@ -194,7 +194,7 @@ async function setupMockDefaults() {\n \tmeta.config. ... [TRUNCATED 4772 chars] ...  } });\n+\t\t\tassert.strictEqual(await meta.slugTaken('test-category-handle'), true);\n+\t\t\tassert.deepStrictEqual(await meta.slugTaken(['test-category-handle', 'doesnot exist']), [true, false]);\n \t\t});\n \n \t\tit('should delete user', async () => {\n",
+    "fail_to_pass": "[\"test/user.js | User | socket methods | should return true/false if user/group exists or not\", \"test/socket.io.js | socket.io | should toggle caches\"]",
+    "pass_to_pass": "[]",
+    "before_repo_set_cmd": "git reset --hard ae3fa85f40db0dca83d19dda1afb96064dffcc83\ngit clean -fd\ngit checkout ae3fa85f40db0dca83d19dda1afb96064dffcc83\ngit apply --verbose /tests/test_patch.patch",
+    "selected_test_files_to_run": "[\"test/mocks/databasemock.js\", \"test/translator.js\", \"test/user.js\", \"test/socket.io.js\", \"test/database.js\", \"test/meta.js\"]",
     "repo_language": "js",
-    "requirements": "\"- The loadUserInfo(callerUid, uids) function should include logic to retrieve and attach `email:pending` and `email:expired` flags to each user object. These flags must be derived by resolving `confirm:byUid:<uid>` keys via the new `getConfi ... [TRUNCATED 3170 chars] ... rval check must compare the stored TTL timestamp if available (or, if TTL is unavailable, use the current time as the baseline) plus the configured interval against the max confirmation period, ensuring the system prevents excessive resends.\"",
-    "interface": "\"Type: Method\\n\\nName: db.mget\\n\\nPath: src/database/mongo/main.js, src/database/postgres/main.js, src/database/redis/main.js\\n\\nInput: keys: string[] (An array of database keys to retrieve.)\\n\\nOutput: Promise<(string | null)[]> (A promise t ... [TRUNCATED 487 chars] ...  to the email address string, or `null` if no suitable email is found.)\\n\\nDescription: A utility function that retrieves the most appropriate email address for an administrative action like \\\"force validate\\\" or \\\"resend validation email\\\".\"",
-    "issue_specificity": "[\"major_bug\",\"data_bug\",\"ui_ux_bug\"]",
-    "issue_categories": "[\"back_end_knowledge\",\"database_knowledge\",\"authentication_authorization_knowledge\",\"ui_ux_knowledge\"]",
-    "dockerhub_tag": "nodebb.nodebb-NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5",
-    "docker_image": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5"
+    "requirements": "- The post cache must use a shared instance so all cache operations observe the same state.\n\n- The post cache module must expose `getOrCreate()`, which returns the shared cache instance and creates it only when first requested.\n\n- All modules ... [TRUNCATED 1394 chars] ... er with display name `John Smith` exists.\n\n- `User.getUidsByUserslugs` must return `null` for each slug that matches no user, and for known slugs each value must be strictly equal (`===`) to what `User.getUidByUserslug` returns for that slug.",
+    "interface": "- Path: `src/posts/cache.js`\n- Name: `getOrCreate`\n- Type: function\n- Input: `NA`\n- Output: `Cache instance object`\n- Description: Returns the shared post cache instance, creating it on first use.\n\n- Path: `src/posts/cache.js`\n- Name: `reset` ... [TRUNCATED 365 chars] ...  other entry in place.\n\n- Path: `src/user/index.js`\n- Name: `getUidsByUserslugs`\n- Type: function\n- Input: `userslugs (string array)`\n- Output: `array of uid values`\n- Description: Returns the user ids corresponding to each userslug in order.",
+    "issue_specificity": "[\"integration_bug\"]",
+    "issue_categories": "[\"back_end_knowledge\",\"database_knowledge\",\"performance_knowledge\"]",
+    "dockerhub_tag": "nodebb.nodebb-NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac",
+    "docker_image": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac"
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

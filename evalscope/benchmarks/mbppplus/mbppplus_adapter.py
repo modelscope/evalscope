@@ -42,6 +42,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 
 ## Evaluation Notes
 
+- Supports E2B with an image or template containing NumPy; Aliyun Agent Sandbox requires a suitable template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Default configuration uses **0-shot** evaluation
 - **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation
