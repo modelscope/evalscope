@@ -455,7 +455,13 @@ class DefaultDataAdapter(DataAdapter):
         if ac is not None:
             # Local import to avoid pulling the bridge stack at module load.
             from evalscope.agent.external.config import ExternalAgentConfig
+            from evalscope.api.agent.otel_config import OTelTraceConfig
 
+            if isinstance(ac, OTelTraceConfig):
+                # Importing an existing trace executes nothing: no sandbox, no loop.
+                from evalscope.api.agent.otel import load_otlp_trace_for_sample
+
+                return load_otlp_trace_for_sample(ac, model, sample)
             if isinstance(ac, ExternalAgentConfig):
                 return self._on_external_agent_inference(model, sample)
             return self._on_agent_inference(model, sample)

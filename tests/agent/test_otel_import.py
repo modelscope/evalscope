@@ -469,3 +469,159 @@ def test_tool_result_message_is_reconstructed():
     assert len(tool_messages) == 1
     assert tool_messages[0].text == 'result'
     assert tool_messages[0].tool_call_id == 'c1'
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for the five review findings on PR #2197
+# ---------------------------------------------------------------------------
+
+
+def test_legacy_span_does_not_duplicate_the_assistant_turn():
+    """Legacy flat export: prompts -> user, completions -> assistant (once)."""
+    payload = _export(
+        _span(
+            'c1',
+            'chat',
+            start=1,
+            end=2,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('chat')},
+                {'key': 'gen_ai.prompts', 'value': _str('legacy question')},
+                {'key': 'gen_ai.completions', 'value': _str('legacy answer')},
+            ],
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+
+    assert [type(m).__name__ for m in messages] == ['ChatMessageUser', 'ChatMessageAssistant']
+    assert [m.text for m in messages] == ['legacy question', 'legacy answer']
+
+
+def test_later_chat_span_contributes_new_tool_observations():
+    """gen_ai.input.messages re-sends history; only the new tail is appended."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2_000_000,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q1')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {}}]}
+                ),
+            },
+        ),
+        _chat_span(
+            'c2',
+            start=3,
+            end=4_000_000,
+            **{
+                # Full history re-sent, including the tool observation.
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('q1')]},
+                    {
+                        'role': 'assistant',
+                        'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {}}],
+                    },
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'call_1', 'content': 'found'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a2')]}),
+            },
+        ),
+    )
+
+    _, messages = import_otlp_trace(payload)
+    texts = [getattr(m, 'text', None) for m in messages]
+
+    # No duplicated 'q1'; the tool observation from the second input is kept.
+    assert texts.count('q1') == 1
+    assert 'found' in texts
+    assert 'a2' in texts
+
+
+def test_high_level_loader_rejects_trace_ending_on_a_tool_call(tmp_path):
+    """A trace whose last assistant turn is a tool call has no final answer."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'search', 'arguments': {}}]}
+                ),
+            },
+        )
+    )
+    path = tmp_path / 'sample-1.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='ends on a tool call'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(tmp_path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id='sample-1'),
+        )
+
+
+def test_high_level_loader_filters_shared_export_by_sample_id(tmp_path):
+    """A multi-sample export is filtered by evalscope.sample_id."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def chat(span_id: str, sample_id: str, start: int) -> dict:
+        return _chat_span(
+            span_id,
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _str(sample_id),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{sample_id}')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(f'a-{sample_id}')]}),
+            },
+        )
+
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(_export(chat('s1', 'sample-a', 1), chat('s2', 'sample-b', 3))))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id='sample-b'),
+    )
+
+    assert [m.text for m in result.messages] == ['q-sample-b', 'a-sample-b']
+    assert result.output.completion == 'a-sample-b'
+
+
+def test_default_adapter_routes_otel_trace_without_a_loop():
+    """DefaultDataAdapter must not treat otel_trace as a native agent loop."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+    from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
+
+    adapter = object.__new__(DefaultDataAdapter)
+    adapter._task_config = SimpleNamespace(agent_config=OTelTraceConfig(trace_path='/nonexistent'))
+
+    # No trace file -> the OTel loader raises OTLPImportError, not AttributeError
+    # from dereferencing cfg.strategy on a native agent config.
+    with pytest.raises(OTLPImportError):
+        DefaultDataAdapter._on_inference(
+            adapter, SimpleNamespace(name='model'), SimpleNamespace(id='sample-1')
+        )
+
+
+def _json(payload) -> str:
+    import json
+
+    return json.dumps(payload)

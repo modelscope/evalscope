@@ -169,50 +169,14 @@ class AgentLoopAdapter(AgentAdapter):
 
         A sibling of :meth:`_maybe_run_external_agent` rather than a branch in
         it: importing a trace executes nothing, so it must not share the
-        external-CLI gate. ``trace_path`` may be one OTLP JSON file (one export
-        per sample) or a directory containing ``<sample_id>.otlp.json``.
-        Missing content, unknown operation names, or an unresolvable sample id
-        raise :class:`~evalscope.api.agent.otel.OTLPImportError` with the
-        offending span id — the importer never produces an empty trace that
-        scores 0.
+        external-CLI gate.
         """
-        import json
-        from pathlib import Path
-
-        from evalscope.api.agent.otel import import_otlp_trace
+        from evalscope.api.agent.otel import load_otlp_trace_for_sample
         from evalscope.api.agent.otel_config import OTelTraceConfig
-        from evalscope.api.messages import ChatMessageAssistant
-        from evalscope.api.model import ModelOutput
 
         if not isinstance(ac, OTelTraceConfig):
             return None
-
-        config = ac
-        path = Path(config.trace_path)
-        if path.is_dir():
-            candidate = path / f'{sample.id}.otlp.json'
-            if not candidate.exists():
-                raise FileNotFoundError(
-                    f'No OTLP export for sample {sample.id!r} in {path} (expected {candidate.name})'
-                )
-            path = candidate
-
-        payload = json.loads(path.read_text(encoding='utf-8'))
-        # One export per sample: the file (or its name in directory mode) is the
-        # association, so the importer does not need a span attribute.
-        trace, messages = import_otlp_trace(payload, sample_id_attribute=config.sample_id_attribute)
-
-        # The prediction artifact is the last assistant text; the message
-        # history and trace ride along for scorers that require them.
-        prediction = ''
-        for message in reversed(messages):
-            text = getattr(message, 'text', None)
-            if isinstance(message, ChatMessageAssistant) and text:
-                prediction = text
-                break
-
-        output = ModelOutput.from_content(model=f'{model.name}-otel-import', content=prediction)
-        return InferenceResult(output=output, messages=messages, trace=trace)
+        return load_otlp_trace_for_sample(ac, model, sample)
 
     def _resolve_strategy(self, sample: Any, ac: Any) -> Any:
         strategy = self.build_strategy(sample)

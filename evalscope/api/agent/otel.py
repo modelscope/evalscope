@@ -274,25 +274,60 @@ def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
     return messages
 
 
-def _legacy_messages(attrs: Dict[str, Any], model: Optional[str]) -> List[ChatMessage]:
-    """Reconstruct messages from the pre-v1.36 flat ``gen_ai.prompts`` / ``completions``.
+def _legacy_input_messages(attrs: Dict[str, Any]) -> List[ChatMessage]:
+    """Reconstruct the user prompt from the pre-v1.36 flat ``gen_ai.prompts``.
 
     Existing instrumentations keep emitting these by default, so accepting them
     avoids telling users to enable content capture when the real problem is a
-    naming change.
+    naming change. Only the prompt side is read here; the completion is added
+    by :func:`_legacy_output_messages` so a legacy span does not append its
+    assistant turn twice.
     """
-    messages: List[ChatMessage] = []
     prompts = attrs.get(_LEGACY_PROMPTS)
     if isinstance(prompts, str):
-        messages.append(ChatMessageUser(content=prompts))
-    elif isinstance(prompts, list):
-        messages.extend(ChatMessageUser(content=str(item)) for item in prompts)
+        return [ChatMessageUser(content=prompts)]
+    if isinstance(prompts, list):
+        return [ChatMessageUser(content=str(item)) for item in prompts]
+    return []
+
+
+def _legacy_output_messages(attrs: Dict[str, Any], model: Optional[str]) -> List[ChatMessage]:
+    """Reconstruct the assistant completion from the pre-v1.36 flat ``gen_ai.completions``."""
     completions = attrs.get(_LEGACY_COMPLETIONS)
     if isinstance(completions, str):
-        messages.append(ChatMessageAssistant(content=completions, model=model))
-    elif isinstance(completions, list):
-        messages.extend(ChatMessageAssistant(content=str(item), model=model) for item in completions)
-    return messages
+        return [ChatMessageAssistant(content=completions, model=model)]
+    if isinstance(completions, list):
+        return [ChatMessageAssistant(content=str(item), model=model) for item in completions]
+    return []
+
+
+def _message_signature(message: ChatMessage) -> tuple:
+    """Stable identity for de-duplicating re-sent history across chat spans."""
+    tool_ids = tuple(call.id for call in getattr(message, 'tool_calls', None) or [])
+    return (type(message).__name__, getattr(message, 'text', None), tool_ids)
+
+
+def _new_messages_tail(collected: List[ChatMessage], history: List[ChatMessage]) -> List[ChatMessage]:
+    """Return the part of ``history`` that follows ``collected``.
+
+    Each chat span repeats the whole conversation so far. Aligning the new
+    history against what has already been collected recovers the tool
+    observations that only appear in the next span's input.
+    """
+    if not history:
+        return []
+    if not collected:
+        return history
+    # Longest suffix of ``collected`` that is a prefix of ``history``.
+    collected_sigs = [_message_signature(m) for m in collected]
+    history_sigs = [_message_signature(m) for m in history]
+    for overlap in range(min(len(collected_sigs), len(history_sigs)), 0, -1):
+        if collected_sigs[-overlap:] == history_sigs[:overlap]:
+            return history[overlap:]
+    # No alignment (the exporter trims history): return everything new by
+    # signature so nothing is silently dropped.
+    seen = set(collected_sigs)
+    return [message for message, sig in zip(history, history_sigs) if sig not in seen]
 
 
 def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -421,13 +456,22 @@ def import_otlp_trace(
         if chat_turns == 0:
             input_messages = _messages_from_attr(
                 attrs.get(_INPUT_MESSAGES), attrs.get('gen_ai.request.model')
-            ) or _legacy_messages(attrs, attrs.get('gen_ai.request.model'))
+            ) or _legacy_input_messages(attrs)
             if input_messages:
                 messages.extend(input_messages)
                 saw_content = True
+        else:
+            # ``gen_ai.input.messages`` is the full history: later chat spans
+            # re-send everything already collected plus the new tool results.
+            # Append only the tail so tool observations are not lost.
+            history = _messages_from_attr(attrs.get(_INPUT_MESSAGES), attrs.get('gen_ai.request.model'))
+            new_tail = _new_messages_tail(messages, history)
+            if new_tail:
+                messages.extend(new_tail)
+                saw_content = True
         output_messages = _messages_from_attr(
             attrs.get(_OUTPUT_MESSAGES), attrs.get('gen_ai.response.model')
-        ) or _legacy_messages({_LEGACY_COMPLETIONS: attrs.get(_LEGACY_COMPLETIONS)}, attrs.get('gen_ai.response.model'))
+        ) or _legacy_output_messages(attrs, attrs.get('gen_ai.response.model'))
         if output_messages:
             messages.extend(output_messages)
             saw_content = True
@@ -549,3 +593,73 @@ def import_otlp_trace(
         )
 
     return trace, _merge_assistant_tool_calls(messages)
+
+
+# ---------------------------------------------------------------------------
+# High-level entry point
+# ---------------------------------------------------------------------------
+
+
+def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
+    """Load the OTLP export for one sample and turn it into an ``InferenceResult``.
+
+    ``config.trace_path`` may be one OTLP JSON file (one export per sample) or
+    a directory containing ``<sample_id>.otlp.json``. When the export carries
+    ``config.sample_id_attribute`` on any span, it is treated as multi-sample
+    and filtered by ``sample.id``; otherwise the file is taken as this
+    sample's export.
+
+    Raises:
+        OTLPImportError: The export is missing, has no content, cannot be
+            associated with the sample, or ends on a tool call without a final
+            answer.
+    """
+    import json
+    from pathlib import Path
+
+    from evalscope.api.evaluator import InferenceResult
+    from evalscope.api.messages import ChatMessageAssistant
+    from evalscope.api.model import ModelOutput
+
+    path = Path(config.trace_path)
+    if path.is_dir():
+        candidate = path / f'{sample.id}.otlp.json'
+        if not candidate.exists():
+            raise OTLPImportError(f'No OTLP export for sample {sample.id!r} in {path} (expected {candidate.name})')
+        path = candidate
+
+    try:
+        payload = json.loads(path.read_text(encoding='utf-8'))
+    except FileNotFoundError as exc:
+        raise OTLPImportError(f'OTLP export not found: {path}') from exc
+    except json.JSONDecodeError as exc:
+        raise OTLPImportError(f'OTLP export at {path} is not valid JSON: {exc}') from exc
+    expected = None
+    if any(_span_attributes(span).get(config.sample_id_attribute) is not None for span in _iter_spans(payload)):
+        expected = sample.id
+    trace, messages = import_otlp_trace(
+        payload,
+        sample_id_attribute=config.sample_id_attribute,
+        expected_sample_id=expected,
+    )
+
+    # The prediction artifact is the last assistant turn that carries text. A
+    # trace that ends on a tool call has no final answer: fail loudly instead of
+    # scoring an intermediate sentence.
+    prediction: Optional[str] = None
+    for message in reversed(messages):
+        if isinstance(message, ChatMessageAssistant):
+            text = getattr(message, 'text', None)
+            if text:
+                prediction = text
+                break
+            if message.tool_calls:
+                raise OTLPImportError(
+                    f'Trace for sample {sample.id!r} ends on a tool call without a final answer; '
+                    f'cannot score an empty prediction'
+                )
+    if prediction is None:
+        raise OTLPImportError(f'Trace for sample {sample.id!r} has no assistant text to use as the prediction')
+
+    output = ModelOutput.from_content(model=f'{model.name}-otel-import', content=prediction)
+    return InferenceResult(output=output, messages=messages, trace=trace)
