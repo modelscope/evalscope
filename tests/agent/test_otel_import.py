@@ -254,8 +254,16 @@ def test_create_agent_does_not_open_a_run_boundary():
 def test_valid_but_uninteresting_operation_is_skipped_and_counted():
     """embeddings is a legal operation; a RAG trace must not be marked as an error."""
     payload = _export(
+        _span(
+            'invoke',
+            'invoke_agent',
+            start=0,
+            end=9,
+            attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}],
+        ),
         _chat_span(
             'c1',
+            parent='invoke',
             start=1,
             end=2,
             **{
@@ -736,3 +744,97 @@ def test_invoke_agent_identity_wins_over_create_agent():
     run_start = next(e for e in trace.events if e.type is EventType.RUN_START)
 
     assert run_start.payload['gen_ai.agent.name'] == 'instance'
+
+
+def test_later_legacy_chat_spans_keep_their_user_prompts():
+    """Pre-v1.36 export with two chat spans must keep both user prompts."""
+    payload = _export(
+        _span(
+            'c1',
+            'chat',
+            start=1,
+            end=2,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('chat')},
+                {'key': 'gen_ai.prompts', 'value': _str('q1')},
+                {'key': 'gen_ai.completions', 'value': _str('a1')},
+            ],
+        ),
+        _span(
+            'c2',
+            'chat',
+            start=3,
+            end=4,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('chat')},
+                {'key': 'gen_ai.prompts', 'value': _str('q2')},
+                {'key': 'gen_ai.completions', 'value': _str('a2')},
+            ],
+        ),
+    )
+
+    _, messages = import_otlp_trace(payload)
+    texts = [getattr(m, 'text', None) for m in messages]
+
+    assert texts == ['q1', 'a1', 'q2', 'a2']
+    assert [type(m).__name__ for m in messages] == [
+        'ChatMessageUser',
+        'ChatMessageAssistant',
+        'ChatMessageUser',
+        'ChatMessageAssistant',
+    ]
+
+
+def test_integer_typed_sample_id_attributes_associate(tmp_path):
+    """A natural integer evalscope.sample_id attribute must match sample.id."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def chat(span_id: str, sample_id: int, start: int) -> dict:
+        return _chat_span(
+            span_id,
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _int(sample_id),  # intValue, not stringValue
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{sample_id}')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(f'a-{sample_id}')]}),
+            },
+        )
+
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(_export(chat('s1', 7, 1), chat('s2', 9, 3))))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id=9),
+    )
+
+    assert [m.text for m in result.messages] == ['q-9', 'a-9']
+
+
+def test_skipped_operations_do_not_add_a_second_run_boundary():
+    """Skipped-operation bookkeeping must reuse the existing RUN_END payload."""
+    payload = _export(
+        _span('invoke', 'invoke_agent', start=0, end=9, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}]),
+        _chat_span(
+            'c1',
+            parent='invoke',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        ),
+        _span('e1', 'embed', start=3, end=4, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('embeddings')}]),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    run_ends = [e for e in trace.events if e.type is EventType.RUN_END]
+
+    assert len(run_ends) == 1, 'skipped operations must not add a run boundary'
+    assert run_ends[0].payload['skipped_operations'] == {'embeddings': 1}

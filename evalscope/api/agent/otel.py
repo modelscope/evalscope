@@ -424,18 +424,21 @@ def import_otlp_trace(
 
     # --- Sample association -------------------------------------------------
     if expected_sample_id is not None:
-        span_ids = {_span_attributes(span).get(sample_id_attribute) for span in spans}
-        span_ids.discard(None)
+        # Sample ids are integers in the dataset but may be int or str in OTLP
+        # attributes; compare their string forms so both spellings associate.
+        expected = str(expected_sample_id)
+        span_ids = {str(_span_attributes(span).get(sample_id_attribute)) for span in spans}
+        span_ids.discard('None')
         if not span_ids:
             raise OTLPImportError(
                 f'No span carries {sample_id_attribute!r}; cannot associate the export with '
                 f'sample {expected_sample_id!r}'
             )
-        if expected_sample_id not in span_ids:
+        if expected not in span_ids:
             raise OTLPImportError(
                 f'No span carries {sample_id_attribute}={expected_sample_id!r}; found sample ids: {sorted(span_ids)}'
             )
-        spans = [span for span in spans if _span_attributes(span).get(sample_id_attribute) == expected_sample_id]
+        spans = [span for span in spans if str(_span_attributes(span).get(sample_id_attribute)) == expected]
 
     ordered = sorted(spans, key=_start_ns)
     steps = _chat_steps(ordered)
@@ -474,7 +477,9 @@ def import_otlp_trace(
             # ``gen_ai.input.messages`` is the full history: later chat spans
             # re-send everything already collected plus the new tool results.
             # Append only the tail so tool observations are not lost.
-            history = _messages_from_attr(attrs.get(_INPUT_MESSAGES), attrs.get('gen_ai.request.model'))
+            history = _messages_from_attr(
+                attrs.get(_INPUT_MESSAGES), attrs.get('gen_ai.request.model')
+            ) or _legacy_input_messages(attrs)
             new_tail = _new_messages_tail(messages, history)
             if new_tail:
                 messages.extend(new_tail)
@@ -597,12 +602,12 @@ def import_otlp_trace(
         )
 
     if skipped_operations:
-        # Record what was skipped so nothing disappears without a trace.
-        trace.add_event(
-            step=0,
-            type=EventType.RUN_END,
-            payload={'skipped_operations': dict(skipped_operations)},
-        )
+        # Attach to the existing RUN_END payload: adding another RUN_END event
+        # would grow a second run boundary on a trace that already has one.
+        for event in reversed(trace.events):
+            if event.type is EventType.RUN_END:
+                event.payload = {**event.payload, 'skipped_operations': dict(skipped_operations)}
+                break
 
     return trace, _merge_assistant_tool_calls(messages)
 
