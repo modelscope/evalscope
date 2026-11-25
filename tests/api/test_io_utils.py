@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,7 @@ from datasets import Audio, Dataset, DatasetInfo, Features, Image, Sequence, Vid
 from datasets.table import InMemoryTable
 from PIL import Image as PILImage
 
-from evalscope.utils.io_utils import csv_to_list, jsonl_to_list, tsv_to_list, undecode_media
+from evalscope.utils.io_utils import JsonlWriter, csv_to_list, jsonl_to_list, tsv_to_list, undecode_media
 
 
 def _generate_jpeg_bytes(dim: int, quality: int = 80) -> bytes:
@@ -183,6 +184,41 @@ class TestUndecodeMediaIntegration:
         result_row = result.to_list()[0]
         for other_col in non_media_data:
             assert result_row[other_col] == original_row[other_col]
+
+
+class TestJsonlWriter:
+    @pytest.mark.parametrize('ending', [b'', b'\n', b'\r\n'])
+    def test_append_preserves_existing_record(self, tmp_path: Path, ending: bytes) -> None:
+        path = tmp_path / 'cache.jsonl'
+        original = json.dumps({'text': '中文'}, ensure_ascii=False).encode('utf-8') + ending
+        path.write_bytes(original)
+        writer = JsonlWriter(str(path))
+        try:
+            writer.write({'id': 2})
+            assert jsonl_to_list(str(path)) == [{'text': '中文'}, {'id': 2}]
+            writer.write({'id': 3})
+        finally:
+            writer.close()
+
+        separator = b'' if ending else b'\n'
+        appended = f'{{"id": 2}}{os.linesep}{{"id": 3}}{os.linesep}'.encode('utf-8')
+        assert path.read_bytes() == original + separator + appended
+
+    @pytest.mark.parametrize('existing', [False, True])
+    def test_empty_file_and_reopen(self, tmp_path: Path, existing: bool) -> None:
+        path = tmp_path / 'nested' / 'cache.jsonl'
+        if existing:
+            path.parent.mkdir()
+            path.touch()
+        writer = JsonlWriter(str(path))
+        try:
+            writer.write({'id': 1})
+            writer.close()
+            writer.write({'id': 2})
+        finally:
+            writer.close()
+
+        assert path.read_text(encoding='utf-8') == '{"id": 1}\n{"id": 2}\n'
 
 
 class TestJsonlToList:
