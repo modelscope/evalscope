@@ -77,6 +77,7 @@ class EvalType:
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
     TEXT2IMAGE = 'text2image'  # image generation service
     TEXT2SPEECH = 'text2speech'  # text-to-speech service
+    SPEECH2TEXT = 'speech2text'  # speech-to-text model / service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'
     SYSTEMONE_API = 'systemone_api'
