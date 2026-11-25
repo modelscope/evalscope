@@ -66,6 +66,8 @@ DEFAULT_TAG_FIX_PATTERNS = [
 # An entity tag is `<name>` or `</name>`, the form `extract_entities_from_text` reads. A bare `<` in the source
 # text (for example `p < 0.05`) must not pair with a later `>` and be dropped together with the text between them.
 _TAG_PATTERN = re.compile(r'</?\w+>')
+# Whitespace just inside a tag, as in `<person> Alice </person>`, is not part of the entity.
+_TAG_PADDING_PATTERN = re.compile(r'(<\w+>)\s+|\s+(</\w+>)')
 
 
 def create_target_text(tokens: List[str], ner_tags: List[str], entity_type_map: Dict[str, str]) -> str:
@@ -225,14 +227,20 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
     Returns:
         List of BIO tags corresponding to the original tokens
     """
+    # Reconstruct the original text to find character positions for each token
+    original_text = ' '.join(original_tokens)
+    # Drop the padding models put inside tags when that makes the annotation reproduce the source text.
+    if _TAG_PATTERN.sub('', xml_text) != original_text:
+        unpadded_text = _TAG_PADDING_PATTERN.sub(r'\1\2', xml_text)
+        if _TAG_PATTERN.sub('', unpadded_text) == original_text:
+            xml_text = unpadded_text
+
     # Extract entities with their character positions
     entities = extract_entities_from_text(xml_text, reverse_entity_map)
 
     # Initialize all tags as 'O'
     bio_tags = ['O'] * len(original_tokens)
 
-    # Reconstruct the original text to find character positions for each token
-    original_text = ' '.join(original_tokens)
     preserves_text = _TAG_PATTERN.sub('', xml_text) == original_text
 
     # Track token start positions in the original text
@@ -254,6 +262,9 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
     for entity_type, entity_text, start_pos, end_pos in entities:
         if not entity_text.strip():
             continue
+        # Search for the text as written first; trim the padding only if that cannot be found.
+        if entity_text not in original_text:
+            entity_text = entity_text.strip()
         # Text-preserving annotations give an exact offset, even for repeated names.
         if preserves_text and not _TAG_PATTERN.search(entity_text):
             entity_start = len(_TAG_PATTERN.sub('', xml_text[:start_pos]))

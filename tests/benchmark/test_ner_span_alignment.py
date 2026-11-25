@@ -102,6 +102,20 @@ def test_nested_markup_keeps_existing_alignment_fallback() -> None:
     assert xml_to_bio_tags(prediction, ['John', 'works'], REVERSE_MAP) == ['O', 'O']
 
 
+@pytest.mark.parametrize(
+    ('prediction', 'tokens', 'tags'),
+    [
+        ('<person> Alice </person> won', ['Alice', 'won'], ['B-PER', 'O']),
+        ('<person>\nJohn Smith\n</person> won', ['John', 'Smith', 'won'], ['B-PER', 'I-PER', 'O']),
+        ('John met <person> John </person>', ['John', 'met', 'John'], ['O', 'O', 'B-PER']),
+        ('<person> Alice </person>', ['Alice', 'won'], ['B-PER', 'O']),
+        ('AliceX <person> Alice </person>', ['AliceX', 'Alice', 'won'], ['O', 'B-PER', 'O']),
+    ],
+)
+def test_whitespace_padded_annotation_is_aligned(prediction: str, tokens: List[str], tags: List[str]) -> None:
+    assert xml_to_bio_tags(clean_prediction(f'<response>{prediction}</response>'), tokens, REVERSE_MAP) == tags
+
+
 @pytest.mark.parametrize('benchmark', NER_BENCHMARKS)
 def test_ner_benchmark_scores_preserve_entity_boundaries(benchmark: str) -> None:
     pytest.importorskip('seqeval')
