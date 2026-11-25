@@ -1,15 +1,16 @@
+from pathlib import Path
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import extract_answer_line
+from evalscope.utils.uri_utils import is_data_uri, is_http_url
 
 # flake8: noqa
 
@@ -24,7 +25,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='chartqa',
         pretty_name='ChartQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -73,12 +74,18 @@ class ChartQAAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = record['question']
-        image_data = record['image']
-        image_base64 = bytes_to_base64(image_data['bytes'], format='png', add_header=True)
+        image = self._normalize_media_value(record['image'], media_type='image')
+        source = image['url']
+        if not is_data_uri(source) and not is_http_url(source):
+            dataset = Path(self.dataset_id)
+            if not dataset.exists():
+                raise ValueError('ChartQA image paths require a local dataset.')
+            root = dataset if dataset.is_dir() else dataset.parent
+            image = self._normalize_media_value({'bytes': (root / source).read_bytes()}, media_type='image')
 
         content_list: List[Content] = [
             ContentText(text=OPEN_PROMPT.format(question=question)),
-            ContentImage(image=image_base64),
+            self._content_image_from_value(image),
         ]
 
         return Sample(
