@@ -217,3 +217,26 @@ def test_filter_prediction_cache_keeps_distinct_repeat_samples(tmp_path: Path) -
     assert [state.sample_id for state in cached_states] == [0, 1]
     assert [state.group_id for state in cached_states] == [0, 0]
     assert len(remaining_dataset) == 0
+
+
+@pytest.mark.parametrize('tail', ['', '{"index":'])
+def test_resume_prediction_cache_without_final_newline(tmp_path: Path, tail: str) -> None:
+    manager = _make_manager(tmp_path)
+    first = _make_task_state(0)
+    first.output = ModelOutput.from_content(model='mock-model', content='first')
+    row = ModelResult.from_task_state(first).model_dump(mode='json')
+    path = Path(manager.get_prediction_cache_path('default'))
+    path.write_text(json.dumps(row) + ('\n' + tail if tail else ''), encoding='utf-8')
+
+    second = _make_task_state(1)
+    second.output = ModelOutput.from_content(model='mock-model', content='second')
+    try:
+        manager.save_prediction_cache('default', second)
+    finally:
+        manager.close()
+
+    dataset = MemoryDataset(samples=[Sample(id=i, input=f'question-{i}', target='answer') for i in range(2)])
+    cached_states, remaining = manager.filter_prediction_cache('default', dataset)
+
+    assert [state.output.completion for state in cached_states] == ['first', 'second']
+    assert len(remaining) == 0
