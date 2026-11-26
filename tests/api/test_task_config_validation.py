@@ -254,6 +254,15 @@ def test_invalid_limits_are_rejected(limit: float | int | bool) -> None:
         TaskConfig.from_dict({'model': 'x', 'limit': limit})
 
 
+def test_update_rejects_bool_limit() -> None:
+    # update() assigns via setattr (validate_assignment is off), so the
+    # _validate_limit field validator never runs; reject bool explicitly.
+    config = TaskConfig.from_dict({'model': 'x'})
+
+    with pytest.raises(ValueError, match='limit'):
+        config.update({'limit': True})
+
+
 @pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])
 def test_invalid_repeats_are_rejected(repeats: object) -> None:
     with pytest.raises(ValueError, match='Repeats must be a positive integer'):

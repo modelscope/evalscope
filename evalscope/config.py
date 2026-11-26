@@ -741,6 +741,11 @@ class TaskConfig(BaseArgument):
             merged['agent_config'] = self._coerce_agent_config(merged['agent_config'])
         if isinstance(merged.get('judge'), dict):
             merged['judge'] = JudgeConfig.model_validate(merged['judge'])
+        # update() assigns via setattr (validate_assignment is off), so a bool
+        # limit would bypass the _validate_limit field validator and silently
+        # slice to one sample (True) or zero (False); reject it before assignment.
+        if isinstance(merged.get('limit'), bool):
+            raise ValueError(_LIMIT_ERROR)
         for key, value in merged.items():
             setattr(self, key, value)
 
