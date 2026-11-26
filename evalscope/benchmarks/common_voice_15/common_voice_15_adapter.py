@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
+from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
-from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.asr_wer import CorpusWERAdapter
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
@@ -60,11 +60,11 @@ Common Voice 15 is a massively multilingual speech corpus collected by Mozilla, 
         eval_split='test',
         metric_list=['wer'],
         aggregation='weighted_mean',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
-class CommonVoice15Adapter(AudioLanguageAdapter):
+class CommonVoice15Adapter(CorpusWERAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -86,22 +86,6 @@ class CommonVoice15Adapter(AudioLanguageAdapter):
             },
         )
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
-        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, word_errors
-
+    def _wer_language(self, task_state: TaskState) -> str:
         locale = task_state.metadata.get('locale', 'en')
-        language = LOCALE_TO_LANG.get(locale, locale)
-
-        normalized_prediction = normalize_text(filtered_prediction or '', language)
-        normalized_reference = normalize_text(reference, language)
-        score = Score(
-            extracted_prediction=normalized_prediction,
-            prediction=original_prediction,
-        )
-
-        errors, ref_words = word_errors([normalized_reference], [normalized_prediction], language)
-        score.value = {'wer': errors / ref_words}
-        # weighted_mean pools errors over reference words: corpus WER, as lmms-eval and Qwen-Audio report it
-        score.metadata[METRIC_WEIGHTS_KEY] = {'wer': ref_words}
-        return score
+        return LOCALE_TO_LANG.get(locale, locale)
