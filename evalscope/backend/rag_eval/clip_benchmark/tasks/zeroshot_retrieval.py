@@ -23,9 +23,6 @@ def evaluate(model, dataloader, device, amp=True, recall_k_list=[5], limit=None)
     dataloader: torch.utils.data.Dataloader
         dataloader to use for evaluation
 
-    tokenizer:
-        text tokenizer, i.e. convert list of strings to torch.Tensor of integers
-
     device: cpu/cuda
 
     amp: whether to use automatic mixed precision
