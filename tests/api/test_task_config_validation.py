@@ -1,7 +1,9 @@
 """Tests for unknown-key rejection and the eval_batch_size default resolution."""
 
 import argparse
+import json
 import math
+from pathlib import Path
 from typing import Optional
 
 import pytest
@@ -23,6 +25,29 @@ def _cli_config(*argv: str) -> TaskConfig:
     parser = argparse.ArgumentParser()
     add_argument(parser)
     return parse_task_config(parser.parse_args(list(argv)))
+
+
+@pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+def test_json_config_file_encoding(tmp_path: Path, encoding: str) -> None:
+    path = tmp_path / 'task.json'
+    data = {'model': '中文模型', 'eval_type': 'mock_llm', 'datasets': ['general_mcq'], 'limit': 3}
+    path.write_bytes(json.dumps(data, ensure_ascii=False).encode(encoding))
+
+    for config in (parse_task_config(str(path)), TaskConfig.from_json(str(path))):
+        assert config.model == data['model']
+        assert config.datasets == data['datasets']
+        assert config.limit == 3
+
+
+@pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+def test_eval_config_json_file_encoding(tmp_path: Path, encoding: str) -> None:
+    path = tmp_path / 'eval.json'
+    data = {'dataset': '中文数据集', 'limit': 3}
+    path.write_bytes(json.dumps(data, ensure_ascii=False).encode(encoding))
+
+    config = TaskConfig(model='dummy', eval_type='mock_llm', eval_config=str(path))
+
+    assert config.eval_config == data
 
 
 def test_hyphenated_key_is_rejected_with_suggestion() -> None:
