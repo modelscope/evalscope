@@ -116,6 +116,7 @@
 | `mit_movie_trivia` | [MIT-Movie-Trivia](../../benchmarks/mit_movie_trivia.md) | `Knowledge`, `NER` |
 | `mit_restaurant` | [MIT-Restaurant](../../benchmarks/mit_restaurant.md) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](../../benchmarks/mmlu.md) | `Knowledge`, `MCQ` |
+| `mmlu_indic` | [MMLU-Indic](../../benchmarks/mmlu_indic.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `mmlu_pro` | [MMLU-Pro](../../benchmarks/mmlu_pro.md) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](../../benchmarks/mmlu_redux.md) | `Knowledge`, `MCQ` |
 | `mmmlu` | [MMMLU](../../benchmarks/mmmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
@@ -291,6 +292,7 @@
 ../../benchmarks/mit_movie_trivia.md
 ../../benchmarks/mit_restaurant.md
 ../../benchmarks/mmlu.md
+../../benchmarks/mmlu_indic.md
 ../../benchmarks/mmlu_pro.md
 ../../benchmarks/mmlu_redux.md
 ../../benchmarks/mmmlu.md

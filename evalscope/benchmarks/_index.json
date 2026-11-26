@@ -177,6 +177,7 @@
  "mm_star": "evalscope.benchmarks.mm_star.mm_star_adapter",
  "mmau": "evalscope.benchmarks.mmau.mmau_adapter",
  "mmlu": "evalscope.benchmarks.mmlu.mmlu_adapter",
+ "mmlu_indic": "evalscope.benchmarks.mmlu_indic.mmlu_indic_adapter",
  "mmlu_pro": "evalscope.benchmarks.mmlu_pro.mmlu_pro_adapter",
  "mmlu_redux": "evalscope.benchmarks.mmlu_redux.mmlu_redux_adapter",
  "mmmlu": "evalscope.benchmarks.mmmlu.mmmlu_adapter",
