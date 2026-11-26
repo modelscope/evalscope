@@ -150,7 +150,7 @@ class BenchmarkInfoCMD(CLICommand):
             '--format',
             choices=['text', 'json', 'markdown'],
             default='text',
-            help='Output format for benchmark info (default: text)',
+            help='Output format for benchmark info and --list (default: text)',
         )
 
         parser.add_argument(
@@ -237,7 +237,7 @@ class BenchmarkInfoCMD(CLICommand):
                         formatted.append(str(metric_name))
         return formatted
 
-    def _list_benchmarks(self):
+    def _list_benchmarks(self) -> None:
         """List all available benchmarks."""
         from tabulate import tabulate
 
@@ -250,6 +250,7 @@ class BenchmarkInfoCMD(CLICommand):
             filter_tags = {t.lower() for t in self.args.tag}
 
         rows = []
+        records = []
         for name, meta in sorted(BENCHMARK_REGISTRY.items()):
             tags = meta.tags or ['Other']
             # Apply tag filter (case-insensitive)
@@ -261,9 +262,24 @@ class BenchmarkInfoCMD(CLICommand):
             n_metrics = len(meta.metric_list) if meta.metric_list else 0
             n_subsets = len(meta.subset_list) if meta.subset_list else 0
             rows.append([name, meta.pretty_name or name, category, tags_str, n_metrics, n_subsets])
+            records.append(
+                {
+                    'name': name,
+                    'pretty_name': meta.pretty_name or name,
+                    'category': category,
+                    'tags': list(tags),
+                    'metrics': n_metrics,
+                    'subsets': n_subsets,
+                }
+            )
+
+        output_format = getattr(self.args, 'format', 'text')
+        if output_format == 'json':
+            print(json.dumps(records, ensure_ascii=False, indent=2))
+            return
 
         headers = ['Name', 'Pretty Name', 'Category', 'Tags', 'Metrics', 'Subsets']
-        print(tabulate(rows, headers=headers, tablefmt='simple'))
+        print(tabulate(rows, headers=headers, tablefmt='github' if output_format == 'markdown' else 'simple'))
         print(f'\nTotal: {len(rows)} benchmarks')
 
     def _update_benchmark_data(self, benchmark_names: list):

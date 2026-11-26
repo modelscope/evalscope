@@ -9,6 +9,21 @@ If the dataset you need is not on the list, you may submit an [issue](https://gi
 For multimodal evaluation, the Native backend is recommended. It already supports 40+ mainstream VLM benchmarks including OCRBench, MMMU, MMBench, MathVista, ChartQA, DocVQA — see [VLM Benchmarks](vlm.md) for the full list. If needed, you can also use other tools integrated with this framework, such as [OpenCompass](../../user_guides/backend/opencompass_backend.md) for language model evaluation or [VLMEvalKit](../../user_guides/backend/vlmevalkit_backend.md) for multimodal model evaluation.
 ```
 
+## Export the benchmark catalog
+
+Use `benchmark-info --list` to inspect the installed benchmark catalog. Add
+`--tag` to select categories (case-insensitive), and `--format` to export it:
+
+```bash
+evalscope benchmark-info --list --tag Coding --format json > coding-benchmarks.json
+evalscope benchmark-info --list --format markdown > benchmarks.md
+```
+
+JSON output is a name-sorted array containing `name`, `pretty_name`, `category`,
+`tags` (an array), and the `metrics` and `subsets` counts. An empty selection
+produces `[]`, without a table or a trailing total, so scripts can parse stdout
+directly. The default text format remains a human-readable table.
+
 :::{toctree}
 :maxdepth: 2
 
