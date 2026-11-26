@@ -255,6 +255,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'xl_puzzle_acc',
     ),
     'quality.bleu.ratio': ('bleu',),
+    'quality.chrf.ratio': ('chrf',),
     'quality.cer.ratio': ('cer',),
     'quality.per.ratio': ('per',),
     'quality.cider.unbounded': ('cider',),

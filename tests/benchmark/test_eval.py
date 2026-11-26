@@ -1073,6 +1073,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test MMLU-Indic benchmark with mock."""
         self._run_dataset_test('mmlu_indic', dataset_args={'subset_list': ['hi', 'hi_roman']}, limit=2, use_mock=True)
 
+    def test_flores_in_mock(self):
+        """Test FLORES-IN benchmark with mock, one subset per direction."""
+        self._run_dataset_test('flores_in', dataset_args={'subset_list': ['en-hi', 'sat-en']}, limit=2, use_mock=True)
+
     def test_triviaqa_indic_mock(self):
         """Test TriviaQA-Indic-MCQ benchmark with mock."""
         self._run_dataset_test('triviaqa_indic', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)

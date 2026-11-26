@@ -130,6 +130,7 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
     'quality.iou.ratio': _percent('quality.iou.ratio', 'IoU'),
     # --- quality: text generation overlap and similarity ----------------------------------
     'quality.bleu.ratio': _percent('quality.bleu.ratio', 'BLEU'),
+    'quality.chrf.ratio': _percent('quality.chrf.ratio', 'chrF'),
     'quality.rouge.ratio': _percent('quality.rouge.ratio', 'ROUGE'),
     'quality.meteor.ratio': _percent('quality.meteor.ratio', 'METEOR'),
     'quality.similarity.ratio': _percent('quality.similarity.ratio', 'Similarity'),

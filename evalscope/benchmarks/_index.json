@@ -92,6 +92,7 @@
  "fin_ner": "evalscope.benchmarks.ner.fin_ner_adapter",
  "finqa": "evalscope.benchmarks.finqa.finqa_adapter",
  "fleurs": "evalscope.benchmarks.fleurs.fleurs_adapter",
+ "flores_in": "evalscope.benchmarks.indicgenbench.flores_in_adapter",
  "frames": "evalscope.benchmarks.frames.frames_adapter",
  "gaia": "evalscope.benchmarks.gaia.gaia_adapter",
  "gdpval": "evalscope.benchmarks.gdpval.gdpval_adapter",

@@ -65,6 +65,7 @@
 | `eq_bench` | [EQ-Bench](../../benchmarks/eq_bench.md) | `InstructionFollowing` |
 | `fin_ner` | [FinNER](../../benchmarks/fin_ner.md) | `Knowledge`, `NER` |
 | `finqa` | [FinQA](../../benchmarks/finqa.md) | `Math`, `QA`, `Reasoning` |
+| `flores_in` | [FLORES-IN](../../benchmarks/flores_in.md) | `MachineTranslation`, `MultiLingual` |
 | `frames` | [FRAMES](../../benchmarks/frames.md) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](../../benchmarks/general_arena.md) | `Arena`, `Custom` |
 | `general_decision` | [General Decision](../../benchmarks/general_decision.md) | `Custom`, `Decision` |
@@ -241,6 +242,7 @@
 ../../benchmarks/eq_bench.md
 ../../benchmarks/fin_ner.md
 ../../benchmarks/finqa.md
+../../benchmarks/flores_in.md
 ../../benchmarks/frames.md
 ../../benchmarks/general_arena.md
 ../../benchmarks/general_decision.md
