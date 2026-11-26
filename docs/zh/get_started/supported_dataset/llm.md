@@ -54,6 +54,7 @@
 | `contract_nli` | [ContractNLI (classification)](../../benchmarks/contract_nli.md) | `MCQ` |
 | `copious` | [Copious](../../benchmarks/copious.md) | `Knowledge`, `NER` |
 | `cross_ner` | [CrossNER](../../benchmarks/cross_ner.md) | `Knowledge`, `NER` |
+| `crosssum_in` | [CrossSum-IN](../../benchmarks/crosssum_in.md) | `MultiLingual` |
 | `data_collection` | [Data-Collection](../../benchmarks/data_collection.md) | `Custom` |
 | `docmath` | [DocMath](../../benchmarks/docmath.md) | `LongContext`, `Math`, `Reasoning` |
 | `drivel_binary` | [DrivelologyBinaryClassification](../../benchmarks/drivel_binary.md) | `Yes/No` |
@@ -231,6 +232,7 @@
 ../../benchmarks/contract_nli.md
 ../../benchmarks/copious.md
 ../../benchmarks/cross_ner.md
+../../benchmarks/crosssum_in.md
 ../../benchmarks/data_collection.md
 ../../benchmarks/docmath.md
 ../../benchmarks/drivel_binary.md
