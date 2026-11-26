@@ -3,19 +3,11 @@
 A load test reports point estimates; running the same configuration several
 times and publishing only the mean hides how much the number moves between
 runs (GPU clocks, cache warm-up, JIT, network noise). This module turns a list
-of per-run metric values into a small, printable summary: mean, standard
-deviation, a two-sided 95% confidence interval for the mean, and the minimum
-difference the observed spread can resolve.
+of per-run metric values into a printable summary of the mean, sample standard
+deviation, and a two-sided 95% confidence interval for the mean.
 
-Two interpretation notes are deliberate:
-
-* The interval is a confidence interval **for the mean of per-run values**
-  (the sampling variability of the run estimator), not an interval for a
-  population percentile. That distinction matters for percentile metrics such
-  as P99 latency, where a parametric interval would need a distributional
-  assumption this module does not make.
-* The minimum detectable difference is **descriptive** (post hoc, derived from
-  the observed standard deviation), not a prospective power calculation.
+For percentile metrics such as P99 latency, the interval estimates the
+uncertainty in the mean of the per-run percentiles.
 """
 
 from dataclasses import dataclass
@@ -60,10 +52,6 @@ _T_CRITICAL_95 = {
     29: 2.045,
     30: 2.042,
 }
-
-#: Below this sample size the 95% interval is so wide that it rarely supports a
-#: decision; callers surface a warning instead of pretending otherwise.
-RECOMMENDED_MIN_RUNS = 5
 
 
 def t_critical(df: int) -> float:
@@ -115,14 +103,11 @@ def summarize_runs(values: Sequence[float]) -> Optional[RunStatistics]:
     """Summarize per-run metric values.
 
     Args:
-        values: One value per completed run. Non-finite values must be filtered
-            by the caller (the SLA probe already excludes failed runs).
+        values: One finite metric value per completed run.
 
     Returns:
         ``None`` when there are no values; otherwise a :class:`RunStatistics`
-        with ``std`` from ``n >= 2`` and the interval from ``n >= 3`` (a
-        two-run interval is degenerate enough that reporting it invites
-        over-reading).
+        with ``std`` from ``n >= 2`` and the interval from ``n >= 3``.
     """
     clean: List[float] = [float(v) for v in values]
     n = len(clean)
@@ -146,23 +131,3 @@ def summarize_runs(values: Sequence[float]) -> Optional[RunStatistics]:
         ci_low=mean - half_width,
         ci_high=mean + half_width,
     )
-
-
-def warn_if_under_sampled(statistics_by_metric: dict, logger) -> None:
-    """Log one warning when repeated runs are too few for an informative interval.
-
-    ``n = 3`` gives a critical value of 4.303, so the 95% interval spans
-    roughly ±2.5 standard deviations — wide enough that it usually cannot
-    separate two configurations. Say so once instead of letting readers
-    over-read the bounds. The check keys off the run count, not the presence
-    of an interval, so ``n = 2`` (spread known, interval not estimable) still
-    warns.
-    """
-    for metric, stats in statistics_by_metric.items():
-        if stats.n < RECOMMENDED_MIN_RUNS:
-            logger.warning(
-                f'{metric}: {stats.n} runs (recommended >= {RECOMMENDED_MIN_RUNS}); '
-                'the 95% interval is wide enough that it usually cannot separate two '
-                'configurations. Increase --sla-num-runs for a tighter bound.'
-            )
-        return  # one warning is enough; the sample size is shared across metrics

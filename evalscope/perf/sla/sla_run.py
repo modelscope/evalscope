@@ -13,7 +13,7 @@ from evalscope.perf.utils.db_util import average_results
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
-from evalscope.perf.utils.statistics import summarize_runs, warn_if_under_sampled
+from evalscope.perf.utils.statistics import summarize_runs
 from evalscope.utils.logger import get_logger
 
 from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion, format_sla_operand
@@ -47,6 +47,7 @@ _PERCENTILE_METRICS = {
     'p50_tpot': ('50%', PercentileMetrics.TPOT, 'tpot'),
 }
 _EMBEDDING_RERANK_METRICS = {'avg_latency', 'p99_latency', 'rps'}
+_RECOMMENDED_MIN_RUNS = 5
 _COUNT_FIELDS = (
     Metrics.TOTAL_REQUESTS,
     Metrics.SUCCEED_REQUESTS,
@@ -235,6 +236,11 @@ class SLAAutoTuner:
         logger.info(f'Starting SLA Auto-tune for {self.sla_variable}')
         logger.info(f'SLA Range: [{self.lower_bound}, {self.upper_bound}]')
         logger.info(f'SLA Params: {self.args.sla_params}')
+        if self.args.sla_num_runs < _RECOMMENDED_MIN_RUNS:
+            logger.warning(
+                f'--sla-num-runs={self.args.sla_num_runs} gives limited information about run-to-run variability. '
+                f'For a more informative summary, use at least {_RECOMMENDED_MIN_RUNS} runs per pressure point.'
+            )
 
         # sla_params is a list of criterion groups. Each group is evaluated independently:
         # - Within one group (dict): ALL metrics must pass → AND logic.
@@ -375,18 +381,13 @@ class SLAAutoTuner:
             for metric in self.metric_names
             if all(metric in values for values in run_values)
         }
-        # Run-to-run summary for the same metrics: how much each number moves
-        # between repeated runs of this pressure level. Only metrics present in
-        # every run are summarized, mirroring ``metric_values`` above.
+        # Summarize metrics present in every run at pressure points that pass the request gate.
         statistics = {}
-        for metric in self.metric_names:
-            series = [values[metric] for values in run_values if metric in values]
-            if len(series) != len(run_values):
-                continue
-            summary = summarize_runs(series)
-            if summary is not None:
-                statistics[metric] = summary
-        warn_if_under_sampled(statistics, logger)
+        if request_gate_passed:
+            for metric in metric_values:
+                summary = summarize_runs([values[metric] for values in run_values])
+                if summary is not None:
+                    statistics[metric] = summary
         probe = SLAProbe(
             value=val,
             averaged_result=avg_result,
@@ -695,7 +696,7 @@ class SLAAutoTuner:
 
 
 def format_run_statistics(result: SLAResult, tablefmt: str = 'pipe') -> str:
-    """Render per-metric run-to-run statistics for every tested pressure level.
+    """Render per-metric run statistics for pressure points that passed the request gate.
 
     Only metrics measured in at least two runs are shown; with a single run per
     level there is nothing to summarize and the section stays empty.

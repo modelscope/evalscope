@@ -10,13 +10,7 @@ import statistics as stdlib_statistics
 import pytest
 
 from evalscope.perf.sla.sla_models import SLAProbe
-from evalscope.perf.utils.statistics import (
-    RECOMMENDED_MIN_RUNS,
-    RunStatistics,
-    summarize_runs,
-    t_critical,
-    warn_if_under_sampled,
-)
+from evalscope.perf.utils.statistics import RunStatistics, summarize_runs, t_critical
 
 
 def test_empty_series_has_no_summary():
@@ -34,8 +28,6 @@ def test_single_run_reports_only_the_mean():
 
 
 def test_two_runs_report_std_but_no_interval():
-    # n = 2: std is defined (ddof=1) but a two-point interval would be
-    # degenerate (t(1) = 12.7); report the spread and stop there.
     stats = summarize_runs([100.0, 104.0])
 
     assert stats.n == 2
@@ -140,40 +132,3 @@ def test_probe_carries_the_statistics_map():
     # pydantic serializes the nested dataclass, so the summary survives a dump.
     dumped = probe.model_dump()
     assert dumped['statistics']['tps']['mean'] == pytest.approx(sum([100.0, 104.0, 98.0]) / 3)
-
-
-def test_under_sampling_warns_once(caplog):
-    import logging
-
-    caplog.set_level(logging.WARNING)
-    stats = {'tps': summarize_runs([100.0, 104.0, 98.0])}
-    warn_if_under_sampled(stats, logging.getLogger())
-
-    messages = [r.getMessage() for r in caplog.records]
-    assert len(messages) == 1
-    assert f'recommended >= {RECOMMENDED_MIN_RUNS}' in messages[0]
-    assert '--sla-num-runs' in messages[0]
-
-
-def test_two_runs_still_warn_despite_missing_interval(caplog):
-    """n = 2 has a spread but no interval; the warning must still fire."""
-    import logging
-
-    caplog.set_level(logging.WARNING)
-    stats = {'tps': summarize_runs([100.0, 104.0])}
-    warn_if_under_sampled(stats, logging.getLogger())
-
-    messages = [r.getMessage() for r in caplog.records]
-    assert len(messages) == 1
-    assert '2 runs' in messages[0]
-    assert 'usually cannot separate two configurations' in messages[0]
-
-
-def test_enough_runs_do_not_warn(caplog):
-    import logging
-
-    caplog.set_level(logging.WARNING)
-    stats = {'tps': summarize_runs([100.0, 104.0, 98.0, 101.0, 99.0])}
-    warn_if_under_sampled(stats, logging.getLogger())
-
-    assert caplog.records == []
