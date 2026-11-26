@@ -27,12 +27,70 @@ function replaceOnce(source, original, replacement) {
   return source.replace(original, replacement);
 }
 
+function createTimingLogger() {
+  let turn = 0;
+  const active = new Map();
+  return (event) => {
+    const { phase, call, elapsedMs, source, name, status } = event;
+    if (phase === 'agent.turn') turn = Number(name);
+    if (call === undefined) return;
+    const key = `${source}:${phase.split('.')[0]}:${call}`;
+    if (phase === 'model.request' || phase === 'tool.start') {
+      active.set(key, { turn, elapsedMs, name });
+    }
+    const start = active.get(key);
+    if (start === undefined) return;
+    console.log('EvalScope review timing', JSON.stringify({
+      turn: start.turn,
+      phase,
+      call,
+      name: start.name,
+      elapsedMs,
+      durationMs: elapsedMs - start.elapsedMs,
+      status,
+    }));
+    if (phase !== 'model.request' && phase !== 'model.headers' && phase !== 'model.first-byte' &&
+        phase !== 'tool.start') {
+      active.delete(key);
+    }
+  };
+}
+
 let source = readFileSync(entrypoint, 'utf8');
 if (createHash('sha256').update(source).digest('hex') !== upstreamDigest) {
   throw new Error('Unexpected DSH-action distribution. Revalidate the integration before upgrading it.');
 }
 // Use the upstream proxy's 32 MiB default for streamed thinking. Keep its 2 MiB worker log limit.
 source = replaceOnce(source, ',maxResponseBytes:d.maxOutputBytes', '');
+// Correlate concurrent proxy requests and the worker's tool events using DSH's
+// redacted diagnostics. No prompts, arguments, or response bodies enter this log.
+source = `const evalscopeTiming = (${createTimingLogger.toString()})();\nlet evalscopeModelRequest = 0;\n${source}`;
+source = replaceOnce(source, 'this.events.push(u);try{this.log', 'this.events.push(u);try{evalscopeTiming(u);this.log');
+source = replaceOnce(
+  source,
+  'onTurn:async(c,l)=>{a.enter("agent");',
+  'onTurn:async(c,l)=>{a.enter("agent");a.diagnostics?.event("agent.turn",{name:String(c)});',
+);
+source = replaceOnce(
+  source,
+  'l.activeRequests.add(y);l.diagnostics?.event("model.request",{name:u.kind})',
+  'l.activeRequests.add(y);const call=String(++evalscopeModelRequest);' +
+    'l.diagnostics?.event("model.request",{name:u.kind,call})',
+);
+source = replaceOnce(source, 'async function streamResponse(a,c,l,u)', 'async function streamResponse(a,c,l,u,call)');
+source = replaceOnce(source, 'u?.event("model.first-byte")', 'u?.event("model.first-byte",{call})');
+source = replaceOnce(
+  source,
+  'event("model.headers",{name:u.kind,status:d.status});await streamResponse(d,c,l.responseLimit,l.diagnostics);' +
+    'l.diagnostics?.event("model.end",{name:u.kind,status:d.status})',
+  'event("model.headers",{name:u.kind,status:d.status,call});await streamResponse(d,c,l.responseLimit,l.diagnostics,call);' +
+    'l.diagnostics?.event("model.end",{name:u.kind,status:d.status,call})',
+);
+source = replaceOnce(
+  source,
+  '"model.timeout-or-abort":"model.error",{name:u.kind}',
+  '"model.timeout-or-abort":"model.error",{name:u.kind,call}',
+);
 // Opt this operation into the controlled Docker read profile. PR trust cannot
 // grant execution, extensions, network access, or repository writes.
 source = replaceOnce(
@@ -109,7 +167,7 @@ const inputs = {
   'base-url': 'https://dashscope.aliyuncs.com/apps/anthropic',
   command: 'review',
   'deepseek-api-key': PR_REVIEW_API_KEY,
-  diagnostics: 'off',
+  diagnostics: 'basic',
   'exclude-comments-by-actor': 'github-actions[bot]',
   'github-token': GH_TOKEN,
   'max-findings': '100',

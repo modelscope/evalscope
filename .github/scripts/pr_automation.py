@@ -55,6 +55,25 @@ LEGACY_COMMIT = re.compile(r'^Commit ([0-9a-f]{12})$', re.MULTILINE)
 SHA = re.compile(r'[0-9a-f]{40}')
 SEVERITIES = ('critical', 'high', 'medium')
 CI_NAMES = {'ci_test.yaml': 'CI Lite', 'lint.yml': 'Lint', 'frontend.yml': 'Frontend'}
+REVIEW_FAILURE = 'DSH-action did not return a usable review. See the Actions run for details.'
+REVIEW_TIMEOUTS = {
+    'AGENT_TIMEOUT': 'The DSH-action agent loop exceeded its overall time limit',
+    'DSH_TIMEOUT': 'The DeepSeek Harness worker exceeded its deadline',
+}
+REVIEW_STEPS = {
+    'model.request': 'sent a model request and was waiting for response headers',
+    'model.headers': 'received model response headers and was waiting for the first response byte',
+    'model.first-byte': 'began receiving the model response stream',
+    'model.end': 'finished receiving a model response',
+    'model.error': 'encountered a model request error',
+    'model.timeout-or-abort': 'recorded a model request timeout or cancellation',
+    'tool.start': 'started a repository tool call',
+    'tool.end': 'finished a repository tool call',
+    'tool.error': 'recorded a repository tool error',
+    'worker.start': 'started a DeepSeek Harness worker',
+    'worker.exit': 'finished running a DeepSeek Harness worker',
+    'output.validated': 'validated the worker output',
+}
 
 
 def github(path: str, *args: str, body: dict | None = None) -> bytes:
@@ -366,11 +385,43 @@ def prepare(number: int, sha: str, command: int, directory: Path) -> None:
     output(decision='review')
 
 
+def review_timeout(data: dict) -> str:
+    error = data.get('error')
+    code = error.get('code') if isinstance(error, dict) else None
+    if not isinstance(code, str) or code not in REVIEW_TIMEOUTS:
+        return REVIEW_FAILURE
+    text = f'{REVIEW_TIMEOUTS[code]} (`{code}`)'
+    timing = data.get('timing')
+    duration_ms = timing.get('durationMs') if isinstance(timing, dict) else None
+    if type(duration_ms) is int and duration_ms >= 0:
+        minutes, seconds = divmod(duration_ms // 1000, 60)
+        text += f' after {minutes}m {seconds}s'
+    text += '.'
+    diagnostics = data.get('diagnostics')
+    events = diagnostics.get('events') if isinstance(diagnostics, dict) else None
+    if isinstance(events, list):
+        for event in reversed(events):
+            phase = event.get('phase') if isinstance(event, dict) else None
+            if isinstance(phase, str) and phase in REVIEW_STEPS:
+                text += f' Last recorded step {REVIEW_STEPS[phase]}.'
+                break
+    return f'{text} See the Actions run for timings.'
+
+
 def review_result(result: str, request: dict, directory: Path) -> tuple[str, str]:
     if result == 'size-skip':
         return 'ai:skipped', request['skip_reason']
     try:
         data = json.loads(result)
+    except ValueError:
+        return 'ai:failed', REVIEW_FAILURE
+    if not isinstance(data, dict) or data.get('schemaVersion') != 1 or data.get('operation') != 'review':
+        return 'ai:failed', REVIEW_FAILURE
+    if data.get('status') == 'timed_out':
+        return 'ai:failed', review_timeout(data)
+    if data.get('status') != 'success':
+        return 'ai:failed', REVIEW_FAILURE
+    try:
         publication = data['publication']
         selected = publication['selected']
         summary_only = publication['summaryOnly']
@@ -381,19 +432,16 @@ def review_result(result: str, request: dict, directory: Path) -> tuple[str, str
         candidates = findings['candidates']
         severities = findings['severities']
     except (OSError, ValueError, TypeError, KeyError):
-        return 'ai:failed', 'DSH-action did not return a usable review. See the Actions run for details.'
+        return 'ai:failed', REVIEW_FAILURE
     if (
-        data.get('schemaVersion') != 1
-        or data.get('status') != 'success'
-        or data.get('operation') != 'review'
-        or not summary.startswith('<!-- dsh-action:v1 kind=summary -->\n')
+        not summary.startswith('<!-- dsh-action:v1 kind=summary -->\n')
         or not all(type(count) is int and count >= 0 for count in (candidates, selected, summary_only, omitted))
         or not summary_only + omitted <= selected <= candidates
         or not isinstance(severities, list)
         or len(severities) != selected
         or any(severity not in SEVERITIES for severity in severities)
     ):
-        return 'ai:failed', 'DSH-action did not return a usable review. See the Actions run for details.'
+        return 'ai:failed', REVIEW_FAILURE
 
     checks = []
     for workflow in evidence.get('workflows', []):

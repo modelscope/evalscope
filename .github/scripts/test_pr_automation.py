@@ -293,6 +293,24 @@ def test_dsh_summary_preserves_findings_without_an_inline_location(tmp_path: Pat
     assert bot.review_result(dsh_result(1), {}, tmp_path)[0] == 'ai:failed'
 
 
+def test_timeout_summary_uses_runtime_evidence_without_publication_files(tmp_path: Path) -> None:
+    result = {
+        'schemaVersion': 1,
+        'status': 'timed_out',
+        'operation': 'review',
+        'timing': {'durationMs': 1800622},
+        'error': {'code': 'AGENT_TIMEOUT', 'message': 'untrusted error detail'},
+        'diagnostics': {'events': [{'phase': 'model.headers'}, {'phase': 'cleanup'}]},
+    }
+
+    outcome, text = bot.review_result(json.dumps(result), {}, tmp_path)
+
+    assert outcome == 'ai:failed'
+    assert 'overall time limit (`AGENT_TIMEOUT`) after 30m 0s' in text
+    assert 'waiting for the first response byte' in text
+    assert 'untrusted error detail' not in text
+
+
 def test_filtered_candidates_do_not_look_like_a_clean_review(tmp_path: Path) -> None:
     write_dsh_summary(tmp_path, candidates=1)
     notes = [
