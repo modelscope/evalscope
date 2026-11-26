@@ -19,6 +19,17 @@ import pytest
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
 
+def _chart_figure(html: str) -> tuple[list[dict], dict]:
+    """Read the trace data and layout Plotly receives in the chart iframe."""
+    args = html.split('Plotly.newPlot(', 1)[1].lstrip()
+    decoder = json.JSONDecoder()
+    _, end = decoder.raw_decode(args)  # chart div id
+    args = args[end:].lstrip(', \r\n\t')
+    traces, end = decoder.raw_decode(args)
+    layout, _ = decoder.raw_decode(args[end:].lstrip(', \r\n\t'))
+    return traces, layout
+
+
 def _write_json(path: str, obj: object) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8') as f:
@@ -436,12 +447,50 @@ class TestPerfArchive(unittest.TestCase):
         explicit = self._compare([self.cli_rel, self.svc_rel], x_axis='workload')
         self.assertEqual(default.status_code, 200)
         self.assertEqual(default.data, explicit.data)
-        self.assertIn(b'R1 \xc2\xb7 my-model', default.data)
+        traces, _ = _chart_figure(default.get_data(as_text=True))
+        self.assertEqual(traces[0]['name'], 'R1 · my-model')
         self.assertIn(b'connectgaps', default.data)
 
         invalid = self._compare([self.cli_rel, self.svc_rel], x_axis='tokens')
         self.assertEqual(invalid.status_code, 400)
         self.assertIn('Unknown x_axis', invalid.get_json()['error'])
+
+    def test_workload_chart_separates_concurrency_and_rate_axes(self):
+        from evalscope.perf.utils.perf_constants import Metrics
+
+        for path, sub, rate, latency in [
+            ('closed', 'parallel_8_number_2', 4.0, 0.4),
+            ('open', 'rate_8_number_2', 8.0, 0.8),
+            ('mixed', 'parallel_8_number_2', 4.0, 0.4),
+            ('mixed', 'rate_8_number_2', 8.0, 0.8),
+        ]:
+            _make_run(os.path.join(self.tmp, path), with_html=False, sub_name=sub,
+                      summary_values={Metrics.REQUEST_RATE: rate, Metrics.AVERAGE_LATENCY: latency})
+
+        for paths in (['closed', 'open'], ['open', 'closed'], ['mixed'], ['closed'], ['open']):
+            with self.subTest(paths=paths):
+                result = self._compare(paths)
+                self.assertEqual(result.status_code, 200)
+                traces, layout = _chart_figure(result.get_data(as_text=True))
+                axes = {}
+                for trace in traces:
+                    self.assertEqual(trace['x'], [8])
+                    self.assertEqual(trace.get('yaxis', 'y'), 'y')
+                    axis = trace.get('xaxis', 'x').replace('x', 'xaxis', 1)
+                    title = layout[axis]['title']['text']
+                    run_id = trace['name'].split(' · ', 1)[0]
+                    self.assertEqual(trace['hovertemplate'], f'%{{y}}<extra>{run_id}</extra>')
+                    axes[trace['y'][0]] = title
+
+                if paths in (['closed'], ['open']):
+                    self.assertNotIn('xaxis2', layout)
+                    self.assertEqual(axes, {0.4: 'Concurrency'} if paths == ['closed'] else {0.8: 'Rate (req/s)'})
+                else:
+                    self.assertEqual(axes, {0.4: 'Concurrency', 0.8: 'Rate (req/s)'})
+                    self.assertEqual(layout['xaxis']['title']['text'], 'Concurrency')
+                    self.assertEqual(layout['xaxis']['dtick'], 1)
+                    self.assertLess(layout['xaxis']['domain'][1], layout['xaxis2']['domain'][0])
+                    self.assertEqual(sum(trace.get('showlegend', True) for trace in traces), len(paths))
 
     def test_compare_chart_input_length_mode(self):
         rels = []
@@ -454,7 +503,8 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Configured input length', response.data)
         self.assertIn(b'C=1', response.data)
-        self.assertNotIn(b'R1 \xc2\xb7 my-model', response.data)
+        traces, _ = _chart_figure(response.get_data(as_text=True))
+        self.assertNotIn('R1 · my-model', [trace['name'] for trace in traces])
 
     def test_compare_chart_input_length_accepts_rate_limited_concurrency_run(self):
         self._make_input_length_run(
