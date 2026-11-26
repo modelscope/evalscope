@@ -71,6 +71,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `general_mcq` | [General-MCQ](../../benchmarks/general_mcq.md) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](../../benchmarks/general_qa.md) | `Custom`, `QA` |
 | `genia_ner` | [GeniaNER](../../benchmarks/genia_ner.md) | `Knowledge`, `NER` |
+| `global_mmlu` | [Global-MMLU](../../benchmarks/global_mmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `global_mmlu_lite` | [Global-MMLU-Lite](../../benchmarks/global_mmlu_lite.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `gpqa_diamond` | [GPQA-Diamond](../../benchmarks/gpqa_diamond.md) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](../../benchmarks/gsm8k.md) | `Math`, `Reasoning` |
 | `gsm8k_indic` | [GSM8K-Indic](../../benchmarks/gsm8k_indic.md) | `Math`, `MultiLingual`, `Reasoning` |
@@ -247,6 +249,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/general_mcq.md
 ../../benchmarks/general_qa.md
 ../../benchmarks/genia_ner.md
+../../benchmarks/global_mmlu.md
+../../benchmarks/global_mmlu_lite.md
 ../../benchmarks/gpqa_diamond.md
 ../../benchmarks/gsm8k.md
 ../../benchmarks/gsm8k_indic.md
