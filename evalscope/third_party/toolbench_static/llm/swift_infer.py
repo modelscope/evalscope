@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from swift.llm import InferEngine
 
 
 @dataclass
@@ -14,7 +18,10 @@ class SwiftInfer:
 
     def __init__(self, args: SwiftInferArgs):
         # infer backend模型初始化
+        from swift.llm import RequestConfig
+
         if args.infer_backend == 'pt':
+            from swift.llm import PtEngine
             self.engine: InferEngine = PtEngine(args.model_id_or_path, max_batch_size=args.max_batch_size)
         elif args.infer_backend == 'vllm':
             from swift.llm import VllmEngine
@@ -51,6 +58,8 @@ class SwiftInfer:
 
         # 添加本次用户问题
         messages.append({'role': 'user', 'content': query})
+
+        from swift.llm import InferRequest
 
         infer_request = InferRequest(messages=messages)
 
