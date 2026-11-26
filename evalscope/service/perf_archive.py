@@ -590,7 +590,6 @@ def render_compare_chart(
     from evalscope.perf.utils.report import perf_charts
 
     series = []
-    series_details = []
     input_length_points = []
     input_modes = set()
     point_keys = set()
@@ -606,12 +605,9 @@ def render_compare_chart(
         first_args = runs[0].args or {}
         input_modes.add(Metrics.is_input_only(first_args.get('api', '')))
         model = first_args.get('model', first_args.get('model_id', rel))
-        ts = extract_timestamp(rel, run_dir)
         identity = _build_identity_metadata(first_args)
         display_name = identity.get('alias') or model
-        detail = ' · '.join(str(value) for value in (display_name, identity.get('api_host'), ts, rel) if value)
-        series.append((f'R{len(series) + 1} · {display_name}', runs))
-        series_details.append(detail)
+        series.append((display_name, runs))
 
         if x_axis == 'input_length':
             input_length = _fixed_input_length(runs, rel)
@@ -623,7 +619,7 @@ def render_compare_chart(
                         400,
                     )
                 point_keys.add(key)
-                input_length_points.append((input_length, run.parallel, run, detail))
+                input_length_points.append((input_length, run.parallel, run))
     if not series:
         raise PerfArchiveError('No perf runs found for the given paths', 404)
     if len(input_modes) > 1:
@@ -645,7 +641,6 @@ def render_compare_chart(
             chart_type,
             is_embedding=input_only,
             theme=theme,
-            series_details=series_details,
         )
     return wrap_chart_html(div)
 

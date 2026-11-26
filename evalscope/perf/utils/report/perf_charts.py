@@ -463,82 +463,60 @@ def build_compare_chart(
     metric: str,
     is_embedding: bool = False,
     theme: str = 'dark',
-    series_details: Optional[List[str]] = None,
 ) -> str:
     """Overlay one sweep metric with one trace per run directory."""
     y_title = _COMPARE_Y_TITLE.get(metric, metric)
     x_title = 'Concurrency'
     traces = []
-    for i, (label, runs) in enumerate(series):
+    for i, (display_name, runs) in enumerate(series):
         if not runs:
             continue
         xs, x_title = _x_axis(runs)
         ys = [_finite_metric(_compare_y(metric, run, is_embedding)) for run in runs]
-        detail = series_details[i] if series_details and i < len(series_details) else label
+        run_id = f'R{i + 1}'
         color = _COMPARE_PALETTE[i % len(_COMPARE_PALETTE)]
         traces.append(
             dict(
                 x=xs,
                 y=ys,
                 mode='markers' if len(xs) <= 1 else 'lines+markers',
-                name=label,
+                name=f'{run_id} · {display_name}',
                 line=dict(color=color, width=2),
                 marker=dict(size=8),
                 connectgaps=False,
-                customdata=[[detail, run.name, run.number] for run in runs],
-                hovertemplate=(
-                    f'{x_title}=%{{x}}<br>{y_title}=%{{y}}'
-                    '<br>Run=%{customdata[0]}<br>Workload=%{customdata[1]}'
-                    '<br>Requests=%{customdata[2]}<extra>%{fullData.name}</extra>'
-                ),
+                hovertemplate=f'%{{y}}<extra>{run_id}</extra>',
             )
         )
     return ChartBuilder.line(traces, x_title=x_title, y_title=y_title, div_id=f'chart-compare-{metric}', theme=theme)
 
 
 def build_input_length_compare_chart(
-    points: 'List[Tuple[int, int, RunData, str]]',
+    points: 'List[Tuple[int, int, RunData]]',
     metric: str,
     is_embedding: bool = False,
     theme: str = 'dark',
 ) -> str:
     """Plot configured input length with one cross-run trace per concurrency."""
     y_title = _COMPARE_Y_TITLE.get(metric, metric)
-    lengths = sorted({length for length, _, _, _ in points})
-    concurrencies = sorted({concurrency for _, concurrency, _, _ in points})
+    lengths = sorted({length for length, _, _ in points})
+    concurrencies = sorted({concurrency for _, concurrency, _ in points})
     traces = []
     for index, concurrency in enumerate(concurrencies):
-        by_length = {
-            length: (run, label) for length, point_concurrency, run, label in points if point_concurrency == concurrency
-        }
-        present = [(length, by_length[length]) for length in lengths if length in by_length]
-        customdata = [
-            [by_length[length][1], concurrency, by_length[length][0].number]
-            if length in by_length
-            else ['', concurrency, '']
-            for length in lengths
-        ]
+        by_length = {length: run for length, point_concurrency, run in points if point_concurrency == concurrency}
         color = _COMPARE_PALETTE[index % len(_COMPARE_PALETTE)]
         traces.append(
             dict(
                 x=lengths,
                 y=[
-                    _finite_metric(_compare_y(metric, by_length[length][0], is_embedding))
-                    if length in by_length
-                    else None
+                    _finite_metric(_compare_y(metric, by_length[length], is_embedding)) if length in by_length else None
                     for length in lengths
                 ],
-                mode='markers' if len(present) <= 1 else 'lines+markers',
+                mode='markers' if len(by_length) <= 1 else 'lines+markers',
                 name=f'C={concurrency}',
                 line=dict(color=color, width=2),
                 marker=dict(size=8),
                 connectgaps=False,
-                customdata=customdata,
-                hovertemplate=(
-                    f'Configured input length=%{{x}}<br>{y_title}=%{{y}}'
-                    '<br>Run=%{customdata[0]}<br>Concurrency=%{customdata[1]}'
-                    '<br>Requests=%{customdata[2]}<extra>%{fullData.name}</extra>'
-                ),
+                hovertemplate='%{y}<extra>%{fullData.name}</extra>',
             )
         )
     return ChartBuilder.line(
