@@ -10,7 +10,7 @@ MMLU-Indic 是 Sarvam AI 将 MMLU（Massive Multitask Language Understanding，�
 ## 任务描述
 
 - **任务类型**：多语言多项选择问答
-- **输入**：21 种语言/文字变体之一的问题及四个选项
+- **输入**：21 种语言/文字变体之一的问题及选项
 - **输出**：正确答案的字母（A-D）
 - **领域**：MMLU 的 57 个学科（STEM、人文、社会科学及其他）
 
@@ -27,8 +27,8 @@ MMLU-Indic 是 Sarvam AI 将 MMLU（Massive Multitask Language Understanding，�
 ## 评估说明
 
 - 默认配置在 `test` 划分上进行 **0-shot** 评估，以准确率作为指标
-- Few-shot 示例取自 `validation` 划分，只有原生文字子集提供该划分；在 `_roman` 子集上进行 few-shot 评估会报错
-- Sarvam 报告的零样本结果使用“Indic Average”：即 10 个原生文字印度语言子集的平均值，不包括英文子集和罗马化子集
+- Few-shot 示例取自 `validation` 划分，英文和 10 个原生文字印度语言子集均提供该划分；`_roman` 子集没有 `validation` 划分，并会拒绝 few-shot 评估
+- Sarvam 报告的零样本结果使用“Indic Average”：即 10 个原生文字印度语言子集的平均值，不包括英文子集和罗马化子集。该口径用于与 Sarvam 的结果进行比较，不是本适配器额外计算的聚合指标
 - 使用 `subset_list` 评估指定的语言或文字（例如 `['hi', 'hi_roman']`）
 
 

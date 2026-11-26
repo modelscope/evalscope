@@ -11,7 +11,7 @@ and `indic_boolq`.
 ## Task Description
 
 - **Task Type**: Multilingual Multiple-Choice Question Answering
-- **Input**: Question with four answer choices in one of 21 language/script variants
+- **Input**: Question with answer choices in one of 21 language/script variants
 - **Output**: Correct answer letter (A-D)
 - **Domain**: The 57 MMLU subjects (STEM, humanities, social sciences and others)
 
@@ -28,10 +28,11 @@ and `indic_boolq`.
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation on the `test` split, with accuracy as the metric
-- Few-shot examples come from the `validation` split, which only the native-script subsets have; few-shot runs
-  on a `_roman` subset raise an error
+- Few-shot examples come from the `validation` split, available for English and the 10 native-script Indic
+  subsets. The `_roman` subsets have no `validation` split and reject few-shot evaluation
 - Sarvam reports zero-shot results with an "Indic Average": the mean of the 10 native-script Indic subsets,
-  excluding English and the romanized subsets
+  excluding English and the romanized subsets. This is a reporting convention for comparison with Sarvam,
+  not an additional aggregate computed by this adapter
 - Use `subset_list` to evaluate specific languages or scripts (e.g., `['hi', 'hi_roman']`)
 
 
@@ -91,7 +92,7 @@ and `indic_boolq`.
 {
   "input": [
     {
-      "id": "b2910eca",
+      "id": "36d1bb8c",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nUnlike most other early civilizations, Minoan culture shows little evidence of:\n\nA) trade.\nB) warfare.\nC) the development of a common religion.\nD) conspicuous consumption by elites."
     }
   ],
