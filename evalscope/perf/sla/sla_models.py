@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from evalscope.perf.utils.statistics import RunStatistics
+
 
 class SLAProbe(BaseModel):
     """One tested pressure value and the evidence used for its SLA decision."""
@@ -16,6 +18,8 @@ class SLAProbe(BaseModel):
     reasons: List[str] = Field(default_factory=list)
     metric_values: Dict[str, float] = Field(default_factory=dict)
     group_passes: Dict[str, bool] = Field(default_factory=dict)
+    statistics: Dict[str, RunStatistics] = Field(default_factory=dict)
+    """Per-metric run-to-run summary (mean, std, 95% CI) across the repeated runs."""
 
 
 class SLASelection(BaseModel):
