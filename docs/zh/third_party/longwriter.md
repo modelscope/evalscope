@@ -18,6 +18,20 @@ pip install evalscope[framework] -U
 pip install vllm -U
 ```
 
+### 配置质量评审模型
+
+LongBench-Write 的官方质量评分脚本使用 `gpt-4o-2024-05-13`。OpenAI 已于 2026 年 10 月 23 日从 API 下线该快照。[官方评分脚本](https://github.com/THUDM/LongWriter/blob/main/evaluation/eval_quality.py) · [OpenAI 下线公告](https://developers.openai.com/api/docs/deprecations)
+
+运行 `eval_q` 前，请在 `eval_config` 中配置你有权限调用的评审模型。
+
+- `openai_gpt_model` 填写评审服务提供的模型 ID。
+- `openai_api_base` 填写完整的 Chat Completions 请求地址，例如 `https://api.openai.com/v1/chat/completions`。使用其他兼容服务时，请换成该服务的完整请求地址。
+- `openai_api_key` 填写该服务的 API 密钥。使用下面的 Python 示例时，运行前请设置环境变量 `JUDGE_API_KEY`；使用 JSON 或 YAML 时，请在本地配置文件里替换 `<judge-api-key>`。
+
+所选服务和模型需接受当前实现发送的 `max_tokens`、`temperature` 和 `stop` 参数，并在 `choices[0].message.content` 中返回包含六项评分的 JSON。建议先用少量样本确认请求和评分解析成功。使用自选 judge 时，请在报告中注明模型 ID，并单独解读质量分。
+
+只评测长度时，从 `stage` 中移除 `eval_q`，并将 `eval_config` 设为空对象。
+
 ### 任务配置
 
 支持的任务配置格式: dict, json, yaml.
@@ -25,6 +39,8 @@ pip install vllm -U
 1. 配置dict:
 
 ```python
+import os
+
 task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
                 model='ZhipuAI/LongWriter-glm4-9b',
                 input_data_path=None,
@@ -41,10 +57,9 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
                     'proc_num': 16,
                 },
                 eval_config={
-                    # No need to set OpenAI info if skipping the stage `eval_q`
-                    'openai_api_key': None,   
-                    'openai_api_base': 'https://api.openai.com/v1/chat/completions', 
-                    'openai_gpt_model': 'gpt-4o-2024-05-13', 
+                    'openai_api_key': os.environ['JUDGE_API_KEY'],
+                    'openai_api_base': 'https://api.openai.com/v1/chat/completions',
+                    'openai_gpt_model': '<judge-model-id>',
                     'generation_kwargs': {
                         'max_new_tokens': 1024, 
                         'temperature': 0.5, 
@@ -61,8 +76,6 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
   - `model`: model id on the ModelScope hub, or local model dir. Refer to [LongWriter-glm4-9b](https://modelscope.cn/models/ZhipuAI/LongWriter-glm4-9b/summary) for more details.
   - `input_data_path`: input data path, default to `None`, it means to use [longbench_write](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/resources/longbench_write.jsonl)
   - `output_dir`: output root directory.
-  - `openai_api_key`: openai_api_key when enabling the stage `eval_q` to use `Model-as-Judge`. Default to None if not needed.
-  - `openai_gpt_model`: Judge model name from OpenAI. Default to `gpt-4o-2024-05-13`
   - `generation_kwargs`: The generation configs.
   - `proc_num`: process number for inference and evaluation.
 
@@ -91,9 +104,9 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
         "proc_num": 16
     },
     "eval_config": {
-        "openai_api_key": null,
+        "openai_api_key": "<judge-api-key>",
         "openai_api_base": "https://api.openai.com/v1/chat/completions",
-        "openai_gpt_model": "gpt-4o-2024-05-13",
+        "openai_gpt_model": "<judge-model-id>",
         "generation_kwargs": {
             "max_new_tokens": 1024,
             "temperature": 0.5,
@@ -126,9 +139,9 @@ infer_config:
     repetition_penalty: 1.0
   proc_num: 16
 eval_config:
-  openai_api_key: null
+  openai_api_key: "<judge-api-key>"
   openai_api_base: "https://api.openai.com/v1/chat/completions"
-  openai_gpt_model: "gpt-4o-2024-05-13"
+  openai_gpt_model: "<judge-model-id>"
   generation_kwargs:
     max_new_tokens: 1024
     temperature: 0.5

@@ -18,6 +18,20 @@ pip install evalscope[framework] -U
 pip install vllm -U
 ```
 
+### Configure the quality judge
+
+The official LongBench-Write quality evaluation script uses `gpt-4o-2024-05-13`. OpenAI removed this snapshot from its API on October 23, 2026. [Official scoring script](https://github.com/THUDM/LongWriter/blob/main/evaluation/eval_quality.py) · [OpenAI deprecation notice](https://developers.openai.com/api/docs/deprecations)
+
+Before running `eval_q`, configure a judge you can access in `eval_config`.
+
+- Set `openai_gpt_model` to the judge model ID provided by your service.
+- Set `openai_api_base` to the full Chat Completions endpoint, such as `https://api.openai.com/v1/chat/completions`. For another compatible service, use its full endpoint URL.
+- Set `openai_api_key` to the key for that service. For the Python example below, set the `JUDGE_API_KEY` environment variable before running it. For JSON or YAML, replace `<judge-api-key>` in your local configuration file.
+
+The service and model must accept the `max_tokens`, `temperature`, and `stop` request fields and return JSON with all six rubric scores in `choices[0].message.content`. Try a few samples first to check that requests succeed and scores are parsed. When reporting quality scores from a custom judge, include the model ID and interpret the scores separately from the official results.
+
+For length-only evaluation, remove `eval_q` from `stage` and set `eval_config` to an empty object.
+
 ### Task configuration
 
 There are few ways to configure the task: dict, json and yaml.
@@ -25,6 +39,8 @@ There are few ways to configure the task: dict, json and yaml.
 1. Configuration with dict:
 
 ```python
+import os
+
 task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
                 model='ZhipuAI/LongWriter-glm4-9b',
                 input_data_path=None,
@@ -41,10 +57,9 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
                     'proc_num': 16,
                 },
                 eval_config={
-                    # No need to set OpenAI info if skipping the stage `eval_q`
-                    'openai_api_key': None,   
-                    'openai_api_base': 'https://api.openai.com/v1/chat/completions', 
-                    'openai_gpt_model': 'gpt-4o-2024-05-13', 
+                    'openai_api_key': os.environ['JUDGE_API_KEY'],
+                    'openai_api_base': 'https://api.openai.com/v1/chat/completions',
+                    'openai_gpt_model': '<judge-model-id>',
                     'generation_kwargs': {
                         'max_new_tokens': 1024, 
                         'temperature': 0.5, 
@@ -61,8 +76,6 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
   - `model`: model id on the ModelScope hub, or local model dir. Refer to [LongWriter-glm4-9b](https://modelscope.cn/models/ZhipuAI/LongWriter-glm4-9b/summary) for more details.
   - `input_data_path`: input data path, default to `None`, it means to use [longbench_write](https://github.com/modelscope/evalscope/blob/main/evalscope/third_party/longbench_write/resources/longbench_write.jsonl)
   - `output_dir`: output root directory.
-  - `openai_api_key`: openai_api_key when enabling the stage `eval_q` to use `Model-as-Judge`. Default to None if not needed.
-  - `openai_gpt_model`: Judge model name from OpenAI. Default to `gpt-4o-2024-05-13`
   - `generation_kwargs`: The generation configs.
   - `proc_num`: process number for inference and evaluation.
 
@@ -91,9 +104,9 @@ task_cfg = dict(stage=['infer', 'eval_l', 'eval_q'],
         "proc_num": 16
     },
     "eval_config": {
-        "openai_api_key": null,
+        "openai_api_key": "<judge-api-key>",
         "openai_api_base": "https://api.openai.com/v1/chat/completions",
-        "openai_gpt_model": "gpt-4o-2024-05-13",
+        "openai_gpt_model": "<judge-model-id>",
         "generation_kwargs": {
             "max_new_tokens": 1024,
             "temperature": 0.5,
@@ -126,9 +139,9 @@ infer_config:
     repetition_penalty: 1.0
   proc_num: 16
 eval_config:
-  openai_api_key: null
+  openai_api_key: "<judge-api-key>"
   openai_api_base: "https://api.openai.com/v1/chat/completions"
-  openai_gpt_model: "gpt-4o-2024-05-13"
+  openai_gpt_model: "<judge-model-id>"
   generation_kwargs:
     max_new_tokens: 1024
     temperature: 0.5
