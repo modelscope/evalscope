@@ -259,7 +259,7 @@ def test_update_rejects_bool_limit() -> None:
     # _validate_limit field validator never runs; reject bool explicitly.
     config = TaskConfig.from_dict({'model': 'x'})
 
-    with pytest.raises(ValueError, match='limit'):
+    with pytest.raises(ValueError, match='Limit must be'):
         config.update({'limit': True})
 
 
