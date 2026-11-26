@@ -156,7 +156,11 @@ class ModelScopeAPI(ModelAPI):
             kwargs['num_return_sequences'] = config.n
         if config.max_tokens is not None:
             kwargs['max_new_tokens'] = config.max_tokens
-        if config.temperature is not None:
+        if config.temperature == 0 and not config.do_sample:
+            # Temperature 0 means greedy decoding, as with API models. Transformers rejects it when the
+            # model's own generation config samples, as for Qwen and Llama instruct models.
+            kwargs['do_sample'] = False
+        elif config.temperature is not None:
             kwargs['temperature'] = config.temperature
         if config.top_p is not None:
             kwargs['top_p'] = config.top_p
