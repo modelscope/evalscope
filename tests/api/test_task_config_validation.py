@@ -248,10 +248,19 @@ def test_update_merges_generation_config_and_recoerces() -> None:
     assert config.sandbox.engine == 'volcengine'
 
 
-@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf])
-def test_invalid_limits_are_rejected(limit: float | int) -> None:
+@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf, True, False])
+def test_invalid_limits_are_rejected(limit: float | int | bool) -> None:
     with pytest.raises(ValueError, match='limit'):
         TaskConfig.from_dict({'model': 'x', 'limit': limit})
+
+
+def test_update_rejects_bool_limit() -> None:
+    # update() assigns via setattr (validate_assignment is off), so the
+    # _validate_limit field validator never runs; reject bool explicitly.
+    config = TaskConfig.from_dict({'model': 'x'})
+
+    with pytest.raises(ValueError, match='Limit must be'):
+        config.update({'limit': True})
 
 
 @pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])
