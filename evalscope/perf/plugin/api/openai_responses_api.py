@@ -42,6 +42,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 query = dict(messages)
                 if 'messages' in query and 'input' not in query:
                     query['input'] = normalize_responses_input(query.pop('messages'))
+                return self._compose_query_from_parameter(query, param, preserve_existing=True)
             else:
                 query = {'input': normalize_responses_input(messages)}
             return self._compose_query_from_parameter(query, param)
@@ -215,21 +216,28 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             if cached is not None:
                 output.real_cached_tokens = cached
 
-    def _compose_query_from_parameter(self, payload: Dict, param: Arguments) -> Dict:
+    def _compose_query_from_parameter(self, payload: Dict, param: Arguments, preserve_existing: bool = False) -> Dict:
+        def _set(key: str, value: Any) -> None:
+            if preserve_existing:
+                payload.setdefault(key, value)
+            else:
+                payload[key] = value
+
         if param.model is not None:
-            payload['model'] = param.model
+            _set('model', param.model)
         if param.max_tokens is not None:
-            payload['max_output_tokens'] = _sample_int_or_range(param.max_tokens)
+            _set('max_output_tokens', _sample_int_or_range(param.max_tokens))
         if param.stream is not None:
-            payload['stream'] = param.stream
+            _set('stream', param.stream)
         if param.temperature is not None:
-            payload['temperature'] = param.temperature
+            _set('temperature', param.temperature)
         if param.top_p is not None:
-            payload['top_p'] = param.top_p
+            _set('top_p', param.top_p)
         if param.n_choices is not None and param.n_choices > 1:
             logger.warning('OpenAI Responses API does not support n_choices > 1; ignoring --n-choices.')
         if param.extra_args is not None:
-            payload.update(param.extra_args)
+            for key, value in param.extra_args.items():
+                _set(key, value)
         return payload
 
     def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
