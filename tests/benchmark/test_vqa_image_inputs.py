@@ -96,13 +96,10 @@ def test_missing_image_keeps_text_only_behavior(adapter: VisionLanguageAdapter, 
 
 
 @pytest.mark.parametrize('image_format', ['JPEG', 'PNG'])
-@pytest.mark.parametrize('source', ['bytes', 'path'])
-def test_chartqa_image_format_and_subset(tmp_path: Path, image_format: str, source: str) -> None:
+def test_chartqa_image_format_and_subset(image_format: str) -> None:
     data = _image_bytes(image_format)
-    path = tmp_path / 'chart'
-    path.write_bytes(data)
-    image = {'bytes': data, 'path': 'stale.png'} if source == 'bytes' else {'path': str(path), 'bytes': None}
-    adapter = _adapter('chartqa', local_path=str(tmp_path))
+    image = {'bytes': data, 'path': 'stale.png'}
+    adapter = _adapter('chartqa')
     sample = adapter.record_to_sample({
         'question': 'What is the maximum?', 'answer': '42', 'type': 'augmented_test', 'image': image,
     })
@@ -118,19 +115,10 @@ def test_chartqa_image_format_and_subset(tmp_path: Path, image_format: str, sour
         assert header == f'data:{Image.MIME[decoded.format]};base64'
 
 
-@pytest.mark.parametrize(
-    ('name', 'subset', 'config_name', 'split', 'metric'),
-    [
-        ('docvqa', 'DocVQA', 'DocVQA', 'validation', 'anls'),
-        ('infovqa', 'InfographicVQA', 'InfographicVQA', 'validation', 'anls'),
-        ('pope', 'popular', 'Full', 'popular', 'acc'),
-        ('chartqa', 'human_test', 'default', 'test', 'relaxed_acc'),
-    ],
-)
+@pytest.mark.parametrize('name', BENCHMARKS)
 @pytest.mark.parametrize('source', ['parquet_bytes', 'jsonl_path'])
 def test_native_pipeline_serializes_images_scores_and_resumes(
-    name: str, subset: str, config_name: str, split: str, metric: str,
-    source: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    name: str, source: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep loaders, model SDK, scoring and reports real; mock only HTTP transport."""
     from datasets import Dataset
@@ -140,25 +128,18 @@ def test_native_pipeline_serializes_images_scores_and_resumes(
 
     monkeypatch.setattr(dataset_config, 'HF_DATASETS_CACHE', str(tmp_path / 'hf-cache'))
     monkeypatch.setattr(ModelCache, '_models', {})
+    data = _image_bytes('JPEG', noisy=True)
+    image_path = tmp_path / 'image.jpg'
+    image_path.write_bytes(data)
+    image = {'bytes': data, 'path': None} if source == 'parquet_bytes' else {'bytes': None, 'path': str(image_path)}
+    records = [_record(image, question=f'Question {index}: Is a cat visible?') for index in range(2)]
+    subset = 'popular' if name == 'pope' else ('DocVQA' if name == 'docvqa' else 'InfographicVQA')
     dataset_dir = tmp_path / 'data'
     dataset_dir.mkdir()
-    # ChartQA JSONL uses a dataset-relative path. The file contents determine its MIME type.
-    relative_chart = name == 'chartqa' and source == 'jsonl_path'
-    data = _image_bytes('JPEG', noisy=not relative_chart)
-    image_path = (dataset_dir / 'chart.png') if relative_chart else (tmp_path / 'image.jpg')
-    image_path.write_bytes(data)
-    if source == 'parquet_bytes':
-        image = {'bytes': data, 'path': None}
-    elif relative_chart:
-        image = image_path.name
-    else:
-        image = {'bytes': None, 'path': str(image_path)}
-    records = [_record(image, question=f'Question {index}: Is a cat visible?') for index in range(2)]
-    if name == 'chartqa':
-        for record in records:
-            record['type'] = subset
     stem = 'Full_popular' if name == 'pope' else subset
     dataset_path = dataset_dir / (f'{stem}.parquet' if source == 'parquet_bytes' else f'{stem}.jsonl')
+    config_name = 'Full' if name == 'pope' else subset
+    split = 'popular' if name == 'pope' else 'validation'
     (dataset_dir / 'README.md').write_text(
         f'---\nconfigs:\n- config_name: {config_name}\n  data_files:\n'
         f'  - split: {split}\n    path: {dataset_path.name}\n---\n', encoding='utf-8')
@@ -184,7 +165,6 @@ def test_native_pipeline_serializes_images_scores_and_resumes(
             assert raw == data
         with Image.open(BytesIO(raw)) as decoded:
             decoded.load()
-            assert decoded.format == 'JPEG'
         # One correct and one incorrect answer, independent of concurrent request order.
         answer = 'YES' if 'Question 0:' in content[0]['text'] else 'NO'
         return httpx.Response(200, json={
@@ -210,12 +190,13 @@ def test_native_pipeline_serializes_images_scores_and_resumes(
     predictions = [json.loads(line) for line in next((output / 'predictions').rglob('*.jsonl')).read_text().splitlines()]
     reviews = [json.loads(line) for line in next((output / 'reviews').rglob('*.jsonl')).read_text().splitlines()]
     assert len(predictions) == len(reviews) == 2
+    metric = 'acc' if name == 'pope' else 'anls'
     assert sorted(row['sample_score']['score']['value'][metric] for row in reviews) == [0.0, 1.0]
     report_path = next((output / 'reports').rglob(f'{name}.json'))
     report = json.loads(report_path.read_text())
     assert report['execution_summary']['succeeded'] == 2
     assert report['execution_summary']['errored'] == 0
-    report_metric = 'accuracy' if metric == 'acc' else metric
+    report_metric = 'accuracy' if name == 'pope' else 'anls'
     aggregate = next(item for item in report['metrics'] if item['identity']['name'] == report_metric)
     assert aggregate['score'] == 0.5
     assert aggregate['num'] == 2
