@@ -141,7 +141,8 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         target = json.loads(sample.target)
         num_houses = len(target['rows'])
         columns = target['header']
-        assert columns[0] == 'House'
+        if not columns or columns[0] != 'House':
+            raise ValueError(f'ZebraLogicBench expects the first header column to be "House", got {columns!r}.')
         json_template = {'reasoning': '___', 'solution': {}}
         for i in range(num_houses):
             json_template['solution'][f'House {i + 1}'] = {columns[j]: '___' for j in range(1, len(columns))}
