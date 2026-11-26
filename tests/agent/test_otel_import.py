@@ -963,3 +963,181 @@ def test_sample_id_on_root_keeps_untagged_children():
     # Both the tagged root and its untagged chat child belong to sample-a.
     assert len(chat_spans) == 1
     assert messages[0].text == 'q'
+
+
+# ---------------------------------------------------------------------------
+# Maintainer scope: one complete run per sample, evidence preserved
+# ---------------------------------------------------------------------------
+
+
+def test_tool_call_response_reads_the_standard_response_field():
+    """GenAI semconv puts the tool result under ``response``, not ``content``."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('search')]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'c1', 'name': 'search', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'c1', 'response': 'found'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('done')]}),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+    tool_message = next(m for m in messages if isinstance(m, ChatMessageTool))
+
+    assert tool_message.text == 'found'
+    assert tool_message.tool_call_id == 'c1'
+
+
+def test_identical_tool_results_from_different_calls_are_kept():
+    """Two different calls returning the same text must both survive."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('q')]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'ping', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'call_1', 'response': 'ok'}]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'call_2', 'name': 'ping', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'call_2', 'response': 'ok'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('done')]}),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+    tool_messages = [m for m in messages if isinstance(m, ChatMessageTool)]
+
+    assert [m.tool_call_id for m in tool_messages] == ['call_1', 'call_2']
+    assert [m.text for m in tool_messages] == ['ok', 'ok']
+
+
+def test_untagged_export_with_multiple_runs_is_rejected(tmp_path):
+    """Two runs in one untagged file cannot be bound to a sample."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def run(root: str, chat_id: str, start: int, question: str, answer: str) -> list:
+        return [
+            _span(
+                root,
+                'invoke_agent',
+                start=start,
+                end=start + 100,
+                attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}],
+            ),
+            _chat_span(
+                chat_id,
+                parent=root,
+                start=start + 1,
+                end=start + 2,
+                **{
+                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(question)]}),
+                    'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(answer)]}),
+                },
+            ),
+        ]
+
+    payload = _export(
+        *run('r1', 'c1', 0, 'q1', 'a1'),
+        *run('r2', 'c2', 200, 'q2', 'a2'),
+    )
+    path = tmp_path / 'untagged.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='2 agent runs'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id=0),
+        )
+
+
+def test_tagged_export_with_multiple_runs_binds_by_sample_id(tmp_path):
+    """A tagged export with two runs binds each sample to its own run."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def run(root: str, chat_id: str, start: int, question: str, answer: str, sample_id: str) -> list:
+        return [
+            _span(
+                root,
+                'invoke_agent',
+                start=start,
+                end=start + 100,
+                attributes=[
+                    {'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')},
+                    {'key': 'evalscope.sample_id', 'value': _str(sample_id)},
+                ],
+            ),
+            _chat_span(
+                chat_id,
+                parent=root,
+                start=start + 1,
+                end=start + 2,
+                **{
+                    'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(question)]}),
+                    'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(answer)]}),
+                },
+            ),
+        ]
+
+    payload = _export(
+        *run('r1', 'c1', 0, 'q1', 'a1', 'sample-a'),
+        *run('r2', 'c2', 200, 'q2', 'a2', 'sample-b'),
+    )
+    path = tmp_path / 'tagged.otlp.json'
+    path.write_text(_json(payload))
+
+    first = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)), SimpleNamespace(name='model'), SimpleNamespace(id='sample-a')
+    )
+    second = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)), SimpleNamespace(name='model'), SimpleNamespace(id='sample-b')
+    )
+
+    assert first.output.completion == 'a1'
+    assert second.output.completion == 'a2'
+
+
+def test_sample_requiring_a_sandbox_is_rejected_before_scoring(tmp_path):
+    """OTel import cannot provide a sandbox, so report before evaluation starts."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        )
+    )
+    path = tmp_path / 'sample-1.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='requires a sandbox'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(tmp_path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id='sample-1', sandbox={'type': 'docker'}),
+        )

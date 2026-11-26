@@ -244,7 +244,9 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str]) -> O
             ],
         )
     if part_type == 'tool_call_response':
-        content = part.get('content')
+        # The GenAI semconv part carries the result under ``response``; accept
+        # the older ``content`` spelling as a fallback.
+        content = part.get('response', part.get('content'))
         if not isinstance(content, str):
             content = _json_dumps(content)
         return ChatMessageTool(content=content, tool_call_id=part.get('id'))
@@ -362,7 +364,14 @@ def _legacy_output_messages(attrs: Dict[str, Any], model: Optional[str]) -> List
 
 
 def _message_signature(message: ChatMessage) -> tuple:
-    """Stable identity for de-duplicating re-sent history across chat spans."""
+    """Stable identity for de-duplicating re-sent history across chat spans.
+
+    Tool results are identified by their call id, not their text: two different
+    calls can return identical output (``"ok"``), and collapsing them would drop
+    one call's evidence.
+    """
+    if isinstance(message, ChatMessageTool):
+        return (type(message).__name__, getattr(message, 'tool_call_id', None), getattr(message, 'text', None))
     tool_ids = tuple(call.id for call in getattr(message, 'tool_calls', None) or [])
     return (type(message).__name__, getattr(message, 'text', None), tool_ids)
 
@@ -410,6 +419,19 @@ def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage
 # ---------------------------------------------------------------------------
 # Step resolution
 # ---------------------------------------------------------------------------
+
+
+def _run_roots(spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Return the root ``invoke_agent`` spans (one per agent run)."""
+    by_id = {_span_id(span): span for span in spans}
+    roots = []
+    for span in spans:
+        if _span_attributes(span).get(_OP_NAME) != _OP_INVOKE_AGENT:
+            continue
+        parent = span.get('parentSpanId') or ''
+        if not parent or parent not in by_id:
+            roots.append(span)
+    return roots
 
 
 def _owning_sample_id(span: Dict[str, Any], by_id: Dict[str, Dict[str, Any]], attribute: str) -> Optional[str]:
@@ -748,11 +770,33 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
         raise OTLPImportError(f'OTLP export not found: {path}') from exc
     except json.JSONDecodeError as exc:
         raise OTLPImportError(f'OTLP export at {path} is not valid JSON: {exc}') from exc
+
+    # OTel import executes nothing, so it cannot provide a sandbox. Report this
+    # before evaluation starts rather than letting the sample fall through to a
+    # native run or fail inside a scorer.
+    if getattr(sample, 'sandbox', None):
+        raise OTLPImportError(f'Sample {sample.id!r} requires a sandbox; OTel trace import cannot provide one')
+
+    spans = _iter_spans(payload)
+    if not spans:
+        raise OTLPImportError('OTLP export contains no spans')
+
     expected = None
-    if sample.id is not None and any(
-        _span_attributes(span).get(config.sample_id_attribute) is not None for span in _iter_spans(payload)
-    ):
+    tagged = any(_span_attributes(span).get(config.sample_id_attribute) is not None for span in spans)
+    if sample.id is not None and tagged:
         expected = str(sample.id)
+
+    # One export per sample unless the export is explicitly tagged: an untagged
+    # file with several runs cannot be bound to this sample, and scoring the last
+    # run would silently reuse another question's answer.
+    if expected is None:
+        runs = _run_roots(spans)
+        if len(runs) > 1:
+            raise OTLPImportError(
+                f'OTLP export at {path} contains {len(runs)} agent runs but no '
+                f'{config.sample_id_attribute!r} attribute; cannot bind one run to sample {sample.id!r} '
+                f'(split the export per sample or tag each run)'
+            )
     trace, messages = import_otlp_trace(
         payload,
         sample_id_attribute=config.sample_id_attribute,
