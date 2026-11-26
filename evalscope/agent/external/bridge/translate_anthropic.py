@@ -20,6 +20,8 @@ from evalscope.api.messages import (
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo, ToolParams
 
+from ._sse_common import uncached_input_tokens
+
 
 def unpack_tool_call(tool_call: Any) -> Tuple[str, Dict[str, Any]]:
     """Return ``(name, arguments)`` for a :class:`ToolCall`.
@@ -276,7 +278,7 @@ def anthropic_stop_reason(output: ModelOutput) -> str:
 
 def anthropic_usage_payload(usage: Any) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
-        'input_tokens': usage.input_tokens if usage else 0,
+        'input_tokens': uncached_input_tokens(usage) if usage else 0,
         'output_tokens': usage.output_tokens if usage else 0,
     }
     if usage and usage.input_tokens_cache_write is not None:

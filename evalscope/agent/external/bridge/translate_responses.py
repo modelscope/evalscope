@@ -38,6 +38,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils.logger import get_logger
 
+from ._sse_common import prompt_tokens
 from .translate_openai import (
     _parse_tool_arguments,
     _safe_tool_params,
@@ -460,7 +461,7 @@ def model_output_to_responses_payload(
         'model': request_model or output.model or '',
         'output': output_items,
         'usage': {
-            'input_tokens': usage.input_tokens if usage else 0,
+            'input_tokens': prompt_tokens(usage) if usage else 0,
             'output_tokens': usage.output_tokens if usage else 0,
             'total_tokens': usage.total_tokens if usage else 0,
         },
