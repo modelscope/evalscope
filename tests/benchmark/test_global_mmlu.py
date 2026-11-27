@@ -8,6 +8,7 @@ from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.global_mmlu.global_mmlu_adapter import GLOBAL_MMLU_LANGUAGES, GLOBAL_MMLU_LITE_LANGUAGES
 from evalscope.config import TaskConfig
+from evalscope.report.generator import ReportGenerator
 
 
 def _adapter(name: str = 'global_mmlu', **dataset_args) -> DataAdapter:
@@ -57,8 +58,8 @@ def test_record_to_sample() -> None:
     assert sample.metadata['subject'] == 'astronomy'
 
 
-@pytest.mark.parametrize('missing', [None, ''])
-def test_option_lost_in_translation_is_kept_empty(missing) -> None:
+@pytest.mark.parametrize('missing', [None, '', '\u00a0'])
+def test_option_lost_in_translation_is_kept_empty(missing: str | None) -> None:
     # A few released rows (e.g. Amharic test row 739) have a None or empty option; the row stays, as in lm-eval.
     record = {**_record('ጥያቄ?', answer='B'), 'option_a': missing}
     sample = _sample(_adapter(), 'am', record)
@@ -132,3 +133,30 @@ def test_cultural_sensitivity_accuracy() -> None:
     # Unannotated questions only count towards the overall accuracy.
     aggregates = _adapter().aggregate_scores([_score(1, '-')])
     assert [a.dimensions for a in aggregates] == [{'cultural_sensitivity': 'all'}]
+
+
+def test_bayes_at_n_preserves_the_primary_overall_cohort() -> None:
+    name = 'global_mmlu_lite'
+    config = TaskConfig(
+        model='mock',
+        eval_type='mock_llm',
+        datasets=[name],
+        repeats=2,
+        dataset_args={name: {'subset_list': ['en'], 'aggregation': 'bayes_at_n'}},
+    )
+    adapter = get_benchmark(name, config)
+    scores = [
+        SampleScore(
+            score=Score(value={'acc': value}),
+            sample_id=i,
+            group_id=0,
+            generation_index=i,
+            sample_metadata={'cultural_sensitivity_label': 'CS'},
+        )
+        for i, value in enumerate([0, 1])
+    ]
+    report = ReportGenerator.generate_report({'en': adapter.aggregate_subset('en', scores)}, 'mock', adapter)
+    assert report.primary_metric_identity.aggregation == 'bayes_at_n'
+    assert report.primary_metric_identity.dimensions == {'cultural_sensitivity': 'all', 'n': 2}
+    assert report.score == pytest.approx(0.5)
+    assert report.num == 1

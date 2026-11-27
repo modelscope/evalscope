@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import DataLoader, Dataset, MemoryDataset, Sample
@@ -89,18 +89,26 @@ GLOBAL_MMLU_LITE_LANGUAGES = {
 
 # Culturally sensitive / culturally agnostic, from the dataset's annotator votes; '-' marks unannotated questions.
 CULTURAL_LABELS = {'CS': 'cs', 'CA': 'ca'}
+OVERALL_ACCURACY = MetricSelector(name='accuracy', aggregation='mean', dimensions={'cultural_sensitivity': 'all'})
 
 
 class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
     """Shared Global-MMLU logic: subject-matched 5-shot examples and CS/CA accuracy next to the overall accuracy."""
 
-    LANGUAGES: Dict[str, tuple] = {}
+    LANGUAGES: Dict[str, tuple[str, str]] = {}
     # Languages released without a `dev` split; they are evaluated zero-shot.
-    LANGUAGES_WITHOUT_DEV: frozenset = frozenset()
+    LANGUAGES_WITHOUT_DEV: frozenset[str] = frozenset()
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.category_map = {code: f'{level}-resource' for code, (_, level) in self.LANGUAGES.items()}
+
+    @property
+    def primary_metric(self) -> Optional[MetricSelector]:
+        selector = super().primary_metric
+        if self.aggregation == 'bayes_at_n' and selector == OVERALL_ACCURACY:
+            return OVERALL_ACCURACY.model_copy(update={'aggregation': 'bayes_at_n'})
+        return selector
 
     def record_to_sample(self, record: Dict[str, Any]) -> Union[Sample, List[Sample]]:
         language = self.current_subset_name
@@ -110,9 +118,8 @@ class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
             return []
         return Sample(
             input=question,
-            # 39 of the 589,764 Global-MMLU test rows lost an option in translation (None or empty); like the
-            # lm-evaluation-harness tasks, keep the row and show the option empty.
-            choices=[record[f'option_{letter}'] or '' for letter in 'abcd'],
+            # Keep rows with missing options, leaving the affected choice blank.
+            choices=[(record[f'option_{letter}'] or '').strip() for letter in 'abcd'],
             target=record['answer'].strip(),
             metadata={
                 'sample_id': record['sample_id'],
@@ -125,6 +132,9 @@ class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
             },
         )
 
+    def _fewshot_load_limit(self) -> Optional[int]:
+        return None
+
     def load_fewshot_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """Load the whole `dev` split: each question takes the examples of its own subject from it."""
         if subset in self.LANGUAGES_WITHOUT_DEV:
@@ -133,21 +143,7 @@ class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
                 f'instead of {self.few_shot_num}-shot.'
             )
             return MemoryDataset([], name=subset)
-        loader = data_loader(
-            data_id_or_path=self.dataset_id,
-            split=self.train_split,
-            subset=subset,
-            sample_fields=self.record_to_sample,
-            limit=None,
-            shuffle=False,
-            shuffle_choices=False,
-            seed=self.seed,
-            data_source=self.dataset_hub,
-            version=self.dataset_revision,
-            force_redownload=self.force_redownload,
-            dataset_dir=self.dataset_dir,
-        )
-        return loader.load()
+        return super().load_fewshot_subset(subset, data_loader)
 
     def process_sample_input(self, sample: Sample, subset: str) -> str:
         if self.few_shot_num <= 0 or self.fewshot_dataset is None or subset in self.LANGUAGES_WITHOUT_DEV:
@@ -166,6 +162,8 @@ class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
         aggregates = super().aggregate_scores(sample_scores)
         for aggregate in aggregates:
             aggregate.dimensions = {**aggregate.dimensions, 'cultural_sensitivity': 'all'}
+        if self.aggregation == 'bayes_at_n':
+            return aggregates
         for label, dimension in CULTURAL_LABELS.items():
             group = [
                 ss for ss in sample_scores if (ss.sample_metadata or {}).get('cultural_sensitivity_label') == label
@@ -177,13 +175,11 @@ class GlobalMMLUBaseAdapter(MultiChoiceAdapter):
 
 
 COMMON_NOTES = """
-- Default configuration uses **5-shot** evaluation, as in the paper. The examples for a question are the five `dev`
-  questions of its own subject (each subject has exactly five), in the same language
-- Every language reports its accuracy on all questions, and separately on the culturally sensitive (`cs`) and
-  culturally agnostic (`ca`) questions, as the `cultural_sensitivity` dimension of the accuracy metric
-- Languages are grouped by the resource level the dataset card gives them (`high-resource`, `mid-resource`,
-  `low-resource`)
-- License: [Apache 2.0](https://opensource.org/license/apache-2-0)
+- Uses five same-subject examples from the language's `dev` split where available.
+- Scores generated answer letters by exact match. The upstream harness scores choice likelihoods and its Lite tasks
+  select examples by subject category.
+- Reports overall, culturally sensitive, and culturally agnostic accuracy per language. Bayes@N reports overall only.
+- Licensed under [Apache 2.0](https://opensource.org/license/apache-2-0).
 """
 
 
@@ -196,9 +192,7 @@ COMMON_NOTES = """
         description=f"""
 ## Overview
 
-Global-MMLU (Cohere Labs, 2024) is MMLU in 42 languages. It combines machine translations with professional
-translations and community post-edits, and labels part of the questions as culturally sensitive (CS) or culturally
-agnostic (CA), so a model's multilingual knowledge can be told apart from its Western-centric knowledge.
+Global-MMLU evaluates multilingual knowledge and performance on culturally sensitive and agnostic questions.
 
 ## Task Description
 
@@ -209,13 +203,8 @@ agnostic (CA), so a model's multilingual knowledge can be told apart from its We
 
 ## Key Features
 
-- 42 subsets, one per language, each with all 14,042 MMLU test questions (589,764 in total) and the 285 `dev`
-  questions (five per subject)
-- 2,850 questions per language carry a cultural sensitivity label: 792 CS and 2,058 CA; the rest are unannotated
-- 39 test questions (0.007%, mostly Amharic, Hindi and Vietnamese) lost an option in translation; they are kept
-  with that option empty, as in lm-evaluation-harness, so every language keeps all 14,042 questions. In 12 of
-  them the lost option is the correct one
-- For a smaller, fully human-translated set in 23 languages, use `global_mmlu_lite`
+- 589,764 test questions across 42 languages. Each language has 2,850 culturally labeled questions.
+- Keeps the 39 rows with a missing option, including 12 where the correct choice is blank.
 
 ## Evaluation Notes
 {COMMON_NOTES}""",
@@ -223,7 +212,7 @@ agnostic (CA), so a model's multilingual knowledge can be told apart from its We
         dataset_id='CohereLabs/Global-MMLU',
         hf_dataset_id='CohereLabs/Global-MMLU',
         metric_list=['acc'],
-        primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'cultural_sensitivity': 'all'}),
+        primary_metric=OVERALL_ACCURACY,
         subset_list=list(GLOBAL_MMLU_LANGUAGES),
         few_shot_num=5,
         allowed_few_shot_nums=(0, 1, 2, 3, 4, 5),
@@ -245,8 +234,7 @@ class GlobalMMLUAdapter(GlobalMMLUBaseAdapter):
         description=f"""
 ## Overview
 
-Global-MMLU-Lite (Cohere Labs) is the balanced, fully human-translated or post-edited subset of Global-MMLU: 200
-culturally sensitive (CS) and 200 culturally agnostic (CA) MMLU questions in each of 23 languages.
+Global-MMLU-Lite balances culturally sensitive and agnostic questions across 23 human-reviewed languages.
 
 ## Task Description
 
@@ -257,15 +245,8 @@ culturally sensitive (CS) and 200 culturally agnostic (CA) MMLU questions in eac
 
 ## Key Features
 
-- 23 subsets, one per language, each with 400 test questions (9,199 evaluated in total, see below) and 215 `dev`
-  questions (285 for Czech), five per subject
-- The language set differs from Global-MMLU: Welsh, Hungarian, Burmese, Oriya, Slovak, Albanian and Tajik are only in
-  the Lite set. The paper's Lite results cover the 15 languages of the first release
-- Every question is labeled CS or CA
-- Burmese (`my`) test row 202 was released without its question and is skipped, so Burmese has 399 questions
-- The Hungarian rows name their subject in Hungarian; few-shot examples are matched on the English subject in
-  `sample_id` instead, which every row carries
-- Welsh (`cy`) is released without a `dev` split, so it is always evaluated zero-shot
+- Version 3.0 evaluates 9,199 questions after skipping one blank Burmese question. The paper covers the first 15 languages.
+- Welsh uses zero-shot because its release has no `dev` split.
 
 ## Evaluation Notes
 {COMMON_NOTES}""",
@@ -273,7 +254,7 @@ culturally sensitive (CS) and 200 culturally agnostic (CA) MMLU questions in eac
         dataset_id='CohereLabs/Global-MMLU-Lite',
         hf_dataset_id='CohereLabs/Global-MMLU-Lite',
         metric_list=['acc'],
-        primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'cultural_sensitivity': 'all'}),
+        primary_metric=OVERALL_ACCURACY,
         subset_list=list(GLOBAL_MMLU_LITE_LANGUAGES),
         few_shot_num=5,
         allowed_few_shot_nums=(0, 1, 2, 3, 4, 5),
