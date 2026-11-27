@@ -237,6 +237,9 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
     if doc_eval_type := getattr(adapter_cls, 'doc_eval_type', None):
         adapter_meta['eval_type'] = doc_eval_type
         adapter_meta['requires_local_dataset'] = getattr(adapter_cls, 'requires_local_dataset', False)
+    if doc_dataset_hub := getattr(adapter_cls, 'doc_dataset_hub', None):
+        adapter_meta['dataset_hub'] = doc_dataset_hub
+        adapter_meta['dataset_id'] = meta.dataset_source.resolve_dataset_id(doc_dataset_hub)
     return adapter_meta
 
 

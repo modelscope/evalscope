@@ -112,6 +112,7 @@
  "global_mmlu": "evalscope.benchmarks.global_mmlu.global_mmlu_adapter",
  "global_mmlu_lite": "evalscope.benchmarks.global_mmlu.global_mmlu_adapter",
  "gpqa_diamond": "evalscope.benchmarks.gpqa.gpqa_adapter",
+ "graphwalks": "evalscope.benchmarks.graphwalks.graphwalks_adapter",
  "gsm8k": "evalscope.benchmarks.gsm8k.gsm8k_adapter",
  "gsm8k_indic": "evalscope.benchmarks.gsm8k_indic.gsm8k_indic_adapter",
  "gsm8k_v": "evalscope.benchmarks.gsm8k_v.gsm8k_v_adapter",

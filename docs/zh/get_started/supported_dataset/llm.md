@@ -76,6 +76,7 @@
 | `global_mmlu` | [Global-MMLU](../../benchmarks/global_mmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `global_mmlu_lite` | [Global-MMLU-Lite](../../benchmarks/global_mmlu_lite.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `gpqa_diamond` | [GPQA-Diamond](../../benchmarks/gpqa_diamond.md) | `Knowledge`, `MCQ` |
+| `graphwalks` | [GraphWalks](../../benchmarks/graphwalks.md) | `LongContext`, `Reasoning` |
 | `gsm8k` | [GSM8K](../../benchmarks/gsm8k.md) | `Math`, `Reasoning` |
 | `gsm8k_indic` | [GSM8K-Indic](../../benchmarks/gsm8k_indic.md) | `Math`, `MultiLingual`, `Reasoning` |
 | `halueval` | [HaluEval](../../benchmarks/halueval.md) | `Hallucination`, `Knowledge`, `Yes/No` |
@@ -256,6 +257,7 @@
 ../../benchmarks/global_mmlu.md
 ../../benchmarks/global_mmlu_lite.md
 ../../benchmarks/gpqa_diamond.md
+../../benchmarks/graphwalks.md
 ../../benchmarks/gsm8k.md
 ../../benchmarks/gsm8k_indic.md
 ../../benchmarks/halueval.md

@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "pretty_name": "GraphWalks",
+    "dataset_id": "openai/graphwalks",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "LongContext"
+    ],
+    "metrics": [
+      "f1",
+      "precision",
+      "recall"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "bfs",
+      "parents"
+    ],
+    "description": "\n## Overview\n\nGraphWalks is OpenAI's long-context graph reasoning benchmark. Models receive a directed graph's edge list and return the nodes resulting from a graph operation.\n\n## Task Description\n\n- **Task Type**: Graph traversal and parent-node retrieval\n- **Input**: The official user prompt, including three demonstrations, a directed edge list, and an operation\n- **Output**: A final line containing `Final Answer: [node1, node2, ...]`\n- **Domain**: Long-context reasoning over graphs\n\n## Key Features\n\n- All 1,150 examples from both official Parquet files: `graphwalks_128k_and_shorter.parquet` and `graphwalks_256k_to_1mil.parquet`.\n- Separate `bfs` (breadth-first search) and `parents` result subsets.\n- MIT-licensed data pinned to revision `be6cc6ecf9b4d495b07d1ff53d2a16598e90fed7`, including the February 2026 parent-answer corrections and clarified BFS prompts.\n- Prompts pass through unchanged. `few_shot_num=0` means no additional demonstrations; the published prompts already contain three.\n\n## Evaluation Notes\n\n- Use `--dataset-hub huggingface` to load the official dataset. The evaluation split is `train`; both files are loaded by the standard dataset loader. No ModelScope mirror is declared.\n- Primary metric: mean per-example **F1**, with mean per-example **precision** and **recall**. Overall results weight task subsets by their sample counts, rather than pooling node counts.\n- Extraction and scoring follow the [pinned OpenAI reference](https://huggingface.co/datasets/openai/graphwalks/blob/be6cc6ecf9b4d495b07d1ff53d2a16598e90fed7/README.md). Node order and duplicates do not affect scores.\n- Only the literal last line is parsed, using a case-sensitive `Final Answer:` substring and a greedy bracket match. Trailing newlines fail parsing; node quotes are not removed. No response cleanup is enabled by default.\n- A successfully parsed empty list against an empty target scores 1 on all metrics. Parse failures score 0, including against an empty target, and remain in the denominator.\n- Real-model runs require long-context inference: the files cover nominal contexts through 1M tokens, and prompts can exceed 1.7 million characters. Character counts are not token counts. Check the model's tokenizer, chat-template overhead, input limit, and output-token headroom before running. The adapter does not truncate prompts; configure the backend to reject over-context requests and report failed or omitted samples when comparing results.\n- No GPU, judge, or paid API is needed for the tests. Offline scoring and mocked end-to-end checks: `pytest tests/benchmark/test_graphwalks.py`. Full official-data verification (downloads about 319 MB on first use): `EVALSCOPE_GRAPHWALKS_DOWNLOAD=1 pytest tests/benchmark/test_graphwalks.py -k official_dataset`.\n- A small live-data pipeline smoke run is `evalscope eval --datasets graphwalks --dataset-hub huggingface --model dummy --eval-type mock_llm --limit 1`. The limit applies per task subset; mock scores do not measure model quality.\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "f1",
+      "aggregation": null,
+      "dimensions": {}
+    },
+    "dataset_hub": "huggingface"
+  },
+  "statistics": {
+    "total_samples": 1150,
+    "subset_stats": [
+      {
+        "name": "bfs",
+        "sample_count": 550,
+        "prompt_length_mean": 437486.04,
+        "prompt_length_min": 2788,
+        "prompt_length_max": 1748364,
+        "prompt_length_std": 637017.5,
+        "target_length_mean": 3947.77
+      },
+      {
+        "name": "parents",
+        "sample_count": 600,
+        "prompt_length_mean": 401252.79,
+        "prompt_length_min": 2709,
+        "prompt_length_max": 1748284,
+        "prompt_length_std": 621549.86,
+        "target_length_mean": 40.61
+      }
+    ],
+    "prompt_length": {
+      "mean": 418581.74,
+      "min": 2709,
+      "max": 1748364,
+      "std": 628981.22
+    },
+    "target_length_mean": 1909.25,
+    "computed_at": "2026-11-27T20:00:57.237744"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "35942846",
+          "content": "\nYou will be given a graph as a list of directed edges. All nodes are at least degree 1. You will also get a description of an operation to perform on the graph.\nYour job is to execute the operation on the graph and return the set of nodes th ... [TRUNCATED 2304 chars] ... ne of your response. For example, if the operation returns the set of nodes [node1, node2, node3], your response should be:\nFinal Answer: [node1, node2, node3]\nIf the operation returns the empty set, your response should be:\nFinal Answer: []\n"
+        }
+      ],
+      "target": "[]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "bfs",
+      "metadata": {
+        "problem_type": "bfs",
+        "prompt_chars": 2650
+      }
+    },
+    "subset": "bfs",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# GraphWalks\n\n\n## Overview\n\nGraphWalks is OpenAI's long-context graph reasoning benchmark. Models receive a directed graph's edge list and return the nodes resulting from a graph operation.\n\n## Task Description\n\n- **Task Type**: Graph traversal and parent-node retrieval\n- **Input**: The official user prompt, including three demonstrations, a directed edge list, and an operation\n- **Output**: A final line containing `Final Answer: [node1, node2, ...]`\n- **Domain**: Long-context reasoning over graphs\n\n## Key Features\n\n- All 1,150 examples from both official Parquet files: `graphwalks_128k_and_shorter.parquet` and `graphwalks_256k_to_1mil.parquet`.\n- Separate `bfs` (breadth-first search) and `parents` result subsets.\n- MIT-licensed data pinned to revision `be6cc6ecf9b4d495b07d1ff53d2a16598e90fed7`, including the February 2026 parent-answer corrections and clarified BFS prompts.\n- Prompts pass through unchanged. `few_shot_num=0` means no additional demonstrations; the published prompts already contain three.\n\n## Evaluation Notes\n\n- Use `--dataset-hub huggingface` to load the official dataset. The evaluation split is `train`; both files are loaded by the standard dataset loader. No ModelScope mirror is declared.\n- Primary metric: mean per-example **F1**, with mean per-example **precision** and **recall**. Overall results weight task subsets by their sample counts, rather than pooling node counts.\n- Extraction and scoring follow the [pinned OpenAI reference](https://huggingface.co/datasets/openai/graphwalks/blob/be6cc6ecf9b4d495b07d1ff53d2a16598e90fed7/README.md). Node order and duplicates do not affect scores.\n- Only the literal last line is parsed, using a case-sensitive `Final Answer:` substring and a greedy bracket match. Trailing newlines fail parsing; node quotes are not removed. No response cleanup is enabled by default.\n- A successfully parsed empty list against an empty target scores 1 on all metrics. Parse failures score 0, including against an empty target, and remain in the denominator.\n- Real-model runs require long-context inference: the files cover nominal contexts through 1M tokens, and prompts can exceed 1.7 million characters. Character counts are not token counts. Check the model's tokenizer, chat-template overhead, input limit, and output-token headroom before running. The adapter does not truncate prompts; configure the backend to reject over-context requests and report failed or omitted samples when comparing results.\n- No GPU, judge, or paid API is needed for the tests. Offline scoring and mocked end-to-end checks: `pytest tests/benchmark/test_graphwalks.py`. Full official-data verification (downloads about 319 MB on first use): `EVALSCOPE_GRAPHWALKS_DOWNLOAD=1 pytest tests/benchmark/test_graphwalks.py -k official_dataset`.\n- A small live-data pipeline smoke run is `evalscope eval --datasets graphwalks --dataset-hub huggingface --model dummy --eval-type mock_llm --limit 1`. The limit applies per task subset; mock scores do not measure model quality.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `graphwalks` |\n| **Dataset ID** | [openai/graphwalks](https://huggingface.co/datasets/openai/graphwalks) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `Reasoning` |\n| **Metrics** | `f1`, `precision`, `recall` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,150 |\n| Prompt Length (Mean) | 418581.74 chars |\n| Prompt Length (Min/Max) | 2709 / 1748364 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `bfs` | 550 | 437486.04 | 2788 | 1748364 |\n| `parents` | 600 | 401252.79 | 2709 | 1748284 |\n\n## Sample Example\n\n**Subset**: `bfs`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"35942846\",\n      \"content\": \"\\nYou will be given a graph as a list of directed edges. All nodes are at least degree 1. You will also get a description of an operation to perform on the graph.\\nYour job is to execute the operation on the graph and return the set of nodes th ... [TRUNCATED 2304 chars] ... ne of your response. For example, if the operation returns the set of nodes [node1, node2, node3], your response should be:\\nFinal Answer: [node1, node2, node3]\\nIf the operation returns the empty set, your response should be:\\nFinal Answer: []\\n\"\n    }\n  ],\n  \"target\": \"[]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"bfs\",\n  \"metadata\": {\n    \"problem_type\": \"bfs\",\n    \"prompt_chars\": 2650\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets graphwalks \\\n    --dataset-hub huggingface \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['graphwalks'],\n    dataset_hub='huggingface',\n    dataset_args={\n        'graphwalks': {\n            # subset_list: ['bfs', 'parents']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "6c19a6508d96a43893bd40bfb6d182ab",
+    "needs_translation": true
+  },
+  "updated_at": "2026-11-27T20:00:57.535156"
+}
