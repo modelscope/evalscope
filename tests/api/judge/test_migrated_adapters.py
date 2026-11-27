@@ -7,6 +7,7 @@ from typing import Any, List
 import pytest
 from PIL import Image
 
+from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
@@ -14,6 +15,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.mt_bench.mt_bench_adapter import MTBenchAdapter
 from evalscope.benchmarks.prbench.prbench_adapter import PRBenchAdapter
+from evalscope.benchmarks.project_eval.project_eval_adapter import ProjectEvalAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeScoreType, ScoreStatus
 from evalscope.metrics.judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE
@@ -841,6 +843,72 @@ def test_mm_safetybench_invalid_judge_reply_excludes_the_sample(reply: str) -> N
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}
     assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+class TransportFailingProjectEvalJudge(ScriptedJudge):
+    def generate(self, messages):
+        self.calls.append(messages)
+        raise RuntimeError('judge transport unavailable')
+
+
+def _project_eval_state(tmp_path: Path, judge: Any) -> tuple[ProjectEvalAdapter, TaskState]:
+    (tmp_path / 'state.json').write_text(json.dumps({'ok': True}), encoding='utf-8')
+    config = TaskConfig(
+        model='m',
+        eval_type='mock_llm',
+        datasets=['project_eval'],
+        judge={'strategy': 'llm', 'models': [{'model_id': 'scripted'}]},
+        work_dir=str(tmp_path / 'evaluation'),
+    )
+    adapter = ProjectEvalAdapter(
+        benchmark_meta=BenchmarkMeta(name='project_eval', dataset_id='project_eval'),
+        task_config=config,
+    )
+    sample = adapter.record_to_sample({
+        'id': 't1',
+        'question': '查余额',
+        'reference_answer': '余额 2000 元',
+        'expected_facts': ['2000 元'],
+        'rubric': [{
+            'id': 'c1',
+            'criterion': '回答余额正确',
+            'weight': 1,
+            'must_pass': True,
+            'evidence_requirement': 'answer',
+        }],
+        'checks': [{
+            'id': 'state-1',
+            'type': 'json_path',
+            'path': 'state.json',
+            'json_path': 'ok',
+            'expect': True,
+        }],
+        'exec': {'type': 'agent_api', 'protocol': 'rest_steps', 'trace': {'mode': 'auto'}},
+        'metadata': {},
+    })
+    sample.metadata['project_root'] = str(tmp_path)
+    adapter.llm_judge = judge
+    state = TaskState(
+        model='m',
+        sample=sample,
+        output=ModelOutput.from_content('m', '余额 2000 元'),
+        completed=True,
+    )
+    return adapter, state
+
+
+@pytest.mark.parametrize('reply', ['not JSON', '{"criteria_met": "maybe"}'])
+def test_project_eval_invalid_judge_reply_excludes_the_sample(tmp_path: Path, reply: str) -> None:
+    adapter, state = _project_eval_state(tmp_path, ScriptedJudge([reply]))
+    score = adapter.calculate_metrics(state).score
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+def test_project_eval_transport_failure_excludes_the_sample(tmp_path: Path) -> None:
+    adapter, state = _project_eval_state(tmp_path, TransportFailingProjectEvalJudge([]))
+    score = adapter.calculate_metrics(state).score
+    assert score.status is ScoreStatus.EXCLUDED
 
 
 def test_mm_safetybench_transport_failure_excludes_the_sample() -> None:

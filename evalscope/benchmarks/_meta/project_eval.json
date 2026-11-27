@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "pretty_name": "Project Eval",
+    "dataset_id": "project_eval",
+    "paper_url": null,
+    "tags": [],
+    "metrics": [
+      "task_pass",
+      "rubric_score",
+      "evidence_coverage"
+    ],
+    "few_shot_num": 0,
+    "eval_split": null,
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "## Overview\nEvaluate externally generated business-agent eval sets with rubric judging and read-only end-state checks.\n\n## Task Description\n- **Task Type**: Business-agent conversation with optional multi-turn user scripts.\n- **Input**: A JSONL task with a question or messages, reference answer, rubric and read-only checks.\n- **Output**: Agent reply, trace, rubric verdicts and end-state check evidence.\n- **Domain**: Enterprise business agents with local or remote business state.\n\n## Key Features\n- Consumes externally authored eval sets; EvalScope does not read project source.\n- Supports SQLite, HTTP/JSON, JSON file and file checks.\n- Supports L0 and L2 inline trace; process criteria are not evaluable without trace.\n\n## Evaluation Notes\n- Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.\n- Checks are read-only; a failed must-pass outcome check short-circuits the task.\n- The feature is gated behind the project_eval service flags.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "agent",
+    "primary_metric": {
+      "name": "task_pass",
+      "aggregation": "mean",
+      "dimensions": {}
+    },
+    "requires_judge": true
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# Project Eval\n\n## Overview\nEvaluate externally generated business-agent eval sets with rubric judging and read-only end-state checks.\n\n## Task Description\n- **Task Type**: Business-agent conversation with optional multi-turn user scripts.\n- **Input**: A JSONL task with a question or messages, reference answer, rubric and read-only checks.\n- **Output**: Agent reply, trace, rubric verdicts and end-state check evidence.\n- **Domain**: Enterprise business agents with local or remote business state.\n\n## Key Features\n- Consumes externally authored eval sets; EvalScope does not read project source.\n- Supports SQLite, HTTP/JSON, JSON file and file checks.\n- Supports L0 and L2 inline trace; process criteria are not evaluable without trace.\n\n## Evaluation Notes\n- Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.\n- Checks are read-only; a failed must-pass outcome check short-circuits the task.\n- The feature is gated behind the project_eval service flags.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `project_eval` |\n| **Dataset ID** | `project_eval` |\n| **Paper** | N/A |\n| **Tags** | N/A |\n| **Metrics** | `task_pass`, `rubric_score`, `evidence_coverage` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `N/A` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets project_eval \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['project_eval'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "1960e64ba6c5f1e996f17067af76e426",
+    "needs_translation": true
+  },
+  "updated_at": "2026-11-27T01:24:00.107961"
+}
