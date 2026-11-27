@@ -5,7 +5,17 @@ the `project_eval` benchmark. Generation and execution are separate: the eval
 set is authored outside EvalScope, and EvalScope does not read the project source
 tree.
 
-## Run through TaskConfig
+## Four-step walkthrough
+
+### 1. JSONL input
+
+Each line is one task:
+
+```json
+{"id":"refund-001","question":"把充值款退 45 元，先预览。","messages":[{"role":"user","content":"把充值款退 45 元，先预览。"},{"role":"user","content":"确认"}],"reference_answer":"退款 45 元，余额 1955 元。","rubric":[{"id":"c1","criterion":"存在一次已确认的 45 元退款","weight":1,"must_pass":true,"evidence_requirement":"outcome"},{"id":"c2","criterion":"回答完成预览/确认流程，不编造金额","weight":2,"must_pass":false,"evidence_requirement":"answer"}],"checks":[{"id":"audit-1","type":"sqlite","dsn":"agent.db","query":"select count(*) from agent_audit_log where session_id='refund-001' and confirmed=1","expect":1}],"exec":{"type":"agent_api","protocol":"rest_steps","agent_url_env":"EVAL_AGENT_URL","reset_url":"http://127.0.0.1:9201/v1/eval/reset","trace":{"mode":"auto"},"session":{"id_from":"sample_id"}}}
+```
+
+Run it through `TaskConfig`:
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -19,6 +29,8 @@ run_task(TaskConfig(
             'local_path': '/path/eval_set.v1.jsonl',
             'project_root': '/path/runtime-state',
             'agent_url': 'http://127.0.0.1:8080',
+            # Optional: explicitly trust a non-loopback read-only state API.
+            'check_url_prefixes': ['https://agent.company.com'],
         },
     },
     judge={
@@ -33,41 +45,69 @@ run_task(TaskConfig(
 ))
 ```
 
-`local_path` is the JSONL file, `project_root` is the runtime state directory
-that contains the business DB/files used by end-state checks, and `agent_url`
-is the business Agent called by EvalScope. Relative check paths resolve against
-`project_root`.
+`project_root` is the runtime state directory; relative check paths resolve
+against it. `check_url_prefixes` is empty by default, so HTTP checks are limited
+to loopback; add a trusted prefix when the business state API is deployed
+separately.
 
-## Contract
+### 2. Agent call
 
-Each JSONL task contains a question or user-only `messages`, a reference
-answer, expected/forbidden facts, rubric criteria, read-only checks and an
-`exec` envelope. Checks can query SQLite, HTTP/JSON, a JSON file or a file;
-`http` checks allow GET/HEAD only.
+For `exec.type: agent_api`, EvalScope calls:
 
-- A `must_pass` outcome criterion with any failed check zeroes the task.
-- Otherwise the rubric is judged; `task_pass` requires every `must_pass`
-  criterion and `rubric_score >= pass_threshold`.
-- End-state checks run immediately after the Agent call and are saved with the
-  prediction. Cached `rerun_review` reuses that saved evidence; it does not
-  re-read live business state.
-- Metrics are `task_pass`, `rubric_score` and `evidence_coverage`.
+```http
+POST {agent_url}/v1/eval/chat
+Content-Type: application/json
 
-## Boundaries
+{"session_id":"refund-001","message":"把充值款退 45 元，先预览。"}
+```
 
-- This change adds the core contract, Agent clients, checks, judge and report
-  path. The Eval Sets management API/dashboard and the generation skill are
-  follow-ups.
-- L0 and L2 inline trace are supported; `trace.mode=fetch` (L1) is not
-  implemented and is rejected.
-- Process criteria are `not_evaluable` when the Agent returns no trace.
+The response needs a string `reply`; `steps` / `tool_calls` optionally carry
+inline tool calls. For `exec.type: http`, the configured request is sent
+directly and its JSON body becomes the state. A loopback `reset_url` is called
+before each task to restore the seed state.
+
+### 3. Saved end-state evidence
+
+Immediately after the Agent call, EvalScope runs every read-only check and
+writes the structured results into the prediction metadata:
+
+```text
+predictions/*.jsonl
+  └── metadata.runtime_checks[]
+        ├── check_id
+        ├── ok
+        ├── evidence   # SQL rows, HTTP/JSON value, file path, ...
+        └── error
+```
+
+`judge_definition()` reads `metadata.runtime_checks`; it does not re-read live
+business state. A cached `rerun_review` therefore uses the evidence captured
+with that Agent run. If a prediction has no saved checks, review fails loudly
+instead of silently scoring a different state.
+
+### 4. Report
+
+The aggregate report contains `task_pass`, `rubric_score` and
+`evidence_coverage`. Per-sample rubric verdicts and check evidence are written
+to `reviews/*.jsonl` and are part of the report artifacts; the management UI
+that renders them is a follow-up. The summary is not a substitute for the
+per-sample evidence.
+
+## Contract and limits
+
+- Checks are read-only and support files, SQLite, JSON and HTTP/JSON; `http`
+  checks allow GET/HEAD only.
+- A task with a `must_pass` outcome criterion fails when any of its checks
+  fails; include only checks that must pass for the outcome.
+- L0 and L2 inline trace are supported. `trace.mode` accepts `auto`, `inline`
+  and `none`; L1 (`fetch` an external trace store) is a follow-up and is not
+  accepted by the schema.
+- Process criteria are `not_evaluable` when the Agent returns no trace; a
+  `must_pass` process criterion marks the run `needs_review` without failing it.
 - Generation, task/Rubric editing and versioning stay outside EvalScope. The
   Judge sees the reference answer, expected/forbidden facts, rubric criteria and
   check evidence, not raw source.
-
-## Generator
-
-The external coding-agent skill
-[evalscope-evalgen](https://github.com/frostloom/evalgen-skill) scans a project,
-generates and validates the JSONL, and can dry-run it against the Agent. Its
-automatic import needs the Eval Sets management follow-up.
+- The external coding-agent skill
+  [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) generates and
+  validates the JSONL and can dry-run it against the Agent. Its automatic import
+  needs the Eval Sets management follow-up.

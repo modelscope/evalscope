@@ -62,7 +62,14 @@ def test_l2_turn_produces_trace_events():
     turn = AgentTurn(
         reply='余额 2000 元',
         trace_id='tr-1',
-        steps=[AgentStep('tool', 'get_balance', {}, {'balance_cent': 200000}, 12.0, {})],
+        steps=[AgentStep(
+            type='tool',
+            name='get_balance',
+            arguments={},
+            result={'balance_cent': 200000},
+            elapsed_ms=12.0,
+            raw={},
+        )],
         state={'balance_cent': 200000},
         usage={'total_tokens': 20},
         trace_available=True,

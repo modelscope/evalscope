@@ -16,8 +16,7 @@ Evaluate externally generated business-agent eval sets with rubric judging and r
 
 ## Evaluation Notes
 - Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.
-- Checks are read-only; a failed must-pass outcome check short-circuits the task.
-- The feature is gated behind the project_eval service flags.
+- Checks are read-only; any failed check fails a task that carries a must-pass outcome criterion.
 
 
 ## Properties

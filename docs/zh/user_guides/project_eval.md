@@ -3,7 +3,17 @@
 EvalScope 可以通过 `project_eval` benchmark 执行外部生成的业务 Agent 评测集。
 生成与执行是分开的：评测集在 EvalScope 外部编写，EvalScope 不读取项目源码树。
 
-## 通过 TaskConfig 运行
+## 四步流程
+
+### 1. JSONL 输入
+
+每行一个任务：
+
+```json
+{"id":"refund-001","question":"把充值款退 45 元，先预览。","messages":[{"role":"user","content":"把充值款退 45 元，先预览。"},{"role":"user","content":"确认"}],"reference_answer":"退款 45 元，余额 1955 元。","rubric":[{"id":"c1","criterion":"存在一次已确认的 45 元退款","weight":1,"must_pass":true,"evidence_requirement":"outcome"},{"id":"c2","criterion":"回答完成预览/确认流程，不编造金额","weight":2,"must_pass":false,"evidence_requirement":"answer"}],"checks":[{"id":"audit-1","type":"sqlite","dsn":"agent.db","query":"select count(*) from agent_audit_log where session_id='refund-001' and confirmed=1","expect":1}],"exec":{"type":"agent_api","protocol":"rest_steps","agent_url_env":"EVAL_AGENT_URL","reset_url":"http://127.0.0.1:9201/v1/eval/reset","trace":{"mode":"auto"},"session":{"id_from":"sample_id"}}}
+```
+
+通过 `TaskConfig` 运行：
 
 ```python
 from evalscope import TaskConfig, run_task
@@ -17,6 +27,8 @@ run_task(TaskConfig(
             'local_path': '/path/eval_set.v1.jsonl',
             'project_root': '/path/runtime-state',
             'agent_url': 'http://127.0.0.1:8080',
+            # 可选：显式信任一个非 loopback 的只读状态 API。
+            'check_url_prefixes': ['https://agent.company.com'],
         },
     },
     judge={
@@ -31,33 +43,57 @@ run_task(TaskConfig(
 ))
 ```
 
-`local_path` 是 JSONL 文件，`project_root` 是存放业务数据库/文件的运行时状态目录，
-`agent_url` 是 EvalScope 调用的业务 Agent。相对检查路径按 `project_root` 解析。
+`project_root` 是运行时状态目录，相对检查路径按它解析。`check_url_prefixes`
+默认为空，HTTP 检查只允许 loopback；业务状态 API 分开部署时再显式加入可信前缀。
 
-## 契约
+### 2. Agent 调用
 
-每个 JSONL 任务包含问题或仅 user 的 `messages`、参考答案、预期/禁止事实、
-rubric、只读检查和 `exec` 包络。检查可以查询 SQLite、HTTP/JSON、JSON 文件或
-普通文件；`http` 检查只允许 GET/HEAD。
+`exec.type: agent_api` 时，EvalScope 调用：
 
-- `must_pass` 的 outcome criterion 只要有检查失败，任务直接判 0。
-- 否则进入 rubric 裁判；`task_pass` 要求所有 `must_pass` 命中且
-  `rubric_score >= pass_threshold`。
-- 终态检查在 Agent 调用后立即执行并随预测保存；缓存 `rerun_review` 复用保存的
-  证据，不会重新读取实时业务状态。
-- 指标是 `task_pass`、`rubric_score` 和 `evidence_coverage`。
+```http
+POST {agent_url}/v1/eval/chat
+Content-Type: application/json
 
-## 边界
+{"session_id":"refund-001","message":"把充值款退 45 元，先预览。"}
+```
 
-- 这次改动只包含核心契约、Agent 客户端、检查、裁判和报告路径。Eval Sets 管理
-  API/面板和生成 skill 是后续改动。
-- 支持 L0 和 L2 inline trace；本版本不实现 `trace.mode=fetch`（L1），会直接报错。
-- Agent 不返回 trace 时，process 类判据为 `not_evaluable`。
+响应需要字符串 `reply`；`steps` / `tool_calls` 可选携带内联工具调用。
+`exec.type: http` 直接发送配置的请求，响应 JSON 作为状态。每个任务前会调用
+loopback `reset_url` 恢复 seed 状态。
+
+### 3. 保存终态证据
+
+Agent 调用后，EvalScope 立即执行所有只读检查，把结构化结果写入预测 metadata：
+
+```text
+predictions/*.jsonl
+  └── metadata.runtime_checks[]
+        ├── check_id
+        ├── ok
+        ├── evidence   # SQL rows、HTTP/JSON 值、文件路径等
+        └── error
+```
+
+`judge_definition()` 读取 `metadata.runtime_checks`，不再重新读取实时业务状态。
+因此缓存 `rerun_review` 使用的是该次 Agent 运行保存的证据。预测里没有保存检查时，
+review 会明确失败，而不是静默按另一份状态打分。
+
+### 4. 报告
+
+汇总报告包含 `task_pass`、`rubric_score` 和 `evidence_coverage`。逐题 rubric
+verdicts 和检查证据写入 `reviews/*.jsonl`，属于报告产物；渲染它们的 Web 管理页
+是后续改动。汇总指标不能替代逐题证据。
+
+## 契约与限制
+
+- 检查只读，支持文件、SQLite、JSON 和 HTTP/JSON；`http` 检查只允许 GET/HEAD。
+- 带 `must_pass` outcome criterion 的任务，只要任意检查失败就判失败；只放必须通过的检查。
+- 支持 L0 和 L2 inline trace；`trace.mode` 接受 `auto`、`inline`、`none`；
+  L1（从外部 trace 系统 fetch）是后续改动，schema 不接受。
+- Agent 不返回 trace 时，process 类判据为 `not_evaluable`；`must_pass` 的
+  process 判据把本次运行标记为 `needs_review`，但不会直接判失败。
 - 题目生成、题目/Rubric 编辑和版本管理仍在 EvalScope 外部。Judge 看到的是参考
   答案、预期/禁止事实、rubric 和检查证据，不会看到原始源码。
-
-## 生成器
-
-外部编码 Agent skill
-[evalscope-evalgen](https://github.com/frostloom/evalgen-skill) 可以扫描项目、
-生成并校验 JSONL，并对 Agent 做 dry-run。自动导入依赖后续的 Eval Sets 管理改动。
+- 外部编码 Agent skill
+  [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) 负责生成并校验
+  JSONL、对 Agent 做 dry-run；自动导入依赖后续的 Eval Sets 管理改动。

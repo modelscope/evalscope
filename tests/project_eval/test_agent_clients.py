@@ -7,7 +7,7 @@ from evalscope.benchmarks.project_eval.agent_clients import (
     RestStepsClient,
     detect_capability,
 )
-from evalscope.project_eval.schema import EvalTask
+from evalscope.project_eval.schema import EvalTask, HttpRequestSpec
 
 TASK = EvalTask.model_validate({
     'id': 't1',
@@ -96,7 +96,7 @@ def test_http_task_client_returns_state():
             'url': url,
             'method': method,
         },
-    ).call({'method': 'POST', 'path': '/release', 'json': {'id': 'doc-1'}})
+    ).call(HttpRequestSpec(method='POST', path='/release', json_body={'id': 'doc-1'}))
     assert turn.reply == 'ok'
     assert turn.state['status'] == 'published'
     assert turn.trace_available is False

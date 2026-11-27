@@ -1,12 +1,16 @@
 import json
 import sqlite3
 
+import pytest
+
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.evaluator import TaskState
+from evalscope.api.evaluator.cache import ModelResult
 from evalscope.api.judge import CaseVerdict, JudgeContext
 from evalscope.api.model import ModelOutput
-from evalscope.benchmarks.project_eval.agent_clients import AgentTurn
+from evalscope.benchmarks.project_eval.agent_clients import AgentProtocolError, AgentTurn
 from evalscope.benchmarks.project_eval.project_eval_adapter import ProjectEvalAdapter, RubricVerdict
+from evalscope.project_eval.checks import run_checks
 
 META = BenchmarkMeta(name='project_eval', dataset_id='project_eval')
 
@@ -38,6 +42,11 @@ ROW = {
 }
 
 
+def _attach_checks(adapter, sample, root):
+    task = adapter._task_from_metadata(sample.metadata)
+    sample.metadata['runtime_checks'] = [result.model_dump() for result in run_checks(task, root)]
+
+
 def context(tmp_path, balance, trace_available=False):
     (tmp_path / 'state.json').write_text(json.dumps({'balance_cent': balance}))
     adapter = ProjectEvalAdapter(benchmark_meta=META, task_config=None)
@@ -55,6 +64,7 @@ def context(tmp_path, balance, trace_available=False):
         trace = AgentTrace(events=[])
         trace.add_event(step=1, type=EventType.TOOL_CALL, payload={'tool': 'get_balance'})
         state.agent_trace = trace
+    _attach_checks(adapter, sample, tmp_path)
     return adapter, JudgeContext(
         task_state=state,
         original_prediction='余额 2000 元',
@@ -101,6 +111,7 @@ def _definition_with(tmp_path, rubric, *, threshold=0.6, trace_available=False):
         trace = AgentTrace(events=[])
         trace.add_event(step=1, type=EventType.TOOL_CALL, payload={'tool': 'get_balance'})
         state.agent_trace = trace
+    _attach_checks(adapter, sample, tmp_path)
     ctx = JudgeContext(task_state=state, original_prediction='余额 2000 元',
                        filtered_prediction='余额 2000 元', reference='')
     return adapter.judge_definition(ctx), ctx
@@ -192,6 +203,7 @@ def test_judge_request_includes_reference_and_expected_facts(tmp_path):
     state = TaskState(model='m', sample=sample,
                       output=ModelOutput.from_content(model='m', content='余额 2000 元'),
                       completed=True)
+    _attach_checks(adapter, sample, tmp_path)
     ctx = JudgeContext(task_state=state, original_prediction='余额 2000 元',
                        filtered_prediction='余额 2000 元', reference='')
     definition = adapter.judge_definition(ctx)
@@ -253,20 +265,29 @@ def test_cached_review_uses_saved_end_state_checks(tmp_path):
     )
     assert first.value['task_pass'] == 1.0
     saved_checks = list(sample.metadata['runtime_checks'])
+    cached = ModelResult.from_task_state(state)
+    assert cached.metadata['runtime_checks'] == saved_checks
+    cached.index = 0
+    restored = cached.to_task_state([sample])
+    cached_ctx = JudgeContext(
+        task_state=restored,
+        original_prediction=result.output.completion,
+        filtered_prediction=result.output.completion,
+        reference='',
+    )
 
     connection = sqlite3.connect(db)
     connection.execute('delete from agent_audit_log')
     connection.commit()
     connection.close()
 
-    second = adapter.judge_definition(ctx).reduce(
+    second = adapter.judge_definition(cached_ctx).reduce(
         [CaseVerdict(case_id='c1', value=RubricVerdict(criteria_met=True))],
-        ctx,
+        cached_ctx,
     )
     assert second.value['task_pass'] == 1.0
     assert second.metadata['checks'] == saved_checks
 
     sample.metadata.pop('runtime_checks')
-    live = adapter.judge_definition(ctx)
-    assert live.immediate_score is not None
-    assert live.immediate_score.value['task_pass'] == 0.0
+    with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
+        adapter.judge_definition(ctx)

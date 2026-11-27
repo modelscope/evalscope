@@ -53,31 +53,61 @@ class CheckSpec(BaseModel):
         return self
 
 
+class HttpRequestSpec(BaseModel):
+    model_config = ConfigDict(extra='forbid', populate_by_name=True)
+
+    method: str = 'POST'
+    path: str = ''
+    json_body: dict[str, Any] = Field(default_factory=dict, alias='json')
+
+
+class SessionConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    id_from: Literal['sample_id'] = 'sample_id'
+
+
+class MessageSpec(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    role: Literal['user'] = 'user'
+    content: str
+
+
 class TraceConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    mode: Literal['auto', 'inline', 'fetch', 'none'] = 'auto'
-    endpoint: str = ''
-    header: str = 'traceparent'
+    mode: Literal['auto', 'inline', 'none'] = 'auto'
 
 
 class ExecSpec(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     type: Literal['agent_api', 'http'] = 'agent_api'
-    protocol: Literal['rest_steps', 'otel', 'openai_compat'] = 'rest_steps'
+    protocol: Literal['rest_steps', 'openai_compat'] = 'rest_steps'
     agent_url_env: str = 'EVAL_AGENT_URL'
     base_url_env: str = 'EVAL_AGENT_URL'
     reset_url: str = ''
-    request: dict[str, Any] = Field(default_factory=dict)
+    request: HttpRequestSpec = Field(default_factory=HttpRequestSpec)
     trace: TraceConfig = Field(default_factory=TraceConfig)
-    session: dict[str, Any] = Field(default_factory=lambda: {'id_from': 'sample_id'})
+    session: SessionConfig = Field(default_factory=SessionConfig)
 
     @model_validator(mode='after')
     def _validate_request(self) -> 'ExecSpec':
-        if self.type == 'http' and not self.request.get('path'):
+        if self.type == 'http' and not self.request.path:
             raise ValueError('http exec requires request.path')
         return self
+
+
+class ProjectEvalRunConfig(BaseModel):
+    """Typed dataset_args.project_eval configuration for the adapter."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    local_path: str = ''
+    agent_url: str = ''
+    project_root: str = ''
+    check_url_prefixes: list[str] = Field(default_factory=list)
 
 
 class Material(BaseModel):
@@ -94,7 +124,7 @@ class EvalTask(BaseModel):
     version: int = Field(default=1, ge=1)
     question: str
     system: str = ''
-    messages: list[dict[str, Any]] = Field(default_factory=list)
+    messages: list[MessageSpec] = Field(default_factory=list)
     reference_answer: str = ''
     expected_facts: list[str] = Field(default_factory=list)
     forbidden_facts: list[str] = Field(default_factory=list)
@@ -140,8 +170,12 @@ __all__ = [
     'CheckSpec',
     'EvalTask',
     'ExecSpec',
+    'HttpRequestSpec',
     'Material',
+    'MessageSpec',
+    'ProjectEvalRunConfig',
     'RubricCriterion',
+    'SessionConfig',
     'TraceConfig',
     'load_eval_set',
 ]

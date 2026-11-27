@@ -1,53 +1,54 @@
 # Project Eval
 
-## Overview
-Evaluate externally generated business-agent eval sets with rubric judging and read-only end-state checks.
+## 概述
 
-## Task Description
-- **Task Type**: Business-agent conversation with optional multi-turn user scripts.
-- **Input**: A JSONL task with a question or messages, reference answer, rubric and read-only checks.
-- **Output**: Agent reply, trace, rubric verdicts and end-state check evidence.
-- **Domain**: Enterprise business agents with local or remote business state.
+评估外部生成的业务 Agent 评测集，使用 rubric 判定和只读终态检查。
 
-## Key Features
-- Consumes externally authored eval sets; EvalScope does not read project source.
-- Supports SQLite, HTTP/JSON, JSON file and file checks.
-- Supports L0 and L2 inline trace; process criteria are not evaluable without trace.
+## 任务描述
 
-## Evaluation Notes
-- Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.
-- Checks are read-only; a failed must-pass outcome check short-circuits the task.
-- The feature is gated behind the project_eval service flags.
+- **任务类型**：业务 Agent 对话，支持可选的 user 多轮脚本。
+- **输入**：包含问题或消息、参考答案、rubric 和只读检查的 JSONL 任务。
+- **输出**：Agent 回复、trace、rubric 判定和终态检查证据。
+- **领域**：拥有本地或远程业务状态的企业业务 Agent。
 
+## 主要特性
 
-## Properties
+- 消费外部编写的评测集；EvalScope 不读取项目源码。
+- 支持 SQLite、HTTP/JSON、JSON 文件和文件检查。
+- 支持 L0 和 L2 inline trace；没有 trace 时 process 判据不可评估。
 
-| Property | Value |
+## 评测说明
+
+- 指标：task_pass、rubric_score、evidence_coverage；task_pass 为主指标。
+- 检查只读；带 must-pass outcome criterion 的任务，任意检查失败即失败。
+
+## 属性
+
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `project_eval` |
-| **Dataset ID** | `project_eval` |
-| **Paper** | N/A |
-| **Tags** | N/A |
-| **Metrics** | `task_pass`, `rubric_score`, `evidence_coverage` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `N/A` |
+| **基准名称** | `project_eval` |
+| **数据集 ID** | `project_eval` |
+| **论文** | N/A |
+| **标签** | N/A |
+| **指标** | `task_pass`、`rubric_score`、`evidence_coverage` |
+| **默认 Shots** | 0-shot |
+| **评测 Split** | `N/A` |
 
+## 数据统计
 
-## Data Statistics
+*暂无统计数据。*
 
-*Statistics not available.*
+## 样本示例
 
-## Sample Example
+*暂无样本示例。*
 
-*Sample example not available.*
+## 提示模板
 
-## Prompt Template
+*未定义提示模板。*
 
-*No prompt template defined.*
+## 使用方式
 
-## Usage
-
-### Using CLI
+### CLI
 
 ```bash
 evalscope eval \
@@ -56,10 +57,10 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets project_eval \
     --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
-    --limit 10  # Remove this line for formal evaluation
+    --limit 10  # 正式评测时删除这一行
 ```
 
-### Using Python
+### Python
 
 ```python
 from evalscope import run_task
@@ -71,7 +72,7 @@ task_cfg = TaskConfig(
     api_key='EMPTY_TOKEN',
     datasets=['project_eval'],
     judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
-    limit=10,  # Remove this line for formal evaluation
+    limit=10,  # 正式评测时删除这一行
 )
 
 run_task(task_cfg=task_cfg)

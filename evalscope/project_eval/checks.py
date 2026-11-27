@@ -6,11 +6,11 @@ import json
 import os
 import sqlite3
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
 import requests
+from pydantic import BaseModel, ConfigDict, Field
 
 from .schema import CheckSpec, EvalTask
 
@@ -23,14 +23,17 @@ _SENSITIVE_NAMES = {
 _SENSITIVE_SUFFIXES = ('.pem', '.key', '.p12', '.pfx', '.kdbx')
 _SENSITIVE_PREFIXES = ('id_rsa', 'id_ed25519', 'id_ecdsa', 'credentials')
 _SENSITIVE_DIRS = {'.git', '.ssh', '.aws', '.gnupg', '.docker'}
-_DEFAULT_HTTP_PREFIXES = ('http://127.0.0.1', 'http://localhost')
+DEFAULT_HTTP_PREFIXES = ('http://127.0.0.1', 'http://localhost')
 
 
-@dataclass
-class CheckResult:
+class CheckResult(BaseModel):
+    """One read-only check result with evidence or an error."""
+
+    model_config = ConfigDict(extra='forbid')
+
     check_id: str
     ok: bool
-    evidence: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
 
 
@@ -81,16 +84,16 @@ def _json_path_value(document: Any, json_path: str) -> Any:
     return current
 
 
-def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str]) -> CheckResult:
+def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: tuple[str, ...]) -> CheckResult:
     started = time.perf_counter()
     try:
         if check.type in {'file_exists', 'file_content', 'json_path'}:
             candidate = assert_within_root(check.path, root)
             if check.type == 'file_exists':
                 return CheckResult(
-                    check.id,
-                    candidate.exists(),
-                    {
+                    check_id=check.id,
+                    ok=candidate.exists(),
+                    evidence={
                         'path': str(candidate.relative_to(root.resolve())),
                         'elapsed_ms': (time.perf_counter() - started) * 1000,
                     },
@@ -98,9 +101,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
             if check.type == 'file_content':
                 text = candidate.read_text(encoding='utf-8', errors='replace')
                 return CheckResult(
-                    check.id,
-                    check.contains in text,
-                    {
+                    check_id=check.id,
+                    ok=check.contains in text,
+                    evidence={
                         'path': str(candidate.relative_to(root.resolve())),
                         'contains': check.contains,
                         'elapsed_ms': (time.perf_counter() - started) * 1000,
@@ -109,9 +112,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
             document = json.loads(candidate.read_text(encoding='utf-8'))
             value = _json_path_value(document, check.json_path)
             return CheckResult(
-                check.id,
-                value == check.expect,
-                {
+                check_id=check.id,
+                ok=value == check.expect,
+                evidence={
                     'path': str(candidate.relative_to(root.resolve())),
                     'json_path': check.json_path,
                     'value': value,
@@ -129,9 +132,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
                 connection.close()
             value = rows[0][0] if rows else None
             return CheckResult(
-                check.id,
-                str(value) == str(check.expect),
-                {
+                check_id=check.id,
+                ok=str(value) == str(check.expect),
+                evidence={
                     'dsn': str(candidate.relative_to(root.resolve())),
                     'query': check.query,
                     'rows': [list(row) for row in rows],
@@ -149,9 +152,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
                 allow_redirects=False,
             )
             return CheckResult(
-                check.id,
-                response.status_code == check.expect_status,
-                {
+                check_id=check.id,
+                ok=response.status_code == check.expect_status,
+                evidence={
                     'url': check.url,
                     'status': response.status_code,
                     'expect_status': check.expect_status,
@@ -166,9 +169,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
             response.raise_for_status()
             value = _json_path_value(response.json(), check.json_path)
             return CheckResult(
-                check.id,
-                value == check.expect,
-                {
+                check_id=check.id,
+                ok=value == check.expect,
+                evidence={
                     'url': check.url,
                     'json_path': check.json_path,
                     'value': value,
@@ -180,11 +183,9 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
         raise ValueError(f'unsupported check type: {check.type}')
     except Exception as exc:  # noqa: BLE001 - reported as check evidence, never raised
         return CheckResult(
-            check.id,
-            False,
-            {
-                'elapsed_ms': (time.perf_counter() - started) * 1000,
-            },
+            check_id=check.id,
+            ok=False,
+            evidence={'elapsed_ms': (time.perf_counter() - started) * 1000},
             error=f'{type(exc).__name__}: {exc}',
         )
 
@@ -192,10 +193,12 @@ def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: Iterable[str
 def run_checks(
     task: EvalTask,
     root: Path,
-    allowed_http_prefixes: Iterable[str] = _DEFAULT_HTTP_PREFIXES,
+    allowed_http_prefixes: Iterable[str] = DEFAULT_HTTP_PREFIXES,
 ) -> list[CheckResult]:
+    """Run every read-only check for one task against the runtime state root."""
     root_path = Path(root)
-    return [_run_check(check, root_path, tuple(allowed_http_prefixes)) for check in task.checks]
+    prefixes = tuple(allowed_http_prefixes)
+    return [_run_check(check, root_path, prefixes) for check in task.checks]
 
 
-__all__ = ['CheckResult', 'assert_within_root', 'run_checks']
+__all__ = ['DEFAULT_HTTP_PREFIXES', 'CheckResult', 'assert_within_root', 'run_checks']

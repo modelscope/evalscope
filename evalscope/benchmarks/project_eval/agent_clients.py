@@ -3,37 +3,39 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Protocol
 
 import requests
+from pydantic import BaseModel, ConfigDict, Field
 
-from evalscope.project_eval.schema import EvalTask, ExecSpec
+from evalscope.project_eval.schema import EvalTask, ExecSpec, HttpRequestSpec
 
 
 class AgentProtocolError(RuntimeError):
     """The business agent replied with a payload the contract cannot interpret."""
 
 
-@dataclass
-class AgentStep:
+class AgentStep(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     type: str
     name: str
-    arguments: dict[str, Any] = field(default_factory=dict)
+    arguments: dict[str, Any] = Field(default_factory=dict)
     result: Any = None
     elapsed_ms: float | None = None
-    raw: dict[str, Any] = field(default_factory=dict)
+    raw: dict[str, Any] = Field(default_factory=dict)
 
 
-@dataclass
-class AgentTurn:
+class AgentTurn(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     reply: str
-    steps: list[AgentStep] = field(default_factory=list)
+    steps: list[AgentStep] = Field(default_factory=list)
     trace_id: str | None = None
-    state: dict[str, Any] = field(default_factory=dict)
-    usage: dict[str, Any] = field(default_factory=dict)
+    state: dict[str, Any] = Field(default_factory=dict)
+    usage: dict[str, Any] = Field(default_factory=dict)
     trace_available: bool = True
-    conversation: list[dict[str, str]] = field(default_factory=list)
+    conversation: list[dict[str, str]] = Field(default_factory=list)
 
 
 class AgentClient(Protocol):
@@ -45,7 +47,7 @@ Transport = Callable[..., Any]
 
 def _messages(task: EvalTask) -> list[dict[str, str]]:
     if task.messages:
-        return list(task.messages)
+        return [message.model_dump() for message in task.messages]
     messages: list[dict[str, str]] = []
     if task.system:
         messages.append({'role': 'system', 'content': task.system})
@@ -209,10 +211,10 @@ class HttpTaskClient:
         response.raise_for_status()
         return response.json()
 
-    def call(self, request: dict[str, Any]) -> AgentTurn:
-        method = str(request.get('method', 'POST')).upper()
-        path = str(request.get('path', ''))
-        body = request.get('json') if isinstance(request.get('json'), dict) else {}
+    def call(self, request: HttpRequestSpec) -> AgentTurn:
+        method = request.method.upper()
+        path = request.path
+        body = request.json_body
         data = self.transport(method, f'{self.base_url}{path}', body, self.timeout)
         if not isinstance(data, dict):
             raise AgentProtocolError('HTTP task reply must be a JSON object')
@@ -228,6 +230,7 @@ class HttpTaskClient:
 
 
 def detect_capability(turn: AgentTurn) -> Literal['L2', 'L1', 'L0']:
+    """Classify the delivered trace as inline (L2), id-only (L1) or answer-only (L0)."""
     if turn.steps:
         return 'L2'
     if turn.trace_id:
@@ -243,9 +246,10 @@ def build_client(
     api_key: str = 'EMPTY',
     transport: Transport | None = None,
 ) -> AgentClient:
+    """Build the client for one task's exec envelope."""
     if exec_spec.type == 'http':
         return HttpTaskClient(base_url, transport=transport)
-    if exec_spec.protocol in ('rest_steps', 'otel'):
+    if exec_spec.protocol == 'rest_steps':
         return RestStepsClient(base_url, transport=transport)
     return OpenAICompatClient(base_url, model, api_key, transport=transport)
 

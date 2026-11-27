@@ -79,6 +79,44 @@ def test_http_prefix_is_enforced(tmp_path):
     assert 'not allowed' in result.error
 
 
+class _RemoteStateResponse:
+    status_code = 200
+
+    def json(self):
+        return {'ok': True}
+
+    def raise_for_status(self):
+        return None
+
+
+def test_remote_state_api_needs_explicit_prefix(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        'evalscope.project_eval.checks.requests.get',
+        lambda url, **_: calls.append(url) or _RemoteStateResponse(),
+    )
+    remote_task = task({
+        'id': 'remote-1',
+        'type': 'http_json',
+        'url': 'http://state.example/v1/state',
+        'json_path': 'ok',
+        'expect': True,
+    })
+
+    rejected = run_checks(remote_task, tmp_path)[0]
+    assert rejected.ok is False
+    assert 'not allowed' in rejected.error
+    assert calls == []
+
+    accepted = run_checks(
+        remote_task,
+        tmp_path,
+        allowed_http_prefixes=('http://state.example',),
+    )[0]
+    assert accepted.ok is True
+    assert calls == ['http://state.example/v1/state']
+
+
 def test_mutating_http_method_is_rejected():
     with pytest.raises(ValidationError):
         task({
