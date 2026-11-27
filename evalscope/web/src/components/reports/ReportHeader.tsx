@@ -1,121 +1,47 @@
 import { useNavigate } from 'react-router-dom'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, formatMetricLabel, getBoundedQualityRatio } from '@/domain/metric'
-import type { MetricSemantics } from '@/domain/metric'
-import { directionHintKey } from '@/domain/report/primaryMetrics'
 
 interface Props {
   modelName: string
-  datasetName: string
-  datasets?: string[]
-  datasetLabels?: Record<string, string>
-  score: number | null
-  metricName?: string
-  /** Backend semantics of the primary metric shown in the header. */
-  semantics?: MetricSemantics | null
+  datasetCount: number
   totalSamples: number
   htmlReportUrl: string
-  onDatasetClick?: (dataset: string) => void
+  reportsUrl: string
 }
 
 export default function ReportHeader({
   modelName,
-  datasetName,
-  datasets,
-  datasetLabels = {},
-  score,
-  metricName,
-  semantics,
+  datasetCount,
   totalSamples,
   htmlReportUrl,
-  onDatasetClick,
+  reportsUrl,
 }: Props) {
   const { t } = useLocale()
   const navigate = useNavigate()
-
-  const normalizedScore = getBoundedQualityRatio(score, semantics)
-  const variant = normalizedScore == null
-    ? 'default'
-    : normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
-  const hintKey = directionHintKey(semantics)
-  const directionHint = hintKey ? t(hintKey) : undefined
-  const metricTooltip = [metricName, directionHint].filter(Boolean).join(' · ') || undefined
-
   return (
-    <div
-      className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5"
-      style={{ boxShadow: 'var(--shadow-sm)' }}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        {/* Left side - info */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-[var(--text)]">{modelName}</h1>
-            {/* text-dim allowed: decorative separator glyph (DESIGN.md §Text) */}
-            <span className="text-[var(--text-dim)]">×</span>
-            {datasets && datasets.length > 0 ? (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {datasets.map((ds, idx) => (
-                  <span key={ds} className="flex items-center gap-1.5">
-                    {/* text-dim allowed: decorative comma separator (DESIGN.md §Text) */}
-                    {idx > 0 && <span className="text-[var(--text-dim)]">,</span>}
-                    {onDatasetClick ? (
-                      <button
-                        onClick={() => onDatasetClick(ds)}
-                        className="text-lg text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit"
-                      >
-                        <span title={ds}>{datasetLabels[ds] || ds}</span>
-                      </button>
-                    ) : (
-                      <span className="text-lg text-[var(--text-muted)]" title={ds}>{datasetLabels[ds] || ds}</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <span className="text-lg text-[var(--text-muted)]">{datasetName}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge variant={variant} className="font-mono text-sm px-3 py-1">
-              <span
-                style={{ color: normalizedScore == null ? undefined : scoreColor(normalizedScore) }}
-                title={metricTooltip}
-                aria-label={semantics ? `${semantics.metric_name}${directionHint ? `, ${directionHint}` : ''}` : undefined}
-              >
-                {semantics ? `${metricName ?? formatMetricLabel(semantics.metric_name, semantics)} ` : ''}
-                {formatMetric(score, semantics).primary}
-              </span>
-            </Badge>
-            <span className="text-sm text-[var(--text-muted)]">
-              {totalSamples.toLocaleString()} {t('single.samples')}
-            </span>
-          </div>
-        </div>
-
-        {/* Right side - actions */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(`/viewer?url=${encodeURIComponent(htmlReportUrl)}`, '_blank')}
-          >
-            <ExternalLink size={14} />
-            {t('reportDetail.viewHtml')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft size={14} />
-            {t('reportDetail.backToReports')}
-          </Button>
-        </div>
+    <div className="flex items-center justify-between gap-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] px-5 py-3">
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h1 className="break-words text-xl font-bold">{modelName}</h1>
+        <p className="text-sm text-[var(--text-muted)]">
+          {t('reportDetail.datasetCount', { count: datasetCount })} ·{' '}
+          {t('diagnosis.sampleCount', { count: totalSamples })}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.open(`/viewer?url=${encodeURIComponent(htmlReportUrl)}`, '_blank')}
+        >
+          <ExternalLink size={14} />
+          {t('reportDetail.viewHtml')}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate(reportsUrl)}>
+          <ArrowLeft size={14} />
+          {t('reportDetail.backToReports')}
+        </Button>
       </div>
     </div>
   )

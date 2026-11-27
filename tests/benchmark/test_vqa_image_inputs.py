@@ -15,7 +15,7 @@ from evalscope.api.benchmark import VisionLanguageAdapter
 from evalscope.api.model.model import ModelCache
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.models.utils.openai import openai_chat_completion_part
+from evalscope.models.utils.openai import openai_chat_completion_part, openai_chat_message
 from evalscope.run import run_task
 
 BENCHMARKS = ['docvqa', 'infovqa', 'pope']
@@ -36,6 +36,25 @@ def _image_bytes(image_format: str, noisy: bool = False) -> bytes:
     buffer = BytesIO()
     image.save(buffer, format=image_format)
     return buffer.getvalue()
+
+
+@pytest.mark.parametrize('name', ['chartqa', 'docvqa', 'infovqa'])
+@pytest.mark.parametrize('dataset_args', [{}, {'prompt_template': None}, {'prompt_template': 'Read: {question}'}])
+def test_dataset_prompt_template_reaches_model_request(name: str, dataset_args: dict) -> None:
+    question = 'What is the label?'
+    image = _image_bytes('JPEG')
+    record = {**_record({'bytes': image}, question), 'type': 'human_test'}
+    default = _adapter(name).prompt_template
+    adapter = _adapter(name, **dataset_args)
+    sample = adapter.record_to_sample(record)
+    message = openai_chat_message(sample.input[0])
+    expected_text = (
+        default.format(question=question) if dataset_args.get('prompt_template') is None else 'Read: What is the label?'
+    )
+    text, picture = message['content']
+    assert text == {'type': 'text', 'text': expected_text}
+    assert picture['type'] == 'image_url'
+    assert picture['image_url']['url'] == 'data:image/jpeg;base64,' + base64.b64encode(image).decode()
 
 
 @pytest.fixture(params=BENCHMARKS)

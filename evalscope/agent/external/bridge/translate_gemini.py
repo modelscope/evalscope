@@ -26,6 +26,8 @@ from evalscope.api.messages import (
 from evalscope.api.model import GenerateConfig, ModelOutput
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, ToolParams
 
+from ._sse_common import prompt_tokens
+
 # -- Request → ChatMessage translation --
 
 
@@ -283,7 +285,7 @@ def model_output_to_gemini_response(
             }
         ],
         'usageMetadata': {
-            'promptTokenCount': usage.input_tokens if usage else 0,
+            'promptTokenCount': prompt_tokens(usage) if usage else 0,
             'candidatesTokenCount': usage.output_tokens if usage else 0,
             'totalTokenCount': usage.total_tokens if usage else 0,
         },

@@ -134,6 +134,22 @@ def test_openai_chat_completion_json_response():
     assert set(body['usage']) == {'prompt_tokens', 'completion_tokens', 'total_tokens'}
 
 
+def test_openai_chat_accepts_request_body_over_one_mib():
+    """Long agent histories exceed aiohttp's 1 MiB default body limit."""
+    expected = 'hello from mock'
+
+    async def _go():
+        proxy = await ModelProxyServer.get_or_start()
+        model = _build_model(_text_output(expected))
+        async with proxy.trial_session(model=model, framework='mock') as session:
+            url = f'{proxy.base_url}/openai/v1/chat/completions'
+            payload = {'model': 'mock-openai', 'messages': [{'role': 'user', 'content': 'a' * (2 * 1024 * 1024)}]}
+            return await asyncio.get_running_loop().run_in_executor(None, _post_json, url, payload, session.token)
+
+    body = AsyncioLoopRunner.run(_go())
+    assert body['choices'][0]['message']['content'] == expected
+
+
 def test_openai_chat_completion_reasoning_content_json():
     """reasoning_content from a ContentReasoning block appears alongside content."""
 

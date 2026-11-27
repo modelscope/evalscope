@@ -50,7 +50,10 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
         """Try to parse the line as JSON.
 
         Returns:
-            - The original string if JSON parsing fails.
+            - The original string if JSON parsing fails, or if the line parses to
+              a JSON scalar (number, boolean, null): scalars are plain-text
+              prompts, not request bodies.
+            - The unquoted string if the line is a JSON string.
             - List[Dict] if the line is a JSON array (messages format).
             - Dict if the line is a JSON object (complete request body).
         """
@@ -58,7 +61,11 @@ class LineByLineDatasetPlugin(DatasetPluginBase):
             parsed = json.loads(line)
         except json.JSONDecodeError:
             return line  # Not valid JSON, treat as plain text
-        return parsed  # List[Dict] or Dict
+        if isinstance(parsed, str):
+            return parsed
+        if isinstance(parsed, (list, dict)):
+            return parsed  # List[Dict] or Dict
+        return line
 
     def build_messages(self) -> Iterator[Union[str, List[Dict], Dict[str, Any]]]:
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):

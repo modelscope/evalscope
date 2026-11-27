@@ -1,4 +1,4 @@
-import { apiDeleteValidated, apiValidated } from './client'
+import { apiDeleteValidated, apiPostValidated, apiValidated } from './client'
 import type {
   AnalysisResponse,
   DataFrameResponse,
@@ -7,7 +7,10 @@ import type {
   ListReportsResponse,
   LoadReportResponse,
   PredictionsResponse,
+  DiagnosisResponse,
+  SampleDiagnosesResponse,
 } from './types'
+import type { DiagnosisRunRequest } from './generated/contracts'
 import { parseReportRef } from '@/domain/report/reportRef'
 
 const BASE = '/api/v1/reports'
@@ -115,12 +118,14 @@ export async function getPredictions(
   datasetName: string,
   subsetName: string,
   signal?: AbortSignal,
+  index?: number,
 ): Promise<PredictionsResponse> {
   return apiValidated<PredictionsResponse>(`${reportPath(ref)}/predictions`, {
     params: {
       root_path: rootPath,
       dataset_name: datasetName,
       subset_name: subsetName,
+      index,
     },
     signal,
   })
@@ -140,6 +145,34 @@ export async function getAnalysis(
     signal,
   })
   return res.analysis
+}
+
+export async function getDiagnosis(rootPath: string, ref: string, dataset: string, signal?: AbortSignal): Promise<DiagnosisResponse> {
+  return apiValidated<DiagnosisResponse>(`${reportPath(ref)}/diagnosis`, {
+    params: { root_path: rootPath, dataset_name: dataset }, signal,
+  })
+}
+
+export function runDiagnosis(rootPath: string, ref: string, dataset: string, options: DiagnosisRunRequest): Promise<DiagnosisResponse> {
+  return apiPostValidated<DiagnosisResponse>(`${reportPath(ref)}/diagnosis`, options, {
+    params: { root_path: rootPath, dataset_name: dataset },
+  })
+}
+
+export interface DiagnosisFilters {
+  outcome?: 'failed' | 'unscored' | 'risk'
+  subset_name?: string
+  failure_type?: string
+  attribution?: string
+  finding_category?: string
+  index?: number
+}
+
+export async function getSampleDiagnoses(rootPath: string, ref: string, dataset: string,
+  filters: DiagnosisFilters = {}, page = 1, signal?: AbortSignal): Promise<SampleDiagnosesResponse> {
+  return apiValidated<SampleDiagnosesResponse>(`${reportPath(ref)}/diagnosis/samples`, {
+    params: { root_path: rootPath, dataset_name: dataset, ...filters, page, page_size: 200 }, signal,
+  })
 }
 
 export function getHtmlReportUrl(rootPath: string, ref: string): string {

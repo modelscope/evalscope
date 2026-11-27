@@ -6,6 +6,14 @@
 // This barrel preserves the stable `@/api/types` import path.
 
 export type {
+  DiagnosisResponse,
+  DiagnosisReport,
+  SampleDiagnosesResponse,
+  SampleDiagnosis,
+  SampleKey,
+  Fact,
+  FailurePattern,
+  Finding,
   // Report score tree
   PercentileStats,
   PerfMetrics,

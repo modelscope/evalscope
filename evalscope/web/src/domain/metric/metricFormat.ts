@@ -281,6 +281,15 @@ export function formatMetric(
   }
 }
 
+/** Format a 0–1 proportion without assigning a quality verdict. */
+export function formatProportion(value: number | null | undefined): FormattedMetric {
+  return formatMetric(value, {
+    semantic_id: 'display.proportion', metric_name: 'Proportion', kind: 'diagnostic', direction: 'none',
+    value_range: { min: 0, max: 1 }, display_kind: 'percent', display_multiplier: 100,
+    display_precision: 1, display_unit: '%',
+  })
+}
+
 /**
  * Normalize a bounded quality metric into `[0, 1]` for colour scales and progress bars, so that
  * "fuller is better" always holds.

@@ -554,3 +554,7 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+.diagnosis-link { color: var(--cyan); }
+[data-theme="light"] .diagnosis-link { color: var(--accent); }
+.diagnosis-link:hover { text-decoration: underline; }

@@ -367,3 +367,7 @@ class AgentHarmAdapter(AgentLoopAdapter):
                 'budget_unit': 'model_generations',
             }
         return scores
+
+
+# Registers the trace-analysis signal provider whenever this adapter module is loaded by name.
+from evalscope.benchmarks.agentharm import trace_signals as _trace_signals  # noqa: E402,F401

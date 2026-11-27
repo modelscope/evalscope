@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components, Options } from 'react-markdown'
@@ -7,6 +7,8 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { resolveMarkdownMediaSrc } from '@/utils/media'
 import ImageLightbox from './ImageLightbox'
 import LazyCodeBlock from './LazyCodeBlock'
+import Button from './Button'
+import { EvidenceQuotes } from '@/contexts/EvidenceContext'
 
 type ContentKind = 'text' | 'math' | 'code' | 'large-table'
 const HEAVY_CONTENT_KINDS: readonly ContentKind[] = ['math', 'code', 'large-table']
@@ -26,6 +28,38 @@ function isLargeTable(lineCount: number): boolean {
 
 function containsMath(content: string): boolean {
   return /\$\$[\s\S]+?\$\$/.test(content) || /\$[^\n$]+\$/.test(content)
+}
+
+interface EvidenceNode { type: string; value?: string; children?: EvidenceNode[]; data?: { hName: string } }
+function evidencePlugin(quotes: string[]) {
+  return () => (tree: unknown) => {
+    function walk(node: EvidenceNode) {
+      if (!node.children || node.data?.hName === 'mark') return
+      node.children = node.children.flatMap(child => {
+        if (child.type !== 'text' || !child.value) { walk(child); return [child] }
+        let pieces: EvidenceNode[] = [child]
+        for (const quote of quotes.filter(Boolean)) {
+          pieces = pieces.flatMap(piece => {
+            if (piece.type !== 'text' || !piece.value?.includes(quote)) return [piece]
+            return piece.value.split(quote).flatMap((text, i) => [
+              ...(i ? [{ type: 'strong', data: { hName: 'mark' }, children: [{ type: 'text', value: quote }] }] : []),
+              { type: 'text', value: text },
+            ])
+          })
+        }
+        return pieces
+      })
+    }
+    walk(tree as EvidenceNode)
+  }
+}
+
+/** Keep currency from opening math spans; leave code and display equations intact. */
+function escapeCurrency(content: string): string {
+  return content.replace(
+    /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|(?<!\\)\$\$[\s\S]*?(?<!\\)\$\$)|(?<!\\)\$(?=<<|\d+(?:[,.]\d+)*[.,;:!?]?(?:\s+(?:[A-Za-z]{2,}|a\b)))/g,
+    (_match, literal: string | undefined) => literal ?? '\\$',
+  )
 }
 
 interface Props {
@@ -111,11 +145,14 @@ function useMathPlugins(content: string, collapsed: boolean): { plugins: MathPlu
 }
 
 export default function MarkdownRenderer({ content, collapsed = false }: Props) {
+  const quotes = useContext(EvidenceQuotes)
   const { theme } = useTheme()
   const { t } = useLocale()
-  const { plugins: mathPlugins, state: mathState } = useMathPlugins(content, collapsed)
+  const displayContent = useMemo(() => escapeCurrency(content), [content])
+  const { plugins: mathPlugins, state: mathState } = useMathPlugins(displayContent, collapsed)
 
   const markdownComponents = useMemo<Components>(() => ({
+    mark: ({ children }) => <mark className="rounded bg-[var(--warning-bg)] px-0.5 text-[var(--text)]">{children}</mark>,
     img: ({ src, alt }) => (
       <ImageLightbox src={src ? resolveMarkdownMediaSrc(src, 'image/jpeg') : ''} alt={alt} style={INLINE_IMG_STYLE} />
     ),
@@ -164,13 +201,17 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
   const remarkPlugins: NonNullable<Options['remarkPlugins']> = mathPlugins
     ? [remarkGfm, ...mathPlugins.remark]
     : [remarkGfm]
+  if (quotes.length) remarkPlugins.push(evidencePlugin(quotes))
   const rehypePlugins: NonNullable<Options['rehypePlugins']> = mathPlugins ? mathPlugins.rehype : []
 
   return (
     <div className={`prose prose-sm max-w-none break-words${theme === 'dark' ? ' prose-invert' : ''}`}>
       {mathState === 'error' && (
-        <div className="text-[0.75rem] text-[var(--text-dim)] mb-1" role="status">
+        <div className="mb-1 flex items-center gap-2 text-xs text-[var(--text-muted)]" role="status">
           {t('markdown.mathLoadError')}
+          <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
+            {t('markdown.reload')}
+          </Button>
         </div>
       )}
       <ReactMarkdown
@@ -179,7 +220,7 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
         urlTransform={(url) => url}
         components={markdownComponents}
       >
-        {content}
+        {displayContent}
       </ReactMarkdown>
     </div>
   )

@@ -1,7 +1,9 @@
 """Tests for unknown-key rejection and the eval_batch_size default resolution."""
 
 import argparse
+import json
 import math
+from pathlib import Path
 from typing import Optional
 
 import pytest
@@ -23,6 +25,29 @@ def _cli_config(*argv: str) -> TaskConfig:
     parser = argparse.ArgumentParser()
     add_argument(parser)
     return parse_task_config(parser.parse_args(list(argv)))
+
+
+@pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+def test_json_config_file_encoding(tmp_path: Path, encoding: str) -> None:
+    path = tmp_path / 'task.json'
+    data = {'model': '中文模型', 'eval_type': 'mock_llm', 'datasets': ['general_mcq'], 'limit': 3}
+    path.write_bytes(json.dumps(data, ensure_ascii=False).encode(encoding))
+
+    for config in (parse_task_config(str(path)), TaskConfig.from_json(str(path))):
+        assert config.model == data['model']
+        assert config.datasets == data['datasets']
+        assert config.limit == 3
+
+
+@pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+def test_eval_config_json_file_encoding(tmp_path: Path, encoding: str) -> None:
+    path = tmp_path / 'eval.json'
+    data = {'dataset': '中文数据集', 'limit': 3}
+    path.write_bytes(json.dumps(data, ensure_ascii=False).encode(encoding))
+
+    config = TaskConfig(model='dummy', eval_type='mock_llm', eval_config=str(path))
+
+    assert config.eval_config == data
 
 
 def test_hyphenated_key_is_rejected_with_suggestion() -> None:
@@ -248,10 +273,19 @@ def test_update_merges_generation_config_and_recoerces() -> None:
     assert config.sandbox.engine == 'volcengine'
 
 
-@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf])
-def test_invalid_limits_are_rejected(limit: float | int) -> None:
+@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf, True, False])
+def test_invalid_limits_are_rejected(limit: float | int | bool) -> None:
     with pytest.raises(ValueError, match='limit'):
         TaskConfig.from_dict({'model': 'x', 'limit': limit})
+
+
+def test_update_rejects_bool_limit() -> None:
+    # update() assigns via setattr (validate_assignment is off), so the
+    # _validate_limit field validator never runs; reject bool explicitly.
+    config = TaskConfig.from_dict({'model': 'x'})
+
+    with pytest.raises(ValueError, match='Limit must be'):
+        config.update({'limit': True})
 
 
 @pytest.mark.parametrize('repeats', [0, -1, 1.5, True, '1'])

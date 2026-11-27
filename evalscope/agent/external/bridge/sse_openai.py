@@ -26,7 +26,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall
 
-from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
+from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks, prompt_tokens
 from .translate_openai import _split_text_and_reasoning, openai_finish_reason, unpack_openai_tool_call
 
 
@@ -120,7 +120,7 @@ async def stream_openai_response(
     if include_usage:
         usage = output.usage
         final['usage'] = {
-            'prompt_tokens': usage.input_tokens if usage else 0,
+            'prompt_tokens': prompt_tokens(usage) if usage else 0,
             'completion_tokens': usage.output_tokens if usage else 0,
             'total_tokens': usage.total_tokens if usage else 0,
         }

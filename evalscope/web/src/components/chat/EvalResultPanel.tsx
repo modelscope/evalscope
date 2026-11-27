@@ -73,6 +73,8 @@ export interface EvalResultPanelProps {
   threshold: number
   showPred: boolean
   metrics?: ReportMetric[]
+  compact?: boolean
+  recordedError?: string | null
 }
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
@@ -94,6 +96,8 @@ export function EvalResultPanel({
   threshold,
   showPred,
   metrics,
+  compact = false,
+  recordedError,
 }: EvalResultPanelProps) {
   const { t } = useLocale()
   const decision = decisionObservation(score.metadata)
@@ -116,7 +120,8 @@ export function EvalResultPanel({
   })()
   const hasMetadata = metaStr && metaStr !== '{}' && metaStr !== 'null'
 
-  return (
+  const goldAnswers = (Array.isArray(gold) ? gold : [gold]).filter(answer => answer.trim() && answer !== '*No Gold Provided*')
+  const panel = (
     <section
       className="overflow-hidden rounded-xl border border-[var(--border-md)] bg-[var(--bg-card)] shadow-[var(--shadow-sm)]"
       style={{ animation: 'fadeInUp 300ms ease-out 160ms both' }}
@@ -130,7 +135,7 @@ export function EvalResultPanel({
 
       <div
         className={`grid grid-cols-1 gap-0 px-4 py-4 ${
-          decision ? '' : showPred
+          decision || !goldAnswers.length ? '' : showPred
             ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(9rem,auto)]'
             : 'md:grid-cols-[minmax(0,1fr)_minmax(9rem,auto)]'
         }`}
@@ -153,7 +158,7 @@ export function EvalResultPanel({
           </div>
         )}
 
-        {!decision && <div className={`${showPred ? 'border-t border-[var(--border)] py-4 md:border-t-0 md:px-4 md:py-0' : 'pb-4 md:border-r md:border-[var(--border)] md:pb-0 md:pr-4'} md:border-r`}>
+        {!decision && goldAnswers.length > 0 && <div className={`${showPred ? 'border-t border-[var(--border)] py-4 md:border-t-0 md:px-4 md:py-0' : 'pb-4 md:border-r md:border-[var(--border)] md:pb-0 md:pr-4'} md:border-r`}>
           <div className={eyebrowBase}>
             <Target size={13} />
             {t('prediction.expectedAnswer')}
@@ -161,7 +166,7 @@ export function EvalResultPanel({
           <div className="type-body-sm text-[var(--text)]">
             {Array.isArray(gold) ? (
               <ul className="list-disc space-y-1 pl-4">
-                {gold.map((answer, index) => (
+                {goldAnswers.map((answer, index) => (
                   <li key={`${index}-${answer}`}>
                     <MarkdownRenderer content={answer} />
                   </li>
@@ -250,4 +255,29 @@ export function EvalResultPanel({
       )}
     </section>
   )
+  const result = compact ? <details className="group rounded-lg border border-[var(--border)]">
+    <summary className="flex cursor-pointer list-none items-center gap-4 px-3 py-3 text-sm [&::-webkit-details-marker]:hidden">
+      <span className="flex shrink-0 items-center gap-2 font-medium"><ChevronRight size={14} className="group-open:rotate-90" />{t('prediction.evalResult')}</span>
+      <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {showPred && pred && <span className="max-w-48 truncate" title={pred}>{t('prediction.extractedAnswer')}: {pred}</span>}
+        {goldAnswers.length > 0 && <span className="max-w-48 truncate" title={goldAnswers.join(' / ')}>{t('prediction.expectedAnswer')}: {goldAnswers.join(' / ')}</span>}
+        {nScore === null ? <span className="text-[var(--warning-text)]">{t('prediction.unavailable')}</span> : <>
+          <span className="inline-flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{mainMetric ? formatMetricIdentityLabel(mainMetric.identity, mainMetric.semantics) : mainName}</span><ScoreBadge score={mainValue ?? nScore} semantics={mainMetric?.semantics ?? RATIO_PERCENT_SEMANTICS} /></span>
+          {secondaryValues.map(([name, value]) => {
+            const metric = metricFor(name)
+            return <span key={name} className="inline-flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{metric ? formatMetricIdentityLabel(metric.identity, metric.semantics) : name}</span><ScoreBadge score={Number(value)} semantics={metric?.semantics} /></span>
+          })}
+        </>}
+      </span>
+    </summary>
+    {panel}
+  </details> : panel
+  if (!recordedError) return result
+  return <div className="space-y-2">
+    <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2">
+      <p className="text-xs font-medium text-[var(--warning-text)]">{t('diagnosis.recordedError')}</p>
+      <p className="whitespace-pre-wrap break-words text-sm">{recordedError}</p>
+    </div>
+    {result}
+  </div>
 }

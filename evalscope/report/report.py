@@ -497,6 +497,13 @@ class Report(BaseModel):
 
     def generate_analysis(self, task_config: 'TaskConfig', analysis_context: 'BenchmarkAnalysisContext') -> str:
         """Generate score analysis from compact benchmark context and report aggregates."""
+        import warnings
+
+        warnings.warn(
+            'Report.generate_analysis is deprecated; use evalscope.analysis.diagnose_run.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         from evalscope.constants import DEFAULT_LANGUAGE
         from evalscope.metrics import LLMJudge
 

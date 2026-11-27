@@ -289,6 +289,10 @@ class DefaultDataAdapter(DataAdapter):
         dataset = loader.load()
         return dataset
 
+    def _fewshot_load_limit(self) -> Optional[int]:
+        """Limit the pool before selecting in-context examples."""
+        return None if self.reformat_subset else self.few_shot_num
+
     def load_fewshot_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
         """
         Load a subset specifically for few-shot examples.
@@ -311,9 +315,7 @@ class DefaultDataAdapter(DataAdapter):
             subset=subset_name,
             sample_fields=self.record_to_sample,
             filter_func=self.sample_filter,  # Apply sample filtering if defined
-            limit=self.few_shot_num
-            if not self.reformat_subset
-            else None,  # Limit to specified number of few-shot examples
+            limit=self._fewshot_load_limit(),
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=False,
             seed=self.seed,

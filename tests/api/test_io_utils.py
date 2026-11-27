@@ -9,7 +9,7 @@ from datasets import Audio, Dataset, DatasetInfo, Features, Image, Sequence, Vid
 from datasets.table import InMemoryTable
 from PIL import Image as PILImage
 
-from evalscope.utils.io_utils import csv_to_list, jsonl_to_list, tsv_to_list, undecode_media
+from evalscope.utils.io_utils import csv_to_list, json_to_dict, jsonl_to_list, tsv_to_list, undecode_media
 
 
 def _generate_jpeg_bytes(dim: int, quality: int = 80) -> bytes:
@@ -183,6 +183,24 @@ class TestUndecodeMediaIntegration:
         result_row = result.to_list()[0]
         for other_col in non_media_data:
             assert result_row[other_col] == original_row[other_col]
+
+
+class TestJsonToDict:
+    @pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+    def test_reads_unicode_and_preserves_embedded_bom(self, tmp_path: Path, encoding: str) -> None:
+        path = tmp_path / 'config.json'
+        data = {'model': '中文模型', 'prompt': 'before\ufeffafter', 'limit': 3}
+        path.write_bytes(json.dumps(data, ensure_ascii=False).encode(encoding))
+
+        assert json_to_dict(str(path)) == data
+
+    @pytest.mark.parametrize('encoding', ['utf-8', 'utf-8-sig'])
+    def test_malformed_json_still_raises(self, tmp_path: Path, encoding: str) -> None:
+        path = tmp_path / 'invalid.json'
+        path.write_bytes('{"model":'.encode(encoding))
+
+        with pytest.raises(json.JSONDecodeError):
+            json_to_dict(str(path))
 
 
 class TestJsonlToList:

@@ -28,6 +28,8 @@ from evalscope.api.messages import (
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo, ToolParams
 
+from ._sse_common import prompt_tokens
+
 
 def openai_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
     """Convert an OpenAI Chat Completions request body to ``ChatMessage[]``.
@@ -226,7 +228,7 @@ def model_output_to_openai_response(
             }
         ],
         'usage': {
-            'prompt_tokens': usage.input_tokens if usage else 0,
+            'prompt_tokens': prompt_tokens(usage) if usage else 0,
             'completion_tokens': usage.output_tokens if usage else 0,
             'total_tokens': usage.total_tokens if usage else 0,
         },

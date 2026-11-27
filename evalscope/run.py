@@ -236,6 +236,21 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
                         strict=True,
                     )
                 eval_results[evaluator.benchmark_name] = res_dict
+                analysis_config = task_config.resolved_analysis_config()
+                if analysis_config is not None and isinstance(res_dict, Report):
+                    try:
+                        from evalscope.analysis.diagnosis import diagnose_benchmark, render_markdown
+                        from evalscope.report.diagnosis import load_diagnosis
+
+                        diagnosis = diagnose_benchmark(
+                            outputs.outputs_dir, task_config.model_id, evaluator.benchmark_name, analysis_config
+                        )
+                        _, active = load_diagnosis(outputs.outputs_dir, task_config.model_id, evaluator.benchmark_name)
+                        res_dict.analysis = render_markdown(active or diagnosis, analysis_config.language)
+                    except Exception as exc:
+                        logger.warning(
+                            f'Analysis unavailable for {evaluator.benchmark_name}: {type(exc).__name__}: {exc}'
+                        )
                 # Release evaluator immediately after eval to avoid
                 # accumulating all benchmark objects in memory simultaneously
                 evaluators[i] = None

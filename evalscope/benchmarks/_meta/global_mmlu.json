@@ -1,0 +1,504 @@
+{
+  "meta": {
+    "pretty_name": "Global-MMLU",
+    "dataset_id": "CohereLabs/Global-MMLU",
+    "paper_url": "https://arxiv.org/abs/2412.03304",
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "dev",
+    "subset_list": [
+      "am",
+      "ar",
+      "bn",
+      "cs",
+      "de",
+      "el",
+      "en",
+      "es",
+      "fa",
+      "fil",
+      "fr",
+      "ha",
+      "he",
+      "hi",
+      "id",
+      "ig",
+      "it",
+      "ja",
+      "ko",
+      "ky",
+      "lt",
+      "mg",
+      "ms",
+      "ne",
+      "nl",
+      "ny",
+      "pl",
+      "pt",
+      "ro",
+      "ru",
+      "si",
+      "sn",
+      "so",
+      "sr",
+      "sv",
+      "sw",
+      "te",
+      "tr",
+      "uk",
+      "vi",
+      "yo",
+      "zh"
+    ],
+    "description": "\n## Overview\n\nGlobal-MMLU evaluates multilingual knowledge and performance on culturally sensitive and agnostic questions.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: An MMLU question with four options in one of 42 languages\n- **Output**: The letter of the correct option (A-D)\n- **Domain**: The 57 MMLU subjects\n\n## Key Features\n\n- 589,764 test questions across 42 languages. Each language has 2,850 culturally labeled questions.\n- Keeps the 39 rows with a missing option, including 12 where the correct choice is blank.\n\n## Evaluation Notes\n\n- Uses five same-subject examples from the language's `dev` split where available.\n- Scores generated answer letters by exact match. The upstream harness scores choice likelihoods and its Lite tasks\n  select examples by subject category.\n- Reports overall, culturally sensitive, and culturally agnostic accuracy per language. Bayes@N reports overall only.\n- Licensed under [Apache 2.0](https://opensource.org/license/apache-2-0).\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "cultural_sensitivity": "all"
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 589764,
+    "subset_stats": [
+      {
+        "name": "am",
+        "sample_count": 14042,
+        "prompt_length_mean": 2143.94,
+        "prompt_length_min": 749,
+        "prompt_length_max": 8937,
+        "prompt_length_std": 1457.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ar",
+        "sample_count": 14042,
+        "prompt_length_mean": 2718.89,
+        "prompt_length_min": 830,
+        "prompt_length_max": 11584,
+        "prompt_length_std": 1981.81,
+        "target_length_mean": 1
+      },
+      {
+        "name": "bn",
+        "sample_count": 14042,
+        "prompt_length_mean": 2985.86,
+        "prompt_length_min": 850,
+        "prompt_length_max": 13433,
+        "prompt_length_std": 2305.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "cs",
+        "sample_count": 14042,
+        "prompt_length_mean": 2955.66,
+        "prompt_length_min": 863,
+        "prompt_length_max": 13127,
+        "prompt_length_std": 2249.59,
+        "target_length_mean": 1
+      },
+      {
+        "name": "de",
+        "sample_count": 14042,
+        "prompt_length_mean": 3570.76,
+        "prompt_length_min": 1007,
+        "prompt_length_max": 16685,
+        "prompt_length_std": 2925.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "el",
+        "sample_count": 14042,
+        "prompt_length_mean": 3446.37,
+        "prompt_length_min": 1003,
+        "prompt_length_max": 15859,
+        "prompt_length_std": 2744.98,
+        "target_length_mean": 1
+      },
+      {
+        "name": "en",
+        "sample_count": 14042,
+        "prompt_length_mean": 3178.85,
+        "prompt_length_min": 949,
+        "prompt_length_max": 14594,
+        "prompt_length_std": 2522.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "es",
+        "sample_count": 14042,
+        "prompt_length_mean": 3469.11,
+        "prompt_length_min": 977,
+        "prompt_length_max": 15556,
+        "prompt_length_std": 2720.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "fa",
+        "sample_count": 14042,
+        "prompt_length_mean": 2772.79,
+        "prompt_length_min": 821,
+        "prompt_length_max": 12018,
+        "prompt_length_std": 2065.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "fil",
+        "sample_count": 14042,
+        "prompt_length_mean": 3641.24,
+        "prompt_length_min": 997,
+        "prompt_length_max": 16835,
+        "prompt_length_std": 2888.24,
+        "target_length_mean": 1
+      },
+      {
+        "name": "fr",
+        "sample_count": 14042,
+        "prompt_length_mean": 3554.29,
+        "prompt_length_min": 1015,
+        "prompt_length_max": 15946,
+        "prompt_length_std": 2791.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ha",
+        "sample_count": 14042,
+        "prompt_length_mean": 3183.13,
+        "prompt_length_min": 890,
+        "prompt_length_max": 14093,
+        "prompt_length_std": 2442.18,
+        "target_length_mean": 1
+      },
+      {
+        "name": "he",
+        "sample_count": 14042,
+        "prompt_length_mean": 2411.77,
+        "prompt_length_min": 813,
+        "prompt_length_max": 10445,
+        "prompt_length_std": 1714.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hi",
+        "sample_count": 14042,
+        "prompt_length_mean": 3087.54,
+        "prompt_length_min": 900,
+        "prompt_length_max": 13884,
+        "prompt_length_std": 2423.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "id",
+        "sample_count": 14042,
+        "prompt_length_mean": 3447.94,
+        "prompt_length_min": 938,
+        "prompt_length_max": 15651,
+        "prompt_length_std": 2857.77,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ig",
+        "sample_count": 14042,
+        "prompt_length_mean": 2998.41,
+        "prompt_length_min": 896,
+        "prompt_length_max": 13562,
+        "prompt_length_std": 2328.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "it",
+        "sample_count": 14042,
+        "prompt_length_mean": 3482.2,
+        "prompt_length_min": 984,
+        "prompt_length_max": 15316,
+        "prompt_length_std": 2769.36,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ja",
+        "sample_count": 14042,
+        "prompt_length_mean": 1571.26,
+        "prompt_length_min": 627,
+        "prompt_length_max": 6229,
+        "prompt_length_std": 984.22,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ko",
+        "sample_count": 14042,
+        "prompt_length_mean": 1733.23,
+        "prompt_length_min": 661,
+        "prompt_length_max": 7096,
+        "prompt_length_std": 1158.33,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ky",
+        "sample_count": 14042,
+        "prompt_length_mean": 3121.07,
+        "prompt_length_min": 936,
+        "prompt_length_max": 14341,
+        "prompt_length_std": 2380.2,
+        "target_length_mean": 1
+      },
+      {
+        "name": "lt",
+        "sample_count": 14042,
+        "prompt_length_mean": 3053.71,
+        "prompt_length_min": 921,
+        "prompt_length_max": 13664,
+        "prompt_length_std": 2331.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "mg",
+        "sample_count": 14042,
+        "prompt_length_mean": 3567.95,
+        "prompt_length_min": 1042,
+        "prompt_length_max": 16250,
+        "prompt_length_std": 2861.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ms",
+        "sample_count": 14042,
+        "prompt_length_mean": 3345.47,
+        "prompt_length_min": 947,
+        "prompt_length_max": 15393,
+        "prompt_length_std": 2704.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ne",
+        "sample_count": 14042,
+        "prompt_length_mean": 2893.76,
+        "prompt_length_min": 861,
+        "prompt_length_max": 13033,
+        "prompt_length_std": 2211.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "nl",
+        "sample_count": 14042,
+        "prompt_length_mean": 3488.92,
+        "prompt_length_min": 993,
+        "prompt_length_max": 16074,
+        "prompt_length_std": 2839.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ny",
+        "sample_count": 14042,
+        "prompt_length_mean": 3307.43,
+        "prompt_length_min": 1012,
+        "prompt_length_max": 15235,
+        "prompt_length_std": 2539.24,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pl",
+        "sample_count": 14042,
+        "prompt_length_mean": 3276.01,
+        "prompt_length_min": 909,
+        "prompt_length_max": 14503,
+        "prompt_length_std": 2585.4,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pt",
+        "sample_count": 14042,
+        "prompt_length_mean": 3295.65,
+        "prompt_length_min": 970,
+        "prompt_length_max": 14620,
+        "prompt_length_std": 2580.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ro",
+        "sample_count": 14042,
+        "prompt_length_mean": 3350.91,
+        "prompt_length_min": 932,
+        "prompt_length_max": 14854,
+        "prompt_length_std": 2630.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ru",
+        "sample_count": 14042,
+        "prompt_length_mean": 3319.02,
+        "prompt_length_min": 920,
+        "prompt_length_max": 14635,
+        "prompt_length_std": 2596.24,
+        "target_length_mean": 1
+      },
+      {
+        "name": "si",
+        "sample_count": 14042,
+        "prompt_length_mean": 2958.06,
+        "prompt_length_min": 881,
+        "prompt_length_max": 13125,
+        "prompt_length_std": 2255.59,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sn",
+        "sample_count": 14042,
+        "prompt_length_mean": 3217.21,
+        "prompt_length_min": 962,
+        "prompt_length_max": 14630,
+        "prompt_length_std": 2479.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "so",
+        "sample_count": 14042,
+        "prompt_length_mean": 3444.59,
+        "prompt_length_min": 944,
+        "prompt_length_max": 15603,
+        "prompt_length_std": 2708.94,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sr",
+        "sample_count": 14042,
+        "prompt_length_mean": 2976.99,
+        "prompt_length_min": 901,
+        "prompt_length_max": 13118,
+        "prompt_length_std": 2257.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sv",
+        "sample_count": 14042,
+        "prompt_length_mean": 3116.67,
+        "prompt_length_min": 924,
+        "prompt_length_max": 14506,
+        "prompt_length_std": 2484.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sw",
+        "sample_count": 14042,
+        "prompt_length_mean": 3214.23,
+        "prompt_length_min": 941,
+        "prompt_length_max": 14343,
+        "prompt_length_std": 2505.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "te",
+        "sample_count": 14042,
+        "prompt_length_mean": 3044.29,
+        "prompt_length_min": 900,
+        "prompt_length_max": 13672,
+        "prompt_length_std": 2342.47,
+        "target_length_mean": 1
+      },
+      {
+        "name": "tr",
+        "sample_count": 14042,
+        "prompt_length_mean": 3094.77,
+        "prompt_length_min": 904,
+        "prompt_length_max": 14003,
+        "prompt_length_std": 2430.67,
+        "target_length_mean": 1
+      },
+      {
+        "name": "uk",
+        "sample_count": 14042,
+        "prompt_length_mean": 3112.33,
+        "prompt_length_min": 908,
+        "prompt_length_max": 13695,
+        "prompt_length_std": 2393.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "vi",
+        "sample_count": 14042,
+        "prompt_length_mean": 3253.18,
+        "prompt_length_min": 977,
+        "prompt_length_max": 15261,
+        "prompt_length_std": 2658.52,
+        "target_length_mean": 1
+      },
+      {
+        "name": "yo",
+        "sample_count": 14042,
+        "prompt_length_mean": 3002.93,
+        "prompt_length_min": 938,
+        "prompt_length_max": 13722,
+        "prompt_length_std": 2304.11,
+        "target_length_mean": 1
+      },
+      {
+        "name": "zh",
+        "sample_count": 14042,
+        "prompt_length_mean": 1234.39,
+        "prompt_length_min": 558,
+        "prompt_length_max": 4397,
+        "prompt_length_std": 701.48,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 3048.64,
+      "min": 558,
+      "max": 16835,
+      "std": 2466.79
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-11-27T17:20:20.968899"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "767e9bb5",
+          "content": "Here are some examples of how to answer similar questions:\n\nZ_3[x]/(x^2 + c) መስክ እንደሆነ ሁሉ በZ_3 ውስጥ ያግኙ።\nA) 0\nB) 1\nC) 2\nD) 3\nANSWER: B\n\nመግለጫ 1 | aH የአንድ ፋክተር ቡድን ኤለመንት ከሆነ |aH| ይከፋፍላል |a|. መግለጫ 2 | H እና K የጂ ንዑስ ቡድን ከሆኑ HK የጂ ንዑስ ቡድን ነው።\nA) እው ... [TRUNCATED 469 chars] ... le choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nየተሰጠውን የመስክ ማራዘሚያ Q(sqrt(2)፣ sqrt(3)፣ sqrt(18)) ከQ በላይ አግኝ።\n\nA) 0\nB) 4\nC) 2\nD) 6"
+        }
+      ],
+      "choices": [
+        "0",
+        "4",
+        "2",
+        "6"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "sample_id": "abstract_algebra/test/0",
+        "subject": "abstract_algebra",
+        "subject_category": "STEM",
+        "cultural_sensitivity_label": "-",
+        "language": "Amharic"
+      }
+    },
+    "subset": "am",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Global-MMLU\n\n\n## Overview\n\nGlobal-MMLU evaluates multilingual knowledge and performance on culturally sensitive and agnostic questions.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: An MMLU question with four options in one of 42 languages\n- **Output**: The letter of the correct option (A-D)\n- **Domain**: The 57 MMLU subjects\n\n## Key Features\n\n- 589,764 test questions across 42 languages. Each language has 2,850 culturally labeled questions.\n- Keeps the 39 rows with a missing option, including 12 where the correct choice is blank.\n\n## Evaluation Notes\n\n- Uses five same-subject examples from the language's `dev` split where available.\n- Scores generated answer letters by exact match. The upstream harness scores choice likelihoods and its Lite tasks\n  select examples by subject category.\n- Reports overall, culturally sensitive, and culturally agnostic accuracy per language. Bayes@N reports overall only.\n- Licensed under [Apache 2.0](https://opensource.org/license/apache-2-0).\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `global_mmlu` |\n| **Dataset ID** | [CohereLabs/Global-MMLU](https://modelscope.cn/datasets/CohereLabs/Global-MMLU/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2412.03304) |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 589,764 |\n| Prompt Length (Mean) | 3048.64 chars |\n| Prompt Length (Min/Max) | 558 / 16835 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `am` | 14,042 | 2143.94 | 749 | 8937 |\n| `ar` | 14,042 | 2718.89 | 830 | 11584 |\n| `bn` | 14,042 | 2985.86 | 850 | 13433 |\n| `cs` | 14,042 | 2955.66 | 863 | 13127 |\n| `de` | 14,042 | 3570.76 | 1007 | 16685 |\n| `el` | 14,042 | 3446.37 | 1003 | 15859 |\n| `en` | 14,042 | 3178.85 | 949 | 14594 |\n| `es` | 14,042 | 3469.11 | 977 | 15556 |\n| `fa` | 14,042 | 2772.79 | 821 | 12018 |\n| `fil` | 14,042 | 3641.24 | 997 | 16835 |\n| `fr` | 14,042 | 3554.29 | 1015 | 15946 |\n| `ha` | 14,042 | 3183.13 | 890 | 14093 |\n| `he` | 14,042 | 2411.77 | 813 | 10445 |\n| `hi` | 14,042 | 3087.54 | 900 | 13884 |\n| `id` | 14,042 | 3447.94 | 938 | 15651 |\n| `ig` | 14,042 | 2998.41 | 896 | 13562 |\n| `it` | 14,042 | 3482.2 | 984 | 15316 |\n| `ja` | 14,042 | 1571.26 | 627 | 6229 |\n| `ko` | 14,042 | 1733.23 | 661 | 7096 |\n| `ky` | 14,042 | 3121.07 | 936 | 14341 |\n| `lt` | 14,042 | 3053.71 | 921 | 13664 |\n| `mg` | 14,042 | 3567.95 | 1042 | 16250 |\n| `ms` | 14,042 | 3345.47 | 947 | 15393 |\n| `ne` | 14,042 | 2893.76 | 861 | 13033 |\n| `nl` | 14,042 | 3488.92 | 993 | 16074 |\n| `ny` | 14,042 | 3307.43 | 1012 | 15235 |\n| `pl` | 14,042 | 3276.01 | 909 | 14503 |\n| `pt` | 14,042 | 3295.65 | 970 | 14620 |\n| `ro` | 14,042 | 3350.91 | 932 | 14854 |\n| `ru` | 14,042 | 3319.02 | 920 | 14635 |\n| `si` | 14,042 | 2958.06 | 881 | 13125 |\n| `sn` | 14,042 | 3217.21 | 962 | 14630 |\n| `so` | 14,042 | 3444.59 | 944 | 15603 |\n| `sr` | 14,042 | 2976.99 | 901 | 13118 |\n| `sv` | 14,042 | 3116.67 | 924 | 14506 |\n| `sw` | 14,042 | 3214.23 | 941 | 14343 |\n| `te` | 14,042 | 3044.29 | 900 | 13672 |\n| `tr` | 14,042 | 3094.77 | 904 | 14003 |\n| `uk` | 14,042 | 3112.33 | 908 | 13695 |\n| `vi` | 14,042 | 3253.18 | 977 | 15261 |\n| `yo` | 14,042 | 3002.93 | 938 | 13722 |\n| `zh` | 14,042 | 1234.39 | 558 | 4397 |\n\n## Sample Example\n\n**Subset**: `am`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"767e9bb5\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nZ_3[x]/(x^2 + c) መስክ እንደሆነ ሁሉ በZ_3 ውስጥ ያግኙ።\\nA) 0\\nB) 1\\nC) 2\\nD) 3\\nANSWER: B\\n\\nመግለጫ 1 | aH የአንድ ፋክተር ቡድን ኤለመንት ከሆነ |aH| ይከፋፍላል |a|. መግለጫ 2 | H እና K የጂ ንዑስ ቡድን ከሆኑ HK የጂ ንዑስ ቡድን ነው።\\nA) እው ... [TRUNCATED 469 chars] ... le choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nየተሰጠውን የመስክ ማራዘሚያ Q(sqrt(2)፣ sqrt(3)፣ sqrt(18)) ከQ በላይ አግኝ።\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"abstract_algebra/test/0\",\n    \"subject\": \"abstract_algebra\",\n    \"subject_category\": \"STEM\",\n    \"cultural_sensitivity_label\": \"-\",\n    \"language\": \"Amharic\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets global_mmlu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['global_mmlu'],\n    dataset_args={\n        'global_mmlu': {\n            # subset_list: ['am', 'ar', 'bn']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Global-MMLU\n\n\n## 概述\n\nGlobal-MMLU 评估模型在多语言知识方面的表现，涵盖文化敏感和文化中立的问题。\n\n## 任务描述\n\n- **任务类型**：多语言多项选择题问答\n- **输入**：一个 MMLU 问题及其四个选项，使用 42 种语言中的一种\n- **输出**：正确选项的字母（A-D）\n- **领域**：MMLU 的 57 个学科\n\n## 主要特点\n\n- 包含 42 种语言的 589,764 道测试题。每种语言有 2,850 道带有文化标签的题目。\n- 保留了 39 行缺失选项的数据，其中包括 12 行正确答案为空的情况。\n\n## 评估说明\n\n- 在可用情况下，使用该语言 `dev` 数据集中同一学科的五个示例。\n- 通过精确匹配对生成的答案字母进行评分。上游框架会对选项的可能性进行评分，其 Lite 任务按学科类别选择示例。\n- 报告每种语言的整体准确率、文化敏感准确率和文化中立即准确率。Bayes@N 仅报告整体准确率。\n- 采用 [Apache 2.0](https://opensource.org/license/apache-2-0) 许可证授权。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `global_mmlu` |\n| **数据集ID** | [CohereLabs/Global-MMLU](https://modelscope.cn/datasets/CohereLabs/Global-MMLU/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2412.03304) |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认示例数** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `dev` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 589,764 |\n| 提示词长度（平均值） | 3048.64 字符 |\n| 提示词长度（最小/最大值） | 558 / 16835 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `am` | 14,042 | 2143.94 | 749 | 8937 |\n| `ar` | 14,042 | 2718.89 | 830 | 11584 |\n| `bn` | 14,042 | 2985.86 | 850 | 13433 |\n| `cs` | 14,042 | 2955.66 | 863 | 13127 |\n| `de` | 14,042 | 3570.76 | 1007 | 16685 |\n| `el` | 14,042 | 3446.37 | 1003 | 15859 |\n| `en` | 14,042 | 3178.85 | 949 | 14594 |\n| `es` | 14,042 | 3469.11 | 977 | 15556 |\n| `fa` | 14,042 | 2772.79 | 821 | 12018 |\n| `fil` | 14,042 | 3641.24 | 997 | 16835 |\n| `fr` | 14,042 | 3554.29 | 1015 | 15946 |\n| `ha` | 14,042 | 3183.13 | 890 | 14093 |\n| `he` | 14,042 | 2411.77 | 813 | 10445 |\n| `hi` | 14,042 | 3087.54 | 900 | 13884 |\n| `id` | 14,042 | 3447.94 | 938 | 15651 |\n| `ig` | 14,042 | 2998.41 | 896 | 13562 |\n| `it` | 14,042 | 3482.2 | 984 | 15316 |\n| `ja` | 14,042 | 1571.26 | 627 | 6229 |\n| `ko` | 14,042 | 1733.23 | 661 | 7096 |\n| `ky` | 14,042 | 3121.07 | 936 | 14341 |\n| `lt` | 14,042 | 3053.71 | 921 | 13664 |\n| `mg` | 14,042 | 3567.95 | 1042 | 16250 |\n| `ms` | 14,042 | 3345.47 | 947 | 15393 |\n| `ne` | 14,042 | 2893.76 | 861 | 13033 |\n| `nl` | 14,042 | 3488.92 | 993 | 16074 |\n| `ny` | 14,042 | 3307.43 | 1012 | 15235 |\n| `pl` | 14,042 | 3276.01 | 909 | 14503 |\n| `pt` | 14,042 | 3295.65 | 970 | 14620 |\n| `ro` | 14,042 | 3350.91 | 932 | 14854 |\n| `ru` | 14,042 | 3319.02 | 920 | 14635 |\n| `si` | 14,042 | 2958.06 | 881 | 13125 |\n| `sn` | 14,042 | 3217.21 | 962 | 14630 |\n| `so` | 14,042 | 3444.59 | 944 | 15603 |\n| `sr` | 14,042 | 2976.99 | 901 | 13118 |\n| `sv` | 14,042 | 3116.67 | 924 | 14506 |\n| `sw` | 14,042 | 3214.23 | 941 | 14343 |\n| `te` | 14,042 | 3044.29 | 900 | 13672 |\n| `tr` | 14,042 | 3094.77 | 904 | 14003 |\n| `uk` | 14,042 | 3112.33 | 908 | 13695 |\n| `vi` | 14,042 | 3253.18 | 977 | 15261 |\n| `yo` | 14,042 | 3002.93 | 938 | 13722 |\n| `zh` | 14,042 | 1234.39 | 558 | 4397 |\n\n## 样例示例\n\n**子集**: `am`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"767e9bb5\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nZ_3[x]/(x^2 + c) መስክ እንደሆነ ሁሉ በZ_3 ውስጥ ያግኙ።\\nA) 0\\nB) 1\\nC) 2\\nD) 3\\nANSWER: B\\n\\nመግለጫ 1 | aH የአንድ ፋክተር ቡድን ኤለመንት ከሆነ |aH| ይከፋፍላል |a|. መግለጫ 2 | H እና K የጂ ንዑስ ቡድን ከሆኑ HK የጂ ንዑስ ቡድን ነው።\\nA) እው ... [TRUNCATED 469 chars] ... le choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nየተሰጠውን የመስክ ማራዘሚያ Q(sqrt(2)፣ sqrt(3)፣ sqrt(18)) ከQ በላይ አግኝ።\\n\\nA) 0\\nB) 4\\nC) 2\\nD) 6\"\n    }\n  ],\n  \"choices\": [\n    \"0\",\n    \"4\",\n    \"2\",\n    \"6\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"abstract_algebra/test/0\",\n    \"subject\": \"abstract_algebra\",\n    \"subject_category\": \"STEM\",\n    \"cultural_sensitivity_label\": \"-\",\n    \"language\": \"Amharic\"\n  }\n}\n```\n\n*注意：为显示目的，部分内容已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets global_mmlu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['global_mmlu'],\n    dataset_args={\n        'global_mmlu': {\n            # subset_list: ['am', 'ar', 'bn']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "0e246d797adddf447fff94af0da53d53",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-27T17:21:30.279299",
+  "translation_updated_at": "2026-11-27T17:21:34"
+}

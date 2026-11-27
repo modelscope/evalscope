@@ -473,7 +473,7 @@ def dict_to_yaml(d: dict, yaml_file: str) -> None:
 
 
 def json_to_dict(json_file: str) -> Any:
-    """Load a JSON file and return its contents as a Python object.
+    """Load a UTF-8 JSON file, accepting an optional leading BOM.
 
     Args:
         json_file (str): Path to the ``.json`` file.
@@ -484,7 +484,7 @@ def json_to_dict(json_file: str) -> Any:
     Raises:
         json.JSONDecodeError: When the file cannot be parsed.
     """
-    with open(json_file, 'r', encoding='utf-8') as f:
+    with open(json_file, 'r', encoding='utf-8-sig') as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:

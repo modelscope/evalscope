@@ -1,0 +1,314 @@
+{
+  "meta": {
+    "pretty_name": "Global-MMLU-Lite",
+    "dataset_id": "CohereLabs/Global-MMLU-Lite",
+    "paper_url": "https://arxiv.org/abs/2412.03304",
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 5,
+    "eval_split": "test",
+    "train_split": "dev",
+    "subset_list": [
+      "ar",
+      "bn",
+      "cs",
+      "cy",
+      "de",
+      "en",
+      "es",
+      "fr",
+      "hi",
+      "hu",
+      "id",
+      "it",
+      "ja",
+      "ko",
+      "my",
+      "or",
+      "pt",
+      "sk",
+      "sq",
+      "sw",
+      "tg",
+      "yo",
+      "zh"
+    ],
+    "description": "\n## Overview\n\nGlobal-MMLU-Lite balances culturally sensitive and agnostic questions across 23 human-reviewed languages.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: An MMLU question with four options in one of 23 languages\n- **Output**: The letter of the correct option (A-D)\n- **Domain**: 43 of the 57 MMLU subjects\n\n## Key Features\n\n- Version 3.0 evaluates 9,199 questions after skipping one blank Burmese question. The paper covers the first 15 languages.\n- Welsh uses zero-shot because its release has no `dev` split.\n\n## Evaluation Notes\n\n- Uses five same-subject examples from the language's `dev` split where available.\n- Scores generated answer letters by exact match. The upstream harness scores choice likelihoods and its Lite tasks\n  select examples by subject category.\n- Reports overall, culturally sensitive, and culturally agnostic accuracy per language. Bayes@N reports overall only.\n- Licensed under [Apache 2.0](https://opensource.org/license/apache-2-0).\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "cultural_sensitivity": "all"
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 9199,
+    "subset_stats": [
+      {
+        "name": "ar",
+        "sample_count": 400,
+        "prompt_length_mean": 2469.9,
+        "prompt_length_min": 995,
+        "prompt_length_max": 11150,
+        "prompt_length_std": 2045.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "bn",
+        "sample_count": 400,
+        "prompt_length_mean": 2687.55,
+        "prompt_length_min": 987,
+        "prompt_length_max": 12825,
+        "prompt_length_std": 2346.81,
+        "target_length_mean": 1
+      },
+      {
+        "name": "cs",
+        "sample_count": 400,
+        "prompt_length_mean": 2680.58,
+        "prompt_length_min": 958,
+        "prompt_length_max": 12785,
+        "prompt_length_std": 2332.92,
+        "target_length_mean": 1
+      },
+      {
+        "name": "cy",
+        "sample_count": 400,
+        "prompt_length_mean": 615.85,
+        "prompt_length_min": 252,
+        "prompt_length_max": 2783,
+        "prompt_length_std": 440.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "de",
+        "sample_count": 400,
+        "prompt_length_mean": 3215.62,
+        "prompt_length_min": 1037,
+        "prompt_length_max": 16179,
+        "prompt_length_std": 2973.8,
+        "target_length_mean": 1
+      },
+      {
+        "name": "en",
+        "sample_count": 400,
+        "prompt_length_mean": 2873.17,
+        "prompt_length_min": 984,
+        "prompt_length_max": 14330,
+        "prompt_length_std": 2593.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "es",
+        "sample_count": 400,
+        "prompt_length_mean": 3127.28,
+        "prompt_length_min": 1019,
+        "prompt_length_max": 15071,
+        "prompt_length_std": 2790.81,
+        "target_length_mean": 1
+      },
+      {
+        "name": "fr",
+        "sample_count": 400,
+        "prompt_length_mean": 3207.97,
+        "prompt_length_min": 1037,
+        "prompt_length_max": 15429,
+        "prompt_length_std": 2863.15,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hi",
+        "sample_count": 400,
+        "prompt_length_mean": 2789.74,
+        "prompt_length_min": 966,
+        "prompt_length_max": 13386,
+        "prompt_length_std": 2491.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hu",
+        "sample_count": 400,
+        "prompt_length_mean": 2978.19,
+        "prompt_length_min": 996,
+        "prompt_length_max": 14592,
+        "prompt_length_std": 2640.57,
+        "target_length_mean": 1
+      },
+      {
+        "name": "id",
+        "sample_count": 400,
+        "prompt_length_mean": 3073.08,
+        "prompt_length_min": 1030,
+        "prompt_length_max": 15137,
+        "prompt_length_std": 2846.7,
+        "target_length_mean": 1
+      },
+      {
+        "name": "it",
+        "sample_count": 400,
+        "prompt_length_mean": 3115.24,
+        "prompt_length_min": 1024,
+        "prompt_length_max": 15079,
+        "prompt_length_std": 2772.93,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ja",
+        "sample_count": 400,
+        "prompt_length_mean": 1444.81,
+        "prompt_length_min": 718,
+        "prompt_length_max": 6013,
+        "prompt_length_std": 1037.33,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ko",
+        "sample_count": 400,
+        "prompt_length_mean": 1571.24,
+        "prompt_length_min": 709,
+        "prompt_length_max": 6645,
+        "prompt_length_std": 1194.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "my",
+        "sample_count": 399,
+        "prompt_length_mean": 3147.32,
+        "prompt_length_min": 1018,
+        "prompt_length_max": 15746,
+        "prompt_length_std": 2854.1,
+        "target_length_mean": 1
+      },
+      {
+        "name": "or",
+        "sample_count": 400,
+        "prompt_length_mean": 2726.38,
+        "prompt_length_min": 995,
+        "prompt_length_max": 13442,
+        "prompt_length_std": 2379.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pt",
+        "sample_count": 400,
+        "prompt_length_mean": 2974.53,
+        "prompt_length_min": 994,
+        "prompt_length_max": 14253,
+        "prompt_length_std": 2630.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sk",
+        "sample_count": 400,
+        "prompt_length_mean": 2772.8,
+        "prompt_length_min": 977,
+        "prompt_length_max": 13133,
+        "prompt_length_std": 2424.19,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sq",
+        "sample_count": 400,
+        "prompt_length_mean": 3030.12,
+        "prompt_length_min": 1033,
+        "prompt_length_max": 14570,
+        "prompt_length_std": 2700.68,
+        "target_length_mean": 1
+      },
+      {
+        "name": "sw",
+        "sample_count": 400,
+        "prompt_length_mean": 2882.58,
+        "prompt_length_min": 1046,
+        "prompt_length_max": 14042,
+        "prompt_length_std": 2522.08,
+        "target_length_mean": 1
+      },
+      {
+        "name": "tg",
+        "sample_count": 400,
+        "prompt_length_mean": 2955.62,
+        "prompt_length_min": 981,
+        "prompt_length_max": 13788,
+        "prompt_length_std": 2595.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "yo",
+        "sample_count": 400,
+        "prompt_length_mean": 2696.96,
+        "prompt_length_min": 984,
+        "prompt_length_max": 13569,
+        "prompt_length_std": 2370.62,
+        "target_length_mean": 1
+      },
+      {
+        "name": "zh",
+        "sample_count": 400,
+        "prompt_length_mean": 1151.58,
+        "prompt_length_min": 624,
+        "prompt_length_max": 4255,
+        "prompt_length_std": 736.19,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 2616.82,
+      "min": 252,
+      "max": 16179,
+      "std": 2487.42
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-11-27T17:18:41.812496"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "87416dc0",
+          "content": "Here are some examples of how to answer similar questions:\n\nأنت تدفع شاحنة على طول الطريق. هل سيكون من الأسهل تسريع هذه الشاحنة على المريخ؟ لماذا؟ (افترض عدم وجود احتكاك)\nA) سيكون الأمر أصعب لأن الشاحنة أثقل وزنًا على المريخ.\nB) سيكون الأمر أ ... [TRUNCATED 1714 chars] ...  following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nعند السفر شمالًا من الولايات المتحدة إلى كندا، سترى نجم الشمال (بولاريس) _________.\n\nA) أكثر سطوعًا\nB) باهت\nC) أعلى في السماء\nD) أكثر انخفاضًا في السماء"
+        }
+      ],
+      "choices": [
+        "أكثر سطوعًا",
+        "باهت",
+        "أعلى في السماء",
+        "أكثر انخفاضًا في السماء"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "sample_id": "astronomy/test/58",
+        "subject": "astronomy",
+        "subject_category": "STEM",
+        "cultural_sensitivity_label": "CS",
+        "language": "Arabic"
+      }
+    },
+    "subset": "ar",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# Global-MMLU-Lite\n\n\n## Overview\n\nGlobal-MMLU-Lite balances culturally sensitive and agnostic questions across 23 human-reviewed languages.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: An MMLU question with four options in one of 23 languages\n- **Output**: The letter of the correct option (A-D)\n- **Domain**: 43 of the 57 MMLU subjects\n\n## Key Features\n\n- Version 3.0 evaluates 9,199 questions after skipping one blank Burmese question. The paper covers the first 15 languages.\n- Welsh uses zero-shot because its release has no `dev` split.\n\n## Evaluation Notes\n\n- Uses five same-subject examples from the language's `dev` split where available.\n- Scores generated answer letters by exact match. The upstream harness scores choice likelihoods and its Lite tasks\n  select examples by subject category.\n- Reports overall, culturally sensitive, and culturally agnostic accuracy per language. Bayes@N reports overall only.\n- Licensed under [Apache 2.0](https://opensource.org/license/apache-2-0).\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `global_mmlu_lite` |\n| **Dataset ID** | [CohereLabs/Global-MMLU-Lite](https://modelscope.cn/datasets/CohereLabs/Global-MMLU-Lite/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2412.03304) |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 5-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 9,199 |\n| Prompt Length (Mean) | 2616.82 chars |\n| Prompt Length (Min/Max) | 252 / 16179 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `ar` | 400 | 2469.9 | 995 | 11150 |\n| `bn` | 400 | 2687.55 | 987 | 12825 |\n| `cs` | 400 | 2680.58 | 958 | 12785 |\n| `cy` | 400 | 615.85 | 252 | 2783 |\n| `de` | 400 | 3215.62 | 1037 | 16179 |\n| `en` | 400 | 2873.17 | 984 | 14330 |\n| `es` | 400 | 3127.28 | 1019 | 15071 |\n| `fr` | 400 | 3207.97 | 1037 | 15429 |\n| `hi` | 400 | 2789.74 | 966 | 13386 |\n| `hu` | 400 | 2978.19 | 996 | 14592 |\n| `id` | 400 | 3073.08 | 1030 | 15137 |\n| `it` | 400 | 3115.24 | 1024 | 15079 |\n| `ja` | 400 | 1444.81 | 718 | 6013 |\n| `ko` | 400 | 1571.24 | 709 | 6645 |\n| `my` | 399 | 3147.32 | 1018 | 15746 |\n| `or` | 400 | 2726.38 | 995 | 13442 |\n| `pt` | 400 | 2974.53 | 994 | 14253 |\n| `sk` | 400 | 2772.8 | 977 | 13133 |\n| `sq` | 400 | 3030.12 | 1033 | 14570 |\n| `sw` | 400 | 2882.58 | 1046 | 14042 |\n| `tg` | 400 | 2955.62 | 981 | 13788 |\n| `yo` | 400 | 2696.96 | 984 | 13569 |\n| `zh` | 400 | 1151.58 | 624 | 4255 |\n\n## Sample Example\n\n**Subset**: `ar`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"87416dc0\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nأنت تدفع شاحنة على طول الطريق. هل سيكون من الأسهل تسريع هذه الشاحنة على المريخ؟ لماذا؟ (افترض عدم وجود احتكاك)\\nA) سيكون الأمر أصعب لأن الشاحنة أثقل وزنًا على المريخ.\\nB) سيكون الأمر أ ... [TRUNCATED 1714 chars] ...  following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nعند السفر شمالًا من الولايات المتحدة إلى كندا، سترى نجم الشمال (بولاريس) _________.\\n\\nA) أكثر سطوعًا\\nB) باهت\\nC) أعلى في السماء\\nD) أكثر انخفاضًا في السماء\"\n    }\n  ],\n  \"choices\": [\n    \"أكثر سطوعًا\",\n    \"باهت\",\n    \"أعلى في السماء\",\n    \"أكثر انخفاضًا في السماء\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"astronomy/test/58\",\n    \"subject\": \"astronomy\",\n    \"subject_category\": \"STEM\",\n    \"cultural_sensitivity_label\": \"CS\",\n    \"language\": \"Arabic\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets global_mmlu_lite \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['global_mmlu_lite'],\n    dataset_args={\n        'global_mmlu_lite': {\n            # subset_list: ['ar', 'bn', 'cs']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Global-MMLU-Lite\n\n\n## 概述\n\nGlobal-MMLU-Lite 在 23 种经人工审核的语言中，平衡了文化敏感型和文化中立型问题。\n\n## 任务描述\n\n- **任务类型**：多语言选择题问答\n- **输入**：以 23 种语言之一呈现的包含四个选项的 MMLU 问题\n- **输出**：正确选项的字母（A-D）\n- **领域**：MMLU 57 个学科中的 43 个\n\n## 主要特点\n\n- 版本 3.0 在跳过一个空白的缅甸语问题后，评估了 9,199 个问题。论文涵盖了前 15 种语言。\n- 威尔士语使用零样本（zero-shot），因为其发布版本没有 `dev` 划分。\n\n## 评估说明\n\n- 如果可用，则从该语言的 `dev` 划分中选取五个同主题示例。\n- 通过精确匹配对生成的答案字母进行评分。上游测试框架对选项可能性进行评分，其 Lite 任务按主题类别选择示例。\n- 报告每种语言的整体准确率、文化敏感型准确率和文化中立型准确率。Bayes@N 仅报告整体准确率。\n- 采用 [Apache 2.0](https://opensource.org/license/apache-2-0) 许可证授权。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `global_mmlu_lite` |\n| **数据集ID** | [CohereLabs/Global-MMLU-Lite](https://modelscope.cn/datasets/CohereLabs/Global-MMLU-Lite/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2412.03304) |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认示例数** | 5-shot |\n| **评估划分** | `test` |\n| **训练划分** | `dev` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 9,199 |\n| 提示词长度（平均值） | 2616.82 字符 |\n| 提示词长度（最小/最大） | 252 / 16179 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `ar` | 400 | 2469.9 | 995 | 11150 |\n| `bn` | 400 | 2687.55 | 987 | 12825 |\n| `cs` | 400 | 2680.58 | 958 | 12785 |\n| `cy` | 400 | 615.85 | 252 | 2783 |\n| `de` | 400 | 3215.62 | 1037 | 16179 |\n| `en` | 400 | 2873.17 | 984 | 14330 |\n| `es` | 400 | 3127.28 | 1019 | 15071 |\n| `fr` | 400 | 3207.97 | 1037 | 15429 |\n| `hi` | 400 | 2789.74 | 966 | 13386 |\n| `hu` | 400 | 2978.19 | 996 | 14592 |\n| `id` | 400 | 3073.08 | 1030 | 15137 |\n| `it` | 400 | 3115.24 | 1024 | 15079 |\n| `ja` | 400 | 1444.81 | 718 | 6013 |\n| `ko` | 400 | 1571.24 | 709 | 6645 |\n| `my` | 399 | 3147.32 | 1018 | 15746 |\n| `or` | 400 | 2726.38 | 995 | 13442 |\n| `pt` | 400 | 2974.53 | 994 | 14253 |\n| `sk` | 400 | 2772.8 | 977 | 13133 |\n| `sq` | 400 | 3030.12 | 1033 | 14570 |\n| `sw` | 400 | 2882.58 | 1046 | 14042 |\n| `tg` | 400 | 2955.62 | 981 | 13788 |\n| `yo` | 400 | 2696.96 | 984 | 13569 |\n| `zh` | 400 | 1151.58 | 624 | 4255 |\n\n## 样例示例\n\n**子集**: `ar`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"87416dc0\",\n      \"content\": \"Here are some examples of how to answer similar questions:\\n\\nأنت تدفع شاحنة على طول الطريق. هل سيكون من الأسهل تسريع هذه الشاحنة على المريخ؟ لماذا؟ (افترض عدم وجود احتكاك)\\nA) سيكون الأمر أصعب لأن الشاحنة أثقل وزنًا على المريخ.\\nB) سيكون الأمر أ ... [TRUNCATED 1714 chars] ...  following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nعند السفر شمالًا من الولايات المتحدة إلى كندا، سترى نجم الشمال (بولاريس) _________.\\n\\nA) أكثر سطوعًا\\nB) باهت\\nC) أعلى في السماء\\nD) أكثر انخفاضًا في السماء\"\n    }\n  ],\n  \"choices\": [\n    \"أكثر سطوعًا\",\n    \"باهت\",\n    \"أعلى في السماء\",\n    \"أكثر انخفاضًا في السماء\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"sample_id\": \"astronomy/test/58\",\n    \"subject\": \"astronomy\",\n    \"subject_category\": \"STEM\",\n    \"cultural_sensitivity_label\": \"CS\",\n    \"language\": \"Arabic\"\n  }\n}\n```\n\n*注意：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets global_mmlu_lite \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['global_mmlu_lite'],\n    dataset_args={\n        'global_mmlu_lite': {\n            # subset_list: ['ar', 'bn', 'cs']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "216500434039b92af98e27d6f332fa11",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-27T17:18:46.131150",
+  "translation_updated_at": "2026-11-27T17:21:34"
+}

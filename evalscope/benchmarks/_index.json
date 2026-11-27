@@ -108,6 +108,8 @@
  "general_vmcq": "evalscope.benchmarks.general_vmcq.general_vmcq_adapter",
  "general_vqa": "evalscope.benchmarks.general_vqa.general_vqa_adapter",
  "genia_ner": "evalscope.benchmarks.ner.genia_ner_adapter",
+ "global_mmlu": "evalscope.benchmarks.global_mmlu.global_mmlu_adapter",
+ "global_mmlu_lite": "evalscope.benchmarks.global_mmlu.global_mmlu_adapter",
  "gpqa_diamond": "evalscope.benchmarks.gpqa.gpqa_adapter",
  "gsm8k": "evalscope.benchmarks.gsm8k.gsm8k_adapter",
  "gsm8k_indic": "evalscope.benchmarks.gsm8k_indic.gsm8k_indic_adapter",

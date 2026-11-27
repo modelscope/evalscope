@@ -3,6 +3,7 @@
 import argparse
 
 from evalscope import __version__
+from evalscope.cli.analyze import AnalyzeCMD
 from evalscope.cli.benchmark_info import BenchmarkInfoCMD
 from evalscope.cli.start_app import StartAppCMD
 from evalscope.cli.start_eval import EvalCMD
@@ -20,6 +21,7 @@ def run_cmd():
     StartAppCMD.define_args(subparsers)
     ServiceCMD.define_args(subparsers)
     BenchmarkInfoCMD.define_args(subparsers)
+    AnalyzeCMD.define_args(subparsers)
 
     args = parser.parse_args()
 

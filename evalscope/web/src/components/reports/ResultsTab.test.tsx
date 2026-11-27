@@ -6,10 +6,9 @@ import type { PerfMetrics } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { formatMetricLabels, metricIdentityKey } from '@/domain/metric'
 import type { MetricIdentity, MetricSemantics } from '@/domain/metric'
-import DetailsTab from './DetailsTab'
+import ResultsTab from './ResultsTab'
 
 vi.mock('@/api/reports', () => ({
-  getAnalysis: vi.fn().mockResolvedValue(''),
   getDataFrame: vi.fn().mockResolvedValue({
     columns: ['Subset', 'Metric', 'Score', 'Num'],
     data: [
@@ -47,15 +46,14 @@ const THROUGHPUT: MetricSemantics = {
   display_precision: 2,
 }
 
-describe('DetailsTab metric semantics', () => {
+describe('ResultsTab metric semantics', () => {
   it('formats each score from its metric contract instead of its magnitude', async () => {
     render(
       <LocaleProvider>
-        <DetailsTab
+        <ResultsTab
           reportName="fixture-report"
           datasetName="fixture-dataset"
           rootPath="/outputs"
-          overallScore={512}
           semantics={THROUGHPUT}
           semanticsByMetric={{ WeightedScorePercent: POINTS_100, AverageOutputTps: THROUGHPUT }}
         />
@@ -67,31 +65,11 @@ describe('DetailsTab metric semantics', () => {
     })
 
     // The headline and the matching row both render the throughput in its native unit.
-    expect(screen.getAllByText('512 tok/s')).toHaveLength(2)
+    expect(screen.getAllByText('512 tok/s')).toHaveLength(1)
     // An official 0-100 score keeps its own scale instead of being multiplied again.
     expect(screen.getByText('81.5%')).toBeInTheDocument()
     expect(screen.queryByText(/8150/)).not.toBeInTheDocument()
     expect(screen.queryByText(/51200/)).not.toBeInTheDocument()
-  })
-
-  it('labels the headline with the metric name and its direction', async () => {
-    render(
-      <LocaleProvider>
-        <DetailsTab
-          reportName="fixture-report"
-          datasetName="fixture-dataset"
-          rootPath="/outputs"
-          overallScore={512}
-          semantics={THROUGHPUT}
-        />
-      </LocaleProvider>,
-    )
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    expect(screen.getByText('Token Throughput ↑')).toBeInTheDocument()
   })
 
   it('labels each row by its identity, dimensions included', async () => {
@@ -122,7 +100,7 @@ describe('DetailsTab metric semantics', () => {
     })
     render(
       <LocaleProvider>
-        <DetailsTab
+        <ResultsTab
           reportName="fixture-report"
           datasetName="fixture-dataset"
           rootPath="/outputs"
@@ -150,7 +128,7 @@ describe('DetailsTab metric semantics', () => {
     }
     render(
       <LocaleProvider>
-        <DetailsTab
+        <ResultsTab
           reportName="fixture-report"
           datasetName="fixture-dataset"
           rootPath="/outputs"
@@ -163,11 +141,11 @@ describe('DetailsTab metric semantics', () => {
       await Promise.resolve()
     })
 
-    expect(screen.queryByText('Performance Metrics')).not.toBeInTheDocument()
+    expect(screen.queryByText('Latency and usage')).not.toBeInTheDocument()
   })
 })
 
-describe('DetailsTab Correct column', () => {
+describe('ResultsTab Correct column', () => {
   it('renders counts and dashes when the frame carries the column', async () => {
     vi.mocked(getDataFrame).mockResolvedValueOnce({
       columns: ['Subset', 'Metric', 'Score', 'Num', 'Correct'],
@@ -178,7 +156,7 @@ describe('DetailsTab Correct column', () => {
     })
     render(
       <LocaleProvider>
-        <DetailsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
+        <ResultsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
       </LocaleProvider>,
     )
 
@@ -194,7 +172,7 @@ describe('DetailsTab Correct column', () => {
   it('omits the column when the frame does not carry it', async () => {
     render(
       <LocaleProvider>
-        <DetailsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
+        <ResultsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
       </LocaleProvider>,
     )
 

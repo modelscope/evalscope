@@ -2,13 +2,13 @@
 
 The rapid advancement of generative models in fields like text-to-image generation has introduced a plethora of models to the community. Objectively evaluating the performance of these diverse models has become crucial for technology selection and optimization. Traditional evaluation methods heavily rely on manual annotation and subjective judgment, often requiring significant human resources for sample selection, quality scoring, and result analysis. This process is not only time-consuming and costly but also prone to bias due to reviewers' subjective preferences, which is particularly problematic in image generation. For instance, in text-image alignment evaluation, manual scoring involves organizing teams to score thousands of generated images individually, taking days and risking consistency. Moreover, manual evaluation struggles to accurately quantify complex metrics like image realism and text-image matching, limiting precise model iteration guidance.
 
-To address these challenges, EvalScope offers a comprehensive solution from automated evaluation to intelligent analysis. Its core advantages include:
+To address these challenges, EvalScope offers a comprehensive solution from automated evaluation to result analysis. Its core advantages include:
 
 1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion, Flux and Qwen-Image, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html).
 
-2. **Intelligent Reporting and Visualization**: Utilizes large models to automatically generate multi-dimensional analysis reports, combined with interactive visualization tools like radar and bar charts, to intuitively display model performance differences across scenarios, aiding developers in quickly identifying model bottlenecks.
+2. **Evaluation Reports and Visualization**: Shows scores and basic analysis alongside interactive charts to help compare performance across scenarios.
 
-This document uses FLUX.1-dev, HiDream-I1-Dev and Qwen-Image models as evaluation subjects on the EvalMuse dataset, providing developers with a complete practice guide from environment setup to result interpretation, leveraging EvalScope's intelligent reporting and visualization features.
+This document uses FLUX.1-dev, HiDream-I1-Dev and Qwen-Image models as evaluation subjects on the EvalMuse dataset, providing developers with a complete practice guide from environment setup to result interpretation, leveraging EvalScope's evaluation reporting and visualization features.
 
 ## Installing Dependencies
 
@@ -31,8 +31,6 @@ Next, we will comprehensively test text-to-image models using the EvalMuse bench
 This evaluation uses FGA-BLIP2 as an automated scoring model, replacing traditional manual annotation to significantly improve efficiency. The scoring system consists of two parts: an overall score (0-5) for evaluating the comprehensive quality and text matching of generated images, and subcategory scores (0-1) for specific semantic tags like objects, colors, and quantities. This method avoids subjective bias and ensures reproducible results, especially suitable for large-scale model comparison tests.
 
 Run the following code to start the full evaluation process. The system will automatically download the text-to-image model, evaluation dataset, and scoring model (the first run may take a long time to download, please be patient), and complete inference with approximately 60GB of VRAM support.
-
-Note: After the evaluation, the Qwen3-235B-A22B large model API will be called to generate an intelligent report. Please obtain the `MODELSCOPE_SDK_TOKEN` from the ModelScope community and configure it in the environment variable in advance. Get it here: [Token Page](https://modelscope.cn/my/myaccesstoken).
 
 ```python
 from evalscope.constants import ModelTask
@@ -70,7 +68,7 @@ task_cfg = TaskConfig(
         'num_inference_steps': 28,  # For HiDream-Dev, recommended steps are 28
         'guidance_scale': 0.0,  # For HiDream-Dev, recommended is 0.0
     },
-    # Whether to generate an analysis report
+    # Enable free basic analysis.
     analysis_report=True,
 )
 
@@ -150,10 +148,12 @@ Run the following command to launch the visualization interface, intuitively dis
 evalscope service
 ```
 
-The evaluation results include intelligent analysis reports, model score distribution, and generated image cases. The analysis report shows that the HiDream-I1-Dev model performs well in image description and understanding but needs improvement in handling complex semantics, spatial relationships, and quantity reasoning.
+The report shows basic analysis, scores by dimension, and generated images.
+
+`analysis_report=True` enables free basic analysis. For model analysis, [configure an analysis model explicitly](../user_guides/diagnosis.md). Model analysis uses text and saved scores.
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_report.png)
-*Intelligent Report Analysis*
+*Evaluation report*
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_overall_score.png)
 *Model Score Distribution*
@@ -167,7 +167,7 @@ We can also compare the results with the official EvalMuse test results. HiDream
 
 ## Conclusion
 
-The automated evaluation provided by the EvalScope framework objectively achieves full-process automation from batch inference to multi-dimensional analysis. Combined with intelligent report analysis and result visualization, it significantly enhances the efficiency and objectivity of text-to-image model performance evaluation. We hope these efforts help address the issues of relying on extensive human resources for sample selection and subjective scoring in traditional manual evaluation, reducing evaluation cycles and costs, and avoiding subjective bias that affects evaluation results. On this basis, we will further improve the capabilities of the EvalScope evaluation framework and introduce evaluation standards that cover more aspects, facilitating developers to conduct more comprehensive and targeted evaluations of model performance in different scenarios.
+The automated evaluation provided by the EvalScope framework objectively achieves full-process automation from batch inference to multi-dimensional analysis. Combined with basic analysis and result visualization, it significantly enhances the efficiency and objectivity of text-to-image model performance evaluation. We hope these efforts help address the issues of relying on extensive human resources for sample selection and subjective scoring in traditional manual evaluation, reducing evaluation cycles and costs, and avoiding subjective bias that affects evaluation results. On this basis, we will further improve the capabilities of the EvalScope evaluation framework and introduce evaluation standards that cover more aspects, facilitating developers to conduct more comprehensive and targeted evaluations of model performance in different scenarios.
 
 ## References
 

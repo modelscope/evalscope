@@ -39,6 +39,8 @@ export default function Collapsible({
     <div style={style}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <button
+          type="button"
+          aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
           style={{
             display: 'flex',

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional,
 if TYPE_CHECKING:
     from evalscope.agent.external.runners.base import AgentRunner
     from evalscope.api.agent import AgentEnvironment, AgentStrategy, ToolHandler
+    from evalscope.api.analysis import TraceSignalProvider
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
     from evalscope.api.evaluator import Evaluator
     from evalscope.api.filter import Filter
@@ -509,3 +510,23 @@ def resolve_tool_infos(names: Optional[List[str]]) -> List['ToolInfo']:
 
 
 # END: Registry for agent strategies, environments, runners and tools
+
+# BEGIN: Registry for trace signal providers
+# Benchmark modules register providers keyed by benchmark name; the analyzer in
+# ``evalscope.analysis`` materializes the owning adapter module on demand.
+TRACE_SIGNAL_PROVIDER_REGISTRY: Registry[Type['TraceSignalProvider']] = Registry('Trace signal provider')
+
+
+def register_trace_signal_provider(
+    name: Union[str, List[str]],
+) -> Callable[[Type['TraceSignalProvider']], Type['TraceSignalProvider']]:
+    """Register a :class:`TraceSignalProvider` class for one or more benchmark names."""
+    return TRACE_SIGNAL_PROVIDER_REGISTRY.register(name)
+
+
+def get_trace_signal_provider(name: str) -> Optional[Type['TraceSignalProvider']]:
+    """Return the provider class registered for ``name``, or ``None``."""
+    return TRACE_SIGNAL_PROVIDER_REGISTRY.get(name)
+
+
+# END: Registry for trace signal providers

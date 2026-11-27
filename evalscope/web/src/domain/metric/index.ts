@@ -1,5 +1,5 @@
 /**
- * Public surface of the metric domain: five pure functions plus the mirrored contract types.
+ * Public surface of the metric domain: shared formatting and comparison functions plus the mirrored contract types.
  *
  * Nothing here resolves a metric by name. Semantics come from the backend, which is what keeps
  * the direction, unit and precision of a metric defined in exactly one place.
@@ -23,6 +23,7 @@ export {
   formatMetricIdentityLabel,
   formatMetricLabels,
   formatMetric,
+  formatProportion,
   getBoundedQualityRatio,
   getComparisonVerdict,
   formatDifference,

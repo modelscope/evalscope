@@ -251,6 +251,17 @@
       ],
       "type": "object"
     },
+    "Attribution": {
+      "description": "Who is responsible for a finding.",
+      "enum": [
+        "model",
+        "guard",
+        "environment",
+        "benchmark",
+        "unknown"
+      ],
+      "type": "string"
+    },
     "BenchmarkDescription": {
       "additionalProperties": false,
       "properties": {
@@ -584,6 +595,15 @@
       ],
       "type": "object"
     },
+    "Confidence": {
+      "description": "How much a finding can be trusted.",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "type": "string"
+    },
     "ConfigResponse": {
       "additionalProperties": false,
       "properties": {
@@ -779,6 +799,457 @@
       ],
       "type": "object"
     },
+    "DiagnosisCost": {
+      "additionalProperties": false,
+      "description": "Analysis usage only, separate from evaluation and scoring usage.",
+      "properties": {
+        "cached_calls": {
+          "default": 0,
+          "type": "integer"
+        },
+        "calls": {
+          "default": 0,
+          "type": "integer"
+        },
+        "estimated_calls": {
+          "default": 0,
+          "type": "integer"
+        },
+        "estimated_input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "usage_missing_calls": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "calls",
+        "input_tokens",
+        "output_tokens",
+        "cached_calls",
+        "estimated_calls",
+        "estimated_input_tokens",
+        "usage_missing_calls"
+      ],
+      "type": "object"
+    },
+    "DiagnosisCoverage": {
+      "additionalProperties": false,
+      "description": "Do not equate unavailable outcomes or absent facts with success or zero events.",
+      "properties": {
+        "analysis_errors": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "citations_total": {
+          "default": 0,
+          "type": "integer"
+        },
+        "citations_valid": {
+          "default": 0,
+          "type": "integer"
+        },
+        "diagnosed_ok": {
+          "default": 0,
+          "type": "integer"
+        },
+        "diagnosis_population": {
+          "default": 0,
+          "type": "integer"
+        },
+        "diagnosis_statuses": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "errored_without_record": {
+          "default": 0,
+          "type": "integer"
+        },
+        "excluded": {
+          "default": 0,
+          "type": "integer"
+        },
+        "outcome_unknown": {
+          "default": 0,
+          "type": "integer"
+        },
+        "proposals_without_rule_clues": {
+          "default": 0,
+          "type": "integer"
+        },
+        "risk_samples": {
+          "default": 0,
+          "type": "integer"
+        },
+        "samples": {
+          "default": 0,
+          "type": "integer"
+        },
+        "selected": {
+          "default": 0,
+          "type": "integer"
+        },
+        "selection_scope": {
+          "anyOf": [
+            {
+              "enum": [
+                "failed",
+                "unscored",
+                "risk",
+                "process",
+                "all",
+                "specified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "skipped_facts": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "task_failed": {
+          "default": 0,
+          "type": "integer"
+        },
+        "task_success_known": {
+          "default": 0,
+          "type": "integer"
+        },
+        "unexplained_failures": {
+          "default": 0,
+          "type": "integer"
+        },
+        "unreadable": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "samples",
+        "task_success_known",
+        "task_failed",
+        "outcome_unknown",
+        "excluded",
+        "errored_without_record",
+        "unreadable",
+        "unexplained_failures",
+        "risk_samples",
+        "proposals_without_rule_clues",
+        "skipped_facts",
+        "analysis_errors",
+        "selection_scope",
+        "diagnosis_population",
+        "selected",
+        "diagnosed_ok",
+        "diagnosis_statuses",
+        "citations_total",
+        "citations_valid"
+      ],
+      "type": "object"
+    },
+    "DiagnosisReport": {
+      "additionalProperties": false,
+      "description": "One analysis of a persisted (run, model, benchmark), with cache provenance.",
+      "properties": {
+        "analyzer_version": {
+          "type": "string"
+        },
+        "benchmark": {
+          "type": "string"
+        },
+        "config_fingerprint": {
+          "type": "string"
+        },
+        "cost": {
+          "$ref": "#/$defs/DiagnosisCost"
+        },
+        "coverage": {
+          "$ref": "#/$defs/DiagnosisCoverage"
+        },
+        "data_fingerprint": {
+          "type": "string"
+        },
+        "diagnosis_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/Fact"
+          },
+          "type": "array"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "level": {
+          "default": "facts",
+          "enum": [
+            "facts",
+            "diagnose"
+          ],
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "model": {
+          "type": "string"
+        },
+        "narrative": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Narrative"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "narrative_samples": {
+          "additionalProperties": {
+            "$ref": "#/$defs/NarrativeSampleReference"
+          },
+          "type": "object"
+        },
+        "narrative_status": {
+          "default": "not_requested",
+          "type": "string"
+        },
+        "patterns": {
+          "items": {
+            "$ref": "#/$defs/FailurePattern"
+          },
+          "type": "array"
+        },
+        "run_dir": {
+          "type": "string"
+        },
+        "samples_sha256": {
+          "default": "",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": 7,
+          "type": "integer"
+        },
+        "self_evaluation": {
+          "default": false,
+          "type": "boolean"
+        },
+        "taxonomy_version": {
+          "default": "1.2",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "analyzer_version",
+        "taxonomy_version",
+        "run_dir",
+        "model",
+        "benchmark",
+        "level",
+        "diagnosis_model",
+        "self_evaluation",
+        "narrative",
+        "narrative_status",
+        "narrative_samples",
+        "generated_at",
+        "config_fingerprint",
+        "data_fingerprint",
+        "samples_sha256",
+        "coverage",
+        "cost",
+        "facts",
+        "patterns",
+        "limitations"
+      ],
+      "type": "object"
+    },
+    "DiagnosisResponse": {
+      "additionalProperties": false,
+      "description": "Diagnostic artifact and freshness state.",
+      "properties": {
+        "report": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosisReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "missing",
+            "stale",
+            "error"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "type": "object"
+    },
+    "DiagnosisRunRequest": {
+      "additionalProperties": false,
+      "description": "Options for analyzing one existing dataset report.",
+      "properties": {
+        "api_key": {
+          "anyOf": [
+            {
+              "format": "password",
+              "type": "string",
+              "writeOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "include_trace": {
+          "default": true,
+          "type": "boolean"
+        },
+        "level": {
+          "default": "facts",
+          "enum": [
+            "facts",
+            "diagnose"
+          ],
+          "type": "string"
+        },
+        "max_diagnosed_samples": {
+          "default": 50,
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scope": {
+          "default": "failed",
+          "enum": [
+            "failed",
+            "unscored",
+            "risk",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DiagnosticSource": {
+      "additionalProperties": false,
+      "description": "Redacted exact text supplied to the model, with an optional original message/step identity.",
+      "properties": {
+        "excerpted": {
+          "default": false,
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "original_start": {
+          "default": 0,
+          "type": "integer"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "message_index",
+        "step",
+        "excerpted",
+        "original_start"
+      ],
+      "type": "object"
+    },
     "EvalInvokeResponse": {
       "additionalProperties": false,
       "properties": {
@@ -842,6 +1313,85 @@
       ],
       "type": "string"
     },
+    "Evidence": {
+      "description": "A short excerpt supporting a finding.",
+      "properties": {
+        "excerpt": {
+          "type": "string"
+        },
+        "message_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "excerpt"
+      ],
+      "type": "object"
+    },
+    "EvidenceReference": {
+      "additionalProperties": false,
+      "description": "Offsets are zero-based Python Unicode character offsets, end-exclusive, in the supplied source.",
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "quote": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "source_id",
+        "start",
+        "end",
+        "quote"
+      ],
+      "type": "object"
+    },
     "ExecutionSubset": {
       "description": "Completion counts for one evaluated subset.",
       "properties": {
@@ -887,6 +1437,223 @@
         }
       },
       "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "description": "An observation with an explicit denominator and computation definition.",
+      "properties": {
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "definition": {
+          "type": "string"
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "generic",
+            "generation",
+            "mcq",
+            "repeats",
+            "agent",
+            "judge",
+            "perf"
+          ],
+          "type": "string"
+        },
+        "numerator": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "samples": {
+          "items": {
+            "$ref": "#/$defs/SampleKey"
+          },
+          "type": "array"
+        },
+        "severity": {
+          "default": "info",
+          "enum": [
+            "info",
+            "warn",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "severity",
+        "title",
+        "value",
+        "unit",
+        "definition",
+        "numerator",
+        "denominator",
+        "samples",
+        "data"
+      ],
+      "type": "object"
+    },
+    "FailurePattern": {
+      "additionalProperties": false,
+      "description": "Observed issue types among failed or unscored samples; groups may overlap.",
+      "properties": {
+        "examples": {
+          "items": {
+            "$ref": "#/$defs/SampleKey"
+          },
+          "type": "array"
+        },
+        "failed": {
+          "default": 0,
+          "type": "integer"
+        },
+        "failure_type": {
+          "type": "string"
+        },
+        "tools": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "unscored": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "failure_type",
+        "failed",
+        "unscored",
+        "tools",
+        "examples"
+      ],
+      "type": "object"
+    },
+    "Finding": {
+      "description": "One problem detected in one sample.",
+      "properties": {
+        "attribution": {
+          "$ref": "#/$defs/Attribution",
+          "default": "unknown"
+        },
+        "call_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "category": {
+          "$ref": "#/$defs/FindingCategory"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "data": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "detector": {
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "first_position": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "positions": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "rule_id": {
+          "default": "fallback",
+          "type": "string"
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "subtype",
+        "confidence",
+        "detector"
+      ],
+      "type": "object"
+    },
+    "FindingCategory": {
+      "description": "Top-level kind of a finding.",
+      "enum": [
+        "tool_failure",
+        "repetition",
+        "termination",
+        "side_effect",
+        "tainted_side_effect",
+        "attack_goal_action",
+        "risky_command",
+        "refusal"
+      ],
+      "type": "string"
     },
     "JudgeAttempt": {
       "additionalProperties": false,
@@ -1018,6 +1785,132 @@
           "type": "integer"
         }
       },
+      "type": "object"
+    },
+    "LLMDiagnosis": {
+      "additionalProperties": false,
+      "description": "A model hypothesis; valid citations do not establish semantic correctness.",
+      "properties": {
+        "attribution": {
+          "$ref": "#/$defs/Attribution"
+        },
+        "confidence": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceReference"
+          },
+          "maxItems": 3,
+          "type": "array"
+        },
+        "explanation": {
+          "maxLength": 1200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "failure_type": {
+          "enum": [
+            "knowledge_error",
+            "reasoning_error",
+            "instruction_violation",
+            "incomplete_answer",
+            "hallucination",
+            "missing_step",
+            "ignored_tool_error",
+            "followed_injection",
+            "unrequested_action",
+            "harmful_compliance",
+            "benchmark_issue",
+            "tool_error",
+            "wrong_tool",
+            "bad_arguments",
+            "environment_failure",
+            "guard_block",
+            "truncated",
+            "empty_output",
+            "extraction_failure",
+            "premature_stop",
+            "loop_or_budget",
+            "attack_goal_action",
+            "safety_violation",
+            "unsafe_command",
+            "refusal",
+            "judge_failure",
+            "unexplained",
+            "other"
+          ],
+          "type": "string"
+        },
+        "gold_suspect": {
+          "default": false,
+          "type": "boolean"
+        },
+        "root_cause_step": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "secondary_types": {
+          "items": {
+            "enum": [
+              "knowledge_error",
+              "reasoning_error",
+              "instruction_violation",
+              "incomplete_answer",
+              "hallucination",
+              "missing_step",
+              "ignored_tool_error",
+              "followed_injection",
+              "unrequested_action",
+              "harmful_compliance",
+              "benchmark_issue",
+              "tool_error",
+              "wrong_tool",
+              "bad_arguments",
+              "environment_failure",
+              "guard_block",
+              "truncated",
+              "empty_output",
+              "extraction_failure",
+              "premature_stop",
+              "loop_or_budget",
+              "attack_goal_action",
+              "safety_violation",
+              "unsafe_command",
+              "refusal",
+              "judge_failure",
+              "unexplained",
+              "other"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "failure_type",
+        "secondary_types",
+        "attribution",
+        "root_cause_step",
+        "explanation",
+        "evidence",
+        "confidence",
+        "gold_suspect"
+      ],
       "type": "object"
     },
     "ListActiveTasksResponse": {
@@ -1322,6 +2215,89 @@
         "direction",
         "display_kind",
         "display_precision"
+      ],
+      "type": "object"
+    },
+    "Narrative": {
+      "additionalProperties": false,
+      "description": "Grounded summary and suggestions, without an unreferenced free-form summary field.",
+      "properties": {
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/NarrativeItem"
+          },
+          "maxItems": 3,
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "type": "array"
+        },
+        "recommendations": {
+          "items": {
+            "$ref": "#/$defs/NarrativeItem"
+          },
+          "maxItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "findings",
+        "recommendations",
+        "limitations"
+      ],
+      "type": "object"
+    },
+    "NarrativeItem": {
+      "additionalProperties": false,
+      "description": "Every sentence has resolvable fact/sample references; it remains model-generated text.",
+      "properties": {
+        "refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "type": "array"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "refs"
+      ],
+      "type": "object"
+    },
+    "NarrativeSampleReference": {
+      "additionalProperties": false,
+      "description": "A summary citation resolved by the analyzer to one inspected sample and optional evidence step.",
+      "properties": {
+        "sample": {
+          "$ref": "#/$defs/SampleKey"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "sample",
+        "step"
       ],
       "type": "object"
     },
@@ -2608,6 +3584,194 @@
       ],
       "type": "object"
     },
+    "SampleDiagnosesResponse": {
+      "additionalProperties": false,
+      "description": "Filtered sample observations, paged after matching.",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SampleDiagnosis"
+          },
+          "type": "array"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "page_size": {
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "missing",
+            "stale",
+            "error"
+          ],
+          "type": "string"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "type": "object"
+    },
+    "SampleDiagnosis": {
+      "additionalProperties": false,
+      "description": "Official outcome and observed findings; a finding is not a proved root cause.",
+      "properties": {
+        "context_omitted": {
+          "default": false,
+          "type": "boolean"
+        },
+        "evidence_errors": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "type": "array"
+        },
+        "invalid_evidence": {
+          "default": 0,
+          "type": "integer"
+        },
+        "key": {
+          "$ref": "#/$defs/SampleKey"
+        },
+        "llm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LLMDiagnosis"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "llm_status": {
+          "default": "not_selected",
+          "enum": [
+            "not_selected",
+            "ok",
+            "parse_error",
+            "transport_error",
+            "invalid_evidence",
+            "unexplained"
+          ],
+          "type": "string"
+        },
+        "needs_attention": {
+          "default": false,
+          "type": "boolean"
+        },
+        "observed_types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "recorded_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "safety_violation": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "score_status": {
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticSource"
+          },
+          "type": "array"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task_success": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "key",
+        "task_success",
+        "safety_violation",
+        "score_status",
+        "stop_reason",
+        "needs_attention",
+        "findings",
+        "observed_types",
+        "recorded_error",
+        "llm",
+        "llm_status",
+        "sources",
+        "context_omitted",
+        "invalid_evidence",
+        "evidence_errors"
+      ],
+      "type": "object"
+    },
+    "SampleKey": {
+      "additionalProperties": false,
+      "description": "A persisted sample identity within one model and benchmark.",
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "subset": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "subset",
+        "index"
+      ],
+      "type": "object"
+    },
     "SamplePerfMetrics": {
       "additionalProperties": false,
       "properties": {
@@ -3081,6 +4245,12 @@
     "delete_report_response": {
       "$ref": "#/$defs/DeleteReportResponse"
     },
+    "diagnosis_response": {
+      "$ref": "#/$defs/DiagnosisResponse"
+    },
+    "diagnosis_run_request": {
+      "$ref": "#/$defs/DiagnosisRunRequest"
+    },
     "eval_invoke_response": {
       "$ref": "#/$defs/EvalInvokeResponse"
     },
@@ -3165,6 +4335,9 @@
     "report_summary": {
       "$ref": "#/$defs/ReportSummary"
     },
+    "sample_diagnoses_response": {
+      "$ref": "#/$defs/SampleDiagnosesResponse"
+    },
     "task_status_response": {
       "$ref": "#/$defs/TaskStatusResponse"
     },
@@ -3177,6 +4350,9 @@
   },
   "required": [
     "config_response",
+    "diagnosis_response",
+    "diagnosis_run_request",
+    "sample_diagnoses_response",
     "data_frame_response",
     "log_response",
     "task_status_response",

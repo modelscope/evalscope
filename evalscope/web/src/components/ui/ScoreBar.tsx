@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
+import { formatMetric, formatProportion, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 
 /**
@@ -21,6 +21,8 @@ interface ScoreBarProps {
   ariaLabel: string
   track?: TrackWidth
   className?: string
+  /** Proportions use a neutral 0–1 scale instead of a quality verdict. */
+  variant?: 'score' | 'proportion'
 }
 
 const ROW: Record<TrackWidth, string> = {
@@ -59,9 +61,13 @@ export default function ScoreBar({
   ariaLabel,
   track = 'fill',
   className,
+  variant = 'score',
 }: ScoreBarProps) {
-  const position = getValuePosition(score, semantics)
-  const quality = getBoundedQualityRatio(score, semantics)
+  const proportion = variant === 'proportion'
+  const position = proportion
+    ? score != null && Number.isFinite(score) ? Math.min(1, Math.max(0, score)) : null
+    : getValuePosition(score, semantics)
+  const quality = proportion ? null : getBoundedQualityRatio(score, semantics)
 
   return (
     <div className={cn(ROW[track], className)}>
@@ -74,7 +80,7 @@ export default function ScoreBar({
             aria-valuemax={100}
             aria-valuenow={Math.round(position * 100)}
             className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${position * 100}%`, background: scoreColor(quality ?? position) }}
+            style={{ width: `${position * 100}%`, background: proportion ? 'var(--accent)' : scoreColor(quality ?? position) }}
           />
         </div>
       )}
@@ -82,7 +88,7 @@ export default function ScoreBar({
         className={VALUE[track]}
         style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
       >
-        {formatMetric(score, semantics).primary}
+        {(proportion ? formatProportion(score) : formatMetric(score, semantics)).primary}
       </span>
     </div>
   )

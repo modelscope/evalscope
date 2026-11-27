@@ -26,9 +26,9 @@ export function roleToBubble(role: Role): BubbleRole {
 export function rolePalette(role: Role, t: (k: string) => string): RolePalette {
   switch (role) {
     case 'user':
-      return { icon: User, labelColor: bubbleAccent('user'), label: 'User' }
+      return { icon: User, labelColor: bubbleAccent('user'), label: t('trace.user') }
     case 'assistant':
-      return { icon: Bot, labelColor: bubbleAccent('bot'), label: 'Assistant' }
+      return { icon: Bot, labelColor: bubbleAccent('bot'), label: t('trace.assistant') }
     case 'tool':
       return { icon: Wrench, labelColor: bubbleAccent('tool'), label: t('prediction.toolResult') }
     case 'environment':

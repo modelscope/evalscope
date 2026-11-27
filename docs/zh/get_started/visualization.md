@@ -103,35 +103,21 @@ evalscope service --outputs examples/viz
 
 点击任意评测报告可进入详情页，查看单个模型在各数据集上的详细表现。详情页由报告头部、数据集导航和三个功能标签页组成。
 
-#### 概览标签
+顶部显示模型名和样本数，左侧选择数据集。切换标签时保留当前数据集。
 
-报告头部展示模型名称、关联数据集列表（可点击切换）、综合得分和样本总数，并提供查看 HTML 报告和返回列表的快捷按钮。
+#### 评测结果
 
-概览标签提供模型在各数据集上的整体表现汇总：
+- **数据集指标**展示官方得分。点击子集名称可以打开该子集的样本。
+- **耗时与用量**展示记录的延迟与 Token 统计。
+- **任务配置**展示本次评测的设置。
 
-![概览标签](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_overview_tab.png)
+#### 结果诊断
 
-- **统计概览**：以环形进度图和数字卡片展示平均得分、最佳/最差数据集及其得分、总样本数。
-- **数据集得分表**：可排序表格，列出每个数据集的名称、得分（含进度条和数值）和样本数。点击数据集名称可跳转到该数据集的详情标签。
-- **雷达图**：以雷达图形式直观展示模型在各数据集上的能力维度分布。
-- **任务配置**：可折叠区域，以 JSON 查看器展示本次评测的任务配置信息。
+从问题列表打开对应样本或 Agent 步骤。可直接生成或更新基础分析，也可配置模型来查看带引用的模型提议。详见[评测诊断](../user_guides/diagnosis.md)。
 
-#### 详情标签
+#### 样本详情
 
-详情标签深入展示选定数据集的子集得分和分析结果：
-
-![详情标签](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_details_tab.png)
-
-- **综合得分**：以大号数字和环形进度图展示该数据集的整体得分。
-- **子集得分表**：可排序表格，列出每个子集的名称、指标（如存在）、得分和样本数。点击子集名称可直接跳转到预测标签中该子集的样本浏览。
-- **AI 分析**：以 Markdown 格式渲染的智能分析报告，对该数据集的表现进行解读。
-- **性能指标**：当评测包含性能数据时，展示延迟分布（含百分位表）、TTFT（首 Token 时间）、TPOT（每 Token 时间）和 Token 用量统计。
-
-#### 预测标签
-
-预测标签逐条浏览每个样本的详细预测结果，是最细粒度的分析工具：
-
-![预测标签](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_predictions_tab.png)
+查看当前数据集中每条样本的原始回答和评分。
 
 **筛选与导航**：
 
@@ -159,12 +145,12 @@ evalscope service --outputs examples/viz
 - **元数据**：可折叠的 JSON 视图，展示样本的附加元信息。
 
 ```{tip}
-当评测启用 [Agent 评测](../user_guides/agent/index.md) 时，预测视图会自动检测样本的 `agent_trace` 并按 `step` 分组渲染 Agent Trace 视图（含工具调用、环境命令、nudge、错误等）。完整说明与示意图见 [Agent 评测 → Trace 可视化](../user_guides/agent/index.md#trace-可视化)。
+当评测启用 [Agent 评测](../user_guides/agent/index.md) 时，样本详情会自动检测样本的 `agent_trace` 并按 `step` 分组渲染 Agent Trace 视图（含工具调用、环境命令、nudge、错误等）。完整说明与示意图见 [Agent 评测 → Trace 可视化](../user_guides/agent/index.md#trace-可视化)。
 ```
 
 #### 数据集导航
 
-在详情和预测标签中，左侧提供数据集导航侧边栏（移动端为顶部横向滚动条），可快速切换当前查看的数据集。
+用左侧导航在评测结果、结果诊断和样本详情中切换当前数据集。
 
 ### 多模型对比
 
