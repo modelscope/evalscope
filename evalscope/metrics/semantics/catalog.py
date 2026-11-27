@@ -332,6 +332,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'overall_ch',
         'overall_en',
         'overall_mrcr_score',
+        'overall_score',
         'partial_credit',
         'simple_partial_credit',
         'submission_ready',

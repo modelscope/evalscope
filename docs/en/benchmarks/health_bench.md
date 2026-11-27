@@ -43,7 +43,7 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
 | **Dataset ID** | [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `Medical`, `QA` |
-| **Metrics** | `communication_quality`, `instruction_following`, `accuracy`, `context_awareness`, `completeness` |
+| **Metrics** | `overall_score`, `communication_quality`, `instruction_following`, `accuracy`, `context_awareness`, `completeness` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `clipped_mean` |
