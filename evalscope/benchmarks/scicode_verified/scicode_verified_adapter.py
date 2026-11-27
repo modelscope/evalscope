@@ -5,7 +5,7 @@ import hashlib
 import re
 import shutil
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from typing import Any, Dict, List, Optional
 
 from filelock import FileLock
@@ -33,8 +33,6 @@ HERE = Path(__file__).parent
 # Reference code of the skipped steps and the official prompt templates, vendored unchanged from SciCode's eval/data
 # (third_party: excluded from formatting hooks, the files must stay byte-identical).
 SCICODE_EVAL_DATA = HERE.parent.parent / 'third_party' / 'scicode' / 'eval_data'
-GOLD_DIR = SCICODE_EVAL_DATA
-OFFICIAL_DIR = SCICODE_EVAL_DATA
 SCICODE_DOCKER_DIR = HERE.parent / 'scicode' / 'docker'
 MODELSCOPE_DATASET_REVISION = '2412b3af319498b46f1a880b07affb6ca5c52d66'
 HF_DATASET_REVISION = '752eb6b786b0e0d0a3b44cdb7c066c559b952658'
@@ -172,7 +170,7 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         if not self.grading_envs:
             raise ValueError(f"grading_envs must be 'or', '2024' or '2025', got {mode!r}")
         template = 'multistep_template.txt' if self.provide_background else 'background_comment_template.txt'
-        self.official_template = (OFFICIAL_DIR / template).read_text(encoding='utf-8')
+        self.official_template = (SCICODE_EVAL_DATA / template).read_text(encoding='utf-8')
         self.dataset_info: Dict[str, Any] = {}
 
     @staticmethod
@@ -226,14 +224,11 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
                 return
             for name, content in files.items():
                 (self.docker_path / name).write_bytes(content)
-            with NamedTemporaryFile(dir=self.docker_path.parent, delete=False) as temp:
-                path = Path(temp.name)
-            try:
-                shutil.copyfile(source, path)
-                path.chmod(0o644)
-                path.replace(target)
-            finally:
-                path.unlink(missing_ok=True)
+            with TemporaryDirectory(dir=self.docker_path.parent) as temporary_dir:
+                temporary_target = Path(temporary_dir) / target.name
+                shutil.copyfile(source, temporary_target)
+                temporary_target.chmod(0o644)
+                temporary_target.replace(target)
 
     # ------------------------------------------------------------------ #
     # Generation                                                           #
@@ -257,7 +252,7 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         return cls._strip_imports(response)
 
     def _gold_code(self, step_number: str) -> str:
-        return self._strip_imports((GOLD_DIR / f'{step_number}.txt').read_text(encoding='utf-8'))
+        return self._strip_imports((SCICODE_EVAL_DATA / f'{step_number}.txt').read_text(encoding='utf-8'))
 
     def _step_text(self, subproblem: Dict[str, Any]) -> str:
         text = subproblem['step_description_prompt']
