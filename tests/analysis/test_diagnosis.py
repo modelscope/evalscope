@@ -820,3 +820,39 @@ def test_web_diagnosis_only_uses_the_credential_supplied_in_the_form(
     assert client.post(url, json=payload).status_code == 200
     assert client.post(url, json={**payload, 'api_key': 'explicit-test-key'}).status_code == 200
     assert supplied_keys == ['EMPTY', 'explicit-test-key']
+
+
+@pytest.mark.parametrize('kind', ['default', 'task_config', 'unknown'])
+def test_web_upgrades_legacy_facts_only_if_original_settings_can_be_recovered(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    from evalscope.service.app import create_app
+    from evalscope.service.blueprints import reports
+
+    root = make_run()
+    options = AnalysisReportConfig(language='zh', warning_rate=0.3 if kind != 'default' else 0.1)
+    snapshot = diagnose_benchmark(str(root), 'm', 'demo', options)
+    path = root / 'analysis/m/demo/diagnosis.json'
+    legacy = json.loads(path.read_text())
+    legacy.pop('facts_config')
+    path.write_text(json.dumps(legacy))
+    if kind == 'task_config':
+        (root / 'configs/task_config.yaml').write_text(
+            'datasets: [demo]\nrepeats: 1\nanalysis_report: ' + options.model_dump_json() + '\n'
+        )
+    original = path.read_bytes()
+
+    def inline(func: Callable, *args: object) -> object:
+        return func(*args)
+
+    monkeypatch.setattr(reports, 'run_in_subprocess', inline)
+    client = create_app(outputs=str(root.parent)).test_client()
+    url = '/api/v1/reports/runs/run/models/m/diagnosis?dataset_name=demo'
+    response = client.post(url, json={})
+    if kind == 'unknown':
+        assert response.status_code == 409
+        assert path.read_bytes() == original
+    else:
+        assert response.status_code == 200
+        assert response.json['report']['config_fingerprint'] == snapshot.config_fingerprint
+        assert json.loads(path.read_text())['facts_config']['warning_rate'] == options.warning_rate

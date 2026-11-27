@@ -40,6 +40,8 @@ The Python entry points `evalscope.analysis.diagnose_run()` and `diagnose_benchm
 
 Open **Diagnosis** in the Web report to generate or update basic analysis on saved results. To run model analysis for the current dataset, configure an OpenAI-compatible endpoint and model, choose the sample scope and limit, and start it explicitly. The form shows the maximum number of model requests and lets you omit intermediate steps and tool output. Web analysis supports up to 50 samples per request; use the CLI or Python for other configurations.
 
+The Web reuses the saved basic-analysis settings, including score thresholds, for both levels. When the basic settings change, the report shows the updated facts until model analysis uses the same settings. For older artifacts whose settings cannot be recovered, run `evalscope analyze` once with the original configuration.
+
 When scores are available without a pass threshold, **Review sample scores** shows the distribution and links to samples prioritized by the primary metric's direction. Diagnosis links preserve the issue, sample position and referenced step.
 
 Diagnostics read saved evaluation records without requiring a benchmark adapter. A mean metric declared as accuracy or exact match can provide binary outcomes even if its score key uses a different name. Optional benchmark providers add benchmark-specific signals such as a safety verdict; they are not required for basic analysis.

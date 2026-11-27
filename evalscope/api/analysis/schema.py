@@ -36,12 +36,23 @@ class AnalysisModelConfig(BaseModel):
     generation_config: GenerateConfig = Field(default_factory=lambda: GenerateConfig(temperature=0, max_tokens=2048))
 
 
-class AnalysisReportConfig(BaseModel):
-    """Facts make no model calls; diagnose requires an explicit model for sample hypotheses and a summary."""
+class AnalysisFactsConfig(BaseModel):
+    """Settings shared by both levels, without model or sampling options."""
 
     model_config = ConfigDict(extra='forbid')
-    level: Literal['facts', 'diagnose'] = 'facts'
+
     language: Literal['auto', 'zh', 'en'] = 'auto'
+    trace: TraceAnalysisConfig = Field(default_factory=TraceAnalysisConfig)
+    weak_subset_gap: float = Field(default=0.1, gt=0)
+    weak_subset_min_samples: int = Field(default=20, ge=1)
+    max_examples: int = Field(default=5, ge=1, le=20)
+    warning_rate: float = Field(default=0.1, ge=0, le=1)
+
+
+class AnalysisReportConfig(AnalysisFactsConfig):
+    """Facts make no model calls; diagnose requires an explicit model for sample hypotheses and a summary."""
+
+    level: Literal['facts', 'diagnose'] = 'facts'
     model: Optional[AnalysisModelConfig] = None
     max_diagnosed_samples: Optional[int] = Field(default=50, ge=1, strict=True)
     scope: Literal['failed', 'unscored', 'risk', 'process', 'all'] = 'failed'
@@ -50,11 +61,10 @@ class AnalysisReportConfig(BaseModel):
     seed: int = 42
     include_trace: bool = True
     max_input_chars: int = Field(default=24000, ge=2000, le=100000)
-    trace: TraceAnalysisConfig = Field(default_factory=TraceAnalysisConfig)
-    weak_subset_gap: float = Field(default=0.1, gt=0)
-    weak_subset_min_samples: int = Field(default=20, ge=1)
-    max_examples: int = Field(default=5, ge=1, le=20)
-    warning_rate: float = Field(default=0.1, ge=0, le=1)
+
+    def facts_settings(self) -> AnalysisFactsConfig:
+        """Extract only the settings that determine facts and rule observations."""
+        return AnalysisFactsConfig.model_validate(self.model_dump(include=set(AnalysisFactsConfig.model_fields)))
 
     @classmethod
     def from_source(cls, source: str) -> 'AnalysisReportConfig':

@@ -11,7 +11,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -69,6 +69,9 @@ from evalscope.utils.uri_utils import sanitize_endpoint, validate_http_endpoint
 
 from ..responses import json_response
 from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, recorded_start_time, run_in_subprocess
+
+if TYPE_CHECKING:
+    from evalscope.api.analysis import AnalysisReportConfig
 
 logger = get_logger()
 
@@ -714,7 +717,7 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
             DiagnosisResponse,
             {
                 'status': status,
-                'report': report.model_dump(mode='json') if report else None,
+                'report': report,
             },
         )
     except (ValueError, ValidationError):
@@ -723,10 +726,19 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'Diagnostic samples unavailable; rerun evalscope analyze.'}), 409
 
 
+def _analyze_saved_report(run_dir: str, model: str, dataset: str, config: 'AnalysisReportConfig') -> Optional[str]:
+    from evalscope.analysis.diagnosis import MissingFactsSettingsError, diagnose_benchmark
+
+    try:
+        diagnose_benchmark(run_dir, model, dataset, config, inherit_facts=True)
+    except MissingFactsSettingsError as error:
+        return str(error)
+    return None
+
+
 @bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis', methods=['POST'])
 def run_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Analyze one completed dataset without rerunning evaluation."""
-    from evalscope.analysis import diagnose_benchmark
     from evalscope.api.analysis import AnalysisModelConfig, AnalysisReportConfig
     from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
     from evalscope.service.api_models import DiagnosisResponse, DiagnosisRunRequest
@@ -782,7 +794,9 @@ def run_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
             scope=options.scope,
             include_trace=options.include_trace,
         )
-        run_in_subprocess(diagnose_benchmark, str(run_dir), ref.model_id, dataset, config)
+        settings_error = run_in_subprocess(_analyze_saved_report, str(run_dir), ref.model_id, dataset, config)
+        if settings_error is not None:
+            return jsonify({'error': settings_error}), 409
         _refresh_html_report(str(run_dir / 'reports'))
         status, report = load_diagnosis(str(run_dir), ref.model_id, dataset)
         return json_response(DiagnosisResponse, {'status': status, 'report': report})

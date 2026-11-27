@@ -863,7 +863,7 @@ def test_new_facts_keep_model_analysis_and_hide_it_when_sources_change(
     report_path = root / 'reports/m/demo.json'
     before_report = json.loads(report_path.read_text())
 
-    facts = diagnose_benchmark(str(root), 'm', 'demo', force=True)
+    facts = diagnose_benchmark(str(root), 'm', 'demo', AnalysisReportConfig(trace=options().trace), force=True)
     assert facts.level == 'facts' and facts.cost.calls == 0
     assert (target / 'samples.jsonl').read_bytes() == original and len(calls) == 2
     assert load_diagnosis_snapshot(str(root), 'm', 'demo') == ('ready', model, target)
@@ -878,3 +878,58 @@ def test_new_facts_keep_model_analysis_and_hide_it_when_sources_change(
     assert {k: v for k, v in after_report.items() if k != 'analysis'} == {
         k: v for k, v in before_report.items() if k != 'analysis'
     }
+
+
+def test_web_reuses_cli_facts_settings_for_both_analysis_levels(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from evalscope.service.app import create_app
+    from evalscope.service.blueprints import reports
+
+    records = [review(0), review(1, 1)]
+    for row, score in zip(records, (0.6, 1.0)):
+        row.sample_score.score.value = {'quality': score}
+        row.sample_score.score.main_score_name = 'quality'
+    root = make_run(rows=records)
+    original_reviews = (root / 'reviews/m/demo_default.jsonl').read_bytes()
+    facts_config = AnalysisReportConfig(
+        trace={'outcome_thresholds': {'demo': {'quality': 0.8}}}, max_examples=1
+    )
+    baseline = diagnose_benchmark(str(root), 'm', 'demo', facts_config)
+
+    def inline(func: Callable, *args: object) -> object:
+        return func(*args)
+
+    monkeypatch.setattr(reports, 'run_in_subprocess', inline)
+    calls = []
+    fake_model(
+        monkeypatch, lambda prompt, _: '{}' if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls
+    )
+    client = create_app(outputs=str(root.parent)).test_client()
+    path = '/api/v1/reports/runs/run/models/m/diagnosis?dataset_name=demo'
+    result = client.post(path, json={
+        'level': 'diagnose', 'model_id': 'reviewer', 'api_url': 'http://localhost/v1',
+        'api_key': 'diagnostic-credential', 'max_diagnosed_samples': 1,
+    })
+    assert result.status_code == 200
+    analysis = result.json['report']
+    assert analysis['level'] == 'diagnose'
+    assert analysis['facts'] == [fact.model_dump(mode='json') for fact in baseline.facts]
+    assert analysis['coverage']['task_success_known'] == 2
+    assert analysis['coverage']['task_failed'] == 1
+    assert analysis['coverage']['selected'] == analysis['coverage']['diagnosed_ok'] == 1
+    assert 'facts_config' not in client.get(path).json['report']
+    paid_artifact = root / 'analysis/m/demo/diagnose/diagnosis.json'
+    paid_snapshot = paid_artifact.read_bytes()
+    assert b'diagnostic-credential' not in paid_snapshot
+
+    refreshed = client.post(path, json={})
+    assert refreshed.status_code == 200 and refreshed.json['report']['level'] == 'diagnose'
+    assert len(calls) == 2 and paid_artifact.read_bytes() == paid_snapshot
+
+    updated = AnalysisReportConfig(trace={'outcome_thresholds': {'demo': {'quality': 0.5}}})
+    diagnose_benchmark(str(root), 'm', 'demo', updated)
+    current = client.get(path).json['report']
+    assert current['level'] == 'facts' and current['coverage']['task_failed'] == 0
+    assert paid_artifact.read_bytes() == paid_snapshot
+    assert (root / 'reviews/m/demo_default.jsonl').read_bytes() == original_reviews

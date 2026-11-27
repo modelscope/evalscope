@@ -19,15 +19,18 @@ from evalscope.api.analysis import (
     FindingCategory,
     SampleDiagnosis,
 )
+from evalscope.api.analysis.schema import AnalysisFactsConfig
 from evalscope.api.analysis.taxonomy import ISSUE_NAMES, TAXONOMY_VERSION, finding_type
 from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.report.diagnosis import (
+    DiagnosisSnapshot,
     data_fingerprint,
     diagnosis_dir,
     iter_review_files,
     load_diagnosis,
     read_diagnosis_snapshot,
 )
+from evalscope.utils.io_utils import yaml_to_dict
 
 from .facts import collect_facts
 from .inputs import is_choice_letter, load_inputs
@@ -63,6 +66,15 @@ def _atomic_write(path: Path, content: str) -> None:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def _redacted_snapshot(report: DiagnosisSnapshot, secrets: List[str]) -> DiagnosisSnapshot:
+    payload = report.model_dump(mode='json')
+    sanitized = redact_data(payload, secrets)
+    if sanitized['facts_config'] != payload['facts_config']:
+        # Redaction can change a custom regex. Never reuse a modified rule.
+        sanitized['facts_config'] = None
+    return DiagnosisSnapshot.model_validate(sanitized)
 
 
 def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
@@ -127,10 +139,51 @@ def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
     return '\n'.join(lines)
 
 
+class MissingFactsSettingsError(ValueError):
+    """Legacy analysis needs regeneration with its original settings before it can be inherited."""
+
+
+def _saved_facts_settings(run_dir: str, model: str, benchmark: str, base: Path) -> AnalysisFactsConfig:
+    _, previous = read_diagnosis_snapshot(run_dir, model, benchmark, base)
+    if previous is None:
+        _, previous = read_diagnosis_snapshot(run_dir, model, benchmark, base / 'diagnose')
+    if previous is not None and previous.facts_config is not None:
+        return previous.facts_config
+
+    # Old artifacts saved a fingerprint but not the settings. Recover only settings we can verify.
+    task_path = Path(run_dir) / 'configs' / 'task_config.yaml'
+    task = yaml_to_dict(str(task_path)) if task_path.is_file() else None
+    configured = task.get('analysis_report') if isinstance(task, dict) else None
+    recorded = None
+    if isinstance(configured, dict):
+        try:
+            recorded = AnalysisReportConfig.model_validate(configured)
+        except ValueError:
+            pass
+    if previous is None:
+        return recorded.facts_settings() if recorded is not None else AnalysisFactsConfig()
+
+    candidates = [AnalysisReportConfig(language=language) for language in ('auto', 'zh', 'en')]
+    if recorded is not None:
+        candidates.append(recorded)
+    for candidate in candidates:
+        if candidate.level == previous.level and config_fingerprint(candidate) == previous.config_fingerprint:
+            return candidate.facts_settings()
+    raise MissingFactsSettingsError(
+        'Regenerate the original analysis with evalscope analyze and its original configuration.'
+    )
+
+
 def diagnose_benchmark(
-    run_dir: str, model: str, benchmark: str, config: Optional[AnalysisReportConfig] = None, force: bool = False
+    run_dir: str,
+    model: str,
+    benchmark: str,
+    config: Optional[AnalysisReportConfig] = None,
+    force: bool = False,
+    *,
+    inherit_facts: bool = False,
 ) -> DiagnosisReport:
-    """Analyze a benchmark and persist a readable failure state without changing scores."""
+    """Analyze a benchmark; inherit saved fact settings only for callers requesting it."""
     config = config or AnalysisReportConfig()
     if config.level != 'facts' and config.model is None:
         raise ValueError('diagnose requires an explicit analysis model; facts makes no model calls.')
@@ -139,6 +192,9 @@ def diagnose_benchmark(
     target = diagnosis_dir(run_dir, model, benchmark, config.level)
     base.mkdir(parents=True, exist_ok=True)
     with FileLock(str(base / '.lock')):
+        if inherit_facts:
+            settings = _saved_facts_settings(run_dir, model, benchmark, base)
+            config = AnalysisReportConfig.model_validate({**config.model_dump(), **settings.model_dump()})
         model_target = diagnosis_dir(run_dir, model, benchmark, 'diagnose')
         if not (model_target / 'diagnosis.json').exists():
             _, legacy = read_diagnosis_snapshot(run_dir, model, benchmark, base)
@@ -155,7 +211,7 @@ def diagnose_benchmark(
             status, _ = read_diagnosis_snapshot(run_dir, model, benchmark, target)
             if status == 'ready':
                 raise
-            failure = DiagnosisReport(
+            failure = DiagnosisSnapshot(
                 analyzer_version=ANALYZER_VERSION,
                 run_dir=run_dir,
                 model=model,
@@ -164,6 +220,7 @@ def diagnose_benchmark(
                 generated_at=datetime.now(timezone.utc).isoformat(),
                 config_fingerprint=config_fingerprint(config),
                 data_fingerprint='',
+                facts_config=config.facts_settings(),
                 coverage=DiagnosisCoverage(
                     analysis_errors={type(exc).__name__: 1},
                     skipped_facts={'analysis': redact(str(exc), _env_secrets())},
@@ -172,10 +229,7 @@ def diagnose_benchmark(
             try:
                 _atomic_write(
                     target / 'diagnosis.json',
-                    json.dumps(
-                        redact_data(failure.model_dump(mode='json'), _env_secrets()), ensure_ascii=False, indent=2
-                    )
-                    + '\n',
+                    _redacted_snapshot(failure, _env_secrets()).model_dump_json(indent=2) + '\n',
                 )
             except OSError as persist_error:
                 from evalscope.utils.logger import get_logger
@@ -213,11 +267,12 @@ def _diagnose_benchmark(
     samples_path = target / 'samples.jsonl'
     if not force and path.is_file() and samples_path.is_file():
         try:
-            cached = DiagnosisReport.model_validate_json(path.read_text())
+            cached = DiagnosisSnapshot.model_validate_json(path.read_text())
         except (ValueError, OSError):
             cached = None
         if (
             cached is not None
+            and cached.facts_config is not None
             and not cached.coverage.analysis_errors
             and not any(
                 cached.coverage.diagnosis_statuses.get(k)
@@ -302,7 +357,7 @@ def _diagnose_benchmark(
             f'{note}: {count}' for note, count in provider_notes.items()
         )
     facts = collect_facts(inputs, config, coverage)
-    report = DiagnosisReport(
+    report = DiagnosisSnapshot(
         analyzer_version=ANALYZER_VERSION,
         run_dir=run_dir,
         model=model,
@@ -310,6 +365,7 @@ def _diagnose_benchmark(
         generated_at=datetime.now(timezone.utc).isoformat(),
         config_fingerprint=config_hash,
         data_fingerprint=fingerprint,
+        facts_config=config.facts_settings(),
         coverage=coverage,
         level=config.level,
         facts=facts,
@@ -335,7 +391,7 @@ def _diagnose_benchmark(
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
             'Model hypotheses describe only the selected samples; no population cause estimates are made.',
         ]
-    report = DiagnosisReport.model_validate(redact_data(report.model_dump(mode='json'), secrets))
+    report = _redacted_snapshot(report, secrets)
     if data_fingerprint(run_dir, model, benchmark) != fingerprint:
         raise RuntimeError('Analysis inputs changed during computation; retry on a stable run.')
     sample_text = ''.join(

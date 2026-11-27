@@ -9,6 +9,7 @@ from typing import Iterator, List, Optional, Tuple
 from pydantic import BaseModel
 
 from evalscope.api.analysis import DiagnosisReport
+from evalscope.api.analysis.schema import AnalysisFactsConfig
 from evalscope.utils.io_utils import OutputsStructure, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
@@ -121,22 +122,36 @@ def load_diagnosis(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optio
     return status, report
 
 
-def load_diagnosis_snapshot(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optional[DiagnosisReport], Path]:
-    """Prefer a current model analysis, with base analysis as the fallback."""
+class DiagnosisSnapshot(DiagnosisReport):
+    """On-disk report with the non-model settings needed to reproduce its observations."""
+
+    facts_config: Optional[AnalysisFactsConfig] = None
+
+
+def load_diagnosis_snapshot(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optional[DiagnosisSnapshot], Path]:
+    """Prefer model analysis only while its underlying facts still match."""
     base = diagnosis_dir(run_dir, model, benchmark)
     model_target = diagnosis_dir(run_dir, model, benchmark, 'diagnose')
     model_status, model_report = read_diagnosis_snapshot(run_dir, model, benchmark, model_target)
+    fingerprint = model_report.data_fingerprint if model_status == 'ready' else None
+    base_status, base_report = read_diagnosis_snapshot(run_dir, model, benchmark, base, fingerprint)
     if model_status == 'ready':
+        if (
+            base_status == 'ready'
+            and base_report.level == 'facts'
+            and base_report.facts_config is not None
+            and base_report.facts_config != model_report.facts_config
+        ):
+            return base_status, base_report, base
         return model_status, model_report, model_target
-    base_status, base_report = read_diagnosis_snapshot(run_dir, model, benchmark, base)
     if base_status == 'ready' or model_status == 'missing':
         return base_status, base_report, base
     return model_status, model_report, model_target
 
 
 def read_diagnosis_snapshot(
-    run_dir: str, model: str, benchmark: str, target: Path
-) -> Tuple[str, Optional[DiagnosisReport]]:
+    run_dir: str, model: str, benchmark: str, target: Path, fingerprint: Optional[str] = None
+) -> Tuple[str, Optional[DiagnosisSnapshot]]:
     """Read and validate a snapshot in a specific directory."""
     path = target / 'diagnosis.json'
     if not path.is_file():
@@ -147,13 +162,13 @@ def read_diagnosis_snapshot(
             return 'error', None
         if payload.get('schema_version', 1) != DiagnosisReport.model_fields['schema_version'].default:
             return 'stale', None
-        report = DiagnosisReport.model_validate(payload)
+        report = DiagnosisSnapshot.model_validate(payload)
     except (ValueError, OSError):
         return 'error', None
     if report.coverage.analysis_errors:
         return 'error', report
     try:
-        fresh = report.data_fingerprint == data_fingerprint(run_dir, model, benchmark)
+        fresh = report.data_fingerprint == (fingerprint or data_fingerprint(run_dir, model, benchmark))
         fresh = fresh and (target / 'samples.jsonl').is_file()
         if fresh:
             fresh = hashlib.sha256((target / 'samples.jsonl').read_bytes()).hexdigest() == report.samples_sha256
