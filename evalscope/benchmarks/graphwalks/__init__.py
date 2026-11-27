@@ -1,0 +1,1 @@
+"""GraphWalks benchmark adapter."""
