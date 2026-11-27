@@ -146,17 +146,27 @@ function detectProviderFromHost(apiUrl: string | undefined): string | undefined 
 /**
  * Resolve the protocol label independently of the provider.
  *
- * Prefers explicit `Protocol` metadata, then falls back to a default protocol.
- * Typed-decision APIs have their own protocols and must not inherit the chat label.
+ * Prefers explicit metadata, then the archived API type, then the default label.
  */
 function resolveProtocol(input: ProviderResolutionInput): string {
   const explicit = input.protocol?.trim() || readInfo(input.basic_info, PROTOCOL_KEY)
   if (explicit) {
     return explicit
   }
-  if (input.api_type === 'systemone') return 'System One'
-  if (input.api_type === 'autotrust') return 'AutoTrust /decide'
-  return DEFAULT_PROTOCOL
+  switch (input.api_type) {
+    case 'anthropic':
+      return 'Anthropic Messages'
+    case 'openai_responses':
+    case 'openai_response':
+    case 'responses':
+      return 'OpenAI Responses'
+    case 'systemone':
+      return 'System One'
+    case 'autotrust':
+      return 'AutoTrust /decide'
+    default:
+      return DEFAULT_PROTOCOL
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import { Download, Upload } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import DismissibleDetails from '@/components/ui/DismissibleDetails'
 import { exportLibrary, MAX_IMPORT_BYTES, parseImport, type ConfigLibrary } from './configStorage'
 import Switch from '@/components/ui/Switch'
 
@@ -81,12 +82,7 @@ export default function ConfigLibraryTools({ library, onImport, onClear }: Props
           <Download size={14} />
           {t('tasks.library.export')}
         </Button>
-        <details
-          className="relative"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') event.currentTarget.open = false
-          }}
-        >
+        <DismissibleDetails className="relative">
           <summary className="coarse-target cursor-pointer rounded-[var(--radius-sm)] px-2 py-2 text-xs">
             {t('tasks.library.actions')}
           </summary>
@@ -95,7 +91,7 @@ export default function ConfigLibraryTools({ library, onImport, onClear }: Props
               {t('tasks.library.clear')}
             </Button>
           </div>
-        </details>
+        </DismissibleDetails>
       </div>
       {error && (
         <p role="alert" className="text-xs text-[var(--danger)]">

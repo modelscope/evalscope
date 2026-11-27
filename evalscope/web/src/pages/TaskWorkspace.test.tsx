@@ -77,6 +77,26 @@ async function flushDraft() {
 }
 
 describe('Task workspace', () => {
+  it('dismisses More actions on outside click or Escape', () => {
+    mount()
+    const title = screen.getByRole('heading', { name: 'Task workspace' })
+    const triggers = screen.getAllByText('More actions', { selector: 'summary' })
+    expect(triggers.length).toBeGreaterThan(1)
+
+    for (const trigger of triggers) {
+      const details = trigger.closest('details')
+      fireEvent.click(trigger)
+      expect(details).toHaveAttribute('open')
+      fireEvent.click(title)
+      expect(details).not.toHaveAttribute('open')
+
+      fireEvent.click(trigger)
+      expect(details).toHaveAttribute('open')
+      fireEvent.keyDown(trigger, { key: 'Escape' })
+      expect(details).not.toHaveAttribute('open')
+    }
+  })
+
   it('summarizes a saved connection and opens invalid fields when submitting', () => {
     const state = emptyWorkspace()
     state.connection = { ...state.connection, url: 'http://localhost/v1' }

@@ -3,6 +3,7 @@ import { Bookmark, Save } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import DismissibleDetails from '@/components/ui/DismissibleDetails'
 import { FORM_INPUT_CLASS } from '@/components/ui/formStyles'
 
 interface PresetToolbarProps {
@@ -108,12 +109,7 @@ export default function PresetToolbar({
           <Save size={13} />
           {t('tasks.library.save')}
         </Button>
-        <details
-          className="relative"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') event.currentTarget.open = false
-          }}
-        >
+        <DismissibleDetails className="relative">
           <summary className="coarse-target cursor-pointer rounded-[var(--radius-sm)] px-2 py-2 text-xs text-[var(--text-muted)]">
             {t('tasks.library.actions')}
           </summary>
@@ -143,7 +139,7 @@ export default function PresetToolbar({
               {t('tasks.library.delete')}
             </Button>
           </div>
-        </details>
+        </DismissibleDetails>
       </div>
       <div>
         <label htmlFor={`${id}-name`} className="sr-only">
