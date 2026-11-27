@@ -55,6 +55,8 @@ export interface EvalDraft {
   sandboxUrl: string
   sandboxImage: string
   sandboxPool: string
+  /** Model API registered by an enabled plugin; empty uses the connection's API type. */
+  pluginEvalType: string
 }
 
 /** TaskConfig keys allowed in Extra Config; unknown keys are ignored. */
@@ -77,6 +79,8 @@ export interface PerfDraft {
   maxPromptLen: string
   minPromptLen: string
   tokenizerPath: string
+  /** Perf API protocol registered by an enabled plugin; empty uses the connection's API type. */
+  pluginApi: string
 }
 
 export const DEFAULT_CONNECTION: ModelConnection = { model: '', url: '', apiKey: '', alias: '', api: 'openai' }
@@ -101,6 +105,7 @@ export const DEFAULT_EVAL: EvalDraft = {
   sandboxUrl: '',
   sandboxImage: '',
   sandboxPool: '',
+  pluginEvalType: '',
 }
 export const DEFAULT_PERF: PerfDraft = {
   parallel: '1',
@@ -112,6 +117,7 @@ export const DEFAULT_PERF: PerfDraft = {
   maxPromptLen: '',
   minPromptLen: '',
   tokenizerPath: '',
+  pluginApi: '',
 }
 
 export type FieldErrors = Record<string, string>
@@ -229,13 +235,21 @@ const EVAL_TYPE_BY_API: Partial<Record<ConnectionApi, string>> = {
   anthropic: 'anthropic_api',
 }
 
-/** Only explicit connection fields can become transport parameters. */
-export function connectionPayload(connection: ModelConnection, kind: 'eval' | 'perf'): Record<string, unknown> {
+/**
+ * Only explicit connection fields can become transport parameters. A plugin API chosen in
+ * the task form replaces the connection's protocol (`eval_type` for eval, `api` for perf).
+ */
+export function connectionPayload(
+  connection: ModelConnection,
+  kind: 'eval' | 'perf',
+  pluginApi = '',
+): Record<string, unknown> {
   const payload: Record<string, unknown> = { model: connection.model.trim() }
   if (kind === 'perf') payload.api = connection.api
   if (kind === 'eval' && connection.api in EVAL_TYPE_BY_API) {
     payload.eval_type = EVAL_TYPE_BY_API[connection.api]
   }
+  if (pluginApi.trim()) payload[kind === 'eval' ? 'eval_type' : 'api'] = pluginApi.trim()
   if (isRemoteApi(connection.api)) {
     payload[kind === 'eval' ? 'api_url' : 'url'] = connection.url.trim()
     if (connection.apiKey) payload.api_key = connection.apiKey
@@ -333,4 +347,24 @@ export function editConnection(connection: ModelConnection, patch: Partial<Model
   const changedOrigin = patch.url !== undefined && endpointOrigin(connection.url) !== endpointOrigin(next.url)
   if (changedOrigin || (patch.api !== undefined && patch.api !== connection.api)) next.apiKey = ''
   return next
+}
+
+/** Registry kinds a plugin can contribute to the task forms. */
+export type PluginApiKind = 'model_api' | 'perf_api'
+
+export interface PluginApiOption {
+  /** Registered name sent as `eval_type` (eval) or `api` (perf). */
+  value: string
+  /** Enabled plugin that registered it. */
+  plugin: string
+}
+
+/** Names of one registry kind contributed by the plugins enabled on the service. */
+export function pluginApiOptions(
+  plugins: ReadonlyArray<{ name: string; registrations: Record<string, string[]> }>,
+  kind: PluginApiKind,
+): PluginApiOption[] {
+  return plugins.flatMap((plugin) =>
+    (plugin.registrations[kind] ?? []).map((value) => ({ value, plugin: plugin.name })),
+  )
 }

@@ -5,6 +5,7 @@ import os
 from argparse import ArgumentTypeError
 
 from evalscope.cli.base import ArgumentParserWithSubParsers, CLICommand
+from evalscope.plugins import add_plugin_argument
 
 
 def subparser_func(args):
@@ -42,10 +43,21 @@ class ServiceCMD(CLICommand):
             'The web dashboard will use this as the default scan path.',
         )
         parser.add_argument('--debug', action='store_true', default=False, help='Enable Flask debug mode')
+        add_plugin_argument(parser)
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
         """Execute the service command."""
+        from evalscope.plugins import PluginError
         from evalscope.service import run_service
 
-        run_service(host=self.args.host, port=self.args.port, debug=self.args.debug, outputs=self.args.outputs)
+        try:
+            run_service(
+                host=self.args.host,
+                port=self.args.port,
+                debug=self.args.debug,
+                outputs=self.args.outputs,
+                plugins=self.args.plugins,
+            )
+        except PluginError as e:
+            raise SystemExit(f'evalscope service: error: {e}') from None

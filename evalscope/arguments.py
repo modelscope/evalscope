@@ -2,8 +2,10 @@
 import argparse
 import ast
 import json
+from typing import Optional
 
 from evalscope.constants import EvalBackend, EvalType, ModelTask
+from evalscope.plugins import add_plugin_argument
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -53,8 +55,27 @@ class ParseStrArgsAction(argparse.Action):
         setattr(namespace, self.dest, arg_dict)
 
 
+def check_eval_type(eval_type: Optional[str]) -> None:
+    """Reject an ``--eval-type`` that no built-in or enabled plugin model API registers.
+
+    Call after the requested plugins are loaded; ``--eval-type`` has no fixed ``choices``
+    because plugins can register new model APIs.
+    """
+    from evalscope.api.registry import MODEL_APIS
+
+    if eval_type is None or eval_type == EvalType.CUSTOM or eval_type in MODEL_APIS:
+        return
+    choices = ', '.join(repr(name) for name in MODEL_APIS.list_keys())
+    raise ValueError(
+        f'argument --eval-type: invalid choice: {eval_type!r} (choose from {choices}, or enable the plugin that registers it with --plugin)'
+    )  # noqa: E501
+
+
 def add_argument(parser: argparse.ArgumentParser):
     # yapf: disable
+    # Plugin arguments
+    add_plugin_argument(parser)
+
     # Model-related arguments
     parser.add_argument('--model', type=str, required=False, help='The model id on modelscope, or local model dir.')
     parser.add_argument('--model-id', type=str, required=False, help='The model id for model name in report.')
@@ -74,22 +95,7 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--generation-config', type=str, action=ParseStrArgsAction, help='The generation config, should be a string.')  # noqa: E501
 
     # Evaluation-related arguments
-    parser.add_argument('--eval-type', type=str,
-                        choices=[
-                            EvalType.CHECKPOINT,
-                            EvalType.OPENAI_API,
-                            EvalType.SYSTEMONE_API,
-                            EvalType.AUTOTRUST_API,
-                            EvalType.OPENAI_RESPONSES_API,
-                            EvalType.ANTHROPIC_API,
-                            EvalType.LITELLM,
-                            EvalType.MOCK_LLM,
-                            EvalType.TEXT2IMAGE,
-                            EvalType.TEXT2SPEECH,
-                            EvalType.IMAGE_EDITING,
-                            EvalType.CUSTOM,
-                        ],
-                        help='Evaluation backend type. Auto-inferred from --api-url / --model when omitted.')  # noqa: E501
+    parser.add_argument('--eval-type', type=str, help='Model API used for evaluation, e.g. openai_api, openai_responses_api, anthropic_api, litellm, llm_ckpt, mock_llm, text2image, text2speech, image_editing, or a name registered by an enabled --plugin. Auto-inferred from --api-url / --model when omitted.')  # noqa: E501
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501

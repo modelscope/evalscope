@@ -5,6 +5,7 @@ from .benchmarks import (
     DEFAULT_MULTIMODAL_BENCHMARKS,
     DEFAULT_TEXT_BENCHMARKS,
     build_benchmark_entry,
+    build_plugin_benchmark_entry,
     discover_all_benchmarks,
     parse_benchmark_description,
 )
@@ -20,6 +21,7 @@ from .log import (
     validate_task_id,
     write_task_manifest,
 )
+from .plugins import ENABLED_PLUGINS_KEY, enabled_plugins, resolve_request_plugins
 from .process import (
     ActiveTask,
     TaskStoppedError,
@@ -55,6 +57,10 @@ __all__ = [
     'DEFAULT_TEXT_BENCHMARKS',
     'DEFAULT_MULTIMODAL_BENCHMARKS',
     'build_benchmark_entry',
+    'build_plugin_benchmark_entry',
+    'ENABLED_PLUGINS_KEY',
+    'enabled_plugins',
+    'resolve_request_plugins',
     'discover_all_benchmarks',
     'parse_benchmark_description',
 ]

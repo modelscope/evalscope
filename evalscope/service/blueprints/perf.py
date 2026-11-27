@@ -37,6 +37,7 @@ from ..utils import (
     create_log_file,
     finish_task,
     get_log_content,
+    resolve_request_plugins,
     run_in_subprocess,
     run_perf_wrapper,
     serialize_result,
@@ -152,6 +153,12 @@ def run_performance_test():
         validate_task_id(task_id)
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+
+    try:
+        # Workers load exactly the plugins this process validated against.
+        data['plugins'] = resolve_request_plugins(data.get('plugins'))
+    except ValueError as error:
+        return jsonify({'error': str(error)}), 400
 
     # Default to openai API
     if 'api' not in data:

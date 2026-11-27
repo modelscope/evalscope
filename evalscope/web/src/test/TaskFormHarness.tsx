@@ -28,7 +28,8 @@ function TaskFormHarness({ kind, onSubmit }: Props & { kind: 'eval' | 'perf' }) 
     return Object.fromEntries(Object.entries(next).map(([key, value]) => [`connection-${key}`, value]))
   }
   function submit(payload: Record<string, unknown>) {
-    onSubmit({ ...payload, ...connectionPayload(connection, kind) })
+    const pluginApi = kind === 'eval' ? evalDraft.pluginEvalType : perfDraft.pluginApi
+    onSubmit({ ...payload, ...connectionPayload(connection, kind, pluginApi) })
   }
   return (
     <>

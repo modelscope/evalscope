@@ -4,15 +4,18 @@
 import multiprocessing
 import os
 from datetime import datetime
+from typing import List, Optional
 
 from flask import Flask, jsonify, send_from_directory
 
+from evalscope.plugins import load_plugins
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__
 
 from .api_models import ConfigResponse
-from .blueprints import bp_eval, bp_perf, bp_reports, bp_tasks
+from .blueprints import bp_eval, bp_perf, bp_plugins, bp_reports, bp_tasks
 from .responses import json_response
+from .utils import ENABLED_PLUGINS_KEY
 from .utils import OUTPUT_DIR as _DEFAULT_ROOT
 
 logger = get_logger()
@@ -23,14 +26,20 @@ _WEB_DIST = os.path.join(os.path.dirname(__file__), '..', 'web', 'dist')
 _WEB_DIST = os.path.abspath(_WEB_DIST)
 
 
-def create_app(outputs: str = None):
+def create_app(outputs: str = None, plugins: Optional[List[str]] = None):
     """Create and configure the Flask application.
 
     Args:
         outputs: Root directory for evaluation outputs. If provided, it will be
                  used as the default scan path in the web dashboard.
+        plugins: Installed plugins to enable, by entry point name. They are loaded
+                 here, so a plugin that fails to load stops the service from starting.
+                 Request validation and every spawned task worker use this list.
     """
+    enabled = [info.name for info in load_plugins(plugins)]
+
     app = Flask(__name__)
+    app.config[ENABLED_PLUGINS_KEY] = enabled
 
     # Store the outputs path in app config so blueprints can access it
     if outputs:
@@ -53,6 +62,7 @@ def create_app(outputs: str = None):
     # Register blueprints
     app.register_blueprint(bp_eval)
     app.register_blueprint(bp_perf)
+    app.register_blueprint(bp_plugins)
     app.register_blueprint(bp_reports)
     app.register_blueprint(bp_tasks)
 
@@ -93,6 +103,7 @@ def create_app(outputs: str = None):
                 'available_endpoints': {
                     'GET  /health': 'Health check',
                     'GET  /api/v1/config': 'Get runtime configuration',
+                    'GET  /api/v1/plugins': 'List enabled plugins and the names they register',
                     'GET  /api/v1/reports/media/file': 'Serve a local media file (image/audio/video) by path',
                     'POST /api/v1/eval/invoke': 'Run model evaluation task (blocking)',
                     'GET  /api/v1/eval/benchmarks': 'List supported benchmarks with descriptions',
@@ -134,23 +145,31 @@ def create_app(outputs: str = None):
     return app
 
 
-def run_service(host: str = '0.0.0.0', port: int = 9000, debug: bool = False, outputs: str = None):
+def run_service(
+    host: str = '0.0.0.0',
+    port: int = 9000,
+    debug: bool = False,
+    outputs: str = None,
+    plugins: Optional[List[str]] = None,
+):
     """Run the Flask service.
 
     Args:
         outputs: Root directory for evaluation outputs. If provided, the web
                  dashboard will use this as the default scan path instead of
                  ``./outputs``.
+        plugins: Installed plugins to enable for every task, by entry point name.
     """
 
     # Force the multiprocessing start method to 'spawn' to avoid issues with
     # model loading in forked child processes on some platforms.
     multiprocessing.set_start_method('spawn', force=True)
-    app = create_app(outputs=outputs)
+    app = create_app(outputs=outputs, plugins=plugins)
 
     logger.info(f'Starting EvalScope service on {host}:{port}')
     logger.info('Available endpoints:')
     logger.info('  GET  /health                         - Health check')
+    logger.info('  GET  /api/v1/plugins                 - List enabled plugins')
     logger.info('  POST /api/v1/eval/invoke             - Run model evaluation task (blocking)')
     logger.info('  GET  /api/v1/eval/benchmarks         - List supported benchmarks with descriptions')
     logger.info('  GET  /api/v1/eval/log                - Get evaluation log')

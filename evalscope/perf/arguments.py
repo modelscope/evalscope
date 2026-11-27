@@ -10,6 +10,7 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
 from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs
+from evalscope.plugins import add_plugin_argument, load_plugins, normalize_plugin_names, plugin_records
 from evalscope.utils import BaseArgument, get_secret_value, secretize_auth_headers
 from evalscope.utils.logger import get_logger
 
@@ -65,6 +66,10 @@ class Arguments(BaseArgument):
 
     attn_implementation: Optional[str] = None
     """Attention implementation, only for local inference."""
+
+    plugins: List[str] = Field(default_factory=list)
+    """Installed plugins to load before the run, by entry point name in the ``evalscope.plugins`` group.
+    Perf API protocols and datasets they register are selected with ``api`` and ``dataset``."""
 
     api: str = 'openai'
     """Service API protocol. One of: 'openai' (chat/completions), 'openai_responses'
@@ -539,6 +544,23 @@ class Arguments(BaseArgument):
             raise ValueError('--device-count must be >= 1')
         return v
 
+    @model_validator(mode='before')
+    @classmethod
+    def _drop_plugin_record(cls, data: Any) -> Any:
+        # ``plugin_packages`` is written to benchmark_args.json as a record, not an input; ignore it
+        # so a recorded run can be replayed from that file.
+        if isinstance(data, dict) and 'plugin_packages' in data:
+            data = {key: value for key, value in data.items() if key != 'plugin_packages'}
+        return data
+
+    @field_validator('plugins', mode='before')
+    @classmethod
+    def _load_plugins(cls, v: Any) -> List[str]:
+        # Load before the model validator, which resolves ``dataset`` through the perf registry.
+        names = normalize_plugin_names(v)
+        load_plugins(names)
+        return names
+
     @field_validator('scenario', mode='before')
     @classmethod
     def _parse_scenario(cls, value: Any) -> Optional[AgentXScenario]:
@@ -830,7 +852,11 @@ class Arguments(BaseArgument):
 
     def to_dict(self) -> dict:
         """Convert the instance to a display-safe dictionary."""
-        return self.model_dump(mode='json')
+        result = self.model_dump(mode='json')
+        if self.plugins:
+            # Recorded in benchmark_args.json so a run can be reproduced with the same plugin versions.
+            result['plugin_packages'] = plugin_records(self.plugins)
+        return result
 
 
 class ParseKVAction(argparse.Action):
@@ -855,7 +881,8 @@ class ParseKVAction(argparse.Action):
 def _add_model_api_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--model', type=str, default=None, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementation')
-    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | anthropic | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm. Determines the auto-appended endpoint path on --url.')  # noqa: E501
+    add_plugin_argument(parser)
+    parser.add_argument('--api', type=str, default='openai', help='Service API protocol: openai | openai_responses/responses | anthropic | openai_embedding/embedding | openai_rerank/rerank | local/local_vllm, or a protocol registered by an enabled --plugin. Determines the auto-appended endpoint path on --url.')  # noqa: E501
     parser.add_argument(
         '--tokenizer-path', type=str, required=False, default=None, help='Specify the tokenizer weight path')
 

@@ -343,6 +343,17 @@
           ],
           "default": null
         },
+        "plugin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "pretty_name": {
           "type": "string"
         },
@@ -1908,6 +1919,70 @@
       ],
       "type": "object"
     },
+    "PluginInfoEntry": {
+      "additionalProperties": false,
+      "description": "An enabled plugin and the names it registered, keyed by registry kind.",
+      "properties": {
+        "distribution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "module": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "registrations": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "module",
+        "registrations"
+      ],
+      "type": "object"
+    },
+    "PluginsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "plugins": {
+          "items": {
+            "$ref": "#/$defs/PluginInfoEntry"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "plugins"
+      ],
+      "type": "object"
+    },
     "PredictionMetadata": {
       "additionalProperties": true,
       "properties": {
@@ -3141,6 +3216,12 @@
     "perf_runs_list_response": {
       "$ref": "#/$defs/PerfRunsListResponse"
     },
+    "plugin_info_entry": {
+      "$ref": "#/$defs/PluginInfoEntry"
+    },
+    "plugins_response": {
+      "$ref": "#/$defs/PluginsResponse"
+    },
     "prediction_row": {
       "$ref": "#/$defs/PredictionRow"
     },
@@ -3177,6 +3258,8 @@
   },
   "required": [
     "config_response",
+    "plugin_info_entry",
+    "plugins_response",
     "data_frame_response",
     "log_response",
     "task_status_response",

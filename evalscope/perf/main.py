@@ -8,6 +8,7 @@ from argparse import Namespace
 from typing import Optional
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.plugins import load_plugins
 from evalscope.utils.asyncio_runtime import shutdown_event_loop
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
@@ -162,6 +163,8 @@ def run_perf_benchmark(args):
         args = Arguments(**args)
     elif isinstance(args, Namespace):
         args = Arguments.from_args(args)
+    # Arguments unpickled in a spawned service worker skip validation, so load plugins here too.
+    plugins = load_plugins(args.plugins)
 
     if args.seed is not None:
         seed_everything(args.seed)
@@ -170,6 +173,8 @@ def run_perf_benchmark(args):
     output_path = get_output_path(args)
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
     args.outputs_dir = output_path
+    for plugin in plugins:
+        logger.info(f'Using {plugin.describe()}')
 
     if args.scenario is not None:
         from .scenarios import run_agentx_benchmark

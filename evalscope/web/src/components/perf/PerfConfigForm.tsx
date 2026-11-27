@@ -3,6 +3,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import Field from '@/components/ui/Field'
 import { FORM_INPUT_CLASS, inputClass } from '@/components/ui/formStyles'
 import { buildPerfPayload, validatePerfDraft, type PerfDraft } from '@/components/tasks/taskConfig'
+import PluginApiField from '@/components/tasks/PluginApiField'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
@@ -114,6 +115,15 @@ export default function PerfConfigForm({ onSubmit, disabled, draft, onChange, to
         </Field>
       }
     >
+      <PluginApiField
+        id="perf-pluginApi"
+        name="api"
+        kind="perf_api"
+        labelKey="tasks.plugin.perfApi"
+        hintKey="tasks.plugin.perfApiHint"
+        value={draft.pluginApi}
+        onChange={(value) => changeField('pluginApi', value)}
+      />
       <Field id={IDS.parallel} name="parallel" labelKey="perf.task.parallel" error={errMsg(IDS.parallel)}>
         {(aria) => (
           <input
