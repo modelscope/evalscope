@@ -6,8 +6,10 @@ from typing import Any, Dict, List
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
+from evalscope.api.registry import BENCHMARK_REGISTRY, MODEL_APIS
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
+from evalscope.plugins import load_plugins
 from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.service.api_models import (
@@ -28,12 +30,15 @@ from ..utils import (
     OUTPUT_DIR,
     TaskStoppedError,
     build_benchmark_entry,
+    build_plugin_benchmark_entry,
     build_task_info,
     create_log_file,
     discover_all_benchmarks,
+    enabled_plugins,
     finish_task,
     get_log_content,
     read_task_manifest,
+    resolve_request_plugins,
     run_eval_wrapper,
     run_in_subprocess,
     serialize_result,
@@ -135,8 +140,28 @@ def _parse_request() -> tuple[dict, str]:
     return data, task_id
 
 
+def _validate_registered_names(task_config: TaskConfig) -> None:
+    """Reject a model API or benchmark that is neither built in nor registered by an enabled plugin."""
+    if task_config.eval_type not in MODEL_APIS:
+        raise RequestValidationError(
+            f"Unknown eval_type '{task_config.eval_type}'; use a built-in model API or one registered by an "
+            'enabled plugin'
+        )
+    # is_registered checks indexed built-in names without importing their adapters.
+    unknown = [name for name in task_config.datasets if not BENCHMARK_REGISTRY.is_registered(name)]
+    if unknown:
+        raise RequestValidationError(
+            f'Unknown datasets: {", ".join(unknown)}; use built-in benchmarks or ones registered by an enabled plugin'
+        )
+
+
 def _build_task_config(data: dict) -> TaskConfig:
     """Build a TaskConfig from request data with common defaults applied."""
+    try:
+        # Workers load exactly the plugins this process validated against.
+        data['plugins'] = resolve_request_plugins(data.get('plugins'))
+    except ValueError as e:
+        raise RequestValidationError(str(e)) from None
     if not data.get('eval_type'):
         data['eval_type'] = EvalType.OPENAI_API
 
@@ -148,6 +173,7 @@ def _build_task_config(data: dict) -> TaskConfig:
         ) from None
     except (ValueError, TypeError):
         raise RequestValidationError('Invalid evaluation configuration; check field names and types') from None
+    _validate_registered_names(task_config)
     if task_config.eval_batch_size < 1 or task_config.repeats < 1:
         raise RequestValidationError('Batch size and repeats must be positive integers')
     generation = task_config.generation_config
@@ -392,6 +418,20 @@ def get_evaluation_log():
         return jsonify({'error': str(e)}), 500
 
 
+_CATEGORY_BUCKETS = {'llm': 'text', 'vlm': 'multimodal', 'agent': 'agent', 'aigc': 'aigc'}
+
+
+def _add_plugin_benchmarks(result: Dict[str, Any], filter_type: str) -> None:
+    """Append benchmarks registered by enabled plugins to their category buckets."""
+    for info in load_plugins(enabled_plugins()):
+        for name in info.registrations.get('benchmark', []):
+            entry = build_plugin_benchmark_entry(name, info.name)
+            bucket = _CATEGORY_BUCKETS[entry['category']]
+            if filter_type and bucket != filter_type:
+                continue
+            result.setdefault(bucket, []).append(entry)
+
+
 @bp_eval.route('/benchmarks', methods=['GET'])
 def list_benchmarks():
     """Return the catalogue of supported benchmarks with descriptions.
@@ -444,6 +484,8 @@ def list_benchmarks():
                 result['text'] = [build_benchmark_entry(name) for name in text_names]
             if filter_type in ('', 'multimodal'):
                 result['multimodal'] = [build_benchmark_entry(name) for name in multimodal_names]
+
+        _add_plugin_benchmarks(result, filter_type)
 
         if filter_type and filter_type not in ('text', 'multimodal'):
             return jsonify({'error': f"Unknown type '{filter_type}'. Use 'text' or 'multimodal'."}), 400

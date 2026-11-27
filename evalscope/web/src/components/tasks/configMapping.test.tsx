@@ -4,6 +4,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext'
 import { EvalFormHarness as EvalConfigForm, PerfFormHarness as PerfConfigForm } from '@/test/TaskFormHarness'
 
 vi.mock('@/api/eval', () => ({ listBenchmarks: vi.fn(() => new Promise(() => {})) }))
+vi.mock('@/api/plugins', () => ({ listPlugins: vi.fn(() => new Promise(() => {})) }))
 
 afterEach(() => { cleanup(); localStorage.clear() })
 

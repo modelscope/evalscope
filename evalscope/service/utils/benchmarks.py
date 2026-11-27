@@ -99,7 +99,7 @@ def _normalise_section_key(title: str) -> str:
     return _SECTION_TITLE_TO_KEY.get(title, title)
 
 
-def parse_benchmark_description(readme_content: str) -> Dict[str, Any]:
+def parse_benchmark_description(readme_content: str, drop_last_section: bool = True) -> Dict[str, Any]:
     """Process a README markdown string into structured description data.
 
     Steps:
@@ -111,6 +111,8 @@ def parse_benchmark_description(readme_content: str) -> Dict[str, Any]:
 
     Args:
         readme_content: Raw markdown from ``readme.zh`` or ``readme.en``.
+        drop_last_section: Remove the trailing usage section of a generated README. Pass
+            False for a raw ``BenchmarkMeta.description``, which has no such section.
 
     Returns:
         A dict with keys:
@@ -135,7 +137,7 @@ def parse_benchmark_description(readme_content: str) -> Dict[str, Any]:
     for i, line in enumerate(lines):
         if re.match(r'^##\s', line):
             last_h2 = i
-    if last_h2 is not None:
+    if drop_last_section and last_h2 is not None:
         lines = lines[:last_h2]
 
     full_content = '\n'.join(lines).strip()
@@ -214,4 +216,47 @@ def build_benchmark_entry(name: str) -> Dict[str, Any]:
         'metrics': metrics,
         'meta': meta,
         'description': description,
+    }
+
+
+def build_plugin_benchmark_entry(name: str, plugin: str) -> Dict[str, Any]:
+    """Build the API response entry for a benchmark registered by an enabled plugin.
+
+    Plugin benchmarks have no generated ``_meta`` cache, so the entry is built from the
+    registered :class:`BenchmarkMeta`. Its English description is used for both locales.
+    """
+    from evalscope.api.registry import BENCHMARK_REGISTRY
+    from evalscope.utils.doc_utils.generate_dataset_md import get_category_from_adapter_class
+
+    meta = BENCHMARK_REGISTRY[name]
+    category = get_category_from_adapter_class(meta.data_adapter)
+    if category not in ('llm', 'vlm', 'agent', 'aigc'):
+        category = 'llm'
+    metrics = [next(iter(m)) if isinstance(m, dict) else str(m) for m in meta.metric_list]
+    description = parse_benchmark_description(meta.description, drop_last_section=False) if meta.description else None
+    summary = {
+        'pretty_name': meta.pretty_name or name,
+        'dataset_id': meta.dataset_id,
+        'category': category,
+        'tags': list(meta.tags),
+        'subset_list': list(meta.subset_list),
+        'metrics': metrics,
+        'few_shot_num': meta.few_shot_num,
+        'eval_split': meta.eval_split,
+        'paper_url': meta.paper_url,
+    }
+    return {
+        'name': name,
+        'pretty_name': summary['pretty_name'],
+        'tags': summary['tags'],
+        'category': category,
+        'subset_list': summary['subset_list'],
+        'total_samples': 0,
+        'few_shot_num': meta.few_shot_num,
+        'dataset_id': meta.dataset_id,
+        'paper_url': meta.paper_url or None,
+        'metrics': metrics,
+        'meta': summary,
+        'description': {'zh': description, 'en': description},
+        'plugin': plugin,
     }

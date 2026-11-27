@@ -6,6 +6,7 @@ import Field from '@/components/ui/Field'
 import Switch from '@/components/ui/Switch'
 import { inputClass } from '@/components/ui/formStyles'
 import { buildEvalPayload, validateEvalDraft, type EvalDraft } from '@/components/tasks/taskConfig'
+import PluginApiField from '@/components/tasks/PluginApiField'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
@@ -511,6 +512,15 @@ export default function EvalConfigForm({ onSubmit, disabled, draft, onChange, to
       moreParamsColumns={2}
       toolbar={toolbar}
     >
+      <PluginApiField
+        id="eval-pluginEvalType"
+        name="eval_type"
+        kind="model_api"
+        labelKey="tasks.plugin.modelApi"
+        hintKey="tasks.plugin.modelApiHint"
+        value={draft.pluginEvalType}
+        onChange={(value) => changeField('pluginEvalType', value)}
+      />
       {/* Datasets with autocomplete */}
       <Field
         id={IDS.datasets}

@@ -34,6 +34,8 @@ class BenchmarkEntry(ApiResponseModel):
     metrics: List[str]
     meta: Dict[str, Any]
     description: BenchmarkDescription
+    plugin: Optional[str] = None
+    """Enabled plugin that registered the benchmark; None for built-in benchmarks."""
 
 
 class BenchmarksResponse(ApiResponseModel):

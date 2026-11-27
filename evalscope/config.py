@@ -22,6 +22,7 @@ from evalscope.constants import (
     JudgeStrategy,
     ModelTask,
 )
+from evalscope.plugins import load_plugins, normalize_plugin_names, plugin_records
 from evalscope.utils.argument_utils import BaseArgument, parse_int_or_float
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.import_utils import check_import
@@ -387,10 +388,25 @@ class TaskConfig(BaseArgument):
     it. ``dict`` inputs accept ``{'mode': 'external',
     'framework': 'claude-code'}`` style payloads."""
 
+    plugins: List[str] = Field(default_factory=list)
+    """Installed plugins to load before the run, by entry point name in the ``evalscope.plugins``
+    group. Loading a plugin runs its ``register_*`` decorators; the registered model APIs,
+    benchmarks and metrics are then selected with ``eval_type``, ``datasets`` and benchmark
+    ``metric_list`` as usual. The package name and version of each plugin are recorded in
+    ``task_config.yaml`` under ``plugin_packages``."""
+
     evalscope_version: Optional[str] = _evalscope_version
     """EvalScope version used for the evaluation."""
 
     # --- Field validators (single-field logic) ---
+
+    @field_validator('plugins', mode='before')
+    @classmethod
+    def _load_plugins(cls, v: Any) -> List[str]:
+        # Load during validation so later validators and callers see the plugin registrations.
+        names = normalize_plugin_names(v)
+        load_plugins(names)
+        return names
 
     @field_validator('repeats', mode='before')
     @classmethod
@@ -814,6 +830,8 @@ class TaskConfig(BaseArgument):
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
             payload = self.to_dict()
+            if self.plugins:
+                payload['plugin_packages'] = plugin_records(self.plugins)
             if generated_metadata:
                 payload.update(generated_metadata)
             os.makedirs(output_dir, exist_ok=True)
@@ -835,6 +853,7 @@ def _strip_generated_evaluation_metadata(task_cfg: Dict[str, Any]) -> Dict[str, 
     result = copy.deepcopy(task_cfg)
     result.pop('resolved_benchmarks', None)
     result.pop('evaluation_identity', None)
+    result.pop('plugin_packages', None)
     return result
 
 

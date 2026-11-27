@@ -31,6 +31,13 @@ class PerfBenchCMD(CLICommand):
                 "Please run `pip install 'evalscope[perf]'`."
             )
 
+        from evalscope.plugins import PluginError, load_plugins
+
+        try:
+            load_plugins(self.args.plugins)
+        except PluginError as e:
+            raise SystemExit(f'evalscope perf: error: {e}') from None
+
         try:
             run_perf_benchmark(self.args)
         except PerfBenchmarkInterrupted as e:

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evalscope-example-plugin"
+version = "0.1.0"
+description = "Example EvalScope plugin: a custom model API, benchmark, metric and perf API protocol"
+requires-python = ">=3.11"
+dependencies = ["evalscope"]
+
+# Importing the module runs its @register_* decorators. Enable it with `--plugin example`.
+[project.entry-points."evalscope.plugins"]
+example = "evalscope_example_plugin"
+
+[tool.setuptools]
+packages = ["evalscope_example_plugin"]
+
+[tool.setuptools.package-data]
+evalscope_example_plugin = ["data/*.jsonl"]

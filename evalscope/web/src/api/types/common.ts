@@ -9,5 +9,7 @@ export type {
   DataFrameResponse,
   ListActiveTasksResponse,
   LogResponse,
+  PluginInfoEntry,
+  PluginsResponse,
   TaskStatusResponse,
 } from '@/api/generated/contracts'

@@ -15,6 +15,7 @@ from evalscope.evaluation_versioning import (
     build_generated_evaluation_metadata,
     validate_cached_evaluation_identity,
 )
+from evalscope.plugins import load_plugins
 from evalscope.utils.io_utils import OutputsStructure, current_time
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
@@ -30,6 +31,8 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
         return [run_task(cfg) for cfg in task_cfg]
 
     task_cfg = parse_task_config(task_cfg)
+    # A TaskConfig unpickled in a spawned worker skips validation, so load its plugins here too.
+    load_plugins(task_cfg.plugins)
     if task_cfg.dry_run:
         logger.info('[dry-run] Parsed TaskConfig — skipping inference.')
         logger.info(task_cfg)
@@ -43,6 +46,8 @@ def run_single_task(task_cfg: TaskConfig) -> dict:
         seed_everything(task_cfg.seed)
     outputs = setup_work_directory(task_cfg)
     configure_logging(task_cfg.debug, os.path.join(outputs.logs_dir, 'eval_log.log'))
+    for plugin in load_plugins(task_cfg.plugins):
+        logger.info(f'Using {plugin.describe()}')
 
     if task_cfg.eval_backend != EvalBackend.NATIVE:
         result = run_non_native_backend(task_cfg, outputs)
@@ -281,9 +286,11 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
 
 
 def main():
-    from evalscope.arguments import parse_args
+    from evalscope.arguments import check_eval_type, parse_args
 
     args = parse_args()
+    load_plugins(args.plugins)
+    check_eval_type(args.eval_type)
     run_task(args)
 
 

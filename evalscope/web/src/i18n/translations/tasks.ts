@@ -2,6 +2,14 @@ import type { Dict } from './types'
 
 export const en: Dict = {
   help: '${field} help',
+  plugin: {
+    modelApi: 'Plugin model API',
+    modelApiHint: 'Optional. Evaluate through a model API registered by a plugin enabled on this service, instead of the API Type above. Model, API URL and API Key still apply.',
+    perfApi: 'Plugin API protocol',
+    perfApiHint: 'Optional. Benchmark with an API protocol registered by a plugin enabled on this service, instead of the API Type above. Model, API URL and API Key still apply.',
+    none: 'None (use API Type)',
+    unavailable: 'not enabled on this service',
+  },
   library: {
     title: 'Task workspace', subtitle: 'Connect once. Reuse your evaluation and performance settings.',
     connection: 'Model connection', evalTemplate: 'Evaluation template', perfTemplate: 'Performance template',
@@ -64,6 +72,14 @@ export const en: Dict = {
 
 export const zh: Dict = {
   help: '${field}说明',
+  plugin: {
+    modelApi: '插件模型 API',
+    modelApiHint: '可选。改用本服务已启用插件注册的模型 API 进行评估，代替上方的 API 类型；模型、API URL 和 API Key 照常使用。',
+    perfApi: '插件 API 协议',
+    perfApiHint: '可选。改用本服务已启用插件注册的 API 协议进行压测，代替上方的 API 类型；模型、API URL 和 API Key 照常使用。',
+    none: '不使用（按 API 类型）',
+    unavailable: '本服务未启用',
+  },
   library: {
     title: '任务工作区', subtitle: '连接只配置一次，评估与压测参数随时复用。',
     connection: '模型连接', evalTemplate: '评估模板', perfTemplate: '压测模板',

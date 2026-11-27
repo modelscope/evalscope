@@ -71,6 +71,8 @@ export interface WebApiContracts {
   perf_run_item: PerfRunItem;
   perf_run_summary: PerfRunSummary;
   perf_runs_list_response: PerfRunsListResponse;
+  plugin_info_entry: PluginInfoEntry;
+  plugins_response: PluginsResponse;
   prediction_row: PredictionRow;
   prediction_score: PredictionScore;
   predictions_response: PredictionsResponse;
@@ -132,6 +134,7 @@ export interface BenchmarkEntry {
   metrics: string[];
   name: string;
   paper_url?: string | null;
+  plugin?: string | null;
   pretty_name: string;
   subset_list: string[];
   tags: string[];
@@ -567,6 +570,21 @@ export interface PerfRunItem {
 export interface PerfRunsListResponse {
   runs: PerfRunItem[];
   total: number;
+}
+/**
+ * An enabled plugin and the names it registered, keyed by registry kind.
+ */
+export interface PluginInfoEntry {
+  distribution?: string | null;
+  module: string;
+  name: string;
+  registrations: {
+    [k: string]: string[];
+  };
+  version?: string | null;
+}
+export interface PluginsResponse {
+  plugins: PluginInfoEntry[];
 }
 export interface PredictionRow {
   AgentTrace?: AgentTrace | null;

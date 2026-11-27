@@ -30,7 +30,7 @@ export default function PerfTaskPanel({
       configTitle={t('perf.task.config')}
       statusTitle={t('perf.task.status')}
       readyLabel={t('perf.task.ready')}
-      submitTask={(payload, id) => submitPerfTask({ ...payload, ...connectionPayload(connection, 'perf') }, id)}
+      submitTask={(payload, id) => submitPerfTask({ ...payload, ...connectionPayload(connection, 'perf', draft.pluginApi) }, id)}
       stopTask={stopPerfTask}
       getLog={getPerfLog}
       renderForm={({ onSubmit, disabled }) => (

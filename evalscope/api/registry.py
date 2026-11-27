@@ -21,6 +21,10 @@ T = TypeVar('T')
 _MISSING = object()
 
 
+class RegistrationConflictError(ValueError):
+    """Raised when a name is registered twice in the same registry."""
+
+
 class Registry(Dict[str, T]):
     """Generic name → object registry with alias support.
 
@@ -51,7 +55,7 @@ class Registry(Dict[str, T]):
         def decorator(obj: T) -> T:
             for n in names:
                 if self.is_registered(n):
-                    raise ValueError(f"{self.kind} '{n}' is already registered.")
+                    raise RegistrationConflictError(f"{self.kind} '{n}' is already registered.")
             if self._on_register is not None:
                 self._on_register(obj, names)
             for n in names:
@@ -261,7 +265,7 @@ def register_benchmark(metadata: 'BenchmarkMeta'):
 
     def register_wrapper(data_adapter: Type['DataAdapter']):
         if BENCHMARK_REGISTRY.is_registered(metadata.name, data_adapter.__module__):
-            raise ValueError(f'Benchmark {metadata.name} already registered')
+            raise RegistrationConflictError(f'Benchmark {metadata.name} already registered')
         metadata.data_adapter = data_adapter
         BENCHMARK_REGISTRY[metadata.name] = metadata
         return data_adapter

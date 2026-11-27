@@ -23,6 +23,13 @@ class EvalCMD(CLICommand):
         parser.set_defaults(func=subparser_func)
 
     def execute(self):
+        from evalscope.arguments import check_eval_type
+        from evalscope.plugins import PluginError, load_plugins
         from evalscope.run import run_task
 
+        try:
+            load_plugins(self.args.plugins)
+            check_eval_type(self.args.eval_type)
+        except (PluginError, ValueError) as e:
+            raise SystemExit(f'evalscope eval: error: {e}') from None
         run_task(self.args)

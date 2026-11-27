@@ -31,7 +31,7 @@ export default function EvalTaskPanel({
       configTitle={t('eval.config')}
       statusTitle={t('eval.status')}
       readyLabel={t('eval.ready')}
-      submitTask={(payload, id) => submitEvalTask({ ...payload, ...connectionPayload(connection, 'eval') }, id)}
+      submitTask={(payload, id) => submitEvalTask({ ...payload, ...connectionPayload(connection, 'eval', draft.pluginEvalType) }, id)}
       stopTask={stopEvalTask}
       getLog={getEvalLog}
       renderForm={({ onSubmit, disabled }) => (

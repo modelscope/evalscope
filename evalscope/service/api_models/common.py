@@ -79,3 +79,17 @@ class ProgressResponse(ApiResponseModel):
     percent: float
     current_step: Optional[str] = None
     status: Optional[str] = None
+
+
+class PluginInfoEntry(ApiResponseModel):
+    """An enabled plugin and the names it registered, keyed by registry kind."""
+
+    name: str
+    module: str
+    distribution: Optional[str] = None
+    version: Optional[str] = None
+    registrations: Dict[str, List[str]]
+
+
+class PluginsResponse(ApiResponseModel):
+    plugins: List[PluginInfoEntry]

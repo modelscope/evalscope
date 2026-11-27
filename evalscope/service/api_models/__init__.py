@@ -11,6 +11,8 @@ from .common import (
     DataFrameResponse,
     ListActiveTasksResponse,
     LogResponse,
+    PluginInfoEntry,
+    PluginsResponse,
     ProgressResponse,
     TaskConfigSummary,
     TaskStatusResponse,
@@ -54,6 +56,8 @@ class WebApiContracts(BaseModel):
     """Schema-only root that keeps every public Web API type reachable for code generation."""
 
     config_response: ConfigResponse
+    plugin_info_entry: PluginInfoEntry
+    plugins_response: PluginsResponse
     data_frame_response: DataFrameResponse
     log_response: LogResponse
     task_status_response: TaskStatusResponse
@@ -116,6 +120,8 @@ __all__ = [
     'PerfDetailResponse',
     'PerfRequestsResponse',
     'PerfRunsListResponse',
+    'PluginInfoEntry',
+    'PluginsResponse',
     'PredictionsResponse',
     'ProgressResponse',
     'TaskStatusResponse',
