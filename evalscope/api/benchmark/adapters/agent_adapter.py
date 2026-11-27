@@ -17,7 +17,7 @@ Two extension modes are supported:
    wires together :class:`AgentLoop` + ``build_*`` hooks.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
 from evalscope.api.agent import AgentLoopResult, NativeAgentConfig, prepare_environment, run_agent_loop
@@ -33,6 +33,11 @@ if TYPE_CHECKING:
 
 
 class AgentAdapter(DefaultDataAdapter):
+    #: Evidence this benchmark's scorer needs beyond the trajectory itself.
+    #: A static OTel trace can provide only ``messages`` and ``trace``; anything
+    #: else (``sandbox``, ``submission``) is reported before evaluation starts.
+    scoring_requires: Tuple[str, ...] = ()
+
     """Marker base class for agent-class benchmarks.
 
     Subclasses are free to override :meth:`_on_inference` to plug in their
@@ -163,20 +168,6 @@ class AgentLoopAdapter(AgentAdapter):
             instruction_override=instruction,
             post_run_hook=self._external_extract_prediction,
         )
-
-    def _maybe_import_otel_trace(self, ac: Any, model: Any, sample: Any) -> Optional[InferenceResult]:
-        """Import an OTLP GenAI export as this sample's inference result.
-
-        A sibling of :meth:`_maybe_run_external_agent` rather than a branch in
-        it: importing a trace executes nothing, so it must not share the
-        external-CLI gate.
-        """
-        from evalscope.api.agent.otel import load_otlp_trace_for_sample
-        from evalscope.api.agent.otel_config import OTelTraceConfig
-
-        if not isinstance(ac, OTelTraceConfig):
-            return None
-        return load_otlp_trace_for_sample(ac, model, sample)
 
     def _resolve_strategy(self, sample: Any, ac: Any) -> Any:
         strategy = self.build_strategy(sample)

@@ -1057,7 +1057,7 @@ def test_untagged_export_with_multiple_runs_is_rejected(tmp_path):
     path = tmp_path / 'untagged.otlp.json'
     path.write_text(_json(payload))
 
-    with pytest.raises(OTLPImportError, match='2 agent runs'):
+    with pytest.raises(OTLPImportError, match='2 runs'):
         load_otlp_trace_for_sample(
             OTelTraceConfig(trace_path=str(path)),
             SimpleNamespace(name='model'),
@@ -1140,4 +1140,112 @@ def test_sample_requiring_a_sandbox_is_rejected_before_scoring(tmp_path):
             OTelTraceConfig(trace_path=str(tmp_path)),
             SimpleNamespace(name='model'),
             SimpleNamespace(id='sample-1', sandbox={'type': 'docker'}),
+        )
+
+
+def test_otel_import_bypasses_an_on_inference_override():
+    """run_inference intercepts before the polymorphic dispatch.
+
+    Real agent benchmarks (cybench, bfcl, tau_bench, ...) override
+    ``_on_inference``; the import must not depend on that hook.
+    """
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+    from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
+
+    calls = []
+
+    class _Override(DefaultDataAdapter):
+        def _on_inference(self, model, sample):  # noqa: D102 - test double
+            calls.append('dispatched')
+            raise AssertionError('the import must run before _on_inference')
+
+    adapter = object.__new__(_Override)
+    adapter._task_config = SimpleNamespace(agent_config=OTelTraceConfig(trace_path='/nonexistent'))
+    adapter._on_inference_start = lambda model, sample: calls.append('start')
+
+    # The importer raises (missing file) instead of dispatching to _on_inference.
+    with pytest.raises(OTLPImportError):
+        DefaultDataAdapter.run_inference(adapter, SimpleNamespace(name='m'), SimpleNamespace(id=1), '/tmp')
+
+    assert calls == ['start']
+
+
+def test_tool_call_response_reads_the_result_field():
+    """The OTel registry example spells the tool result ``result``."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('weather')]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'c1', 'name': 'weather', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'c1', 'result': 'rainy, 57F'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('done')]}),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+    tool_message = next(m for m in messages if isinstance(m, ChatMessageTool))
+
+    assert tool_message.text == 'rainy, 57F'
+
+
+def test_turn_order_is_preserved():
+    """The reconstructed message history keeps the user/assistant/tool order."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr(
+                    {'role': 'user', 'parts': [_text_part('q')]},
+                    {'role': 'assistant', 'parts': [{'type': 'tool_call', 'id': 'c1', 'name': 'search', 'arguments': {}}]},
+                    {'role': 'tool', 'parts': [{'type': 'tool_call_response', 'id': 'c1', 'response': 'found'}]},
+                ),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('answer')]}),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+
+    assert [m.role for m in messages] == ['user', 'assistant', 'tool', 'assistant']
+
+
+def test_consecutive_assistant_answers_are_rejected(tmp_path):
+    """Two answers with no turn boundary cannot be resolved to a final one."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {'role': 'assistant', 'parts': [_text_part('first')]},
+                    {'role': 'assistant', 'parts': [_text_part('second')]},
+                ),
+            },
+        )
+    )
+    path = tmp_path / 'sample-1.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='consecutive assistant answers'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(tmp_path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id='sample-1'),
         )

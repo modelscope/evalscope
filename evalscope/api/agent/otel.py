@@ -96,8 +96,20 @@ _KNOWN_ATTRIBUTES = {
 #: Attributes naming the agent that produced the trace; carried on RUN_START.
 _AGENT_IDENTITY_KEYS = ('gen_ai.agent.name', 'gen_ai.agent.id')
 
+#: Evidence a static trace export can provide to a scorer.
+PROVIDABLE_EVIDENCE = frozenset({'messages', 'trace'})
+
 #: OTel span status codes (``status.code``).
 _STATUS_ERROR = 2
+
+
+def missing_evidence_error(benchmark: str, missing: List[str]) -> 'OTLPImportError':
+    """Report evidence a benchmark's scorer needs but a static trace cannot provide."""
+    return OTLPImportError(
+        f'{benchmark} needs {missing!r}, which a static trace cannot provide; OTel import '
+        f'supports benchmarks whose scorer consumes messages + trace only '
+        f'(providable: {sorted(PROVIDABLE_EVIDENCE)})'
+    )
 
 
 class OTLPImportError(ValueError):
@@ -246,7 +258,7 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str]) -> O
     if part_type == 'tool_call_response':
         # The GenAI semconv part carries the result under ``response``; accept
         # the older ``content`` spelling as a fallback.
-        content = part.get('response', part.get('content'))
+        content = part.get('response', part.get('result', part.get('content')))
         if not isinstance(content, str):
             content = _json_dumps(content)
         return ChatMessageTool(content=content, tool_call_id=part.get('id'))
@@ -421,17 +433,25 @@ def _merge_assistant_tool_calls(messages: List[ChatMessage]) -> List[ChatMessage
 # ---------------------------------------------------------------------------
 
 
-def _run_roots(spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Return the root ``invoke_agent`` spans (one per agent run)."""
-    by_id = {_span_id(span): span for span in spans}
-    roots = []
-    for span in spans:
-        if _span_attributes(span).get(_OP_NAME) != _OP_INVOKE_AGENT:
-            continue
-        parent = span.get('parentSpanId') or ''
-        if not parent or parent not in by_id:
-            roots.append(span)
-    return roots
+def _run_ids(spans: List[Dict[str, Any]]) -> set:
+    """Return the distinct run (trace) ids in an export.
+
+    A run is one OTLP trace: every span emitted for it shares ``traceId``.
+    Counting ``invoke_agent`` spans would miss the common client
+    instrumentation (OpenAI / Anthropic SDKs), which emits only ``chat``
+    spans — exactly the export that reproduced the original all-zero /
+    last-answer bug.
+    """
+    ids = set()
+    for index, span in enumerate(spans):
+        trace_id = span.get('traceId')
+        if trace_id:
+            ids.add(trace_id)
+        elif not span.get('parentSpanId'):
+            # No traceId (hand-written export): fall back to the parentless
+            # span, which is the root of one run.
+            ids.add(f'__root_{index}')
+    return ids
 
 
 def _owning_sample_id(span: Dict[str, Any], by_id: Dict[str, Dict[str, Any]], attribute: str) -> Optional[str]:
@@ -790,10 +810,10 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
     # file with several runs cannot be bound to this sample, and scoring the last
     # run would silently reuse another question's answer.
     if expected is None:
-        runs = _run_roots(spans)
+        runs = _run_ids(spans)
         if len(runs) > 1:
             raise OTLPImportError(
-                f'OTLP export at {path} contains {len(runs)} agent runs but no '
+                f'OTLP export at {path} contains {len(runs)} runs but no '
                 f'{config.sample_id_attribute!r} attribute; cannot bind one run to sample {sample.id!r} '
                 f'(split the export per sample or tag each run)'
             )
@@ -802,6 +822,22 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
         sample_id_attribute=config.sample_id_attribute,
         expected_sample_id=expected,
     )
+
+    # Two consecutive assistant answers with no turn boundary between them:
+    # the export does not say which one is final, so refuse rather than pick.
+    for previous, current in zip(messages, messages[1:]):
+        if (
+            isinstance(previous, ChatMessageAssistant)
+            and previous.text
+            and not previous.tool_calls
+            and isinstance(current, ChatMessageAssistant)
+            and current.text
+            and not current.tool_calls
+        ):
+            raise OTLPImportError(
+                f'Trace for sample {sample.id!r} has consecutive assistant answers with no turn '
+                f'boundary; cannot determine the final answer'
+            )
 
     # The prediction artifact is the last assistant turn that carries text. A
     # trace that ends on a tool call has no final answer: fail loudly instead of

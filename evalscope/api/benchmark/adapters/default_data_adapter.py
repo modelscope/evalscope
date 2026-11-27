@@ -561,6 +561,28 @@ class DefaultDataAdapter(DataAdapter):
         )
 
     @override
+    def _maybe_import_otel_trace(self, model: Model, sample: Sample) -> Optional[InferenceResult]:
+        """Import a recorded OTel trace as this sample's inference result.
+
+        Returns ``None`` for every other agent-config mode, so the normal
+        dispatch runs unchanged. A benchmark whose scorer needs evidence a
+        static trace cannot provide (a sandbox, a live submission, ...)
+        declares it in ``scoring_requires``; the mismatch is reported here,
+        before any score exists.
+        """
+        from evalscope.api.agent.otel import PROVIDABLE_EVIDENCE, load_otlp_trace_for_sample, missing_evidence_error
+        from evalscope.api.agent.otel_config import OTelTraceConfig
+
+        ac = self._task_config.agent_config if self._task_config is not None else None
+        if not isinstance(ac, OTelTraceConfig):
+            return None
+
+        required = tuple(getattr(self, 'scoring_requires', ()) or ())
+        missing = [requirement for requirement in required if requirement not in PROVIDABLE_EVIDENCE]
+        if missing:
+            raise missing_evidence_error(type(self).__name__, missing)
+        return load_otlp_trace_for_sample(ac, model, sample)
+
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         """
         Execute the complete inference pipeline for a single sample.
@@ -579,7 +601,12 @@ class DefaultDataAdapter(DataAdapter):
             TaskState: Complete state object containing inference results
         """
         self._on_inference_start(model, sample)
-        result = self._on_inference(model, sample)
+        # Importing a recorded trace executes nothing: intercept before the
+        # polymorphic dispatch so adapters that override ``_on_inference``
+        # (cybench, bfcl, tau_bench, ...) still accept ``mode='otel_trace'``.
+        result = self._maybe_import_otel_trace(model, sample)
+        if result is None:
+            result = self._on_inference(model, sample)
 
         # ``_on_inference`` may return either a plain ``ModelOutput`` (single
         # -turn benchmarks) or a richer ``InferenceResult`` carrying agent
