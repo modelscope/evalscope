@@ -3,8 +3,7 @@
 
 ## Overview
 
-DPG-Bench (ELLA) evaluates semantic alignment on 1,065 dense prompts describing multiple
-objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Object365.
+DPG-Bench evaluates how well generated images follow dense prompts about objects, attributes, and relations.
 
 ## Task Description
 
@@ -15,26 +14,15 @@ objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Obj
 
 ## Key Features
 
-- 1,065 dense prompts decomposed into ~14k atomic questions with dependency structure,
-  following the DSG scoring pipeline of the official evaluator.
-- Loads the ModelScope mirror by default; the official metadata CSV (from the
-  diffusionbench-evals packaging of the ELLA evaluator) can be used through a local
-  ``dataset_id`` while the Hugging Face mirror is being published.
+- 1,065 official prompts and 14,392 yes/no questions with dependencies.
+- The ModelScope mirror includes the exact prompts. For a local CSV, place the original text files in `prompts/`.
 
 ## Evaluation Notes
 
-- A vision API answers each atomic question. An answer scores 1.0 only when it is exactly
-  'yes'; a question whose parent is adjusted to 0 is forced to 0. The overall score is the
-  mean of adjusted per-image ratios; the five L1 category scores (Global / Entity /
-  Attribute / Relation / Other) aggregate RAW answers corpus-level, as in the official
-  evaluator.
-- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are
-  needed. The official evaluator uses mPLUG, so results from different judges are not
-  directly comparable. API failures are excluded rather than scored zero. The judge prompt
-  pins the accepted token (lowercase 'yes'/'no', no punctuation), matching the strict
-  exact-match rule.
-- A prompt-level category without questions emits no report row; use repeats=4 for the
-  official repeated-image protocol.
+- Configure a vision judge with `--judge`. Missing or invalid verdicts exclude the image. The official judge is mPLUG.
+- Overall score averages dependency-adjusted image scores. Category scores pool raw verdicts across images.
+- EvalScope retains all CSV rows and uses every image for category scoring. The reference script skips its first CSV
+  row and uses the final crop for category scoring. Use `repeats=4` to generate four images per prompt.
 
 
 ## Properties
@@ -43,20 +31,140 @@ objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Obj
 |----------|-------|
 | **Benchmark Name** | `dpg_bench` |
 | **Dataset ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |
-| **Paper** | [Paper](https://arxiv.org/abs/2403.12915) |
+| **Paper** | [Paper](https://arxiv.org/abs/2403.05135) |
 | **Tags** | `TextToImage` |
-| **Metrics** | `DPGScore` |
+| **Metrics** | `dpg_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 1,065 |
+| Prompt Length (Mean) | 407.9 chars |
+| Prompt Length (Min/Max) | 234 / 891 chars |
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "27494d92",
+      "content": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control."
+    }
+  ],
+  "target": "",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "id": "partiprompts97",
+    "prompt": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.",
+    "questions": [
+      {
+        "proposition_id": 1,
+        "question": "Is there an empty space?",
+        "dependency": [
+          0
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 2,
+        "question": "Is there an invisible man?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 3,
+        "question": "Are there glasses?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 4,
+        "question": "Is there a necklace?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 5,
+        "question": "Is there a smartphone?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 6,
+        "question": "Is there a room?",
+        "dependency": [
+          0
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 7,
+        "question": "Is there a couch?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 8,
+        "question": "Is there a coffee table?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 9,
+        "question": "Are there magazines?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 10,
+        "question": "Is there a remote control?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      "... [TRUNCATED 9 more items] ..."
+    ],
+    "category": "",
+    "tags": [],
+    "image_path": ""
+  }
+}
+```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 
@@ -74,6 +182,7 @@ evalscope eval \
     --api-url http://127.0.0.1:18131/v1 \
     --api-key EMPTY_TOKEN \
     --datasets dpg_bench \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -90,6 +199,7 @@ task_cfg = TaskConfig(
     api_url='http://127.0.0.1:18131/v1',
     api_key='EMPTY_TOKEN',
     datasets=['dpg_bench'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # Remove this line for formal evaluation
 )
 

@@ -1,70 +1,177 @@
 # DPG-Bench
 
 
-## Overview
+## 概述
 
-DPG-Bench (ELLA) evaluates semantic alignment on 1,065 dense prompts describing multiple
-objects, attributes and relations, built from COCO, PartiPrompts, DSG-1k and Object365.
+DPG-Bench 评估生成的图像在多大程度上遵循了关于对象、属性和关系的密集提示词。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Text-to-image generation
-- **Input**: Dense prompt describing a multi-object scene
-- **Output**: Image scored through atomic yes/no questions decomposed from the prompt
-- **Domain**: Dense prompt semantic alignment
+- **任务类型**：文本到图像生成
+- **输入**：描述多对象场景的密集提示词
+- **输出**：通过从提示词分解出的原子级是/否问题进行评分的图像
+- **领域**：密集提示词语义对齐
 
-## Key Features
+## 主要特点
 
-- 1,065 dense prompts decomposed into ~14k atomic questions with dependency structure,
-  following the DSG scoring pipeline of the official evaluator.
-- Loads the ModelScope mirror by default; the official metadata CSV (from the
-  diffusionbench-evals packaging of the ELLA evaluator) can be used through a local
-  ``dataset_id`` while the Hugging Face mirror is being published.
+- 包含 1,065 个官方提示词和 14,392 个具有依赖关系的是/否问题。
+- ModelScope 镜像包含了确切的提示词。若需本地 CSV，请将原始文本文件放置在 `prompts/` 目录下。
 
-## Evaluation Notes
+## 评估说明
 
-- A vision API answers each atomic question. An answer scores 1.0 only when it is exactly
-  'yes'; a question whose parent is adjusted to 0 is forced to 0. The overall score is the
-  mean of adjusted per-image ratios; the five L1 category scores (Global / Entity /
-  Attribute / Relation / Other) aggregate RAW answers corpus-level, as in the official
-  evaluator.
-- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are
-  needed. The official evaluator uses mPLUG, so results from different judges are not
-  directly comparable. API failures are excluded rather than scored zero. The judge prompt
-  pins the accepted token (lowercase 'yes'/'no', no punctuation), matching the strict
-  exact-match rule.
-- A prompt-level category without questions emits no report row; use repeats=4 for the
-  official repeated-image protocol.
+- 使用 `--judge` 配置视觉评判器。缺失或无效的判定结果将排除该图像。官方评判器为 mPLUG。
+- 总体分数是对经过依赖调整后的图像分数取平均值。类别分数则汇总所有图像的原始判定结果。
+- EvalScope 保留所有 CSV 行，并使用每张图像进行类别评分。参考脚本会跳过其第一行 CSV，并使用最终裁剪区域进行类别评分。使用 `repeats=4` 可为每个提示词生成四张图像。
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `dpg_bench` |
-| **Dataset ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |
-| **Paper** | [Paper](https://arxiv.org/abs/2403.12915) |
-| **Tags** | `TextToImage` |
-| **Metrics** | `DPGScore` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `test` |
+| **基准测试名称** | `dpg_bench` |
+| **数据集ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |
+| **论文** | [Paper](https://arxiv.org/abs/2403.05135) |
+| **标签** | `TextToImage` |
+| **指标** | `dpg_score` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `test` |
 
 
-## Data Statistics
+## 数据统计
 
-*Statistics not available.*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 1,065 |
+| 提示词长度（平均） | 407.9 字符 |
+| 提示词长度（最小/最大） | 234 / 891 字符 |
 
-## Sample Example
+## 样例示例
 
-*Sample example not available.*
+**子集**: `default`
 
-## Prompt Template
+```json
+{
+  "input": [
+    {
+      "id": "27494d92",
+      "content": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control."
+    }
+  ],
+  "target": "",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "id": "partiprompts97",
+    "prompt": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.",
+    "questions": [
+      {
+        "proposition_id": 1,
+        "question": "Is there an empty space?",
+        "dependency": [
+          0
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 2,
+        "question": "Is there an invisible man?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 3,
+        "question": "Are there glasses?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 4,
+        "question": "Is there a necklace?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 5,
+        "question": "Is there a smartphone?",
+        "dependency": [
+          1
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 6,
+        "question": "Is there a room?",
+        "dependency": [
+          0
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 7,
+        "question": "Is there a couch?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 8,
+        "question": "Is there a coffee table?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 9,
+        "question": "Are there magazines?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      {
+        "proposition_id": 10,
+        "question": "Is there a remote control?",
+        "dependency": [
+          6
+        ],
+        "category_broad": "entity",
+        "category_detailed": "whole"
+      },
+      "... [TRUNCATED 9 more items] ..."
+    ],
+    "category": "",
+    "tags": [],
+    "image_path": ""
+  }
+}
+```
 
-*No prompt template defined.*
+*注意：部分内容为显示目的已截断。*
 
-## Usage
+## 提示模板
 
-### Using CLI
+*未定义提示模板。*
+
+## 使用方法
+
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -74,10 +181,11 @@ evalscope eval \
     --api-url http://127.0.0.1:18131/v1 \
     --api-key EMPTY_TOKEN \
     --datasets dpg_bench \
-    --limit 10  # Remove this line for formal evaluation
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
+    --limit 10  # 正式评估时请删除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -90,7 +198,8 @@ task_cfg = TaskConfig(
     api_url='http://127.0.0.1:18131/v1',
     api_key='EMPTY_TOKEN',
     datasets=['dpg_bench'],
-    limit=10,  # Remove this line for formal evaluation
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

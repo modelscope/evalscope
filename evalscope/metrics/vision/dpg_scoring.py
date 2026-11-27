@@ -1,8 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Pure scoring functions for DPG-Bench (ELLA, TencentQQGYLab).
 
-Mirrors the official evaluator (``dpg_evaluator/evaluator.py`` in the ELLA repo and its
-faithful ``diffusionbench-evals`` port):
+Follows the per-image rules in ELLA's ``dpg_bench/compute_dpg_bench.py``:
 
 - Every atomic question is answered by a VQA judge; the answer scores 1.0 only when it is
   exactly ``'yes'`` (case-sensitive, no punctuation), else 0.0.
@@ -19,16 +18,13 @@ faithful ``diffusionbench-evals`` port):
 L1_CATEGORIES = ('global', 'entity', 'attribute', 'relation', 'other')
 
 
-def parse_questions(target_json: str) -> list:
-    """Parse the sample target: a JSON list of question records.
+def parse_questions(records: list[dict]) -> list[dict]:
+    """Normalize the sample's question records.
 
     Each record carries ``proposition_id`` (int), ``question`` (str), ``dependency``
     (list of parent ids, empty or [0] for roots), ``category_broad`` (L1) and
     ``category_detailed`` (L2).
     """
-    import json
-
-    records = json.loads(target_json or '[]')
     questions = []
     for record in records:
         dependency = record.get('dependency') or []
@@ -45,28 +41,22 @@ def parse_questions(target_json: str) -> list:
     return questions
 
 
-def normalize_answer(answer: str) -> str:
-    """Official matching is strict: the answer string must equal 'yes'."""
-    return str(answer).strip()
-
-
-def raw_and_adjusted(questions: list, answers: dict) -> tuple:
+def raw_and_adjusted(questions: list[dict], answers: dict[int, str]) -> tuple[dict[int, float], dict[int, float]]:
     """Compute raw and dependency-adjusted per-question scores.
 
     ``answers`` maps question id -> judge reply. Returns ``(raw_scores, adjusted_scores)``
     as dicts keyed by qid.
     """
-    raw = {q['qid']: (1.0 if normalize_answer(answers.get(q['qid'], '')) == 'yes' else 0.0) for q in questions}
-    adjusted = {}
+    raw = {q['qid']: float(answers[q['qid']] == 'yes') for q in questions}
+    adjusted = raw.copy()
     for q in questions:
-        # Same lookup order/fallback as the official evaluator: a parent processed later
-        # falls back to 1.0 (the metadata guarantees parents appear before children).
-        parents_no = any(adjusted.get(pid, 1.0) == 0.0 for pid in q['dependency'])
-        adjusted[q['qid']] = 0.0 if parents_no else raw[q['qid']]
+        # The official pass starts with raw scores, so a later parent supplies its raw verdict.
+        if any(adjusted[pid] == 0.0 for pid in q['dependency']):
+            adjusted[q['qid']] = 0.0
     return raw, adjusted
 
 
-def overall_counts(questions: list, adjusted: dict) -> tuple:
+def overall_counts(questions: list[dict], adjusted: dict[int, float]) -> tuple[float, float, int]:
     """Overall (adjusted) counts: ``(score, yes_sum, question_count)``."""
     total = len(questions)
     if not total:
@@ -76,7 +66,7 @@ def overall_counts(questions: list, adjusted: dict) -> tuple:
     return score, yes_sum, total
 
 
-def category_raw_counts(questions: list, raw: dict, category: str) -> tuple:
+def category_raw_counts(questions: list[dict], raw: dict[int, float], category: str) -> tuple[float, float, int]:
     """Official L1 category score over RAW scores: ``(score, yes_sum, question_count)``.
 
     Questions whose ``category_broad`` differs from ``category`` are excluded; a category

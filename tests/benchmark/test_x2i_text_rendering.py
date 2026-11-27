@@ -496,130 +496,65 @@ class TestDPGScoringCore:
         {'proposition_id': 3, 'question': 'Is the room ordinary?', 'dependency': [0], 'category_broad': 'global', 'category_detailed': 'scene'},
     ]
 
-    def test_parse_questions_drops_zero_dependency(self):
-        questions = dpg_scoring.parse_questions(json.dumps(self.QUESTIONS))
+    def test_parse_questions_drops_zero_dependency(self) -> None:
+        questions = dpg_scoring.parse_questions(self.QUESTIONS)
         assert questions[0]['dependency'] == []
         assert questions[1]['dependency'] == [1]
 
-    def test_raw_strict_yes(self):
+    def test_raw_strict_yes(self) -> None:
         # Official matching is strict: exactly 'yes' counts, 'Yes, it is' does not.
         raw, adjusted = dpg_scoring.raw_and_adjusted(
-            dpg_scoring.parse_questions(json.dumps(self.QUESTIONS)),
+            dpg_scoring.parse_questions(self.QUESTIONS),
             {1: 'yes', 2: 'Yes, it is', 3: 'yes'},
         )
         assert raw == {1: 1.0, 2: 0.0, 3: 1.0}
 
-    def test_raw_strict_case(self):
+    def test_raw_strict_case(self) -> None:
         # A capitalized 'Yes' must not count: the reply is matched exactly.
         raw, adjusted = dpg_scoring.raw_and_adjusted(
-            dpg_scoring.parse_questions(json.dumps(self.QUESTIONS)),
+            dpg_scoring.parse_questions(self.QUESTIONS),
             {1: 'Yes', 2: 'YES', 3: 'yes'},
         )
         assert raw == {1: 0.0, 2: 0.0, 3: 1.0}
 
-    def test_judge_prompt_pins_the_accepted_form(self, tmp_path, monkeypatch):
-        # The prompt must demand the exact accepted token (lowercase 'yes'), so the strict
-        # matching rule and the judge instruction cannot drift apart again.
-        from PIL import Image
-
-        from evalscope.metrics.vision.metrics import DPGScore
-
-        image_path = tmp_path / 'image.png'
-        Image.new('RGB', (4, 4)).save(image_path)
-        target = json.dumps([
-            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
-        ])
-        metric = DPGScore()
-        prompts = []
-
-        class FakeModel:
-
-            def generate(self, **kwargs):
-                prompts.append(kwargs['input'][0].content[1].text)
-                return type('O', (), {'error': None, 'empty': False, 'completion': 'yes', 'stop_reason': 'stop'})()
-
-        monkeypatch.setattr(metric, '_api_model', FakeModel())
-        metric(str(image_path), target)
-        assert len(prompts) == 1
-        assert 'yes or no' in prompts[0]
-        assert 'lowercase' in prompts[0] and 'no punctuation' in prompts[0]
-
-    def test_judge_reply_keeps_original_case(self, tmp_path, monkeypatch):
-        # The judge path must not lowercase the reply; normalize_answer owns the rule.
-        from PIL import Image
-
-        from evalscope.metrics.vision.metrics import DPGScore
-
-        image_path = tmp_path / 'image.png'
-        Image.new('RGB', (4, 4)).save(image_path)
-        target = json.dumps([
-            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
-        ])
-        metric = DPGScore()
-        monkeypatch.setattr(metric, '_api_model', type('M', (), {'generate': lambda self, **k: type('O', (), {
-            'error': None, 'empty': False, 'completion': 'Yes', 'stop_reason': 'stop'})()})())
-        result = metric(str(image_path), target)
-        # 'Yes' is not an exact 'yes': the sample scores 0.
-        assert result.main_value == 0.0
-        assert result.metadata['corpus_counts']['components']['entity'] == {'numerator': 0, 'denominator': 1}
-
-    def test_dependency_propagation(self):
+    def test_dependency_propagation(self) -> None:
         # Parent adjusted to 0 forces the child to 0 (q2 depends on q1).
         raw, adjusted = dpg_scoring.raw_and_adjusted(
-            dpg_scoring.parse_questions(json.dumps(self.QUESTIONS)),
+            dpg_scoring.parse_questions(self.QUESTIONS),
             {1: 'no', 2: 'yes', 3: 'yes'},
         )
         assert raw[2] == 1.0
         assert adjusted[2] == 0.0
         assert adjusted[1] == 0.0 and adjusted[3] == 1.0
 
-    def test_overall_counts(self):
-        questions = dpg_scoring.parse_questions(json.dumps(self.QUESTIONS))
+    def test_overall_counts(self) -> None:
+        questions = dpg_scoring.parse_questions(self.QUESTIONS)
         _, adjusted = dpg_scoring.raw_and_adjusted(questions, {1: 'yes', 2: 'no', 3: 'yes'})
         score, yes_sum, total = dpg_scoring.overall_counts(questions, adjusted)
         assert abs(score - 2 / 3) < 1e-9 and yes_sum == 2 and total == 3
 
-    def test_category_raw_counts(self):
+    def test_category_raw_counts(self) -> None:
         # L1 categories aggregate RAW scores, not dependency-adjusted ones.
-        questions = dpg_scoring.parse_questions(json.dumps(self.QUESTIONS))
+        questions = dpg_scoring.parse_questions(self.QUESTIONS)
         raw, adjusted = dpg_scoring.raw_and_adjusted(questions, {1: 'no', 2: 'yes', 3: 'yes'})
         score, yes_sum, total = dpg_scoring.category_raw_counts(questions, raw, 'attribute')
         assert (score, yes_sum, total) == (1.0, 1, 1)  # raw q2 yes, even though adjusted 0
 
-    def test_category_missing_is_zero_counts(self):
-        questions = dpg_scoring.parse_questions(json.dumps(self.QUESTIONS))
+    def test_category_missing_is_zero_counts(self) -> None:
+        questions = dpg_scoring.parse_questions(self.QUESTIONS)
         raw, _ = dpg_scoring.raw_and_adjusted(questions, {1: 'yes', 2: 'yes', 3: 'yes'})
         score, yes_sum, total = dpg_scoring.category_raw_counts(questions, raw, 'relation')
         assert (score, yes_sum, total) == (0.0, 0, 0)
 
 
 class TestDPGAdapter:
-    def test_load_subset_converts_official_csv(self, tmp_path, monkeypatch):
-        import evalscope.benchmarks.text2image.dpg_bench_adapter as module
-
-        source = tmp_path / 'dpg_bench.csv'
-        source.write_bytes((FIXTURES / 'dpg_bench.csv').read_bytes())
-        monkeypatch.setattr(module, 'download_dataset_file', lambda repo, filename, **kwargs: str(source))
-        adapter = get_benchmark('dpg_bench', TaskConfig(
-            model='test', eval_type='mock_llm', dataset_hub='huggingface',
-            dataset_args={'dpg_bench': {'dataset_id': 'test/dpg', 'dataset_id_source': 'huggingface'}}))
-        data = adapter.load_dataset()['default']
-        assert len(data) == 2
-        target = json.loads(data[0].target)
-        assert len(target) == 8
-        assert target[0]['category_broad'] == 'global'
-        assert data[0].input[0].content == data[0].metadata['prompt']
-
-    def test_local_directory_and_csv_dataset_ids(self, tmp_path, monkeypatch):
+    def test_local_directory_and_csv_dataset_ids(self, tmp_path: Path) -> None:
         import shutil
-
-        import evalscope.benchmarks.text2image.dpg_bench_adapter as module
 
         # Local directory form: standard loader resolves default_test.jsonl.
         local_dir = tmp_path / 'dpg_local'
         local_dir.mkdir()
         shutil.copy(FIXTURES / 'dpg_bench_prompts.jsonl', local_dir / 'default_test.jsonl')
-        monkeypatch.setattr(module, 'download_dataset_file', lambda *a, **k: (_ for _ in ()).throw(AssertionError('must not download')))
         adapter = get_benchmark('dpg_bench', TaskConfig(
             model='test', eval_type='mock_llm',
             dataset_args={'dpg_bench': {'dataset_id': str(local_dir)}}))
@@ -634,23 +569,25 @@ class TestDPGAdapter:
             dataset_args={'dpg_bench': {'dataset_id': str(local_csv)}}))
         data_csv = adapter_csv.load_dataset()['default']
         assert len(data_csv) == 2
-        assert json.loads(data_csv[0].target)[0]['category_broad'] == 'global'
+        assert data_csv[0].metadata['questions'][0]['category_broad'] == 'global'
+        assert list(tmp_path.glob('*.jsonl')) == []
 
-    def test_record_to_sample_serializes_questions(self):
+    def test_record_to_sample_preserves_questions_and_id(self) -> None:
         adapter = get_benchmark('dpg_bench')
         questions = [{'proposition_id': 1, 'question': 'q?', 'dependency': [], 'category_broad': 'entity', 'category_detailed': 'whole'}]
         sample = adapter.record_to_sample({'item_id': 'x', 'prompt': 'dense prompt', 'questions': questions})
         assert sample.input[0].content == 'dense prompt'
-        assert json.loads(sample.target) == questions
+        assert sample.metadata['questions'] == questions
+        assert sample.metadata[FileConstants.ID] == 'x'
 
 
 class TestDPGCorpusAggregation:
     """Component mode: overall keeps the mean, L1 categories aggregate corpus-level."""
 
     @staticmethod
-    def _sample_score(sample_id, overall, global_counts, entity_counts):
-        from evalscope.api.metric import SampleScore, Score
-
+    def _sample_score(
+        sample_id: int, overall: float, global_counts: dict[str, int], entity_counts: dict[str, int],
+    ) -> SampleScore:
         value = {'dpg_score': overall, 'dpg_score:global': global_counts['numerator'] / global_counts['denominator'],
                  'dpg_score:entity': entity_counts['numerator'] / entity_counts['denominator']}
         identities = {
@@ -665,7 +602,7 @@ class TestDPGCorpusAggregation:
         }
         return SampleScore(score=Score(value=value, metadata=metadata), sample_id=sample_id, sample_metadata={})
 
-    def test_component_rows_corpus_overall_rows_mean(self):
+    def test_component_rows_corpus_overall_rows_mean(self) -> None:
         adapter = get_benchmark('dpg_bench')
         sample_scores = [
             self._sample_score(0, 0.8, {'numerator': 2, 'denominator': 2}, {'numerator': 1, 'denominator': 3}),
@@ -679,55 +616,37 @@ class TestDPGCorpusAggregation:
         assert abs(rows['dpg_score' + json.dumps({'component': 'entity'}, sort_keys=True)] - 0.5) < 1e-9
 
 
-class TestDPGJudge:
-    def test_stub_answers_via_monkeypatch(self, tmp_path, monkeypatch):
-        from PIL import Image
-
-        from evalscope.metrics.vision.metrics import DPGScore
-
-        image_path = tmp_path / 'image.png'
-        Image.new('RGB', (4, 4)).save(image_path)
-        target = json.dumps([
-            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
-            {'proposition_id': 2, 'question': 'Is he wearing glasses?', 'dependency': [1], 'category_broad': 'attribute', 'category_detailed': 'color'},
-        ])
-        metric = DPGScore()
-        monkeypatch.setattr(metric, '_answer', lambda image_path, question: 'yes' if 'man' in question else 'no')
-        result = metric(str(image_path), target)
-        assert result.status.is_usable
-        # q1 yes, q2 no; q2 depends on q1 (q1 yes, no propagation): overall 1/2.
-        assert result.main_value == 0.5
-        assert result.metadata['corpus_counts']['components']['entity'] == {'numerator': 1, 'denominator': 1}
-        assert result.metadata['corpus_counts']['components']['attribute'] == {'numerator': 0, 'denominator': 1}
-
-    def test_dependency_failure_excludes_parent_chain(self, tmp_path, monkeypatch):
-        from PIL import Image
-
-        from evalscope.metrics.vision.metrics import DPGScore
-
-        image_path = tmp_path / 'image.png'
-        Image.new('RGB', (4, 4)).save(image_path)
-        target = json.dumps([
-            {'proposition_id': 1, 'question': 'Is there a man?', 'dependency': [0], 'category_broad': 'entity', 'category_detailed': 'whole'},
-            {'proposition_id': 2, 'question': 'Is he wearing glasses?', 'dependency': [1], 'category_broad': 'attribute', 'category_detailed': 'color'},
-        ])
-        metric = DPGScore()
-        monkeypatch.setattr(metric, '_answer', lambda image_path, question: 'no' if 'man' in question else 'yes')
-        result = metric(str(image_path), target)
-        assert result.status.is_usable
-        # q1 no; q2 yes but parent adjusted to 0 -> 0: overall 0/2.
-        assert result.main_value == 0.0
-        assert result.metadata['corpus_counts']['components']['attribute'] == {'numerator': 1, 'denominator': 1}
-
-
 class TestDPGFullPipeline:
     """Full flow with the official DPG metadata (truncated fixture) and stubbed answers."""
 
-    def test_run_dpg_bench(self, tmp_path, monkeypatch):
-        from evalscope.metrics.vision.metrics import DPGScore
+    @pytest.mark.parametrize('judge_content', ['{"answer":"yes"}', 'not JSON'])
+    def test_run_dpg_bench(self, tmp_path: Path, judge_content: str) -> None:
+        class DPGHandler(_ImageHandler):
 
-        monkeypatch.setattr(DPGScore, '_answer', lambda self, image_path, question: 'yes')
-        with _api_service() as api_url:
+            def do_POST(self) -> None:
+                if self.path == '/v1/images/generations':
+                    super().do_POST()
+                    return
+                assert self.path == '/v1/chat/completions'
+                payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                content = payload['messages'][0]['content']
+                assert content[0]['image_url']['url'].startswith('data:image/png;base64,')
+                assert 'exactly one of' in content[1]['text']
+                result = {
+                    'id': 'test', 'object': 'chat.completion', 'created': 1, 'model': 'dpg-judge',
+                    'choices': [{
+                        'index': 0, 'message': {'role': 'assistant', 'content': judge_content},
+                        'finish_reason': 'stop',
+                    }],
+                }
+                body = json.dumps(result).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        with _api_service(DPGHandler) as api_url:
             task_cfg = TaskConfig(
                 model='test-image-model',
                 model_task=ModelTask.IMAGE_GENERATION,
@@ -736,11 +655,21 @@ class TestDPGFullPipeline:
                 api_key='test-key',
                 work_dir=str(tmp_path),
                 datasets=['dpg_bench'],
+                judge={'models': [{'model_id': 'dpg-judge', 'api_url': api_url, 'api_key': 'test-key'}]},
                 dataset_args={'dpg_bench': {'dataset_id': str(FIXTURES / 'dpg_bench_prompts.jsonl')}},
             )
             run_task(task_cfg=task_cfg)
 
         rows = _read_report_scores(tmp_path, 'dpg_bench')
+        if judge_content == 'not JSON':
+            assert not rows
+            reviews = next(tmp_path.glob('*/reviews/*/dpg_bench_default.jsonl'))
+            statuses = [
+                review['sample_score']['score']['status']
+                for review in map(json.loads, reviews.read_text(encoding='utf-8').splitlines())
+            ]
+            assert statuses == [ScoreStatus.EXCLUDED, ScoreStatus.EXCLUDED]
+            return
         # Stub answers 'yes' everywhere: overall 1.0 and every present L1 component at 1.0.
         assert rows['dpg_score' + json.dumps({'scope': 'overall'}, sort_keys=True)] == 1.0
         assert rows['dpg_score' + json.dumps({'component': 'global'}, sort_keys=True)] == 1.0

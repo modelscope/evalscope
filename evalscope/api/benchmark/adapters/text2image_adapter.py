@@ -314,17 +314,12 @@ class Text2ImageAdapter(DefaultDataAdapter):
 
     @staticmethod
     def _resolve_reference_image(reference: Any, metadata: Dict[str, Any], metric_name: str) -> Any:
-        # The sample target comes first: ``_record_reference_image`` places the record's
-        # reference image there, and text-scoring metrics (LongTextScore, DPGScore) carry
-        # their ground truth through it. ``metadata['image_path']`` is the generated image
-        # written by ``_on_inference_end``, not a reference, so it must not shadow the
-        # target.
-        if not Text2ImageAdapter._is_empty_image_value(reference):
-            return reference
         for key in IMAGE_PAIR_REFERENCE_KEYS:
             value = metadata.get(key)
             if not Text2ImageAdapter._is_empty_image_value(value):
                 return value
+        if not Text2ImageAdapter._is_empty_image_value(reference):
+            return reference
         raise ValueError(
             f'Metric {metric_name} requires a reference image. Provide one of: {", ".join(IMAGE_PAIR_REFERENCE_KEYS)}.'
         )
