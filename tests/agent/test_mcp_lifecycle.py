@@ -84,3 +84,33 @@ class TestMCPInitialization(unittest.TestCase):
                 await server.list_tools()
 
         AsyncioLoopRunner.run(run(), timeout=10)
+
+
+class TestMCPToolPagination(unittest.TestCase):
+    """``tools/list`` is paginated: every page must reach the caller."""
+
+    def tearDown(self) -> None:
+        AsyncioLoopRunner.shutdown_for_thread()
+
+    def test_list_tools_follows_next_cursor(self) -> None:
+        from mcp import types
+        from mcp.server.lowlevel import Server
+        from mcp.shared.memory import create_connected_server_and_client_session
+
+        pages = {None: ('first', 'page-2'), 'page-2': ('second', None)}
+        app = Server('paged')
+
+        @app.list_tools()
+        async def list_page(request: types.ListToolsRequest) -> types.ListToolsResult:
+            cursor = request.params.cursor if request.params else None
+            name, next_cursor = pages[cursor]
+            tool = types.Tool(name=name, inputSchema={'type': 'object'})
+            return types.ListToolsResult(tools=[tool], nextCursor=next_cursor)
+
+        async def run() -> List[str]:
+            async with create_connected_server_and_client_session(app) as session:
+                server = MCPServer(MCPServerConfigHTTP(url='http://mcp.test/mcp'))
+                server._session = session
+                return [tool.name for tool in await server.list_tools()]
+
+        self.assertEqual(AsyncioLoopRunner.run(run(), timeout=10), ['first', 'second'])

@@ -123,11 +123,20 @@ class MCPServer:
         return False
 
     async def list_tools(self) -> List[Any]:
-        """Return the raw ``mcp.types.Tool`` list from the server."""
+        """Return the raw ``mcp.types.Tool`` list from the server, following ``nextCursor`` pages."""
         if self._session is None:
             raise RuntimeError('MCPServer not entered; use `async with MCPServer(cfg) as server:`')
         result = await self._session.list_tools()
-        return list(result.tools)
+        tools = list(result.tools)
+        seen_cursors = set()
+        # A repeated cursor would never terminate, so stop there.
+        while result.nextCursor is not None and result.nextCursor not in seen_cursors:
+            from mcp.types import PaginatedRequestParams
+
+            seen_cursors.add(result.nextCursor)
+            result = await self._session.list_tools(params=PaginatedRequestParams(cursor=result.nextCursor))
+            tools.extend(result.tools)
+        return tools
 
     async def call_tool(self, name: str, arguments: Optional[Dict[str, Any]] = None) -> str:
         """Invoke a tool and return a flat text observation.
