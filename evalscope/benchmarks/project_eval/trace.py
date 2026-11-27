@@ -25,7 +25,6 @@ def build_agent_trace(turn: AgentTurn, task: EvalTask) -> AgentTrace:
     """Convert one business-agent turn into EvalScope's structured trace."""
     trace = AgentTrace(
         framework='business_agent',
-        environment=None,
         trial_id=turn.trace_id,
         total_usage=model_usage(turn.usage),
         events=[],

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import posixpath
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Callable, Iterable
-from urllib.parse import urlsplit
+from typing import Any, Callable, Iterable, cast
+from urllib.parse import unquote, urlsplit
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -103,10 +104,12 @@ def _url_allowed(url: str, prefixes: Iterable[str]) -> bool:
             continue
         if allowed_port is not None and effective_target_port != allowed_port:
             continue
-        allowed_path = allowed.path or '/'
+        # An omitted prefix port is a wildcard; loopback defaults allow any local port.
+        allowed_path = posixpath.normpath(unquote(allowed.path or '/'))
+        target_path = posixpath.normpath(unquote(target.path or '/'))
         if allowed_path == '/':
             return True
-        if target.path == allowed_path or target.path.startswith(allowed_path.rstrip('/') + '/'):
+        if target_path == allowed_path or target_path.startswith(allowed_path.rstrip('/') + '/'):
             return True
     return False
 
@@ -148,9 +151,7 @@ def handle_file_exists(check: CheckSpec, root: Path, _: tuple[str, ...], started
 
 def handle_file_content(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
     """Check whether a file contains the expected text."""
-    contains = check.contains
-    if contains is None:
-        raise ValueError('file_content check requires contains')
+    contains = cast(str, check.contains)
     candidate = assert_within_root(check.path, root)
     text = candidate.read_text(encoding='utf-8', errors='replace')
     return CheckResult(

@@ -140,7 +140,8 @@ def test_reference_fields_default_and_round_trip(tmp_path: Path) -> None:
 
 
 def test_run_config_rejects_unsafe_http_prefixes() -> None:
-    for prefix in ['', 'http://user@state.example', 'http://state.example?x=1']:
+    for prefix in ['', 'http://user@state.example', 'http://state.example?x=1',
+                   'https://state.example/api/../admin']:
         with pytest.raises(ValidationError):
             ProjectEvalRunConfig(check_url_prefixes=[prefix])
     config = ProjectEvalRunConfig(check_url_prefixes=['https://state.example'])

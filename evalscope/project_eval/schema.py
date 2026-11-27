@@ -164,6 +164,8 @@ class ProjectEvalRunConfig(BaseModel):
                 raise ValueError('check_url_prefix must not contain user info')
             if parsed.query or parsed.fragment:
                 raise ValueError('check_url_prefix must not contain a query or fragment')
+            if '..' in parsed.path.split('/'):
+                raise ValueError('check_url_prefix must not contain dot segments')
         return prefixes
 
 

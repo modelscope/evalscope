@@ -163,6 +163,7 @@ class ProjectEvalAdapter(AgentAdapter):
     _runtime_keys = {PROJECT_ROOT_KEY, RUNTIME_CHECKS_KEY, AGENT_CAPABILITY_KEY, AGENT_STATE_KEY}
 
     def load_from_disk(self, use_local_loader: bool = False) -> tuple[DatasetDict, DatasetDict | None]:
+        """Load the local JSONL eval set and reject duplicate task ids."""
         # project_eval eval sets are always local JSONL files.
         dataset_dict, fewshot_dataset = super().load_from_disk(use_local_loader=True)
         self._validate_task_ids(dataset_dict)
@@ -172,7 +173,7 @@ class ProjectEvalAdapter(AgentAdapter):
     def _validate_task_ids(dataset_dict: DatasetDict) -> None:
         seen: set[str] = set()
         for _, dataset in dataset_dict.items():
-            for sample in getattr(dataset, 'samples', []):
+            for sample in dataset:
                 task_id = str(sample.metadata.get('id') or '').strip()
                 if not task_id:
                     raise ValueError('task id must be non-empty')
@@ -225,7 +226,7 @@ class ProjectEvalAdapter(AgentAdapter):
         if not url:
             return
         parsed = urlsplit(url)
-        if parsed.scheme != 'http' or parsed.hostname not in ('127.0.0.1', 'localhost'):
+        if parsed.scheme != 'http' or parsed.hostname not in ('127.0.0.1', 'localhost', '::1'):
             raise AgentProtocolError('reset_url must be a loopback http URL')
         try:
             response = requests.post(url, timeout=10)
@@ -296,7 +297,7 @@ class ProjectEvalAdapter(AgentAdapter):
                 raise AgentProtocolError(
                     'missing saved end-state checks: cached evidence does not match the task checks'
                 )
-        elif saved is None:
+        else:
             saved = []
         checks = saved
         check_records = [result.model_dump() for result in checks]

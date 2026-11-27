@@ -163,6 +163,12 @@ def test_invalid_bracketed_host_fails_closed() -> None:
     assert _url_allowed('http://[::1].evil.com/x', DEFAULT_HTTP_PREFIXES) is False
 
 
+def test_url_allowlist_normalizes_dot_segments() -> None:
+    assert not _url_allowed('https://state.example/api/../admin', ('https://state.example/api',))
+    assert not _url_allowed('https://state.example/api/%2e%2e/admin', ('https://state.example/api',))
+    assert _url_allowed('https://state.example/api/./state', ('https://state.example/api',))
+
+
 class _RemoteStateResponse:
     status_code = 200
 
