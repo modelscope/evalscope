@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import sacrebleu
@@ -9,20 +10,21 @@ import sacrebleu
 from evalscope.api.benchmark import DataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.indicgenbench.flores_in_adapter import (
     LANGUAGE_NAMES,
     SUBSET_LIST,
-    first_line,
     subset_direction,
     subset_file,
 )
+from evalscope.benchmarks.indicgenbench.utils import first_line
 from evalscope.config import TaskConfig
 from evalscope.report import ReportGenerator
 
 
-def _adapter(**dataset_args) -> DataAdapter:
+def _adapter(**dataset_args: Any) -> DataAdapter:
     args = {'flores_in': dataset_args} if dataset_args else {}
     return get_benchmark('flores_in', TaskConfig(model='mock', datasets=['flores_in'], dataset_args=args))
 
@@ -121,7 +123,7 @@ FIXED = {
 }
 
 
-def _scores(adapter: DataAdapter, pairs):
+def _scores(adapter: DataAdapter, pairs: list[tuple[str, str]]) -> list[SampleScore]:
     scores = []
     for index, (reference, completion) in enumerate(pairs):
         state = TaskState(

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import sacrebleu
@@ -9,6 +10,7 @@ import sacrebleu
 from evalscope.api.benchmark import DataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.indicgenbench.crosssum_in_adapter import SUBSET_LIST, subset_file
@@ -18,7 +20,7 @@ from evalscope.report import ReportGenerator
 PREFIX = 'I will first show a news article in English and then provide a summary of it in the'
 
 
-def _adapter(**dataset_args) -> DataAdapter:
+def _adapter(**dataset_args: Any) -> DataAdapter:
     args = {'crosssum_in': dataset_args} if dataset_args else {}
     return get_benchmark('crosssum_in', TaskConfig(model='mock', datasets=['crosssum_in'], dataset_args=args))
 
@@ -61,7 +63,7 @@ def test_prompts() -> None:
     assert adapter.format_prompt_template(english).startswith(f'{PREFIX} English language.')
 
 
-def _scores(adapter: DataAdapter, pairs):
+def _scores(adapter: DataAdapter, pairs: list[tuple[str, str]]) -> list[SampleScore]:
     scores = []
     for index, (reference, completion) in enumerate(pairs):
         state = TaskState(

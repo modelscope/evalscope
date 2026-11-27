@@ -2,10 +2,10 @@
 """Shared loading, prompting and scoring for the IndicGenBench adapters (Singh et al., ACL 2024)."""
 
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Type, Union
 
 from evalscope.api.benchmark import DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, download_dataset_file
+from evalscope.api.dataset import DataLoader, Dataset, Sample, build_dataset_from_records, download_dataset_file
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
 
@@ -89,26 +89,15 @@ class IndicGenBenchAdapter(DefaultDataAdapter):
         """Describe why `record` does not belong to `subset`, or return None when it does."""
         return None
 
-    def load(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
-        for subset in self.subset_list:
-            self.subset_file(subset, self.eval_split)
-        test_dataset = DatasetDict(
-            {
-                subset: self._build_subset(subset, self.eval_split, self.limit, self.repeats, self.shuffle)
-                for subset in self.subset_list
-            }
-        )
-        fewshot_dataset = None
-        if self._should_load_fewshot():
-            fewshot_dataset = DatasetDict(
-                {
-                    subset: self._build_subset(subset, self.train_split, self.few_shot_num, 1, self.few_shot_random)
-                    for subset in self.subset_list
-                }
-            )
-        return test_dataset, fewshot_dataset
+    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
+        return self._build_subset(subset, self.eval_split, self.limit, self.repeats, self.shuffle)
 
-    def _build_subset(self, subset: str, split: str, limit: Any, repeats: int, shuffle: bool):
+    def load_fewshot_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
+        return self._build_subset(subset, self.train_split, self.few_shot_num, 1, self.few_shot_random)
+
+    def _build_subset(
+        self, subset: str, split: str, limit: Optional[Union[int, float]], repeats: int, shuffle: bool
+    ) -> Dataset:
         return build_dataset_from_records(
             records=self._read_records(subset, split),
             sample_fields=self.record_to_sample,

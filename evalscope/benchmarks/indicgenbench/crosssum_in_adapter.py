@@ -39,44 +39,26 @@ def subset_file(subset: str, split: str) -> str:
         description="""
 ## Overview
 
-CrossSum-IN is the cross-lingual summarization task of IndicGenBench (Google Research, ACL 2024). Built on
-CrossSum, it pairs English BBC news articles with human-written summaries in 29 Indic languages, many of them
-low-resource, and in English.
+CrossSum-IN evaluates summarization of English BBC news in English and 29 languages from India and nearby regions.
 
 ## Task Description
 
 - **Task Type**: Cross-lingual Summarization
 - **Input**: A news article in English
 - **Output**: A one-sentence summary in the subset's language
-- **Languages**: Assamese, Awadhi, Bengali, Bhojpuri, Bodo, Chhattisgarhi, Garhwali, Gujarati, Haryanvi, Hindi,
-  Kannada, Konkani, Maithili, Malvi, Malayalam, Manipuri, Marathi, Marwari, Nepali, Odia, Pashto, Punjabi,
-  Rajasthani, Sanskrit, Santali, Tamil, Telugu, Tibetan and Urdu, plus English
+- **Domain**: BBC news
 
 ## Key Features
 
-- 30 subsets named by summary language (`en`, `hi`, `sat`, ...), each evaluated on its released `test` file
-  (104 to 632 articles per language, 12,463 in total)
-- The `train` file of the same language (100 articles, 99 for `gbm`) provides the in-context examples
-- Results are grouped into `indic` (the 29 Indic languages) and `english`, which the paper reports separately
+- 12,463 test articles across 30 summary-language subsets.
+- Uses the paper's prompt and one example from the same language's `train` split by default.
 
 ## Evaluation Notes
 
-- Default configuration uses **1-shot** evaluation, the paper's main setting. The example is the first `train`
-  article of the same language, so every model sees the same prompt; set `few_shot_num=0` for zero-shot
-- Prompt (Table 15 of the paper), with the English language names of its Table 7:
-  `I will first show a news article in English and then provide a summary of it in the {language} language.\\n\\n`
-  `Summarize the following article: {article}\\nSummary:`. The example uses the same format followed by
-  ` {summary}`, then a blank line before the test article
-- Articles are not truncated, as in the paper: they average about 4,200 characters, 5% exceed 8,200, and 28
-  (0.2%) exceed 32,768 characters (roughly 8k tokens), so a model with a short context window cannot take those
-- The first non-empty line of the output is scored; use greedy decoding (`temperature=0`) as in the paper
-- Metric: **chrF** from SacreBLEU with default settings (character order 6, word order 0, beta 2), computed at
-  the corpus level per language. The Indic score is the macro-average of the 29 Indic languages, reported as the
-  `macro_score` of the `indic` category (languages differ in size, so the category `score`, weighted by sample
-  count, is a different number)
-- Each sample also records its sentence-level chrF for inspection; only the corpus score is reported
-- License: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), from CrossSum: non-commercial
-  use only
+- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).
+- The `indic` category's `macro_score` gives equal weight to each language. Its `score` weights by sample count.
+- Articles are untruncated. The longest examples require a long context window.
+- Licensed for non-commercial use under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 """,
         paper_url=PAPER_URL,
         dataset_id='google/IndicGenBench_crosssum_in',

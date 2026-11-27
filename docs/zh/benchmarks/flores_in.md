@@ -2,30 +2,25 @@
 
 ## 概述
 
-FLORES-IN 是 IndicGenBench（Google Research，ACL 2024）中的机器翻译任务。它为 FLORES-200 的 `devtest` 句子补充了 29 种印度语言的人工翻译（其中许多是低资源语言），并在英语与每种语言之间双向评估翻译能力。
+FLORES-IN 评估英语与印度及周边地区29种语言之间的翻译能力。
 
 ## 任务描述
 
 - **任务类型**：机器翻译
-- **输入**：一个英语句子（`en-xx` 子集）或印度语言句子（`xx-en` 子集）
+- **输入**：一个英文句子（`en-xx` 子集）或配对语言的句子（`xx-en` 子集）
 - **输出**：该句子翻译成另一种语言的结果
-- **语言**：阿萨姆语、阿瓦德语、孟加拉语、博杰普尔语、博多语、恰蒂斯加尔语、加瓦尔语、古吉拉特语、哈里亚纳语、印地语、卡纳达语、孔卡尼语、迈蒂利语、马尔维语、马拉雅拉姆语、曼尼普尔语、马拉地语、马尔瓦里语、尼泊尔语、奥里亚语、普什图语、旁遮普语、拉贾斯坦语、梵语、桑塔利语、泰米尔语、泰卢固语、藏语和乌尔都语，共涉及 13 种文字
+- **领域**：英语与来自印度及周边地区的29种语言之间的通用领域翻译
 
 ## 主要特点
 
-- 58 个子集，每种语言的每个翻译方向各一个，命名为 `<source>-<target>`（例如 `en-hi`、`hi-en`）
-- 每个子集评估其发布的 `test` 文件中的全部 1,012 个句子（FLORES `devtest`），共计 58,696 个
-- 同一子集的 `dev` 文件（997 个句子，FLORES `dev`）提供上下文示例
-- 结果按翻译方向分组：`en-xx`（英语到印度语言）和 `xx-en`（印度语言到英语）
+- 包含 58,696 个测试句子，分布在 58 个子集中，每个子集对应一种语言和翻译方向。
+- 默认使用论文中的提示词以及来自同一子集 `dev` 拆分的一个示例。
 
 ## 评估说明
 
-- 默认配置使用 **1-shot** 评估，即论文的主要设置。示例为同一子集的第一个 `dev` 句子，因此每个模型看到的提示完全相同；设置 `few_shot_num=0` 可进行零样本评估
-- 提示（论文表 15），语言名称采用论文表 7 中的英文名称：`Translate the following:\n\nTo {language}: {source}\nOutput:`。示例使用相同格式，后接 ` {reference}`，再空一行，然后是测试句子
-- 只对输出的第一个非空行进行评分；与论文一致，请使用贪心解码（`temperature=0`）
-- 指标：SacreBLEU 默认设置下的 **chrF**（字符阶数 6，词阶数 0，beta 为 2），在每个子集上按语料库级别计算。每个方向的得分是其 29 个子集的宏平均，报告为 `en-xx` 和 `xx-en` 类别的 `macro_score`；所有子集大小相同，因此类别的 `score` 与之相同
-- 每个样本还会记录其句子级 chrF 以便检查；报告中只给出语料库级得分
-- 许可证：[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，继承自 FLORES
+- 使用语料库 SacreBLEU chrF（字符顺序为 6，单词顺序为 0，beta 为 2）对第一个非空行进行评分。
+- 每个方向的 `macro_score` 对其包含的 29 种语言赋予相等的权重。
+- 根据 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可发布。
 
 ## 属性
 
@@ -33,24 +28,24 @@ FLORES-IN 是 IndicGenBench（Google Research，ACL 2024）中的机器翻译任
 |----------|-------|
 | **基准测试名称** | `flores_in` |
 | **数据集ID** | [google/IndicGenBench_flores_in](https://modelscope.cn/datasets/google/IndicGenBench_flores_in/summary) |
-| **论文** | [论文](https://aclanthology.org/2024.acl-long.595/) |
+| **论文** | [Paper](https://aclanthology.org/2024.acl-long.595/) |
 | **标签** | `MachineTranslation`, `MultiLingual` |
 | **指标** | `chrf` |
-| **默认样本数** | 1-shot |
-| **评估分割** | `test` |
-| **训练分割** | `dev` |
+| **默认示例数** | 1-shot |
+| **评估划分** | `test` |
+| **训练划分** | `dev` |
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 58,696 |
-| 提示词长度（平均） | 461.71 字符 |
+| 提示词长度（平均值） | 461.71 字符 |
 | 提示词长度（最小/最大） | 234 / 946 字符 |
 
-**各子集统计数据：**
+**各子集统计：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
 | `en-as` | 1,012 | 581.4 | 486 | 819 |
 | `en-awa` | 1,012 | 554.4 | 459 | 792 |
@@ -119,7 +114,7 @@ FLORES-IN 是 IndicGenBench（Google Research，ACL 2024）中的机器翻译任
 {
   "input": [
     {
-      "id": "f6a6562d",
+      "id": "7c97bce9",
       "content": "Translate the following:\n\nTo Assamese: In the 1480s, when its construction was begun by Lord Hastings, the country was relatively peaceful and defense was only required against small bands of roving marauders.\nOutput: 1480 চনত লর্ড হেষ্টিংছে  ... [TRUNCATED 105 chars] ... াওডাৰৰ সৰু সৰু গোটৰ বিৰুদ্ধেহে সেনেবাহিনীৰ দৰকাৰ হৈছিল।\n\nTranslate the following:\n\nTo Assamese: Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\nOutput:"
     }
   ],
@@ -135,7 +130,7 @@ FLORES-IN 是 IndicGenBench（Google Research，ACL 2024）中的机器翻译任
 }
 ```
 
-*注：部分内容已截断显示。*
+*注：为便于显示，部分内容已截断。*
 
 ## 提示模板
 

@@ -3,40 +3,25 @@
 
 ## Overview
 
-FLORES-IN is the machine translation task of IndicGenBench (Google Research, ACL 2024). It extends the
-FLORES-200 `devtest` sentences with human translations into 29 Indic languages, many of them low-resource,
-and evaluates translation in both directions between English and each language.
+FLORES-IN evaluates translation between English and 29 languages from India and nearby regions.
 
 ## Task Description
 
 - **Task Type**: Machine Translation
-- **Input**: A sentence in English (`en-xx` subsets) or in an Indic language (`xx-en` subsets)
+- **Input**: A sentence in English (`en-xx` subsets) or in the paired language (`xx-en` subsets)
 - **Output**: Its translation into the other language
-- **Languages**: Assamese, Awadhi, Bengali, Bhojpuri, Bodo, Chhattisgarhi, Garhwali, Gujarati, Haryanvi, Hindi,
-  Kannada, Konkani, Maithili, Malvi, Malayalam, Manipuri, Marathi, Marwari, Nepali, Odia, Pashto, Punjabi,
-  Rajasthani, Sanskrit, Santali, Tamil, Telugu, Tibetan and Urdu, in 13 scripts
+- **Domain**: General-domain translation between English and 29 languages from India and nearby regions
 
 ## Key Features
 
-- 58 subsets, one per language and direction, named `<source>-<target>` (e.g. `en-hi`, `hi-en`)
-- Each subset evaluates all 1,012 sentences of its released `test` file (FLORES `devtest`), 58,696 in total
-- The `dev` file of the same subset (997 sentences, FLORES `dev`) provides the in-context examples
-- Results are grouped by direction: `en-xx` (English to Indic) and `xx-en` (Indic to English)
+- 58,696 test sentences across 58 subsets, one for each language and direction.
+- Uses the paper's prompt and one example from the same subset's `dev` split by default.
 
 ## Evaluation Notes
 
-- Default configuration uses **1-shot** evaluation, the paper's main setting. The example is the first `dev`
-  sentence of the same subset, so every model sees the same prompt; set `few_shot_num=0` for zero-shot
-- Prompt (Table 15 of the paper), with the English language names of its Table 7:
-  `Translate the following:\n\nTo {language}: {source}\nOutput:`. The example uses the same format followed by
-  ` {reference}`, then a blank line before the test sentence
-- The first non-empty line of the output is scored; use greedy decoding (`temperature=0`) as in the paper
-- Metric: **chrF** from SacreBLEU with default settings (character order 6, word order 0, beta 2), computed at
-  the corpus level per subset. Each direction's score is the macro-average of its 29 subsets, reported as the
-  `macro_score` of the `en-xx` and `xx-en` categories; all subsets have the same size, so the category `score`
-  is the same number
-- Each sample also records its sentence-level chrF for inspection; only the corpus score is reported
-- License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), from FLORES
+- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).
+- Each direction's `macro_score` gives equal weight to its 29 languages.
+- Licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 
 ## Properties
@@ -132,7 +117,7 @@ and evaluates translation in both directions between English and each language.
 {
   "input": [
     {
-      "id": "f6a6562d",
+      "id": "7c97bce9",
       "content": "Translate the following:\n\nTo Assamese: In the 1480s, when its construction was begun by Lord Hastings, the country was relatively peaceful and defense was only required against small bands of roving marauders.\nOutput: 1480 চনত লর্ড হেষ্টিংছে  ... [TRUNCATED 105 chars] ... াওডাৰৰ সৰু সৰু গোটৰ বিৰুদ্ধেহে সেনেবাহিনীৰ দৰকাৰ হৈছিল।\n\nTranslate the following:\n\nTo Assamese: Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\nOutput:"
     }
   ],
