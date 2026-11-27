@@ -102,6 +102,10 @@ parallel execution, reporting, and dashboard trace review.
 class ClawEvalAdapter(AgentAdapter):
     """EvalScope wrapper for the official Claw-Eval runner."""
 
+    # The scorer reads ``task_state.metadata['claw_eval_result']`` and the task
+    # needs the official Docker sandbox; a static trace provides neither.
+    scoring_requires = ('sandbox', 'benchmark_metadata')
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._check_runtime()

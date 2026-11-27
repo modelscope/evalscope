@@ -17,7 +17,7 @@ Two extension modes are supported:
    wires together :class:`AgentLoop` + ``build_*`` hooks.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from evalscope.agent.tools.bash import apply_bash_command_timeout_defaults
 from evalscope.api.agent import AgentLoopResult, NativeAgentConfig, prepare_environment, run_agent_loop
@@ -33,6 +33,11 @@ if TYPE_CHECKING:
 
 
 class AgentAdapter(DefaultDataAdapter):
+    #: Evidence this benchmark's scorer needs beyond the trajectory itself.
+    #: A static OTel trace can provide only ``messages`` and ``trace``; anything
+    #: else (``sandbox``, ``submission``) is reported before evaluation starts.
+    scoring_requires: Tuple[str, ...] = ()
+
     """Marker base class for agent-class benchmarks.
 
     Subclasses are free to override :meth:`_on_inference` to plug in their

@@ -135,6 +135,9 @@ class CybenchAdapter(AgentLoopAdapter):
     max_steps_default = 15
     command_timeout_default = 120
     strategy_name = 'cybench_unguided'
+    # The scorer validates the cached task/run against the manifest and needs the
+    # Kali sandbox ``_on_inference`` sets up; a static trace provides neither.
+    scoring_requires = ('sandbox', 'benchmark_metadata')
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

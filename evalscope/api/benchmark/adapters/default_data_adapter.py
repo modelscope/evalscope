@@ -457,7 +457,13 @@ class DefaultDataAdapter(DataAdapter):
         if ac is not None:
             # Local import to avoid pulling the bridge stack at module load.
             from evalscope.agent.external.config import ExternalAgentConfig
+            from evalscope.api.agent.otel_config import OTelTraceConfig
 
+            if isinstance(ac, OTelTraceConfig):
+                # Importing an existing trace executes nothing: no sandbox, no loop.
+                from evalscope.api.agent.otel import load_otlp_trace_for_sample
+
+                return load_otlp_trace_for_sample(ac, model, sample)
             if isinstance(ac, ExternalAgentConfig):
                 return self._on_external_agent_inference(model, sample)
             return self._on_agent_inference(model, sample)
@@ -557,6 +563,48 @@ class DefaultDataAdapter(DataAdapter):
         )
 
     @override
+    def _maybe_import_otel_trace(
+        self, model: Model, sample: Sample, subset: Optional[str] = None
+    ) -> Optional[InferenceResult]:
+        """Import a recorded OTel trace as this sample's inference result.
+
+        Returns ``None`` for every other agent-config mode, so the normal
+        dispatch runs unchanged. A benchmark whose scorer needs evidence a
+        static trace cannot provide (a sandbox, a live submission, ...)
+        declares it in ``scoring_requires``; the mismatch is reported here,
+        before any score exists.
+        """
+        from evalscope.api.agent.otel import PROVIDABLE_EVIDENCE, load_otlp_trace_for_sample, missing_evidence_error
+        from evalscope.api.agent.otel_config import OTelTraceConfig
+
+        ac = self._task_config.agent_config if self._task_config is not None else None
+        if not isinstance(ac, OTelTraceConfig):
+            return None
+
+        required = tuple(getattr(self, 'scoring_requires', ()) or ())
+        missing = [requirement for requirement in required if requirement not in PROVIDABLE_EVIDENCE]
+        if missing:
+            raise missing_evidence_error(type(self).__name__, missing)
+
+        n_samples = None
+        n_subsets_with_id = 1
+        test_dataset = getattr(self, 'test_dataset', None)
+        if test_dataset is not None:
+            n_samples = sum(len(dataset) for dataset in test_dataset.datasets.values())
+            # A sample id is unique only within its subset; count the subsets
+            # that contain this id so an ambiguous bare binding is rejected.
+            n_subsets_with_id = (
+                sum(1 for dataset in test_dataset.datasets.values() if any(s.id == sample.id for s in dataset)) or 1
+            )
+        return load_otlp_trace_for_sample(
+            ac,
+            model,
+            sample,
+            n_samples=n_samples,
+            subset=subset,
+            n_subsets_with_id=n_subsets_with_id,
+        )
+
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         """
         Execute the complete inference pipeline for a single sample.
@@ -575,7 +623,12 @@ class DefaultDataAdapter(DataAdapter):
             TaskState: Complete state object containing inference results
         """
         self._on_inference_start(model, sample)
-        result = self._on_inference(model, sample)
+        # Importing a recorded trace executes nothing: intercept before the
+        # polymorphic dispatch so adapters that override ``_on_inference``
+        # (cybench, bfcl, tau_bench, ...) still accept ``mode='otel_trace'``.
+        result = self._maybe_import_otel_trace(model, sample, subset=kwargs.get('subset'))
+        if result is None:
+            result = self._on_inference(model, sample)
 
         # ``_on_inference`` may return either a plain ``ModelOutput`` (single
         # -turn benchmarks) or a richer ``InferenceResult`` carrying agent

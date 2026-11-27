@@ -383,7 +383,11 @@ class DefaultEvaluator(Evaluator):
             ``(task_state, sample_score)`` where ``sample_score`` is ``None``
             for batch-scoring benchmarks (review deferred).
         """
-        task_state = self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+        task_state = (
+            self._predict_sample(item.sample, model_prediction_dir, item.subset)
+            if item.needs_predict
+            else item.task_state
+        )
         if item.needs_predict:
             # A review can fail independently of inference. Persist prediction first so offline
             # re-review never has to regenerate an already completed answer.
@@ -512,19 +516,24 @@ class DefaultEvaluator(Evaluator):
 
         return agg_score_dict
 
-    def _predict_sample(self, sample: Sample, model_prediction_dir: str) -> TaskState:
+    def _predict_sample(self, sample: Sample, model_prediction_dir: str, subset: Optional[str] = None) -> TaskState:
         """
         Run model inference on a single sample.
 
         Args:
             sample: The sample to predict.
             model_prediction_dir: Directory for storing model predictions.
+            subset: Name of the subset ``sample`` belongs to. Threaded through to
+                ``run_inference`` so an OTel trace import can bind the run to the
+                right subset when sample ids repeat across subsets.
 
         Returns:
             TaskState: The task state containing the prediction result.
         """
         logger.debug(f'\n{sample.pretty_print()}')
-        task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+        task_state = self.benchmark.run_inference(
+            model=self.model, sample=sample, output_dir=model_prediction_dir, subset=subset
+        )
         return task_state
 
     def _review_task_state(self, task_state: TaskState) -> SampleScore:
