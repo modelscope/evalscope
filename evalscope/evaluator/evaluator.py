@@ -20,11 +20,10 @@ from evalscope.api.judge import summarize_judge_runs
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC, ScoreStatus
-from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchmark_identity
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.execution_tracker import ExecutionTracker
 from evalscope.evaluator.perf_collector import PerfCollector
-from evalscope.report import ExecutionSummary, Report, build_analysis_context, gen_perf_table, gen_table
+from evalscope.report import ExecutionSummary, Report, gen_perf_table, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -583,20 +582,6 @@ class DefaultEvaluator(Evaluator):
                 logger.info(f'\n{self.benchmark_name} report table:\n{report_table} \n')
             except Exception as e:
                 logger.error(f'Failed to generate report table: {e}')
-
-        # Generate detailed analysis if requested in configuration
-        if self.task_config.analysis_report and agg_score_dict:
-            logger.info('Generating report analysis, please wait ...')
-            meta = self.benchmark.benchmark_meta
-            spec = ResolvedBenchmarkSpec.from_adapter(self.benchmark, self.task_config)
-            identity = build_benchmark_identity(spec, meta.evaluation_version, self.task_config)
-            analysis = report.generate_analysis(
-                self.task_config,
-                build_analysis_context(meta, spec, identity, report),
-            )
-            logger.info(f'Report analysis:\n{analysis}')
-        else:
-            logger.info('Skipping report analysis (`analysis_report=False`).')
 
         # Inject perf metrics into the report when collect_perf is enabled
         if self.task_config.collect_perf:

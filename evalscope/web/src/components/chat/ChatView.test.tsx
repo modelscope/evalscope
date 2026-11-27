@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { PredictionRow, PredictionsResponse } from '@/api/types'
@@ -174,4 +174,66 @@ describe('ChatView rendering modes', () => {
     expect(screen.getByText('Legacy user prompt')).toBeInTheDocument()
     expect(screen.getByText('Legacy model response')).toBeInTheDocument()
   })
+})
+
+it('keeps the question and answer ahead of the result and collapsed diagnostic details', () => {
+  render(<LocaleProvider><ChatView
+    prediction={{ ...tracedPrediction, Input: 'Question first', Generated: 'Answer second', Messages: null, AgentTrace: null }}
+    diagnosis={{
+      llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
+      key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
+      score_status: 'success', stop_reason: 'stop', needs_attention: true,
+      findings: [],
+    }}
+  /></LocaleProvider>)
+  const summary = screen.getByText(/Related evidence/)
+  expect(screen.getByText('Answer second').compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(summary.closest('details')).not.toHaveAttribute('open')
+  fireEvent.click(summary)
+  expect(screen.getByRole('region', { name: 'Sample analysis' })).toBeInTheDocument()
+})
+
+it('opens the proposal from the embedded toolbar and marks only its referenced message', () => {
+  const diagnosis = {
+    key: { subset: 'default', index: 0 }, task_success: false, safety_violation: null,
+    score_status: 'success', stop_reason: null, needs_attention: true,
+    findings: [], observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [], llm_status: 'ok',
+    context_omitted: false, sources: [{ id: 'm:1', text: 'Shared quotation', message_index: 1, step: null, excerpted: false, original_start: 0 }],
+    llm: { failure_type: 'reasoning_error', secondary_types: [], attribution: 'model', root_cause_step: null,
+      explanation: 'A candidate explanation.', confidence: 'medium', gold_suspect: false,
+      evidence: [{ source_id: 'm:1', start: 0, end: 16, quote: 'Shared quotation' }] },
+  } as import('@/api/types').SampleDiagnosis
+  const { container } = render(<LocaleProvider><ChatView prediction={{ ...tracedPrediction, AgentTrace: null,
+    Messages: [{ id: 'user-quote', role: 'user', content: 'Shared quotation' },
+      { id: 'answer-quote', role: 'assistant', content: 'Shared quotation' }] }} diagnosis={diagnosis} navigation="toolbar" /></LocaleProvider>)
+  expect(container.querySelectorAll('.prose mark')).toHaveLength(1)
+  expect(container.querySelector('mark')).toHaveTextContent('Shared quotation')
+  fireEvent.click(screen.getByRole('button', { name: 'Review model proposal' }))
+  expect(screen.getByText('A candidate explanation.').closest('details')).toHaveAttribute('open')
+})
+
+
+it.each(['fallback', 'degraded'])('preserves usable %s scoring in the shared reader', (status) => {
+  render(<LocaleProvider><ChatView prediction={tracedPrediction} diagnosis={{
+    llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
+    key: { subset: 'default', index: 0 }, task_success: true, safety_violation: null,
+    score_status: status, stop_reason: 'stop', needs_attention: false,
+    findings: [], }} /></LocaleProvider>)
+  expect(screen.getByRole('navigation', { name: 'Sample contents' })).toHaveTextContent('Task passed')
+  expect(screen.queryByText('Score unavailable')).not.toBeInTheDocument()
+})
+
+it('uses a top step selector in the embedded reader while keeping the standalone outline', () => {
+  const { container, rerender } = render(<LocaleProvider><ChatView prediction={tracedPrediction} navigation="toolbar" focusStep={0} /></LocaleProvider>)
+  const picker = screen.getByRole('combobox', { name: 'Locate step' })
+  expect(picker).toHaveValue('0')
+  const options = [...picker.querySelectorAll('option')].filter(option => option.value !== '')
+  expect(options.length).toBeGreaterThan(0)
+  fireEvent.change(picker, { target: { value: options.at(-1)!.value } })
+  expect(picker).toHaveValue(options.at(-1)!.value)
+  expect(within(screen.getByRole('navigation', { name: 'Sample contents' })).queryByRole('button', { name: /^Step 0/ })).not.toBeInTheDocument()
+  expect(container.querySelector('[data-reader-toolbar]')).toBeInTheDocument()
+  rerender(<LocaleProvider><ChatView prediction={tracedPrediction} /></LocaleProvider>)
+  expect(screen.queryByRole('combobox', { name: 'Locate step' })).not.toBeInTheDocument()
+  expect(screen.getByRole('navigation', { name: 'Sample contents' }).querySelector('[aria-current="step"]')).toBeInTheDocument()
 })

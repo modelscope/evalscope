@@ -103,3 +103,19 @@ forbidden_modules =
     evalscope.evaluator
 ignore_imports =
     evalscope.utils.multi_choices -> evalscope.api.evaluator
+# The trace analyzer is a post-hoc consumer of run outputs. It may lazily load
+# benchmark signal providers by name, so nothing in the evaluation stack (or the
+# benchmarks themselves) may import it back.
+[importlinter:contract:core-does-not-import-analysis]
+name = core layers and benchmarks must not import the trace analyzer
+type = forbidden
+source_modules =
+    evalscope.api
+    evalscope.evaluator
+    evalscope.report
+    evalscope.metrics
+    evalscope.models
+    evalscope.perf
+    evalscope.benchmarks
+forbidden_modules =
+    evalscope.analysis

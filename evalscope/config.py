@@ -11,6 +11,7 @@ from pydantic import ConfigDict, Field, SecretStr, field_validator, model_valida
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.analysis import AnalysisReportConfig
 from evalscope.api.dataset.dataset import _LIMIT_ERROR, validate_dataset_limit, validate_dataset_repeats
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
@@ -343,7 +344,7 @@ class TaskConfig(BaseArgument):
     judge: JudgeConfig = Field(default_factory=JudgeConfig)
     """Typed configuration for Native LLM judging."""
 
-    analysis_report: bool = False
+    analysis_report: Union[bool, AnalysisReportConfig] = False
     """Whether to generate detailed analysis reports after evaluation."""
 
     collect_perf: bool = True
@@ -515,6 +516,12 @@ class TaskConfig(BaseArgument):
     @classmethod
     def _secretize_sandbox_manager_config(cls, value: Any) -> Any:
         return _secretize_api_keys(value)
+
+    def resolved_analysis_config(self) -> Optional[AnalysisReportConfig]:
+        """Resolve the analysis switch without constructing or calling a model."""
+        if self.analysis_report is False:
+            return None
+        return AnalysisReportConfig() if self.analysis_report is True else self.analysis_report
 
     # --- Model validator (cross-field logic, replaces __post_init__) ---
 

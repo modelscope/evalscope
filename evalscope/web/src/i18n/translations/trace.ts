@@ -1,6 +1,17 @@
 import type { Dict } from './types'
 
 export const en: Dict = {
+  passed: 'Task passed',
+  failed: 'Task did not pass',
+  unscored: 'Scoring unavailable',
+  recordDetails: 'Record details',
+  user: 'User',
+  assistant: 'Assistant',
+  readingOutline: 'Sample contents',
+  locateStep: 'Locate step',
+  question: 'Question',
+  answer: 'Answer',
+  scoring: 'Scoring',
   rawTrace: 'Full Trace (JSON)',
   modelGenerate: 'Model Generate',
   toolCall: 'Tool Call',
@@ -11,8 +22,6 @@ export const en: Dict = {
   error: 'Error',
   submit: 'Submit',
   step: 'Step',
-  toolCallsCount: '${n} tool calls',
-  stdout: 'stdout',
   arguments: 'Arguments',
   nudge: 'System Nudge',
   runStart: 'Run Start',
@@ -35,6 +44,17 @@ export const en: Dict = {
 }
 
 export const zh: Dict = {
+  passed: '任务已通过',
+  failed: '任务未通过',
+  unscored: '评分不可用',
+  recordDetails: '记录详情',
+  user: '用户',
+  assistant: '助手',
+  readingOutline: '样本目录',
+  locateStep: '定位步骤',
+  question: '题目',
+  answer: '回答',
+  scoring: '评分',
   rawTrace: '完整轨迹（JSON）',
   modelGenerate: '模型生成',
   toolCall: '工具调用',
@@ -45,8 +65,6 @@ export const zh: Dict = {
   error: '错误',
   submit: '提交',
   step: '步骤',
-  toolCallsCount: '${n} 个工具调用',
-  stdout: '输出',
   arguments: '参数',
   nudge: '系统提醒',
   runStart: '运行开始',

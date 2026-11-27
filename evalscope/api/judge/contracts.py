@@ -45,9 +45,14 @@ class OutputContract(BaseModel):
         fields = '\n'.join(
             f'- "{field.alias or name}": {_describe(field)}' for name, field in self.schema_model.model_fields.items()
         )
+        extra_keys = (
+            'no additional keys are allowed'
+            if self.schema_model.model_config.get('extra') == 'forbid'
+            else 'additional keys are allowed'
+        )
         return (
             '\n\nReply with a single JSON object and no other text, containing these required keys '
-            '(additional keys are allowed):\n'
+            f'({extra_keys}):\n'
             f'{fields}\n'
             'Use valid JSON escaping for backslashes, double quotes, and newlines inside strings.'
         )

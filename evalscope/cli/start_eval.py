@@ -25,4 +25,9 @@ class EvalCMD(CLICommand):
     def execute(self):
         from evalscope.run import run_task
 
+        if self.args.analysis_config:
+            from evalscope.api.analysis import AnalysisReportConfig
+
+            self.args.analysis_report = AnalysisReportConfig.from_source(self.args.analysis_config)
+
         run_task(self.args)

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import type { LoadReportResponse } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
@@ -59,4 +59,25 @@ describe('PerfMetricsPanel missing statistics', () => {
 
     expect(screen.getAllByText('706.4 ms').length).toBeGreaterThan(0)
   })
+})
+
+it('shortens token counts and preserves exact values in both summary and details', () => {
+  const perf = loadFixture<LoadReportResponse>('report-real-single-sample').report_list[0].perf_metrics!
+  perf.summary!.usage.total_input_tokens = 2146277
+  perf.summary!.usage.total_output_tokens = 50164
+  perf.summary!.usage.input_tokens.mean = 1000
+  perf.summary!.usage.output_tokens.mean = 0
+  render(
+    <LocaleProvider>
+      <PerfMetricsPanel perfMetrics={perf} compact />
+    </LocaleProvider>,
+  )
+  for (const value of screen.getAllByText('2.15M')) expect(value).toHaveAttribute('title', '2,146,277 tokens')
+  for (const value of screen.getAllByText('50.16K')) expect(value).toHaveAttribute('title', '50,164 tokens')
+  const toggle = screen.getByText('Latency and token details')
+  expect(toggle.closest('details')).toHaveAttribute('open')
+  fireEvent.click(toggle)
+  expect(toggle.closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByText('1K')).toHaveAttribute('title', '1,000 tokens')
+  expect(screen.getAllByText('0').length).toBeGreaterThan(0)
 })

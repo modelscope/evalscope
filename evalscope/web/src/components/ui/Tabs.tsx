@@ -74,7 +74,7 @@ export interface TabsProps {
   actions?: ReactNode
   /** Shared controls between the tablist and panels, mounted once. */
   beforePanels?: ReactNode
-  keepMounted?: boolean
+  keepMounted?: boolean | string[]
 }
 
 /**
@@ -190,7 +190,7 @@ export default function Tabs({
             )
           })}
         </div>
-        {actions && <div className="flex min-w-0 flex-1 justify-end">{actions}</div>}
+        {actions && <div className="flex shrink-0 justify-end">{actions}</div>}
       </div>
 
       {beforePanels}
@@ -204,7 +204,7 @@ export default function Tabs({
               aria-labelledby={tabDomId(tab.key)}
               hidden={!isSelected}
             >
-              {isSelected || keepMounted ? panels[tab.panelId as string] : null}
+              {isSelected || keepMounted === true || (Array.isArray(keepMounted) && keepMounted.includes(tab.key)) ? panels[tab.panelId as string] : null}
             </div>
           )
         })}

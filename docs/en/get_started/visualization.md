@@ -103,35 +103,21 @@ The report list page provides more refined report management and filtering capab
 
 Click any evaluation report to enter the details page and view a single model's detailed performance on each dataset. The details page consists of a report header, dataset navigation, and three functional tabs.
 
-#### Overview Tab
+The header shows the model and sample count. The dataset sidebar stays visible while switching tabs.
 
-The report header displays the model name, associated dataset list (clickable to switch), overall score and total sample count, and provides quick buttons to view the HTML report and return to the list.
+#### Results tab
 
-The overview tab provides a summary of the model's overall performance on each dataset:
+- **Dataset metrics** show the current dataset's official scores. Click a subset to browse its saved samples.
+- **Latency and usage** show latency and token statistics when recorded.
+- **Task configuration** shows how the run was configured.
 
-![Overview tab](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_overview_tab.png)
+#### Diagnosis tab
 
-- **Statistics Overview**: Displays average score, best/worst dataset and their scores, and total sample count using ring progress charts and number cards.
-- **Dataset Score Table**: A sortable table listing each dataset's name, score (with progress bar and value), and sample count. Click the dataset name to jump to the dataset's details tab.
-- **Radar Chart**: Intuitively displays the model's capability dimension distribution across datasets using a radar chart.
-- **Task Configuration**: A collapsible area that displays the evaluation task configuration information using a JSON viewer.
+Use the problem list to open a sample or a recorded Agent step. Generate or update basic analysis directly on this report, or configure an analysis model for evidence-linked proposals. See [Evaluation diagnosis](../user_guides/diagnosis.md).
 
-#### Details Tab
+#### Samples tab
 
-The details tab provides an in-depth view of the selected dataset's subset scores and analysis results:
-
-![Details tab](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_details_tab.png)
-
-- **Overall Score**: Displays the dataset's overall score using a large number and ring progress chart.
-- **Subset Score Table**: A sortable table listing each subset's name, metric (if applicable), score, and sample count. Click the subset name to jump directly to the sample browsing for that subset in the predictions tab.
-- **AI Analysis**: An intelligent analysis report rendered in Markdown format, interpreting the model's performance on this dataset.
-- **Performance Metrics**: When the evaluation includes performance data, displays latency distribution (with percentile table), TTFT (Time to First Token), TPOT (Time per Output Token), and token usage statistics.
-
-#### Predictions Tab
-
-The predictions tab allows browsing each sample's detailed prediction results one by one, and is the most fine-grained analysis tool:
-
-![Predictions tab](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/dashboard/report_predictions_tab.png)
+Browse the saved samples for the selected dataset and inspect the original scores and responses.
 
 **Filter and Navigation**:
 
@@ -159,12 +145,12 @@ The predictions tab allows browsing each sample's detailed prediction results on
 - **Metadata**: A collapsible JSON view showing the sample's additional metadata.
 
 ```{tip}
-When [Agent Evaluation](../user_guides/agent/index.md) is enabled, the predictions view automatically detects the sample's `agent_trace` and renders an Agent Trace view grouped by `step` (with tool calls, environment commands, nudges, errors, etc.). See [Agent Evaluation → Trace Visualization](../user_guides/agent/index.md#trace-visualization) for the full description and a screenshot.
+When [Agent Evaluation](../user_guides/agent/index.md) is enabled, the Samples tab automatically detects the sample's `agent_trace` and renders an Agent Trace view grouped by `step` (with tool calls, environment commands, nudges, errors, etc.). See [Agent Evaluation → Trace Visualization](../user_guides/agent/index.md#trace-visualization) for the full description and a screenshot.
 ```
 
 #### Dataset Navigation
 
-In the details and predictions tabs, a dataset navigation sidebar is provided on the left (horizontal scroll bar at the top on mobile), allowing quick switching of the currently viewed dataset.
+Select a dataset in the sidebar to use it across Results, Diagnosis, and Samples.
 
 ### Multi-Model Comparison
 
@@ -243,3 +229,7 @@ The stress test task page provides a configuration form and task monitoring pane
 ```{note}
 For detailed configuration instructions on online evaluation and stress test features, please refer to [Evaluation Quick Start](basic_usage.md) and [Stress Test Quick Start](../user_guides/stress_test/quick_start.md).
 ```
+
+### Diagnostics tab
+
+The tab shows outcome coverage, observed issue patterns, a subset-by-type table and facts. Patterns and examples open filtered predictions; Agent step badges use recorded tool-call IDs. Missing diagnostics offer a free offline command; changed source data marks old diagnostics as stale. Native evaluations launched from the Web generate facts by default, with no additional model calls. See [Evaluation diagnostics](../user_guides/diagnosis.md).

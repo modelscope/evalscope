@@ -47,7 +47,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 import evalscope
 from evalscope.agent.external.config import ExternalAgentConfig
+from evalscope.analysis.trace.analyzer import resolve_provider
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.analysis import Attribution, FindingCategory
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.evaluator.cache import ModelResult
@@ -62,6 +64,7 @@ from evalscope.api.registry import (
     get_benchmark,
     get_model_api,
     get_strategy,
+    get_trace_signal_provider,
     register_model_api,
 )
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo
@@ -102,6 +105,7 @@ from evalscope.benchmarks.agentdojo.tool_binding import (
     AgentDojoToolBinding,
     to_jsonable,
 )
+from evalscope.benchmarks.agentdojo.trace_signals import SIDE_EFFECT_TOOLS, AgentDojoTraceSignals
 from evalscope.benchmarks.agentdojo.upstream import (
     UPSTREAM_DISTRIBUTION,
     UpstreamContext,
@@ -1858,3 +1862,86 @@ class TestEndToEnd:
         assert any("ignores judge.strategy='llm'" in message for message in warnings), warnings
         assert _score(_reviews(tmp_path)[USER_TASK_ID])['value'] == {'utility': 1.0}
         assert _report_metric(report, 'utility').num == 1
+
+
+def _analyze_trace(path: Path) -> list:
+    from evalscope.analysis.trace import analyze_records
+    from evalscope.api.analysis import SampleRef
+    from evalscope.api.evaluator.cache import ReviewResult
+
+    rows = list(_reviews(path).values())
+    for row in rows:
+        row['sample_score']['sample_metadata'][SAMPLE_META_KEY]['analysis_annotation'] = 'not an environment setting'
+    return analyze_records(
+        [
+            (
+                SampleRef(run_dir=str(path), model='scripted', benchmark='agentdojo', subset=SUITE, index=row['index']),
+                ReviewResult.from_cache_item(row),
+            )
+            for row in rows
+        ]
+    )
+
+
+@requires_upstream
+class TestTraceAnalysis:
+
+    def test_side_effect_lists_match_upstream_tools(self) -> None:
+        from evalscope.benchmarks.agentdojo.upstream import load_upstream
+
+        upstream = load_upstream()
+        assert set(SIDE_EFFECT_TOOLS) == set(upstream.suites)
+        for suite, tools in SIDE_EFFECT_TOOLS.items():
+            assert set(tools) <= {tool.name for tool in upstream.suites[suite].tools}, suite
+        assert get_trace_signal_provider('agentdojo') is AgentDojoTraceSignals
+
+    def test_tool_failures_and_outcome_from_a_scripted_run(self, tmp_path: Path) -> None:
+        resolve_provider.cache_clear()
+        script = [
+            tool_calls_turn(('nonexistent_tool', {'x': 1})),
+            tool_calls_turn(('send_money', {})),
+            *ground_truth_turns(SUITE, USER_TASK_ID),
+        ]
+        _run({(SUITE, USER_TASK_ID): script}, tmp_path, user_task_ids=[USER_TASK_ID])
+        trace = _reviews(tmp_path)[USER_TASK_ID]['sample_score']['sample_metadata'][RUN_RECORD_META_KEY][
+            'tool_call_trace'
+        ]
+        assert [item['runtime_error'] for item in trace[:2]] == [False, True]
+        assert not any(item['runtime_error'] for item in trace[2:])
+
+        [case] = _analyze_trace(tmp_path)
+        failures = {f.subtype: f for f in case.findings if f.category == FindingCategory.TOOL_FAILURE}
+        assert set(failures) == {'provider:invalid_function', 'provider:runtime_error'}
+        assert failures['provider:invalid_function'].rule_id == 'model.unknown_tool'
+        assert failures['provider:runtime_error'].attribution == Attribution.MODEL
+        assert case.labels['suite'] == SUITE
+        assert case.outcome.task_success is True and case.outcome.source == 'provider'
+
+    def test_attack_goal_call_is_matched(self, tmp_path: Path) -> None:
+        resolve_provider.cache_clear()
+        from evalscope.benchmarks.agentdojo.injections import InjectionPlanner
+        from evalscope.benchmarks.agentdojo.upstream import load_upstream
+
+        injections = InjectionPlanner(load_upstream(), DEFAULT_ATTACK, VICTIM_MODEL_NAME).injections_for(
+            SUITE, USER_TASK_ID, INJECTION_TASK_ID
+        )
+        turns = _user_then_injection_turns(SUITE, USER_TASK_ID, INJECTION_TASK_ID, injections)
+        _run(
+            {(SUITE, USER_TASK_ID): turns},
+            tmp_path,
+            attack=DEFAULT_ATTACK,
+            user_task_ids=[USER_TASK_ID],
+            injection_task_ids=[INJECTION_TASK_ID],
+            victim_model_name=VICTIM_MODEL_NAME,
+        )
+        [case] = _analyze_trace(tmp_path)
+        goals = [f for f in case.findings if f.category == FindingCategory.ATTACK_GOAL_ACTION]
+        assert case.outcome.safety_violation is True
+        assert goals and goals[0].confidence.value == 'high' and goals[0].data['goal_source'] == INJECTION_TASK_ID
+
+    def test_benign_run_without_attack_has_no_goal_matching(self, tmp_path: Path) -> None:
+        resolve_provider.cache_clear()
+        _run({(SUITE, USER_TASK_ID): [text_turn('I cannot find the bill.')]}, tmp_path, user_task_ids=[USER_TASK_ID])
+        [case] = _analyze_trace(tmp_path)
+        assert case.outcome.task_success is False
+        assert not case.findings

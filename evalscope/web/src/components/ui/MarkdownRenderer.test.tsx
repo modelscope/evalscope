@@ -1,9 +1,10 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import MarkdownRenderer from './MarkdownRenderer'
+import { EvidenceQuotes } from '@/contexts/EvidenceContext'
 
 afterEach(cleanup)
 
@@ -85,4 +86,57 @@ describe('MarkdownRenderer image sources', () => {
     expect(images[0]).toHaveAttribute('src', 'HTTPS://example.com/a.png')
     expect(images[1]).toHaveAttribute('src', '//cdn.example.com/a.png')
   })
+})
+
+it('renders a real formula through the lazy math pipeline', async () => {
+  vi.useRealTimers()
+  const { container } = renderMarkdown('Equation: $x^2 + y^2 = z^2$')
+  await screen.findByText('Equation:', { exact: false })
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull())
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+
+
+it('keeps multiple currency amounts readable alongside inline math and code', async () => {
+  vi.useRealTimers()
+  const { container } = renderMarkdown('The tree costs $90 to plant and $3 per year. Formula: $x^2$. Code: `$90 and $3`.')
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull())
+  expect(container).toHaveTextContent('The tree costs $90 to plant and $3 per year.')
+  expect(container.querySelectorAll('.katex')).toHaveLength(1)
+  expect(container.querySelector('code')).toHaveTextContent('$90 and $3')
+})
+
+
+it('preserves currency with GSM8K arithmetic annotations', async () => {
+  vi.useRealTimers()
+  const text = 'She earns $<<12/60=0.2>>0.2 per minute and $<<0.2*50=10>>10 in total. Formula: $x^2$.'
+  const { container } = renderMarkdown(text)
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull())
+  expect(container).toHaveTextContent('She earns $<<12/60=0.2>>0.2 per minute and $<<0.2*50=10>>10 in total.')
+  expect(container.querySelectorAll('.katex')).toHaveLength(1)
+})
+
+
+it('renders equations after currency while preserving numeric math and fenced code', async () => {
+  vi.useRealTimers()
+  const source = 'He sells them for $1.50 each.\n$$ \\text{Revenue} = 7 \\times 1.50 = \\$10.50 $$\n\nMath: $90 \\div 7.5 = 12$.\n\n```text\n$90 to plant and $3 a year\n```'
+  const { container } = renderMarkdown(source)
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelectorAll('.katex')).toHaveLength(2))
+  expect(container).toHaveTextContent('He sells them for $1.50 each.')
+  expect(container.querySelector('code')).toHaveTextContent('$90 to plant and $3 a year')
+})
+
+
+it('keeps original currency quotations highlightable', async () => {
+  vi.useRealTimers()
+  const { container } = render(<LocaleProvider><ThemeProvider><EvidenceQuotes.Provider value={['$90 to plant']}>
+    <MarkdownRenderer content="It costs $90 to plant and $3 per year." />
+  </EvidenceQuotes.Provider></ThemeProvider></LocaleProvider>)
+  const { waitFor } = await import('@testing-library/react')
+  await waitFor(() => expect(container.querySelector('mark')).toHaveTextContent('$90 to plant'))
+  expect(container).toHaveTextContent('It costs $90 to plant and $3 per year.')
 })
