@@ -17,6 +17,8 @@ Evaluate externally generated business-agent eval sets with rubric judging and r
 ## Evaluation Notes
 - Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.
 - Checks are read-only; any failed check fails a task that carries a must-pass outcome criterion.
+- `project_root` is required when checks are present; remote state APIs need explicit `check_url_prefixes`.
+- `trace.mode=inline` requires inline steps; all-process rubrics without trace are excluded from metrics and marked `needs_review`.
 
 
 ## Properties
@@ -26,7 +28,7 @@ Evaluate externally generated business-agent eval sets with rubric judging and r
 | **Benchmark Name** | `project_eval` |
 | **Dataset ID** | `project_eval` |
 | **Paper** | N/A |
-| **Tags** | N/A |
+| **Tags** | `Agent` |
 | **Metrics** | `task_pass`, `rubric_score`, `evidence_coverage` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `N/A` |

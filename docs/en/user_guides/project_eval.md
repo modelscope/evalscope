@@ -46,9 +46,11 @@ run_task(TaskConfig(
 ```
 
 `project_root` is the runtime state directory; relative check paths resolve
-against it. `check_url_prefixes` is empty by default, so HTTP checks are limited
-to loopback; add a trusted prefix when the business state API is deployed
-separately.
+against it. It is required when a task has checks; a missing root fails the run
+instead of falling back to the current working directory. `check_url_prefixes`
+is empty by default, so HTTP checks are limited to loopback; add a trusted
+http(s) prefix (without user info, query or fragment) when the business state
+API is deployed separately.
 
 ### 2. Agent call
 
@@ -58,13 +60,15 @@ For `exec.type: agent_api`, EvalScope calls:
 POST {agent_url}/v1/eval/chat
 Content-Type: application/json
 
-{"session_id":"refund-001","message":"把充值款退 45 元，先预览。"}
+{"session_id":"refund-001","message":"把充值款退 45 元，先预览。","system":"客服"}
 ```
 
 The response needs a string `reply`; `steps` / `tool_calls` optionally carry
-inline tool calls. For `exec.type: http`, the configured request is sent
-directly and its JSON body becomes the state. A loopback `reset_url` is called
-before each task to restore the seed state.
+inline tool calls. For a single-turn task, a non-empty `system` is sent as the
+`system` field; when `messages` is present, each user turn is sent instead. For
+`exec.type: http`, the configured request is sent directly, its JSON body is
+saved as `agent_state`, and that state is shown to the Judge. A loopback
+`reset_url` is called before each task to restore the seed state.
 
 ### 3. Saved end-state evidence
 
@@ -73,6 +77,7 @@ writes the structured results into the prediction metadata:
 
 ```text
 predictions/*.jsonl
+  ├── metadata.agent_state        # Agent state returned by the protocol, when present
   └── metadata.runtime_checks[]
         ├── check_id
         ├── ok
@@ -82,8 +87,9 @@ predictions/*.jsonl
 
 `judge_definition()` reads `metadata.runtime_checks`; it does not re-read live
 business state. A cached `rerun_review` therefore uses the evidence captured
-with that Agent run. If a prediction has no saved checks, review fails loudly
-instead of silently scoring a different state.
+with that Agent run. If a prediction has no saved checks, or any saved check
+record is invalid, review fails loudly instead of silently scoring a different
+state.
 
 ### 4. Report
 
@@ -95,18 +101,23 @@ per-sample evidence.
 
 ## Contract and limits
 
+- `question` is required; `messages` are an optional multi-turn supplement.
+  Duplicate task ids are rejected when the eval set loads.
 - Checks are read-only and support files, SQLite, JSON and HTTP/JSON; `http`
-  checks allow GET/HEAD only.
+  checks allow GET/HEAD only and require an http(s) URL.
 - A task with a `must_pass` outcome criterion fails when any of its checks
   fails; include only checks that must pass for the outcome.
 - L0 and L2 inline trace are supported. `trace.mode` accepts `auto`, `inline`
-  and `none`; L1 (`fetch` an external trace store) is a follow-up and is not
-  accepted by the schema.
+  and `none`; `inline` requires inline steps, `auto` accepts L0, and `none`
+  disables trace evidence. L1 (`fetch` an external trace store) is a follow-up
+  and is not accepted by the schema.
 - Process criteria are `not_evaluable` when the Agent returns no trace; a
   `must_pass` process criterion marks the run `needs_review` without failing it.
+  If every criterion is a process criterion and no trace exists, the sample is
+  excluded from metrics and marked `needs_review`.
 - Generation, task/Rubric editing and versioning stay outside EvalScope. The
-  Judge sees the reference answer, expected/forbidden facts, rubric criteria and
-  check evidence, not raw source.
+  Judge sees the question, reference answer, expected/forbidden facts, rubric
+  criteria, agent state and check evidence, not raw source.
 - The external coding-agent skill
   [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) generates and
   validates the JSONL and can dry-run it against the Agent. Its automatic import

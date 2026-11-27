@@ -1,20 +1,24 @@
 import json
 import sqlite3
+from pathlib import Path
+from typing import Any
 
 import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.evaluator import TaskState
 from evalscope.api.evaluator.cache import ModelResult
-from evalscope.api.judge import CaseVerdict, JudgeContext
+from evalscope.api.judge import CaseVerdict, JudgeContext, JudgeDefinition
 from evalscope.api.model import ModelOutput
 from evalscope.benchmarks.project_eval.agent_clients import AgentProtocolError, AgentTurn
 from evalscope.benchmarks.project_eval.project_eval_adapter import ProjectEvalAdapter, RubricVerdict
+from evalscope.constants import ScoreStatus
 from evalscope.project_eval.checks import run_checks
+from evalscope.project_eval.schema import EvalTask
 
 META = BenchmarkMeta(name='project_eval', dataset_id='project_eval')
 
-ROW = {
+ROW: dict[str, Any] = {
     'id': 't1',
     'question': '查余额',
     'system': '客服',
@@ -42,12 +46,12 @@ ROW = {
 }
 
 
-def _attach_checks(adapter, sample, root):
+def _attach_checks(adapter: ProjectEvalAdapter, sample: Any, root: Path) -> None:
     task = adapter._task_from_metadata(sample.metadata)
     sample.metadata['runtime_checks'] = [result.model_dump() for result in run_checks(task, root)]
 
 
-def context(tmp_path, balance, trace_available=False):
+def context(tmp_path: Path, balance: int, trace_available: bool = False) -> tuple[ProjectEvalAdapter, JudgeContext]:
     (tmp_path / 'state.json').write_text(json.dumps({'balance_cent': balance}))
     adapter = ProjectEvalAdapter(benchmark_meta=META, task_config=None)
     sample = adapter.record_to_sample(ROW)
@@ -73,7 +77,7 @@ def context(tmp_path, balance, trace_available=False):
     )
 
 
-def test_failed_must_pass_check_short_circuits(tmp_path):
+def test_failed_must_pass_check_short_circuits(tmp_path: Path) -> None:
     adapter, ctx = context(tmp_path, 100)
     definition = adapter.judge_definition(ctx)
     assert definition.immediate_score is not None
@@ -82,14 +86,21 @@ def test_failed_must_pass_check_short_circuits(tmp_path):
     assert 'must_pass' in definition.skip_reason
 
 
-def test_passed_checks_open_rubric_workflow(tmp_path):
+def test_passed_checks_open_rubric_workflow(tmp_path: Path) -> None:
     adapter, ctx = context(tmp_path, 200000)
     definition = adapter.judge_definition(ctx)
     assert definition.immediate_score is None
     assert len(definition.cases) == 1
 
 
-def _definition_with(tmp_path, rubric, *, threshold=0.6, trace_available=False):
+def _definition_with(
+    tmp_path: Path,
+    rubric: list[dict[str, Any]],
+    *,
+    threshold: float = 0.6,
+    trace_available: bool = False,
+    agent_state: dict[str, Any] | None = None,
+) -> tuple[JudgeDefinition, JudgeContext]:
     row = {
         **ROW,
         'rubric': rubric,
@@ -111,13 +122,15 @@ def _definition_with(tmp_path, rubric, *, threshold=0.6, trace_available=False):
         trace = AgentTrace(events=[])
         trace.add_event(step=1, type=EventType.TOOL_CALL, payload={'tool': 'get_balance'})
         state.agent_trace = trace
+    if agent_state is not None:
+        state.metadata['agent_state'] = agent_state
     _attach_checks(adapter, sample, tmp_path)
     ctx = JudgeContext(task_state=state, original_prediction='余额 2000 元',
                        filtered_prediction='余额 2000 元', reference='')
     return adapter.judge_definition(ctx), ctx
 
 
-def test_weighted_score_and_threshold_fail(tmp_path):
+def test_weighted_score_and_threshold_fail(tmp_path: Path) -> None:
     definition, ctx = _definition_with(tmp_path, [
         {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
          'evidence_requirement': 'outcome'},
@@ -132,7 +145,7 @@ def test_weighted_score_and_threshold_fail(tmp_path):
     assert reduced.value['task_pass'] == 0.0
 
 
-def test_must_pass_answer_criterion_fails_task(tmp_path):
+def test_must_pass_answer_criterion_fails_task(tmp_path: Path) -> None:
     definition, ctx = _definition_with(tmp_path, [
         {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
          'evidence_requirement': 'outcome'},
@@ -147,7 +160,7 @@ def test_must_pass_answer_criterion_fails_task(tmp_path):
     assert reduced.value['task_pass'] == 0.0
 
 
-def test_process_criterion_is_not_evaluable_without_trace(tmp_path):
+def test_process_criterion_is_not_evaluable_without_trace(tmp_path: Path) -> None:
     definition, ctx = _definition_with(tmp_path, [
         {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
          'evidence_requirement': 'outcome'},
@@ -166,7 +179,7 @@ def test_process_criterion_is_not_evaluable_without_trace(tmp_path):
     )
 
 
-def test_must_pass_process_without_trace_marks_needs_review(tmp_path):
+def test_must_pass_process_without_trace_marks_needs_review(tmp_path: Path) -> None:
     definition, ctx = _definition_with(tmp_path, [
         {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
          'evidence_requirement': 'outcome'},
@@ -180,7 +193,18 @@ def test_must_pass_process_without_trace_marks_needs_review(tmp_path):
     assert reduced.value['evidence_coverage'] == 0.5
 
 
-def test_judge_request_requires_json_verdict(tmp_path):
+def test_all_process_without_trace_is_excluded(tmp_path: Path) -> None:
+    definition, _ = _definition_with(tmp_path, [
+        {'id': 'c1', 'criterion': '调用了工具', 'weight': 1, 'must_pass': True,
+         'evidence_requirement': 'process'},
+    ])
+    assert definition.immediate_score is not None
+    assert definition.immediate_score.status is ScoreStatus.EXCLUDED
+    assert definition.immediate_score.value == {}
+    assert definition.immediate_score.metadata['needs_review'] is True
+
+
+def test_judge_request_requires_json_verdict(tmp_path: Path) -> None:
     definition, ctx = _definition_with(tmp_path, [
         {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
          'evidence_requirement': 'outcome'},
@@ -189,7 +213,24 @@ def test_judge_request_requires_json_verdict(tmp_path):
     assert 'Reply with a single JSON object' in request.messages[0].content
 
 
-def test_judge_request_includes_reference_and_expected_facts(tmp_path):
+def test_judge_request_includes_question_and_state(tmp_path: Path) -> None:
+    definition, ctx = _definition_with(
+        tmp_path,
+        [
+            {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
+             'evidence_requirement': 'outcome'},
+        ],
+        agent_state={'balance_cent': 200000},
+    )
+    request = definition.request(definition.cases[0], 'original', [], ctx)
+    prompt = request.messages[0].content
+    assert '# Question' in prompt
+    assert '查余额' in prompt
+    assert '# Agent state' in prompt
+    assert '200000' in prompt
+
+
+def test_judge_request_includes_reference_and_expected_facts(tmp_path: Path) -> None:
     row = {
         **ROW,
         'reference_answer': '当前余额 2000 元',
@@ -215,7 +256,7 @@ def test_judge_request_includes_reference_and_expected_facts(tmp_path):
     assert '9999 元' in prompt
 
 
-def test_cached_review_uses_saved_end_state_checks(tmp_path):
+def test_cached_review_uses_saved_end_state_checks(tmp_path: Path) -> None:
     db = tmp_path / 'agent.db'
     connection = sqlite3.connect(db)
     connection.execute('create table agent_audit_log(confirmed integer)')
@@ -245,7 +286,7 @@ def test_cached_review_uses_saved_end_state_checks(tmp_path):
     sample.metadata['project_root'] = str(tmp_path)
 
     class FakeClient:
-        def chat(self, task, session_id):
+        def chat(self, task: EvalTask, session_id: str) -> AgentTurn:
             return AgentTurn(reply='已退款')
 
     adapter._client_for = lambda _sample: FakeClient()
@@ -264,7 +305,7 @@ def test_cached_review_uses_saved_end_state_checks(tmp_path):
         ctx,
     )
     assert first.value['task_pass'] == 1.0
-    saved_checks = list(sample.metadata['runtime_checks'])
+    saved_checks: list[dict[str, Any]] = list(sample.metadata['runtime_checks'])
     cached = ModelResult.from_task_state(state)
     assert cached.metadata['runtime_checks'] == saved_checks
     cached.index = 0
@@ -289,5 +330,12 @@ def test_cached_review_uses_saved_end_state_checks(tmp_path):
     assert second.metadata['checks'] == saved_checks
 
     sample.metadata.pop('runtime_checks')
+    with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
+        adapter.judge_definition(ctx)
+
+
+def test_corrupt_saved_checks_fail_loudly(tmp_path: Path) -> None:
+    adapter, ctx = context(tmp_path, 200000)
+    ctx.task_state.metadata['runtime_checks'] = [1]
     with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
         adapter.judge_definition(ctx)

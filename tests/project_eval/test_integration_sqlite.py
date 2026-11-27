@@ -2,6 +2,10 @@ import json
 import sqlite3
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Any
+
+import pytest
 
 from evalscope import TaskConfig, run_task
 
@@ -9,13 +13,13 @@ DB_PATH = ''
 
 
 class _Handler(BaseHTTPRequestHandler):
-    def do_POST(self):  # noqa: N802
+    def do_POST(self) -> None:
         length = int(self.headers.get('content-length', '0'))
         body = json.loads(self.rfile.read(length) or b'{}')
         if self.path.endswith('/v1/eval/chat'):
             session_id = body.get('session_id')
             message = str(body.get('message') or '')
-            steps = []
+            steps: list[dict[str, Any]] = []
             if '余额' in message:
                 connection = sqlite3.connect(DB_PATH)
                 connection.execute(
@@ -44,11 +48,11 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def log_message(self, *args):
+    def log_message(self, *args: Any) -> None:
         pass
 
 
-def _task(task_id, question, expect_count):
+def _task(task_id: str, question: str, expect_count: int) -> dict[str, Any]:
     return {
         'id': task_id,
         'version': 1,
@@ -74,7 +78,7 @@ def _task(task_id, question, expect_count):
     }
 
 
-def test_sqlite_checks_read_real_database(tmp_path, monkeypatch):
+def test_sqlite_checks_read_real_database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     global DB_PATH
     DB_PATH = str(tmp_path / 'agent.db')
     connection = sqlite3.connect(DB_PATH)

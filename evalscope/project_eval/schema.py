@@ -5,11 +5,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+
+RUNTIME_CHECKS_KEY = 'runtime_checks'
+AGENT_CAPABILITY_KEY = 'agent_capability'
+AGENT_STATE_KEY = 'agent_state'
+PROJECT_ROOT_KEY = 'project_root'
 
 
 class RubricCriterion(BaseModel):
+    """One rubric criterion; the Judge returns one verdict for each."""
+
     model_config = ConfigDict(extra='forbid')
 
     id: str
@@ -20,6 +28,8 @@ class RubricCriterion(BaseModel):
 
 
 class CheckSpec(BaseModel):
+    """One read-only end-state check and the value it expects."""
+
     model_config = ConfigDict(extra='forbid')
 
     id: str
@@ -46,6 +56,14 @@ class CheckSpec(BaseModel):
             raise ValueError('http check requires url')
         if self.type == 'http_json' and (not self.url or not self.json_path):
             raise ValueError('http_json check requires url and json_path')
+        if self.type in {'http', 'http_json'}:
+            parsed = urlsplit(self.url)
+            if parsed.scheme not in {'http', 'https'} or not parsed.hostname:
+                raise ValueError(f'{self.type} check requires an http(s) url')
+            try:
+                parsed.port
+            except ValueError as exc:
+                raise ValueError(f'{self.type} check has an invalid port') from exc
         if self.type == 'http_json' and self.method != 'GET':
             raise ValueError('http_json check must use GET')
         if self.type == 'sqlite' and (not self.dsn or not self.query):
@@ -54,6 +72,8 @@ class CheckSpec(BaseModel):
 
 
 class HttpRequestSpec(BaseModel):
+    """Request envelope for `exec.type='http'` tasks."""
+
     model_config = ConfigDict(extra='forbid', populate_by_name=True)
 
     method: str = 'POST'
@@ -62,12 +82,20 @@ class HttpRequestSpec(BaseModel):
 
 
 class SessionConfig(BaseModel):
+    """Business session key contract.
+
+    `sample_id` is the JSONL task `id`, which is also the key the business agent
+    uses for its audit/state.
+    """
+
     model_config = ConfigDict(extra='forbid')
 
     id_from: Literal['sample_id'] = 'sample_id'
 
 
 class MessageSpec(BaseModel):
+    """One user turn of an optional multi-turn script."""
+
     model_config = ConfigDict(extra='forbid')
 
     role: Literal['user'] = 'user'
@@ -75,12 +103,20 @@ class MessageSpec(BaseModel):
 
 
 class TraceConfig(BaseModel):
+    """Trace delivery contract.
+
+    `auto` uses inline steps when the Agent returns them, `inline` requires them,
+    and `none` disables trace evidence.
+    """
+
     model_config = ConfigDict(extra='forbid')
 
     mode: Literal['auto', 'inline', 'none'] = 'auto'
 
 
 class ExecSpec(BaseModel):
+    """How EvalScope calls the business Agent for one task."""
+
     model_config = ConfigDict(extra='forbid')
 
     type: Literal['agent_api', 'http'] = 'agent_api'
@@ -109,20 +145,46 @@ class ProjectEvalRunConfig(BaseModel):
     project_root: str = ''
     check_url_prefixes: list[str] = Field(default_factory=list)
 
+    @field_validator('check_url_prefixes')
+    @classmethod
+    def _validate_prefixes(cls, prefixes: list[str]) -> list[str]:
+        for prefix in prefixes:
+            parsed = urlsplit(prefix)
+            if parsed.scheme not in {'http', 'https'} or not parsed.hostname:
+                raise ValueError(f'invalid check_url_prefix: {prefix!r}')
+            try:
+                parsed.port
+            except ValueError as exc:
+                raise ValueError(f'invalid check_url_prefix port: {prefix!r}') from exc
+            if parsed.username or parsed.password:
+                raise ValueError('check_url_prefix must not contain user info')
+            if parsed.query or parsed.fragment:
+                raise ValueError('check_url_prefix must not contain a query or fragment')
+        return prefixes
+
 
 class Material(BaseModel):
+    """One source material supplied by the external generator."""
+
     model_config = ConfigDict(extra='forbid')
 
-    path: str
-    sha256: str = ''
+    path: str = Field(min_length=1)
+    sha256: str = Field(default='', pattern=r'^(?:[0-9a-f]{64})?$')
 
 
 class EvalTask(BaseModel):
+    """One externally generated business-agent eval task.
+
+    `question` is required; `messages` are an optional multi-turn supplement.
+    `version`, `source_refs`, `origin` and `materials` are provenance fields
+    validated for the external generator; execution does not read them.
+    """
+
     model_config = ConfigDict(extra='forbid')
 
-    id: str
+    id: str = Field(min_length=1)
     version: int = Field(default=1, ge=1)
-    question: str
+    question: str = Field(min_length=1)
     system: str = ''
     messages: list[MessageSpec] = Field(default_factory=list)
     reference_answer: str = ''
@@ -136,12 +198,6 @@ class EvalTask(BaseModel):
     origin: Literal['fact', 'inference'] = 'fact'
     materials: list[Material] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @model_validator(mode='after')
-    def _validate_task(self) -> 'EvalTask':
-        if not self.question and not self.messages:
-            raise ValueError('task requires question or messages')
-        return self
 
 
 def load_eval_set(path: str | Path) -> list[EvalTask]:
@@ -167,13 +223,17 @@ def load_eval_set(path: str | Path) -> list[EvalTask]:
 
 
 __all__ = [
+    'AGENT_CAPABILITY_KEY',
+    'AGENT_STATE_KEY',
     'CheckSpec',
     'EvalTask',
     'ExecSpec',
     'HttpRequestSpec',
     'Material',
     'MessageSpec',
+    'PROJECT_ROOT_KEY',
     'ProjectEvalRunConfig',
+    'RUNTIME_CHECKS_KEY',
     'RubricCriterion',
     'SessionConfig',
     'TraceConfig',

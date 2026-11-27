@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urlsplit
 
 import requests
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
+from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
@@ -26,18 +25,30 @@ from evalscope.api.judge import (
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.metric.semantics import MetricSelector
-from evalscope.api.model import ModelOutput, ModelUsage
+from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.project_eval.agent_clients import (
+    AgentClient,
     AgentProtocolError,
-    AgentTurn,
     HttpTaskClient,
     build_client,
     detect_capability,
 )
-from evalscope.constants import ScoringPolicy
-from evalscope.project_eval.checks import DEFAULT_HTTP_PREFIXES, CheckResult, run_checks
-from evalscope.project_eval.schema import EvalTask, ProjectEvalRunConfig
+from evalscope.benchmarks.project_eval.trace import build_agent_trace, model_usage
+from evalscope.constants import ScoreStatus, ScoringPolicy, Tags
+from evalscope.project_eval.checks import (
+    DEFAULT_HTTP_PREFIXES,
+    run_checks,
+    saved_checks_from_metadata,
+)
+from evalscope.project_eval.schema import (
+    AGENT_CAPABILITY_KEY,
+    AGENT_STATE_KEY,
+    PROJECT_ROOT_KEY,
+    RUNTIME_CHECKS_KEY,
+    EvalTask,
+    ProjectEvalRunConfig,
+)
 
 
 class RubricVerdict(BaseModel):
@@ -48,13 +59,52 @@ class RubricVerdict(BaseModel):
 RUBRIC_CONTRACT = OutputContract(schema_model=RubricVerdict, allow_json_fences=True)
 
 
-def _model_usage(usage: dict[str, Any]) -> ModelUsage | None:
-    if not usage:
-        return None
-    return ModelUsage(
-        input_tokens=int(usage.get('input_tokens', 0)),
-        output_tokens=int(usage.get('output_tokens', 0)),
-        total_tokens=int(usage.get('total_tokens', 0)),
+def _trace_context(trace: AgentTrace | None) -> tuple[str, str]:
+    if trace is None:
+        return '', ''
+    trace_summary = '\n'.join(f'step {event.step} {event.type.value}: {event.payload}' for event in trace.events)
+    conversation_lines = []
+    for event in trace.events:
+        if event.type != EventType.SUBMIT or not isinstance(event.payload.get('conversation'), list):
+            continue
+        for message in event.payload['conversation']:
+            role = str(message.get('role', 'user'))
+            content = str(message.get('content', '')).strip()
+            if content:
+                conversation_lines.append(f'{role}: {content}')
+    return trace_summary, '\n'.join(conversation_lines)
+
+
+def _render_judge_prompt(
+    task: EvalTask,
+    criterion: dict[str, Any],
+    trace: AgentTrace | None,
+    prediction: str,
+    check_records: list[dict[str, Any]],
+    agent_state: Any,
+    instruction: str,
+) -> str:
+    trace_summary, conversation_block = _trace_context(trace)
+    state_block = f'\n# Agent state\n{agent_state}\n' if agent_state else ''
+    return (
+        f'You are evaluating a business agent against one rubric criterion.\n\n'
+        f'# Question (the user request being evaluated)\n{task.question}\n\n'
+        f'# Criterion (judge only this)\n{criterion["criterion"]}\n\n'
+        f'# Reference answer (context only; do not require unrelated facts)\n'
+        f'{task.reference_answer or "(not provided)"}\n\n'
+        f'# Expected facts (context only; use only when the criterion names them)\n'
+        f'{task.expected_facts or "(none)"}\n\n'
+        f'# Forbidden claims\n{task.forbidden_facts or "(none)"}\n\n'
+        f'# Conversation (full multi-turn transcript; judge criteria against it)\n'
+        f'{conversation_block or "(not available)"}\n\n'
+        f'# Agent answer (final turn)\n{prediction}\n\n'
+        f'# Tool trace\n{trace_summary or "(not available)"}\n\n'
+        f'{state_block}'
+        f'# End-state checks\n{check_records}\n\n'
+        f'Judge ONLY the criterion above. Do not fail it because unrelated reference '
+        f'facts are absent. For end-state criteria, the checks are authoritative. '
+        f'When a criterion refers to an earlier turn, verify it against the conversation.'
+        f'{instruction}'
     )
 
 
@@ -78,9 +128,14 @@ def _model_usage(usage: dict[str, Any]) -> ModelUsage | None:
             '## Evaluation Notes\n'
             '- Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.\n'
             '- Checks are read-only; any failed check fails a task that carries a must-pass outcome criterion.\n'
+            '- `project_root` is required when checks are present; remote state APIs need explicit '
+            '`check_url_prefixes`.\n'
+            '- `trace.mode=inline` requires inline steps; all-process rubrics without trace are excluded '
+            'from metrics and marked `needs_review`.\n'
         ),
         dataset_id='project_eval',
         subset_list=['default'],
+        tags=[Tags.AGENT],
         metric_list=['task_pass', 'rubric_score', 'evidence_coverage'],
         primary_metric=MetricSelector(name='task_pass', aggregation='mean'),
         evaluation_version='v1.0',
@@ -90,10 +145,24 @@ class ProjectEvalAdapter(AgentAdapter):
     """Consume eval_set.v1.jsonl and call the business agent through HTTP."""
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    _runtime_keys = {'project_root', 'runtime_checks', 'agent_capability'}
+    _runtime_keys = {PROJECT_ROOT_KEY, RUNTIME_CHECKS_KEY, AGENT_CAPABILITY_KEY, AGENT_STATE_KEY}
 
     def load_from_disk(self, **kwargs: Any) -> Any:
-        return super().load_from_disk(use_local_loader=True)
+        dataset_dict, fewshot_dataset = super().load_from_disk(use_local_loader=True)
+        self._validate_task_ids(dataset_dict)
+        return dataset_dict, fewshot_dataset
+
+    @staticmethod
+    def _validate_task_ids(dataset_dict: Any) -> None:
+        seen: set[str] = set()
+        for _, dataset in dataset_dict.items():
+            for sample in dataset.samples:
+                task_id = str(sample.metadata.get('id') or '').strip()
+                if not task_id:
+                    raise ValueError('task id must be non-empty')
+                if task_id in seen:
+                    raise ValueError(f'duplicate task id: {task_id}')
+                seen.add(task_id)
 
     @classmethod
     def _task_from_metadata(cls, metadata: dict[str, Any]) -> EvalTask:
@@ -109,7 +178,7 @@ class ProjectEvalAdapter(AgentAdapter):
                 input_messages.append(ChatMessageSystem(content=task.system))
             input_messages.append(ChatMessageUser(content=task.question))
         return Sample(
-            id=int(hashlib.sha256(task.id.encode('utf-8')).hexdigest()[:16], 16) % (2**31),
+            id=0,
             input=input_messages,
             target=task.reference_answer,
             metadata=record,
@@ -121,7 +190,7 @@ class ProjectEvalAdapter(AgentAdapter):
         raw = self._task_config.dataset_args.get('project_eval') or {}
         return ProjectEvalRunConfig.model_validate(raw)
 
-    def _client_for(self, sample: Sample) -> Any:
+    def _client_for(self, sample: Sample) -> AgentClient | HttpTaskClient:
         task = self._task_from_metadata(sample.metadata)
         spec = task.exec
         env_name = spec.base_url_env if spec.type == 'http' else spec.agent_url_env
@@ -149,9 +218,8 @@ class ProjectEvalAdapter(AgentAdapter):
 
     def _on_inference(self, model: Any, sample: Sample) -> InferenceResult:
         task = self._task_from_metadata(sample.metadata)
+        root = self._root_for(task, sample.metadata)
         self._reset_if_configured(task)
-        if task.exec.trace.mode == 'fetch':
-            raise AgentProtocolError('trace.mode=fetch is not implemented; use auto/inline/none')
         client = self._client_for(sample)
         if task.exec.type == 'http':
             if not isinstance(client, HttpTaskClient):
@@ -162,14 +230,16 @@ class ProjectEvalAdapter(AgentAdapter):
         if task.exec.trace.mode == 'none':
             turn.steps = []
             turn.trace_available = False
-        sample.metadata['agent_capability'] = detect_capability(turn)
+        elif task.exec.trace.mode == 'inline' and not turn.steps:
+            raise AgentProtocolError('trace.mode=inline requires inline steps')
+        sample.metadata[AGENT_CAPABILITY_KEY] = detect_capability(turn)
+        if turn.state:
+            sample.metadata[AGENT_STATE_KEY] = turn.state
         prefixes = tuple(DEFAULT_HTTP_PREFIXES) + tuple(self._run_config().check_url_prefixes)
-        sample.metadata['runtime_checks'] = [
-            result.model_dump() for result in run_checks(task, self._root_for(sample.metadata), prefixes)
-        ]
+        sample.metadata[RUNTIME_CHECKS_KEY] = [result.model_dump() for result in run_checks(task, root, prefixes)]
 
-        output = ModelOutput.from_content(model='project-eval', content=turn.reply)
-        output.usage = _model_usage(turn.usage)
+        output = ModelOutput.from_content(model=getattr(model, 'name', None) or 'project-eval', content=turn.reply)
+        output.usage = model_usage(turn.usage)
         messages = list(sample.input) + [ChatMessageAssistant(content=turn.reply)]
         return InferenceResult(
             output=output,
@@ -177,22 +247,16 @@ class ProjectEvalAdapter(AgentAdapter):
             trace=build_agent_trace(turn, task),
         )
 
-    def _root_for(self, metadata: dict[str, Any] | None) -> Path:
+    def _root_for(self, task: EvalTask, metadata: dict[str, Any] | None) -> Path:
         metadata = metadata or {}
-        root = metadata.get('project_root') or self._run_config().project_root
+        root = metadata.get(PROJECT_ROOT_KEY) or self._run_config().project_root
         if not root:
+            if task.checks:
+                raise AgentProtocolError(
+                    'missing project_root: configure dataset_args.project_eval.project_root for read-only checks'
+                )
             root = os.getcwd()
         return Path(root)
-
-    @staticmethod
-    def _saved_checks(metadata: dict[str, Any] | None) -> list[CheckResult] | None:
-        records = metadata.get('runtime_checks') if isinstance(metadata, dict) else None
-        if not isinstance(records, list):
-            return None
-        try:
-            return [CheckResult.model_validate(record) for record in records if isinstance(record, dict)]
-        except ValidationError:
-            return None
 
     @staticmethod
     def _trace_available(trace: AgentTrace | None) -> bool:
@@ -207,14 +271,15 @@ class ProjectEvalAdapter(AgentAdapter):
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         task = self._task_from_metadata(context.task_state.metadata)
-        saved = self._saved_checks(context.task_state.metadata)
+        saved = saved_checks_from_metadata(context.task_state.metadata)
         if saved is None:
             raise AgentProtocolError(
                 'missing saved end-state checks; refusing to review a cached run against live state'
             )
         checks = saved
         check_records = [result.model_dump() for result in checks]
-        capability = context.task_state.metadata.get('agent_capability')
+        capability = context.task_state.metadata.get(AGENT_CAPABILITY_KEY)
+        agent_state = context.task_state.metadata.get(AGENT_STATE_KEY)
 
         trace_available = self._trace_available(context.task_state.agent_trace)
         evaluable = []
@@ -240,19 +305,22 @@ class ProjectEvalAdapter(AgentAdapter):
                     'not_evaluable': not_evaluable,
                     'needs_review': needs_review,
                     'agent_capability': capability,
+                    'agent_state': agent_state,
                 },
             )
             return JudgeDefinition.skip(score, reason='must_pass check failed')
 
         if not evaluable:
             score = Score(
-                value={'task_pass': 0.0, 'rubric_score': 0.0, 'evidence_coverage': 0.0},
-                explanation='no evaluable rubric criteria without trace',
+                value={},
+                status=ScoreStatus.EXCLUDED,
+                explanation='no evaluable rubric criteria without trace; sample needs review',
                 metadata={
                     'checks': check_records,
                     'not_evaluable': not_evaluable,
-                    'needs_review': needs_review,
+                    'needs_review': True,
                     'agent_capability': capability,
+                    'agent_state': agent_state,
                 },
             )
             return JudgeDefinition.skip(score, reason='no evaluable criteria')
@@ -272,39 +340,14 @@ class ProjectEvalAdapter(AgentAdapter):
             completed_cases: list[JudgeCase],
             judge_context: JudgeContext,
         ) -> JudgeRequest:
-            criterion = case.metadata['criterion']
-            trace_summary = ''
-            conversation_lines = []
-            trace = judge_context.task_state.agent_trace
-            if trace is not None:
-                trace_summary = '\n'.join(
-                    f'step {event.step} {event.type.value}: {event.payload}' for event in trace.events
-                )
-                for event in trace.events:
-                    if event.type == EventType.SUBMIT and isinstance(event.payload.get('conversation'), list):
-                        for message in event.payload['conversation']:
-                            role = str(message.get('role', 'user'))
-                            content = str(message.get('content', '')).strip()
-                            if content:
-                                conversation_lines.append(f'{role}: {content}')
-            conversation_block = '\n'.join(conversation_lines)
-            prompt = (
-                f'You are evaluating a business agent against one rubric criterion.\n\n'
-                f'# Criterion (judge only this)\n{criterion["criterion"]}\n\n'
-                f'# Reference answer (context only; do not require unrelated facts)\n'
-                f'{task.reference_answer or "(not provided)"}\n\n'
-                f'# Expected facts (context only; use only when the criterion names them)\n'
-                f'{task.expected_facts or "(none)"}\n\n'
-                f'# Forbidden claims\n{task.forbidden_facts or "(none)"}\n\n'
-                f'# Conversation (full multi-turn transcript; judge criteria against it)\n'
-                f'{conversation_block or "(not available)"}\n\n'
-                f'# Agent answer (final turn)\n{judge_context.original_prediction}\n\n'
-                f'# Tool trace\n{trace_summary or "(not available)"}\n\n'
-                f'# End-state checks\n{check_records}\n\n'
-                f'Judge ONLY the criterion above. Do not fail it because unrelated reference '
-                f'facts are absent. For end-state criteria, the checks are authoritative. '
-                f'When a criterion refers to an earlier turn, verify it against the conversation.'
-                f'{case.output_contract.instruction()}'
+            prompt = _render_judge_prompt(
+                task,
+                case.metadata['criterion'],
+                judge_context.task_state.agent_trace,
+                judge_context.original_prediction,
+                check_records,
+                agent_state,
+                case.output_contract.instruction(),
             )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
@@ -366,6 +409,7 @@ class ProjectEvalAdapter(AgentAdapter):
                     'needs_review': needs_review,
                     'checks': check_records,
                     'agent_capability': capability,
+                    'agent_state': agent_state,
                 },
             )
 
@@ -380,66 +424,6 @@ class ProjectEvalAdapter(AgentAdapter):
             main_score_name='task_pass',
             finalize=finalize,
         )
-
-
-def build_agent_trace(turn: AgentTurn, task: EvalTask) -> AgentTrace:
-    """Convert one business-agent turn into EvalScope's structured trace."""
-    trace = AgentTrace(
-        framework='business_agent',
-        strategy=task.exec.protocol,
-        environment=None,
-        max_steps=len(turn.steps),
-        trial_id=turn.trace_id,
-        total_usage=_model_usage(turn.usage),
-        events=[],
-    )
-
-    step = 0
-    trace.add_event(
-        step=step,
-        type=EventType.RUN_START,
-        payload={
-            'protocol': task.exec.protocol,
-            'trace_available': turn.trace_available,
-        },
-    )
-    for item in turn.steps:
-        step += 1
-        trace.add_event(
-            step=step,
-            type=EventType.TOOL_CALL,
-            latency_ms=item.elapsed_ms,
-            payload={
-                'tool': item.name,
-                'arguments': item.arguments,
-                'confirmed': item.raw.get('confirmed'),
-                'phase': item.raw.get('phase'),
-                'preview': item.raw.get('preview'),
-                'outcome': item.raw.get('outcome'),
-            },
-        )
-        trace.add_event(
-            step=step,
-            type=EventType.TOOL_RESULT,
-            latency_ms=item.elapsed_ms,
-            payload={
-                'tool': item.name,
-                'result': item.result,
-                'confirmed': item.raw.get('confirmed'),
-                'phase': item.raw.get('phase'),
-                'outcome': item.raw.get('outcome'),
-            },
-        )
-    step += 1
-    conversation = turn.conversation or [{'role': 'assistant', 'content': turn.reply}]
-    trace.add_event(
-        step=step,
-        type=EventType.SUBMIT,
-        payload={'reply': turn.reply, 'conversation': conversation},
-    )
-    step += 1
-    trace.add_event(step=step, type=EventType.RUN_END, payload={'trace_available': turn.trace_available})
-    return trace
 
 
 __all__ = ['ProjectEvalAdapter', 'build_agent_trace']

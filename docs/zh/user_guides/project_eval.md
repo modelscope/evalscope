@@ -43,8 +43,10 @@ run_task(TaskConfig(
 ))
 ```
 
-`project_root` 是运行时状态目录，相对检查路径按它解析。`check_url_prefixes`
-默认为空，HTTP 检查只允许 loopback；业务状态 API 分开部署时再显式加入可信前缀。
+`project_root` 是运行时状态目录，相对检查路径按它解析。任务带 checks 时它必填；
+缺失会直接报错，不再回退到当前工作目录。`check_url_prefixes` 默认为空，HTTP
+检查只允许 loopback；业务状态 API 分开部署时再显式加入可信 http(s) 前缀
+（不能包含 user info、query 或 fragment）。
 
 ### 2. Agent 调用
 
@@ -54,12 +56,13 @@ run_task(TaskConfig(
 POST {agent_url}/v1/eval/chat
 Content-Type: application/json
 
-{"session_id":"refund-001","message":"把充值款退 45 元，先预览。"}
+{"session_id":"refund-001","message":"把充值款退 45 元，先预览。","system":"客服"}
 ```
 
-响应需要字符串 `reply`；`steps` / `tool_calls` 可选携带内联工具调用。
-`exec.type: http` 直接发送配置的请求，响应 JSON 作为状态。每个任务前会调用
-loopback `reset_url` 恢复 seed 状态。
+响应需要字符串 `reply`；`steps` / `tool_calls` 可选携带内联工具调用。单轮任务
+若 `system` 非空，会作为 `system` 字段一起发送；有 `messages` 时则逐条发送 user
+消息。`exec.type: http` 直接发送配置的请求，响应 JSON 保存为 `agent_state` 并
+展示给 Judge。每个任务前会调用 loopback `reset_url` 恢复 seed 状态。
 
 ### 3. 保存终态证据
 
@@ -67,6 +70,7 @@ Agent 调用后，EvalScope 立即执行所有只读检查，把结构化结果�
 
 ```text
 predictions/*.jsonl
+  ├── metadata.agent_state        # 协议返回的 Agent 状态（存在时）
   └── metadata.runtime_checks[]
         ├── check_id
         ├── ok
@@ -75,8 +79,8 @@ predictions/*.jsonl
 ```
 
 `judge_definition()` 读取 `metadata.runtime_checks`，不再重新读取实时业务状态。
-因此缓存 `rerun_review` 使用的是该次 Agent 运行保存的证据。预测里没有保存检查时，
-review 会明确失败，而不是静默按另一份状态打分。
+因此缓存 `rerun_review` 使用的是该次 Agent 运行保存的证据。预测里没有保存检查，
+或保存的检查记录无法解析时，review 会明确失败，而不是静默按另一份状态打分。
 
 ### 4. 报告
 
@@ -86,14 +90,18 @@ verdicts 和检查证据写入 `reviews/*.jsonl`，属于报告产物；渲染�
 
 ## 契约与限制
 
-- 检查只读，支持文件、SQLite、JSON 和 HTTP/JSON；`http` 检查只允许 GET/HEAD。
+- `question` 必填；`messages` 是可选的 user 多轮补充。加载时拒绝重复 task id。
+- 检查只读，支持文件、SQLite、JSON 和 HTTP/JSON；`http` 检查只允许 GET/HEAD，
+  且 URL 必须是 http(s)。
 - 带 `must_pass` outcome criterion 的任务，只要任意检查失败就判失败；只放必须通过的检查。
 - 支持 L0 和 L2 inline trace；`trace.mode` 接受 `auto`、`inline`、`none`；
-  L1（从外部 trace 系统 fetch）是后续改动，schema 不接受。
+  `inline` 要求内联 steps，`auto` 接受 L0，`none` 关闭 trace 证据。L1（从外部
+  trace 系统 fetch）是后续改动，schema 不接受。
 - Agent 不返回 trace 时，process 类判据为 `not_evaluable`；`must_pass` 的
-  process 判据把本次运行标记为 `needs_review`，但不会直接判失败。
-- 题目生成、题目/Rubric 编辑和版本管理仍在 EvalScope 外部。Judge 看到的是参考
-  答案、预期/禁止事实、rubric 和检查证据，不会看到原始源码。
+  process 判据把本次运行标记为 `needs_review`，但不会直接判失败。若所有判据都是
+  process 且没有 trace，该样本不计入指标并标记 `needs_review`。
+- 题目生成、题目/Rubric 编辑和版本管理仍在 EvalScope 外部。Judge 看到的是问题、
+  参考答案、预期/禁止事实、rubric、agent state 和检查证据，不会看到原始源码。
 - 外部编码 Agent skill
   [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) 负责生成并校验
   JSONL、对 Agent 做 dry-run；自动导入依赖后续的 Eval Sets 管理改动。

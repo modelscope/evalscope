@@ -26,7 +26,7 @@ Below is the list of supported AGENT benchmarks. Click on a benchmark name for d
 | `minimax_verifier` | [MiniMax-Vendor-Verifier](../../benchmarks/minimax_verifier.md) | `Agent`, `FunctionCalling` |
 | `miniwob` | [MiniWoB](../../benchmarks/miniwob.md) | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |
 | `officeqa` | [OfficeQA](../../benchmarks/officeqa.md) | `Agent`, `Knowledge`, `QA` |
-| `project_eval` | [Project Eval](../../benchmarks/project_eval.md) | N/A |
+| `project_eval` | [Project Eval](../../benchmarks/project_eval.md) | `Agent` |
 | `researchrubrics` | [ResearchRubrics](../../benchmarks/researchrubrics.md) | `Agent`, `MultiTurn`, `Reasoning`, `Retrieval` |
 | `skillsbench` | [SkillsBench](../../benchmarks/skillsbench.md) | `Agent`, `MultiTurn` |
 | `swe_atlas_qna` | [SWE-Atlas-QnA](../../benchmarks/swe_atlas_qna.md) | `Agent`, `Coding`, `MultiTurn` |

@@ -1,1 +1,1 @@
-"""Read-only evaluation-set contract shared by the adapter and the service."""
+"""Read-only evaluation-set contract and checks used by the project_eval adapter."""

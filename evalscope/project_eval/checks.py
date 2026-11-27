@@ -7,12 +7,13 @@ import os
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
+from urllib.parse import urlsplit
 
 import requests
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from .schema import CheckSpec, EvalTask
+from .schema import RUNTIME_CHECKS_KEY, CheckSpec, EvalTask
 
 _SENSITIVE_NAMES = {
     '.env',
@@ -23,7 +24,7 @@ _SENSITIVE_NAMES = {
 _SENSITIVE_SUFFIXES = ('.pem', '.key', '.p12', '.pfx', '.kdbx')
 _SENSITIVE_PREFIXES = ('id_rsa', 'id_ed25519', 'id_ecdsa', 'credentials')
 _SENSITIVE_DIRS = {'.git', '.ssh', '.aws', '.gnupg', '.docker'}
-DEFAULT_HTTP_PREFIXES = ('http://127.0.0.1', 'http://localhost')
+DEFAULT_HTTP_PREFIXES = ('http://127.0.0.1', 'http://localhost', 'http://[::1]')
 
 
 class CheckResult(BaseModel):
@@ -74,6 +75,38 @@ def assert_within_root(path: str, root: Path) -> Path:
     return resolved
 
 
+def _url_allowed(url: str, prefixes: Iterable[str]) -> bool:
+    """Match a URL against trusted origins, not a raw string prefix."""
+    target = urlsplit(url)
+    if target.scheme not in {'http', 'https'} or not target.hostname:
+        return False
+    for prefix in prefixes:
+        allowed = urlsplit(prefix)
+        if allowed.scheme not in {'http', 'https'} or not allowed.hostname:
+            continue
+        if target.scheme != allowed.scheme or target.hostname.lower() != allowed.hostname.lower():
+            continue
+        if allowed.port is not None and target.port != allowed.port:
+            continue
+        allowed_path = allowed.path or '/'
+        if allowed_path == '/':
+            return True
+        if target.path == allowed_path or target.path.startswith(allowed_path.rstrip('/') + '/'):
+            return True
+    return False
+
+
+def saved_checks_from_metadata(metadata: dict[str, Any] | None) -> list[CheckResult] | None:
+    """Load the checks saved with a prediction, or None when they are unusable."""
+    records = metadata.get(RUNTIME_CHECKS_KEY) if isinstance(metadata, dict) else None
+    if not isinstance(records, list):
+        return None
+    try:
+        return [CheckResult.model_validate(record) for record in records]
+    except ValidationError:
+        return None
+
+
 def _json_path_value(document: Any, json_path: str) -> Any:
     current = document
     for key in json_path.split('.'):
@@ -84,108 +117,127 @@ def _json_path_value(document: Any, json_path: str) -> Any:
     return current
 
 
+def _elapsed_ms(started: float) -> float:
+    return (time.perf_counter() - started) * 1000
+
+
+def _file_exists(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    candidate = assert_within_root(check.path, root)
+    return CheckResult(
+        check_id=check.id,
+        ok=candidate.exists(),
+        evidence={'path': str(candidate.relative_to(root.resolve())), 'elapsed_ms': _elapsed_ms(started)},
+    )
+
+
+def _file_content(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    candidate = assert_within_root(check.path, root)
+    text = candidate.read_text(encoding='utf-8', errors='replace')
+    return CheckResult(
+        check_id=check.id,
+        ok=check.contains in text,
+        evidence={
+            'path': str(candidate.relative_to(root.resolve())),
+            'contains': check.contains,
+            'elapsed_ms': _elapsed_ms(started),
+        },
+    )
+
+
+def _json_file(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    candidate = assert_within_root(check.path, root)
+    document = json.loads(candidate.read_text(encoding='utf-8'))
+    value = _json_path_value(document, check.json_path)
+    return CheckResult(
+        check_id=check.id,
+        ok=value == check.expect,
+        evidence={
+            'path': str(candidate.relative_to(root.resolve())),
+            'json_path': check.json_path,
+            'value': value,
+            'expect': check.expect,
+            'elapsed_ms': _elapsed_ms(started),
+        },
+    )
+
+
+def _sqlite(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    candidate = assert_within_root(check.dsn, root)
+    connection = sqlite3.connect(f'{candidate.as_uri()}?mode=ro', uri=True)
+    try:
+        rows = connection.execute(check.query).fetchall()
+    finally:
+        connection.close()
+    value = rows[0][0] if rows else None
+    return CheckResult(
+        check_id=check.id,
+        ok=str(value) == str(check.expect),
+        evidence={
+            'dsn': str(candidate.relative_to(root.resolve())),
+            'query': check.query,
+            'rows': [list(row) for row in rows],
+            'elapsed_ms': _elapsed_ms(started),
+        },
+    )
+
+
+def _http(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+    if not _url_allowed(check.url, prefixes):
+        raise ValueError('http url is not allowed')
+    response = requests.request(check.method, check.url, timeout=10, allow_redirects=False)
+    return CheckResult(
+        check_id=check.id,
+        ok=response.status_code == check.expect_status,
+        evidence={
+            'url': check.url,
+            'status': response.status_code,
+            'expect_status': check.expect_status,
+            'elapsed_ms': _elapsed_ms(started),
+        },
+    )
+
+
+def _http_json(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+    if not _url_allowed(check.url, prefixes):
+        raise ValueError('http url is not allowed')
+    response = requests.get(check.url, timeout=10, allow_redirects=False)
+    response.raise_for_status()
+    value = _json_path_value(response.json(), check.json_path)
+    return CheckResult(
+        check_id=check.id,
+        ok=value == check.expect,
+        evidence={
+            'url': check.url,
+            'json_path': check.json_path,
+            'value': value,
+            'expect': check.expect,
+            'elapsed_ms': _elapsed_ms(started),
+        },
+    )
+
+
+_CHECK_HANDLERS: dict[str, Callable[[CheckSpec, Path, tuple[str, ...], float], CheckResult]] = {
+    'file_exists': _file_exists,
+    'file_content': _file_content,
+    'json_path': _json_file,
+    'sqlite': _sqlite,
+    'http': _http,
+    'http_json': _http_json,
+}
+
+
 def _run_check(check: CheckSpec, root: Path, allowed_http_prefixes: tuple[str, ...]) -> CheckResult:
     started = time.perf_counter()
     try:
-        if check.type in {'file_exists', 'file_content', 'json_path'}:
-            candidate = assert_within_root(check.path, root)
-            if check.type == 'file_exists':
-                return CheckResult(
-                    check_id=check.id,
-                    ok=candidate.exists(),
-                    evidence={
-                        'path': str(candidate.relative_to(root.resolve())),
-                        'elapsed_ms': (time.perf_counter() - started) * 1000,
-                    },
-                )
-            if check.type == 'file_content':
-                text = candidate.read_text(encoding='utf-8', errors='replace')
-                return CheckResult(
-                    check_id=check.id,
-                    ok=check.contains in text,
-                    evidence={
-                        'path': str(candidate.relative_to(root.resolve())),
-                        'contains': check.contains,
-                        'elapsed_ms': (time.perf_counter() - started) * 1000,
-                    },
-                )
-            document = json.loads(candidate.read_text(encoding='utf-8'))
-            value = _json_path_value(document, check.json_path)
-            return CheckResult(
-                check_id=check.id,
-                ok=value == check.expect,
-                evidence={
-                    'path': str(candidate.relative_to(root.resolve())),
-                    'json_path': check.json_path,
-                    'value': value,
-                    'expect': check.expect,
-                    'elapsed_ms': (time.perf_counter() - started) * 1000,
-                },
-            )
-
-        if check.type == 'sqlite':
-            candidate = assert_within_root(check.dsn, root)
-            connection = sqlite3.connect(f'file:{candidate}?mode=ro', uri=True)
-            try:
-                rows = connection.execute(check.query).fetchall()
-            finally:
-                connection.close()
-            value = rows[0][0] if rows else None
-            return CheckResult(
-                check_id=check.id,
-                ok=str(value) == str(check.expect),
-                evidence={
-                    'dsn': str(candidate.relative_to(root.resolve())),
-                    'query': check.query,
-                    'rows': [list(row) for row in rows],
-                    'elapsed_ms': (time.perf_counter() - started) * 1000,
-                },
-            )
-
-        if check.type == 'http':
-            if not any(check.url.startswith(prefix) for prefix in allowed_http_prefixes):
-                raise ValueError('http url is not allowed')
-            response = requests.request(
-                check.method,
-                check.url,
-                timeout=10,
-                allow_redirects=False,
-            )
-            return CheckResult(
-                check_id=check.id,
-                ok=response.status_code == check.expect_status,
-                evidence={
-                    'url': check.url,
-                    'status': response.status_code,
-                    'expect_status': check.expect_status,
-                    'elapsed_ms': (time.perf_counter() - started) * 1000,
-                },
-            )
-
-        if check.type == 'http_json':
-            if not any(check.url.startswith(prefix) for prefix in allowed_http_prefixes):
-                raise ValueError('http url is not allowed')
-            response = requests.get(check.url, timeout=10, allow_redirects=False)
-            response.raise_for_status()
-            value = _json_path_value(response.json(), check.json_path)
-            return CheckResult(
-                check_id=check.id,
-                ok=value == check.expect,
-                evidence={
-                    'url': check.url,
-                    'json_path': check.json_path,
-                    'value': value,
-                    'expect': check.expect,
-                    'elapsed_ms': (time.perf_counter() - started) * 1000,
-                },
-            )
-
-        raise ValueError(f'unsupported check type: {check.type}')
-    except Exception as exc:  # noqa: BLE001 - reported as check evidence, never raised
+        handler = _CHECK_HANDLERS.get(check.type)
+        if handler is None:
+            raise ValueError(f'unsupported check type: {check.type}')
+        return handler(check, root, allowed_http_prefixes, started)
+    except Exception as exc:
         return CheckResult(
             check_id=check.id,
             ok=False,
-            evidence={'elapsed_ms': (time.perf_counter() - started) * 1000},
+            evidence={'elapsed_ms': _elapsed_ms(started)},
             error=f'{type(exc).__name__}: {exc}',
         )
 
@@ -201,4 +253,10 @@ def run_checks(
     return [_run_check(check, root_path, prefixes) for check in task.checks]
 
 
-__all__ = ['DEFAULT_HTTP_PREFIXES', 'CheckResult', 'assert_within_root', 'run_checks']
+__all__ = [
+    'DEFAULT_HTTP_PREFIXES',
+    'CheckResult',
+    'assert_within_root',
+    'run_checks',
+    'saved_checks_from_metadata',
+]

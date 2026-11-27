@@ -15,7 +15,29 @@ class AgentProtocolError(RuntimeError):
     """The business agent replied with a payload the contract cannot interpret."""
 
 
+def _json_request(
+    method: str,
+    url: str,
+    payload: dict[str, Any],
+    timeout: float,
+    headers: dict[str, str] | None = None,
+) -> Any:
+    """Send one JSON request and return the decoded JSON response."""
+    response = requests.request(method, url, json=payload, headers=headers, timeout=timeout)
+    response.raise_for_status()
+    return response.json()
+
+
+def _as_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 class AgentStep(BaseModel):
+    """One inline tool call returned by the business agent."""
+
     model_config = ConfigDict(extra='forbid')
 
     type: str
@@ -27,6 +49,8 @@ class AgentStep(BaseModel):
 
 
 class AgentTurn(BaseModel):
+    """One aggregated business-agent turn, including multi-turn state."""
+
     model_config = ConfigDict(extra='forbid')
 
     reply: str
@@ -39,6 +63,8 @@ class AgentTurn(BaseModel):
 
 
 class AgentClient(Protocol):
+    """Conversation client used by `agent_api` tasks."""
+
     def chat(self, task: EvalTask, session_id: str) -> AgentTurn: ...
 
 
@@ -97,9 +123,7 @@ class RestStepsClient:
         self.transport = transport or self._post
 
     def _post(self, url: str, payload: dict[str, Any], timeout: float) -> Any:
-        response = requests.post(url, json=payload, timeout=timeout)
-        response.raise_for_status()
-        return response.json()
+        return _json_request('POST', url, payload, timeout)
 
     def chat(self, task: EvalTask, session_id: str) -> AgentTurn:
         messages = _messages(task)
@@ -114,11 +138,13 @@ class RestStepsClient:
         trace_id: str | None = None
         conversation: list[dict[str, str]] = []
         for message in user_messages:
-            data = self.transport(
-                f'{self.base_url}/v1/eval/chat',
-                {'session_id': session_id, 'message': message.get('content', '')},
-                self.timeout,
-            )
+            payload: dict[str, Any] = {
+                'session_id': session_id,
+                'message': message.get('content', ''),
+            }
+            if task.system and not task.messages:
+                payload['system'] = task.system
+            data = self.transport(f'{self.base_url}/v1/eval/chat', payload, self.timeout)
             if not isinstance(data, dict) or not isinstance(data.get('reply'), str):
                 raise AgentProtocolError('missing reply: expected a string')
             raw_steps = data.get('steps') or data.get('tool_calls') or data.get('trace') or []
@@ -131,7 +157,7 @@ class RestStepsClient:
                 state.update(data['state'])
             if isinstance(data.get('usage'), dict):
                 for key in usage:
-                    usage[key] += int(data['usage'].get(key, 0) or 0)
+                    usage[key] += _as_int(data['usage'].get(key))
             if data.get('trace_id'):
                 trace_id = str(data['trace_id'])
 
@@ -164,14 +190,7 @@ class OpenAICompatClient:
         self.transport = transport or self._post
 
     def _post(self, url: str, payload: dict[str, Any], timeout: float) -> Any:
-        response = requests.post(
-            url,
-            json=payload,
-            headers={'Authorization': f'Bearer {self.api_key}'},
-            timeout=timeout,
-        )
-        response.raise_for_status()
-        return response.json()
+        return _json_request('POST', url, payload, timeout, headers={'Authorization': f'Bearer {self.api_key}'})
 
     def chat(self, task: EvalTask, session_id: str) -> AgentTurn:
         data = self.transport(
@@ -190,9 +209,9 @@ class OpenAICompatClient:
             trace_id=None,
             state={},
             usage={
-                'input_tokens': usage.get('prompt_tokens', 0),
-                'output_tokens': usage.get('completion_tokens', 0),
-                'total_tokens': usage.get('total_tokens', 0),
+                'input_tokens': _as_int(usage.get('prompt_tokens')),
+                'output_tokens': _as_int(usage.get('completion_tokens')),
+                'total_tokens': _as_int(usage.get('total_tokens')),
             },
             trace_available=False,
         )
@@ -207,9 +226,7 @@ class HttpTaskClient:
         self.transport = transport or self._request
 
     def _request(self, method: str, url: str, json_body: dict[str, Any], timeout: float) -> Any:
-        response = requests.request(method, url, json=json_body, timeout=timeout)
-        response.raise_for_status()
-        return response.json()
+        return _json_request(method, url, json_body, timeout)
 
     def call(self, request: HttpRequestSpec) -> AgentTurn:
         method = request.method.upper()
@@ -245,7 +262,7 @@ def build_client(
     model: str = '',
     api_key: str = 'EMPTY',
     transport: Transport | None = None,
-) -> AgentClient:
+) -> AgentClient | HttpTaskClient:
     """Build the client for one task's exec envelope."""
     if exec_spec.type == 'http':
         return HttpTaskClient(base_url, transport=transport)
