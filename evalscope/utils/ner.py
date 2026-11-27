@@ -215,6 +215,39 @@ def extract_entities_from_text(text: str, reverse_entity_map: Dict[str, str]) ->
     return entities
 
 
+def _find_token_aligned(
+    original_text: str,
+    entity_text: str,
+    context_before: str,
+    context_after: str,
+    token_starts: List[int],
+    token_ends: List[int],
+) -> int:
+    """
+    Find the only occurrence of an entity that starts and ends on token boundaries.
+
+    Several such occurrences are narrowed down by the text surrounding the annotation.
+
+    Returns:
+        The start offset in the original text, or -1 if there is no single candidate
+    """
+    starts, ends = set(token_starts), set(token_ends)
+    candidates = [
+        match.start()
+        for match in re.finditer(f'(?={re.escape(entity_text)})', original_text)
+        if match.start() in starts and match.start() + len(entity_text) in ends
+    ]
+    before, after = context_before.strip(), context_after.strip()
+    if len(candidates) > 1 and (before or after):
+        candidates = [
+            start
+            for start in candidates
+            if original_text[:start].rstrip().endswith(before)
+            and original_text[start + len(entity_text) :].lstrip().startswith(after)
+        ]
+    return candidates[0] if len(candidates) == 1 else -1
+
+
 def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_map: Dict[str, str]) -> List[str]:
     """
     Convert XML-annotated text back to BIO tags aligned with the original tokens.
@@ -263,6 +296,7 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
         if not entity_text.strip():
             continue
         # Search for the text as written first; trim the padding only if that cannot be found.
+        trimmed = entity_text not in original_text and entity_text != entity_text.strip()
         if entity_text not in original_text:
             entity_text = entity_text.strip()
         # Text-preserving annotations give an exact offset, even for repeated names.
@@ -279,6 +313,14 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
         # Extract context without XML tags
         context_before = _TAG_PATTERN.sub('', xml_text[context_start:start_pos])
         context_after = _TAG_PATTERN.sub('', xml_text[end_pos:context_end])
+
+        # A match that only exists after trimming must cover whole tokens, and is skipped if still ambiguous.
+        if trimmed and entity_start == -1:
+            entity_start = _find_token_aligned(
+                original_text, entity_text, context_before, context_after, token_positions, token_ends
+            )
+            if entity_start == -1:
+                continue
 
         # Use context to find the correct entity position in original text
         search_pos = 0
