@@ -77,6 +77,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.11.27]** Added **BBEH**, **HLE-Diamond**, **Global-MMLU** and other benchmarks; enhanced evaluation diagnostics and performance-run comparisons; fixed scoring, data loading and model compatibility.
 - 🔥 **[2026.11.12]** Added **E2B remote sandboxes** with support for official E2B and Aliyun Agent Sandbox. Run benchmarks such as SWE-bench Agentic, HumanEval and LiveCodeBench in the cloud without local Docker. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - 🔥 **[2026.10.09]** Added **System One Choice evaluation** and **ANLI**, **BoolQ**, **BANKING77**, **ContractNLI**, **RewardBench v1** benchmarks. All five default to ModelScope and also support standard LLM evaluation. See [System One Evaluation](https://evalscope.readthedocs.io/en/latest/user_guides/systemone.html).
 - 🔥 **[2026.08.24] v1.11.0** Introduced published evaluation versions for reproducible benchmark results; improved report semantics and incomplete-run handling; strengthened multimodal media loading and task-config validation.
