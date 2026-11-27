@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "pretty_name": "CrossSum-IN",
+    "dataset_id": "google/IndicGenBench_crosssum_in",
+    "paper_url": "https://aclanthology.org/2024.acl-long.595/",
+    "tags": [
+      "MultiLingual"
+    ],
+    "metrics": [
+      "chrf"
+    ],
+    "few_shot_num": 1,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "en",
+      "as",
+      "awa",
+      "bgc",
+      "bho",
+      "bn",
+      "bo",
+      "brx",
+      "gbm",
+      "gom",
+      "gu",
+      "hi",
+      "hne",
+      "hoj",
+      "kn",
+      "mai",
+      "ml",
+      "mni",
+      "mr",
+      "mup",
+      "mwr",
+      "ne",
+      "or",
+      "pa",
+      "ps",
+      "sa",
+      "sat",
+      "ta",
+      "te",
+      "ur"
+    ],
+    "description": "\n## Overview\n\nCrossSum-IN evaluates summarization of English BBC news in English and 29 languages from India and nearby regions.\n\n## Task Description\n\n- **Task Type**: Cross-lingual Summarization\n- **Input**: A news article in English\n- **Output**: A one-sentence summary in the subset's language\n- **Domain**: BBC news\n\n## Key Features\n\n- 12,463 test articles across 30 summary-language subsets.\n- Uses the paper's prompt and one example from the same language's `train` split by default.\n\n## Evaluation Notes\n\n- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).\n- The `indic` category's `macro_score` gives equal weight to each language. Its `score` weights by sample count.\n- Articles are untruncated. The longest examples require a long context window.\n- Licensed for non-commercial use under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).\n",
+    "prompt_template": "I will first show a news article in English and then provide a summary of it in the {language} language.\n\nSummarize the following article: {article}\nSummary:",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "chrf",
+      "aggregation": "official",
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 12463,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 500,
+        "prompt_length_mean": 8916.97,
+        "prompt_length_min": 5066,
+        "prompt_length_max": 76155,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 138.25
+      },
+      {
+        "name": "as",
+        "sample_count": 500,
+        "prompt_length_mean": 8917.97,
+        "prompt_length_min": 5067,
+        "prompt_length_max": 76156,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 143.61
+      },
+      {
+        "name": "awa",
+        "sample_count": 500,
+        "prompt_length_mean": 5879.97,
+        "prompt_length_min": 2029,
+        "prompt_length_max": 73118,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 144.8
+      },
+      {
+        "name": "bgc",
+        "sample_count": 500,
+        "prompt_length_mean": 8224.97,
+        "prompt_length_min": 4374,
+        "prompt_length_max": 75463,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 137.26
+      },
+      {
+        "name": "bho",
+        "sample_count": 500,
+        "prompt_length_mean": 8043.97,
+        "prompt_length_min": 4193,
+        "prompt_length_max": 75282,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 133.81
+      },
+      {
+        "name": "bn",
+        "sample_count": 155,
+        "prompt_length_mean": 6583.78,
+        "prompt_length_min": 3341,
+        "prompt_length_max": 21182,
+        "prompt_length_std": 2332.95,
+        "target_length_mean": 155.18
+      },
+      {
+        "name": "bo",
+        "sample_count": 499,
+        "prompt_length_mean": 6299.98,
+        "prompt_length_min": 2445,
+        "prompt_length_max": 73534,
+        "prompt_length_std": 4010.07,
+        "target_length_mean": 147.65
+      },
+      {
+        "name": "brx",
+        "sample_count": 500,
+        "prompt_length_mean": 5661.97,
+        "prompt_length_min": 1811,
+        "prompt_length_max": 72900,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 157.78
+      },
+      {
+        "name": "gbm",
+        "sample_count": 500,
+        "prompt_length_mean": 9939.97,
+        "prompt_length_min": 6089,
+        "prompt_length_max": 77178,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 129.66
+      },
+      {
+        "name": "gom",
+        "sample_count": 500,
+        "prompt_length_mean": 6356.97,
+        "prompt_length_min": 2506,
+        "prompt_length_max": 73595,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 143.71
+      },
+      {
+        "name": "gu",
+        "sample_count": 104,
+        "prompt_length_mean": 11224.04,
+        "prompt_length_min": 7178,
+        "prompt_length_max": 77591,
+        "prompt_length_std": 7034.4,
+        "target_length_mean": 138.39
+      },
+      {
+        "name": "hi",
+        "sample_count": 481,
+        "prompt_length_mean": 7252.13,
+        "prompt_length_min": 3758,
+        "prompt_length_max": 74847,
+        "prompt_length_std": 3688.04,
+        "target_length_mean": 143.51
+      },
+      {
+        "name": "hne",
+        "sample_count": 499,
+        "prompt_length_mean": 7089.83,
+        "prompt_length_min": 3237,
+        "prompt_length_max": 74326,
+        "prompt_length_std": 4010.86,
+        "target_length_mean": 136.95
+      },
+      {
+        "name": "hoj",
+        "sample_count": 500,
+        "prompt_length_mean": 9224.97,
+        "prompt_length_min": 5374,
+        "prompt_length_max": 76463,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 126.34
+      },
+      {
+        "name": "kn",
+        "sample_count": 500,
+        "prompt_length_mean": 8913.97,
+        "prompt_length_min": 5063,
+        "prompt_length_max": 76152,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 155.28
+      },
+      {
+        "name": "mai",
+        "sample_count": 499,
+        "prompt_length_mean": 9254.26,
+        "prompt_length_min": 5404,
+        "prompt_length_max": 76493,
+        "prompt_length_std": 4011.04,
+        "target_length_mean": 138.82
+      },
+      {
+        "name": "ml",
+        "sample_count": 500,
+        "prompt_length_mean": 8941.97,
+        "prompt_length_min": 5091,
+        "prompt_length_max": 76180,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 164.47
+      },
+      {
+        "name": "mni",
+        "sample_count": 497,
+        "prompt_length_mean": 6706.51,
+        "prompt_length_min": 2855,
+        "prompt_length_max": 73944,
+        "prompt_length_std": 4017.66,
+        "target_length_mean": 142.36
+      },
+      {
+        "name": "mr",
+        "sample_count": 118,
+        "prompt_length_mean": 9623.2,
+        "prompt_length_min": 5447,
+        "prompt_length_max": 76164,
+        "prompt_length_std": 6650.72,
+        "target_length_mean": 172.03
+      },
+      {
+        "name": "mup",
+        "sample_count": 500,
+        "prompt_length_mean": 10125.97,
+        "prompt_length_min": 6275,
+        "prompt_length_max": 77364,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 144.11
+      },
+      {
+        "name": "mwr",
+        "sample_count": 500,
+        "prompt_length_mean": 10087.97,
+        "prompt_length_min": 6237,
+        "prompt_length_max": 77326,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 135.27
+      },
+      {
+        "name": "ne",
+        "sample_count": 163,
+        "prompt_length_mean": 8686.5,
+        "prompt_length_min": 5510,
+        "prompt_length_max": 17316,
+        "prompt_length_std": 2008.06,
+        "target_length_mean": 133.65
+      },
+      {
+        "name": "or",
+        "sample_count": 500,
+        "prompt_length_mean": 8932.97,
+        "prompt_length_min": 5082,
+        "prompt_length_max": 76171,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 145.95
+      },
+      {
+        "name": "pa",
+        "sample_count": 136,
+        "prompt_length_mean": 10065.45,
+        "prompt_length_min": 5956,
+        "prompt_length_max": 27075,
+        "prompt_length_std": 3317.58,
+        "target_length_mean": 143.29
+      },
+      {
+        "name": "ps",
+        "sample_count": 154,
+        "prompt_length_mean": 8983.71,
+        "prompt_length_min": 5350,
+        "prompt_length_max": 76439,
+        "prompt_length_std": 5941.56,
+        "target_length_mean": 147.59
+      },
+      {
+        "name": "sa",
+        "sample_count": 499,
+        "prompt_length_mean": 6341.02,
+        "prompt_length_min": 2488,
+        "prompt_length_max": 73577,
+        "prompt_length_std": 4010.81,
+        "target_length_mean": 142.98
+      },
+      {
+        "name": "sat",
+        "sample_count": 500,
+        "prompt_length_mean": 9233.97,
+        "prompt_length_min": 5383,
+        "prompt_length_max": 76472,
+        "prompt_length_std": 4007.05,
+        "target_length_mean": 147.07
+      },
+      {
+        "name": "ta",
+        "sample_count": 315,
+        "prompt_length_mean": 6187.91,
+        "prompt_length_min": 2738,
+        "prompt_length_max": 73435,
+        "prompt_length_std": 4482.88,
+        "target_length_mean": 178.49
+      },
+      {
+        "name": "te",
+        "sample_count": 212,
+        "prompt_length_mean": 13614.55,
+        "prompt_length_min": 9163,
+        "prompt_length_max": 80198,
+        "prompt_length_std": 5361.15,
+        "target_length_mean": 159.7
+      },
+      {
+        "name": "ur",
+        "sample_count": 632,
+        "prompt_length_mean": 9770.29,
+        "prompt_length_min": 6269,
+        "prompt_length_max": 77358,
+        "prompt_length_std": 4271.99,
+        "target_length_mean": 151.94
+      }
+    ],
+    "prompt_length": {
+      "mean": 8303.71,
+      "min": 1811,
+      "max": 80198,
+      "std": 4404.89
+    },
+    "target_length_mean": 144.82,
+    "computed_at": "2026-11-27T17:18:39.781325"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7d9c3fa5",
+          "content": "I will first show a news article in English and then provide a summary of it in the English language.\n\nSummarize the following article: Dave LeeNorth America technology reporter Twitter said it removed 936 accounts it said were being used to  ... [TRUNCATED 11284 chars] ... y expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter\nSummary:"
+        }
+      ],
+      "target": "When it comes to vaccine making, India is a powerhouse.",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "article": "Soutik BiswasIndia correspondent It runs a massive immunisation programme, makes 60% of the world's vaccines and is home to half a dozen major manufacturers, including Serum Institute of India - the largest in the world. Not surprisingly, the ... [TRUNCATED 6503 chars] ... ld be very expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter",
+        "language": "en",
+        "language_name": "English",
+        "source_url": "https://www.bbc.com/news/world-asia-india-55048925",
+        "target_url": "https://www.bbc.com/news/world-asia-india-55048925"
+      }
+    },
+    "subset": "en",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# CrossSum-IN\n\n\n## Overview\n\nCrossSum-IN evaluates summarization of English BBC news in English and 29 languages from India and nearby regions.\n\n## Task Description\n\n- **Task Type**: Cross-lingual Summarization\n- **Input**: A news article in English\n- **Output**: A one-sentence summary in the subset's language\n- **Domain**: BBC news\n\n## Key Features\n\n- 12,463 test articles across 30 summary-language subsets.\n- Uses the paper's prompt and one example from the same language's `train` split by default.\n\n## Evaluation Notes\n\n- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).\n- The `indic` category's `macro_score` gives equal weight to each language. Its `score` weights by sample count.\n- Articles are untruncated. The longest examples require a long context window.\n- Licensed for non-commercial use under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `crosssum_in` |\n| **Dataset ID** | [google/IndicGenBench_crosssum_in](https://modelscope.cn/datasets/google/IndicGenBench_crosssum_in/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-long.595/) |\n| **Tags** | `MultiLingual` |\n| **Metrics** | `chrf` |\n| **Default Shots** | 1-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 12,463 |\n| Prompt Length (Mean) | 8303.71 chars |\n| Prompt Length (Min/Max) | 1811 / 80198 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 500 | 8916.97 | 5066 | 76155 |\n| `as` | 500 | 8917.97 | 5067 | 76156 |\n| `awa` | 500 | 5879.97 | 2029 | 73118 |\n| `bgc` | 500 | 8224.97 | 4374 | 75463 |\n| `bho` | 500 | 8043.97 | 4193 | 75282 |\n| `bn` | 155 | 6583.78 | 3341 | 21182 |\n| `bo` | 499 | 6299.98 | 2445 | 73534 |\n| `brx` | 500 | 5661.97 | 1811 | 72900 |\n| `gbm` | 500 | 9939.97 | 6089 | 77178 |\n| `gom` | 500 | 6356.97 | 2506 | 73595 |\n| `gu` | 104 | 11224.04 | 7178 | 77591 |\n| `hi` | 481 | 7252.13 | 3758 | 74847 |\n| `hne` | 499 | 7089.83 | 3237 | 74326 |\n| `hoj` | 500 | 9224.97 | 5374 | 76463 |\n| `kn` | 500 | 8913.97 | 5063 | 76152 |\n| `mai` | 499 | 9254.26 | 5404 | 76493 |\n| `ml` | 500 | 8941.97 | 5091 | 76180 |\n| `mni` | 497 | 6706.51 | 2855 | 73944 |\n| `mr` | 118 | 9623.2 | 5447 | 76164 |\n| `mup` | 500 | 10125.97 | 6275 | 77364 |\n| `mwr` | 500 | 10087.97 | 6237 | 77326 |\n| `ne` | 163 | 8686.5 | 5510 | 17316 |\n| `or` | 500 | 8932.97 | 5082 | 76171 |\n| `pa` | 136 | 10065.45 | 5956 | 27075 |\n| `ps` | 154 | 8983.71 | 5350 | 76439 |\n| `sa` | 499 | 6341.02 | 2488 | 73577 |\n| `sat` | 500 | 9233.97 | 5383 | 76472 |\n| `ta` | 315 | 6187.91 | 2738 | 73435 |\n| `te` | 212 | 13614.55 | 9163 | 80198 |\n| `ur` | 632 | 9770.29 | 6269 | 77358 |\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7d9c3fa5\",\n      \"content\": \"I will first show a news article in English and then provide a summary of it in the English language.\\n\\nSummarize the following article: Dave LeeNorth America technology reporter Twitter said it removed 936 accounts it said were being used to  ... [TRUNCATED 11284 chars] ... y expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter\\nSummary:\"\n    }\n  ],\n  \"target\": \"When it comes to vaccine making, India is a powerhouse.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"article\": \"Soutik BiswasIndia correspondent It runs a massive immunisation programme, makes 60% of the world's vaccines and is home to half a dozen major manufacturers, including Serum Institute of India - the largest in the world. Not surprisingly, the ... [TRUNCATED 6503 chars] ... ld be very expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter\",\n    \"language\": \"en\",\n    \"language_name\": \"English\",\n    \"source_url\": \"https://www.bbc.com/news/world-asia-india-55048925\",\n    \"target_url\": \"https://www.bbc.com/news/world-asia-india-55048925\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nI will first show a news article in English and then provide a summary of it in the {language} language.\n\nSummarize the following article: {article}\nSummary:\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets crosssum_in \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['crosssum_in'],\n    dataset_args={\n        'crosssum_in': {\n            # subset_list: ['en', 'as', 'awa']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CrossSum-IN\n\n\n## 概述\n\nCrossSum-IN 评估对英语 BBC 新闻进行摘要的能力，输出语言为英语以及来自印度及周边地区的 29 种语言。\n\n## 任务描述\n\n- **任务类型**: 跨语言摘要\n- **输入**: 一篇英语新闻文章\n- **输出**: 使用子集对应语言生成的一句话摘要\n- **领域**: BBC 新闻\n\n## 主要特点\n\n- 包含 12,463 篇测试文章，分布在 30 个摘要语言子集中。\n- 默认使用论文中的提示词以及同一语言 `train` 划分中的一个示例。\n\n## 评估说明\n\n- 使用语料库 SacreBLEU chrF（字符顺序 6，单词顺序 0，beta 2）对第一个非空行进行评分。\n- `indic` 类别的 `macro_score` 对每种语言赋予相等的权重。其 `score` 则根据样本数量进行加权。\n- 文章未经截断处理。最长的示例需要较长的上下文窗口。\n- 在 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可下用于非商业用途。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `crosssum_in` |\n| **数据集ID** | [google/IndicGenBench_crosssum_in](https://modelscope.cn/datasets/google/IndicGenBench_crosssum_in/summary) |\n| **论文** | [Paper](https://aclanthology.org/2024.acl-long.595/) |\n| **标签** | `MultiLingual` |\n| **指标** | `chrf` |\n| **默认示例数** | 1-shot |\n| **评估划分** | `test` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 12,463 |\n| 提示词长度 (平均值) | 8303.71 字符 |\n| 提示词长度 (最小/最大值) | 1811 / 80198 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `en` | 500 | 8916.97 | 5066 | 76155 |\n| `as` | 500 | 8917.97 | 5067 | 76156 |\n| `awa` | 500 | 5879.97 | 2029 | 73118 |\n| `bgc` | 500 | 8224.97 | 4374 | 75463 |\n| `bho` | 500 | 8043.97 | 4193 | 75282 |\n| `bn` | 155 | 6583.78 | 3341 | 21182 |\n| `bo` | 499 | 6299.98 | 2445 | 73534 |\n| `brx` | 500 | 5661.97 | 1811 | 72900 |\n| `gbm` | 500 | 9939.97 | 6089 | 77178 |\n| `gom` | 500 | 6356.97 | 2506 | 73595 |\n| `gu` | 104 | 11224.04 | 7178 | 77591 |\n| `hi` | 481 | 7252.13 | 3758 | 74847 |\n| `hne` | 499 | 7089.83 | 3237 | 74326 |\n| `hoj` | 500 | 9224.97 | 5374 | 76463 |\n| `kn` | 500 | 8913.97 | 5063 | 76152 |\n| `mai` | 499 | 9254.26 | 5404 | 76493 |\n| `ml` | 500 | 8941.97 | 5091 | 76180 |\n| `mni` | 497 | 6706.51 | 2855 | 73944 |\n| `mr` | 118 | 9623.2 | 5447 | 76164 |\n| `mup` | 500 | 10125.97 | 6275 | 77364 |\n| `mwr` | 500 | 10087.97 | 6237 | 77326 |\n| `ne` | 163 | 8686.5 | 5510 | 17316 |\n| `or` | 500 | 8932.97 | 5082 | 76171 |\n| `pa` | 136 | 10065.45 | 5956 | 27075 |\n| `ps` | 154 | 8983.71 | 5350 | 76439 |\n| `sa` | 499 | 6341.02 | 2488 | 73577 |\n| `sat` | 500 | 9233.97 | 5383 | 76472 |\n| `ta` | 315 | 6187.91 | 2738 | 73435 |\n| `te` | 212 | 13614.55 | 9163 | 80198 |\n| `ur` | 632 | 9770.29 | 6269 | 77358 |\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7d9c3fa5\",\n      \"content\": \"I will first show a news article in English and then provide a summary of it in the English language.\\n\\nSummarize the following article: Dave LeeNorth America technology reporter Twitter said it removed 936 accounts it said were being used to  ... [TRUNCATED 11284 chars] ... y expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter\\nSummary:\"\n    }\n  ],\n  \"target\": \"When it comes to vaccine making, India is a powerhouse.\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"article\": \"Soutik BiswasIndia correspondent It runs a massive immunisation programme, makes 60% of the world's vaccines and is home to half a dozen major manufacturers, including Serum Institute of India - the largest in the world. Not surprisingly, the ... [TRUNCATED 6503 chars] ... ld be very expensive. That's why, says Gagandeep Kang, a good vaccine for India should cost below 50 cents a shot, be plentifully available and delivered as a single dose. What do I need to know about the coronavirus? Follow Soutik on Twitter\",\n    \"language\": \"en\",\n    \"language_name\": \"English\",\n    \"source_url\": \"https://www.bbc.com/news/world-asia-india-55048925\",\n    \"target_url\": \"https://www.bbc.com/news/world-asia-india-55048925\"\n  }\n}\n```\n\n*注意：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板:**\n```text\nI will first show a news article in English and then provide a summary of it in the {language} language.\n\nSummarize the following article: {article}\nSummary:\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets crosssum_in \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['crosssum_in'],\n    dataset_args={\n        'crosssum_in': {\n            # subset_list: ['en', 'as', 'awa']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4dbfb0ae7266a268cdad6ec33a2910f7",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-27T17:18:40.963291",
+  "translation_updated_at": "2026-11-27T17:18:45"
+}

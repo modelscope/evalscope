@@ -1,0 +1,654 @@
+{
+  "meta": {
+    "pretty_name": "FLORES-IN",
+    "dataset_id": "google/IndicGenBench_flores_in",
+    "paper_url": "https://aclanthology.org/2024.acl-long.595/",
+    "tags": [
+      "MultiLingual",
+      "MachineTranslation"
+    ],
+    "metrics": [
+      "chrf"
+    ],
+    "few_shot_num": 1,
+    "eval_split": "test",
+    "train_split": "dev",
+    "subset_list": [
+      "en-as",
+      "en-awa",
+      "en-bgc",
+      "en-bho",
+      "en-bn",
+      "en-bo",
+      "en-brx",
+      "en-gbm",
+      "en-gom",
+      "en-gu",
+      "en-hi",
+      "en-hne",
+      "en-hoj",
+      "en-kn",
+      "en-mai",
+      "en-ml",
+      "en-mni",
+      "en-mr",
+      "en-mup",
+      "en-mwr",
+      "en-ne",
+      "en-or",
+      "en-pa",
+      "en-ps",
+      "en-sa",
+      "en-sat",
+      "en-ta",
+      "en-te",
+      "en-ur",
+      "as-en",
+      "awa-en",
+      "bgc-en",
+      "bho-en",
+      "bn-en",
+      "bo-en",
+      "brx-en",
+      "gbm-en",
+      "gom-en",
+      "gu-en",
+      "hi-en",
+      "hne-en",
+      "hoj-en",
+      "kn-en",
+      "mai-en",
+      "ml-en",
+      "mni-en",
+      "mr-en",
+      "mup-en",
+      "mwr-en",
+      "ne-en",
+      "or-en",
+      "pa-en",
+      "ps-en",
+      "sa-en",
+      "sat-en",
+      "ta-en",
+      "te-en",
+      "ur-en"
+    ],
+    "description": "\n## Overview\n\nFLORES-IN evaluates translation between English and 29 languages from India and nearby regions.\n\n## Task Description\n\n- **Task Type**: Machine Translation\n- **Input**: A sentence in English (`en-xx` subsets) or in the paired language (`xx-en` subsets)\n- **Output**: Its translation into the other language\n- **Domain**: General-domain translation between English and 29 languages from India and nearby regions\n\n## Key Features\n\n- 58,696 test sentences across 58 subsets, one for each language and direction.\n- Uses the paper's prompt and one example from the same subset's `dev` split by default.\n\n## Evaluation Notes\n\n- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).\n- Each direction's `macro_score` gives equal weight to its 29 languages.\n- Licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).\n",
+    "prompt_template": "Translate the following:\n\nTo {language}: {source}\nOutput:",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "chrf",
+      "aggregation": "official",
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 58696,
+    "subset_stats": [
+      {
+        "name": "en-as",
+        "sample_count": 1012,
+        "prompt_length_mean": 581.4,
+        "prompt_length_min": 486,
+        "prompt_length_max": 819,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 124.44
+      },
+      {
+        "name": "en-awa",
+        "sample_count": 1012,
+        "prompt_length_mean": 554.4,
+        "prompt_length_min": 459,
+        "prompt_length_max": 792,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 126.65
+      },
+      {
+        "name": "en-bgc",
+        "sample_count": 1012,
+        "prompt_length_mean": 425.4,
+        "prompt_length_min": 330,
+        "prompt_length_max": 663,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 124.0
+      },
+      {
+        "name": "en-bho",
+        "sample_count": 1012,
+        "prompt_length_mean": 566.4,
+        "prompt_length_min": 471,
+        "prompt_length_max": 804,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 127.09
+      },
+      {
+        "name": "en-bn",
+        "sample_count": 1012,
+        "prompt_length_mean": 389.4,
+        "prompt_length_min": 294,
+        "prompt_length_max": 627,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 127.51
+      },
+      {
+        "name": "en-bo",
+        "sample_count": 1012,
+        "prompt_length_mean": 491.4,
+        "prompt_length_min": 396,
+        "prompt_length_max": 729,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 146.39
+      },
+      {
+        "name": "en-brx",
+        "sample_count": 1012,
+        "prompt_length_mean": 436.4,
+        "prompt_length_min": 341,
+        "prompt_length_max": 674,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 143.85
+      },
+      {
+        "name": "en-gbm",
+        "sample_count": 1012,
+        "prompt_length_mean": 441.4,
+        "prompt_length_min": 346,
+        "prompt_length_max": 679,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 127.53
+      },
+      {
+        "name": "en-gom",
+        "sample_count": 1012,
+        "prompt_length_mean": 441.4,
+        "prompt_length_min": 346,
+        "prompt_length_max": 679,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 125.71
+      },
+      {
+        "name": "en-gu",
+        "sample_count": 1012,
+        "prompt_length_mean": 493.4,
+        "prompt_length_min": 398,
+        "prompt_length_max": 731,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 124.93
+      },
+      {
+        "name": "en-hi",
+        "sample_count": 1012,
+        "prompt_length_mean": 401.4,
+        "prompt_length_min": 306,
+        "prompt_length_max": 639,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 129.5
+      },
+      {
+        "name": "en-hne",
+        "sample_count": 1012,
+        "prompt_length_mean": 554.4,
+        "prompt_length_min": 459,
+        "prompt_length_max": 792,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 125.43
+      },
+      {
+        "name": "en-hoj",
+        "sample_count": 1012,
+        "prompt_length_mean": 425.4,
+        "prompt_length_min": 330,
+        "prompt_length_max": 663,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 128.48
+      },
+      {
+        "name": "en-kn",
+        "sample_count": 1012,
+        "prompt_length_mean": 507.4,
+        "prompt_length_min": 412,
+        "prompt_length_max": 745,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 136.4
+      },
+      {
+        "name": "en-mai",
+        "sample_count": 1012,
+        "prompt_length_mean": 418.4,
+        "prompt_length_min": 323,
+        "prompt_length_max": 656,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 127.87
+      },
+      {
+        "name": "en-ml",
+        "sample_count": 1012,
+        "prompt_length_mean": 454.4,
+        "prompt_length_min": 359,
+        "prompt_length_max": 692,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 147.57
+      },
+      {
+        "name": "en-mni",
+        "sample_count": 1012,
+        "prompt_length_mean": 540.4,
+        "prompt_length_min": 445,
+        "prompt_length_max": 778,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 135.16
+      },
+      {
+        "name": "en-mr",
+        "sample_count": 1012,
+        "prompt_length_mean": 398.4,
+        "prompt_length_min": 303,
+        "prompt_length_max": 636,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 131.47
+      },
+      {
+        "name": "en-mup",
+        "sample_count": 1012,
+        "prompt_length_mean": 422.4,
+        "prompt_length_min": 327,
+        "prompt_length_max": 660,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 128.53
+      },
+      {
+        "name": "en-mwr",
+        "sample_count": 1012,
+        "prompt_length_mean": 421.4,
+        "prompt_length_min": 326,
+        "prompt_length_max": 659,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 130.22
+      },
+      {
+        "name": "en-ne",
+        "sample_count": 1012,
+        "prompt_length_mean": 422.4,
+        "prompt_length_min": 327,
+        "prompt_length_max": 660,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 125.4
+      },
+      {
+        "name": "en-or",
+        "sample_count": 1012,
+        "prompt_length_mean": 386.4,
+        "prompt_length_min": 291,
+        "prompt_length_max": 624,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 133.24
+      },
+      {
+        "name": "en-pa",
+        "sample_count": 1012,
+        "prompt_length_mean": 448.4,
+        "prompt_length_min": 353,
+        "prompt_length_max": 686,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 131.84
+      },
+      {
+        "name": "en-ps",
+        "sample_count": 1012,
+        "prompt_length_mean": 496.4,
+        "prompt_length_min": 401,
+        "prompt_length_max": 734,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 121.0
+      },
+      {
+        "name": "en-sa",
+        "sample_count": 1012,
+        "prompt_length_mean": 423.4,
+        "prompt_length_min": 328,
+        "prompt_length_max": 661,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 126.74
+      },
+      {
+        "name": "en-sat",
+        "sample_count": 1012,
+        "prompt_length_mean": 400.4,
+        "prompt_length_min": 305,
+        "prompt_length_max": 638,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 138.13
+      },
+      {
+        "name": "en-ta",
+        "sample_count": 1012,
+        "prompt_length_mean": 558.4,
+        "prompt_length_min": 463,
+        "prompt_length_max": 796,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 152.31
+      },
+      {
+        "name": "en-te",
+        "sample_count": 1012,
+        "prompt_length_mean": 432.4,
+        "prompt_length_min": 337,
+        "prompt_length_max": 670,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 130.9
+      },
+      {
+        "name": "en-ur",
+        "sample_count": 1012,
+        "prompt_length_mean": 459.4,
+        "prompt_length_min": 364,
+        "prompt_length_max": 697,
+        "prompt_length_std": 44.69,
+        "target_length_mean": 128.38
+      },
+      {
+        "name": "as-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 488.44,
+        "prompt_length_min": 399,
+        "prompt_length_max": 693,
+        "prompt_length_std": 43.73,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "awa-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 635.65,
+        "prompt_length_min": 543,
+        "prompt_length_max": 887,
+        "prompt_length_std": 46.75,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "bgc-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 417.0,
+        "prompt_length_min": 331,
+        "prompt_length_max": 625,
+        "prompt_length_std": 43.91,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "bho-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 325.09,
+        "prompt_length_min": 234,
+        "prompt_length_max": 565,
+        "prompt_length_std": 47.26,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "bn-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 461.51,
+        "prompt_length_min": 372,
+        "prompt_length_max": 667,
+        "prompt_length_std": 45.21,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "bo-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 661.39,
+        "prompt_length_min": 557,
+        "prompt_length_max": 946,
+        "prompt_length_std": 52.0,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "brx-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 455.85,
+        "prompt_length_min": 348,
+        "prompt_length_max": 708,
+        "prompt_length_std": 51.58,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "gbm-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 436.53,
+        "prompt_length_min": 347,
+        "prompt_length_max": 642,
+        "prompt_length_std": 45.65,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "gom-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 436.71,
+        "prompt_length_min": 348,
+        "prompt_length_max": 646,
+        "prompt_length_std": 44.41,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "gu-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 483.93,
+        "prompt_length_min": 397,
+        "prompt_length_max": 708,
+        "prompt_length_std": 44.61,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "hi-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 424.5,
+        "prompt_length_min": 336,
+        "prompt_length_max": 676,
+        "prompt_length_std": 46.14,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "hne-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 465.43,
+        "prompt_length_min": 382,
+        "prompt_length_max": 666,
+        "prompt_length_std": 44.66,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "hoj-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 417.48,
+        "prompt_length_min": 327,
+        "prompt_length_max": 627,
+        "prompt_length_std": 46.15,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "kn-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 450.4,
+        "prompt_length_min": 357,
+        "prompt_length_max": 702,
+        "prompt_length_std": 49.02,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "mai-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 555.87,
+        "prompt_length_min": 464,
+        "prompt_length_max": 778,
+        "prompt_length_std": 45.25,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "ml-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 387.57,
+        "prompt_length_min": 288,
+        "prompt_length_max": 616,
+        "prompt_length_std": 52.56,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "mni-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 424.16,
+        "prompt_length_min": 327,
+        "prompt_length_max": 642,
+        "prompt_length_std": 47.87,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "mr-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 435.47,
+        "prompt_length_min": 338,
+        "prompt_length_max": 659,
+        "prompt_length_std": 46.38,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "mup-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 424.53,
+        "prompt_length_min": 336,
+        "prompt_length_max": 636,
+        "prompt_length_std": 45.55,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "mwr-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 421.22,
+        "prompt_length_min": 326,
+        "prompt_length_max": 636,
+        "prompt_length_std": 46.25,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "ne-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 431.4,
+        "prompt_length_min": 340,
+        "prompt_length_max": 668,
+        "prompt_length_std": 44.3,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "or-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 535.24,
+        "prompt_length_min": 440,
+        "prompt_length_max": 756,
+        "prompt_length_std": 47.15,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "pa-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 490.84,
+        "prompt_length_min": 396,
+        "prompt_length_max": 739,
+        "prompt_length_std": 47.4,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "ps-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 461.0,
+        "prompt_length_min": 375,
+        "prompt_length_max": 665,
+        "prompt_length_std": 42.29,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "sa-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 561.74,
+        "prompt_length_min": 468,
+        "prompt_length_max": 793,
+        "prompt_length_std": 44.32,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "sat-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 465.13,
+        "prompt_length_min": 370,
+        "prompt_length_max": 693,
+        "prompt_length_std": 46.98,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "ta-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 475.31,
+        "prompt_length_min": 371,
+        "prompt_length_max": 727,
+        "prompt_length_std": 52.7,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "te-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 348.9,
+        "prompt_length_min": 257,
+        "prompt_length_max": 577,
+        "prompt_length_std": 45.58,
+        "target_length_mean": 130.4
+      },
+      {
+        "name": "ur-en",
+        "sample_count": 1012,
+        "prompt_length_mean": 408.38,
+        "prompt_length_min": 314,
+        "prompt_length_max": 628,
+        "prompt_length_std": 45.45,
+        "target_length_mean": 130.4
+      }
+    ],
+    "prompt_length": {
+      "mean": 461.71,
+      "min": 234,
+      "max": 946,
+      "std": 79.75
+    },
+    "target_length_mean": 130.83,
+    "computed_at": "2026-11-27T17:18:41.834651"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7c97bce9",
+          "content": "Translate the following:\n\nTo Assamese: In the 1480s, when its construction was begun by Lord Hastings, the country was relatively peaceful and defense was only required against small bands of roving marauders.\nOutput: 1480 চনত লর্ড হেষ্টিংছে  ... [TRUNCATED 105 chars] ... াওডাৰৰ সৰু সৰু গোটৰ বিৰুদ্ধেহে সেনেবাহিনীৰ দৰকাৰ হৈছিল।\n\nTranslate the following:\n\nTo Assamese: Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\nOutput:"
+        }
+      ],
+      "target": "উপসংস্কৃতিসমূহে ব্যক্তি বিশেষৰ একেলগে থকা মনোভাৱ আনি দিয়ে যিসকলে সমাজৰ পৰা অৱহেলাৰ সন্মুখীন হৈছিল আৰু তেওঁলোকক নিজা পৰিচয়ৰ মনোভাৱ বিকশিত কৰাত সহায় কৰে।",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "source": "Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.",
+        "source_language": "en",
+        "target_language": "as",
+        "target_language_name": "Assamese"
+      }
+    },
+    "subset": "en-as",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# FLORES-IN\n\n\n## Overview\n\nFLORES-IN evaluates translation between English and 29 languages from India and nearby regions.\n\n## Task Description\n\n- **Task Type**: Machine Translation\n- **Input**: A sentence in English (`en-xx` subsets) or in the paired language (`xx-en` subsets)\n- **Output**: Its translation into the other language\n- **Domain**: General-domain translation between English and 29 languages from India and nearby regions\n\n## Key Features\n\n- 58,696 test sentences across 58 subsets, one for each language and direction.\n- Uses the paper's prompt and one example from the same subset's `dev` split by default.\n\n## Evaluation Notes\n\n- Scores the first non-empty line using corpus SacreBLEU chrF (character order 6, word order 0, beta 2).\n- Each direction's `macro_score` gives equal weight to its 29 languages.\n- Licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `flores_in` |\n| **Dataset ID** | [google/IndicGenBench_flores_in](https://modelscope.cn/datasets/google/IndicGenBench_flores_in/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2024.acl-long.595/) |\n| **Tags** | `MachineTranslation`, `MultiLingual` |\n| **Metrics** | `chrf` |\n| **Default Shots** | 1-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `dev` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 58,696 |\n| Prompt Length (Mean) | 461.71 chars |\n| Prompt Length (Min/Max) | 234 / 946 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en-as` | 1,012 | 581.4 | 486 | 819 |\n| `en-awa` | 1,012 | 554.4 | 459 | 792 |\n| `en-bgc` | 1,012 | 425.4 | 330 | 663 |\n| `en-bho` | 1,012 | 566.4 | 471 | 804 |\n| `en-bn` | 1,012 | 389.4 | 294 | 627 |\n| `en-bo` | 1,012 | 491.4 | 396 | 729 |\n| `en-brx` | 1,012 | 436.4 | 341 | 674 |\n| `en-gbm` | 1,012 | 441.4 | 346 | 679 |\n| `en-gom` | 1,012 | 441.4 | 346 | 679 |\n| `en-gu` | 1,012 | 493.4 | 398 | 731 |\n| `en-hi` | 1,012 | 401.4 | 306 | 639 |\n| `en-hne` | 1,012 | 554.4 | 459 | 792 |\n| `en-hoj` | 1,012 | 425.4 | 330 | 663 |\n| `en-kn` | 1,012 | 507.4 | 412 | 745 |\n| `en-mai` | 1,012 | 418.4 | 323 | 656 |\n| `en-ml` | 1,012 | 454.4 | 359 | 692 |\n| `en-mni` | 1,012 | 540.4 | 445 | 778 |\n| `en-mr` | 1,012 | 398.4 | 303 | 636 |\n| `en-mup` | 1,012 | 422.4 | 327 | 660 |\n| `en-mwr` | 1,012 | 421.4 | 326 | 659 |\n| `en-ne` | 1,012 | 422.4 | 327 | 660 |\n| `en-or` | 1,012 | 386.4 | 291 | 624 |\n| `en-pa` | 1,012 | 448.4 | 353 | 686 |\n| `en-ps` | 1,012 | 496.4 | 401 | 734 |\n| `en-sa` | 1,012 | 423.4 | 328 | 661 |\n| `en-sat` | 1,012 | 400.4 | 305 | 638 |\n| `en-ta` | 1,012 | 558.4 | 463 | 796 |\n| `en-te` | 1,012 | 432.4 | 337 | 670 |\n| `en-ur` | 1,012 | 459.4 | 364 | 697 |\n| `as-en` | 1,012 | 488.44 | 399 | 693 |\n| `awa-en` | 1,012 | 635.65 | 543 | 887 |\n| `bgc-en` | 1,012 | 417.0 | 331 | 625 |\n| `bho-en` | 1,012 | 325.09 | 234 | 565 |\n| `bn-en` | 1,012 | 461.51 | 372 | 667 |\n| `bo-en` | 1,012 | 661.39 | 557 | 946 |\n| `brx-en` | 1,012 | 455.85 | 348 | 708 |\n| `gbm-en` | 1,012 | 436.53 | 347 | 642 |\n| `gom-en` | 1,012 | 436.71 | 348 | 646 |\n| `gu-en` | 1,012 | 483.93 | 397 | 708 |\n| `hi-en` | 1,012 | 424.5 | 336 | 676 |\n| `hne-en` | 1,012 | 465.43 | 382 | 666 |\n| `hoj-en` | 1,012 | 417.48 | 327 | 627 |\n| `kn-en` | 1,012 | 450.4 | 357 | 702 |\n| `mai-en` | 1,012 | 555.87 | 464 | 778 |\n| `ml-en` | 1,012 | 387.57 | 288 | 616 |\n| `mni-en` | 1,012 | 424.16 | 327 | 642 |\n| `mr-en` | 1,012 | 435.47 | 338 | 659 |\n| `mup-en` | 1,012 | 424.53 | 336 | 636 |\n| `mwr-en` | 1,012 | 421.22 | 326 | 636 |\n| `ne-en` | 1,012 | 431.4 | 340 | 668 |\n| `or-en` | 1,012 | 535.24 | 440 | 756 |\n| `pa-en` | 1,012 | 490.84 | 396 | 739 |\n| `ps-en` | 1,012 | 461.0 | 375 | 665 |\n| `sa-en` | 1,012 | 561.74 | 468 | 793 |\n| `sat-en` | 1,012 | 465.13 | 370 | 693 |\n| `ta-en` | 1,012 | 475.31 | 371 | 727 |\n| `te-en` | 1,012 | 348.9 | 257 | 577 |\n| `ur-en` | 1,012 | 408.38 | 314 | 628 |\n\n## Sample Example\n\n**Subset**: `en-as`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7c97bce9\",\n      \"content\": \"Translate the following:\\n\\nTo Assamese: In the 1480s, when its construction was begun by Lord Hastings, the country was relatively peaceful and defense was only required against small bands of roving marauders.\\nOutput: 1480 চনত লর্ড হেষ্টিংছে  ... [TRUNCATED 105 chars] ... াওডাৰৰ সৰু সৰু গোটৰ বিৰুদ্ধেহে সেনেবাহিনীৰ দৰকাৰ হৈছিল।\\n\\nTranslate the following:\\n\\nTo Assamese: Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\\nOutput:\"\n    }\n  ],\n  \"target\": \"উপসংস্কৃতিসমূহে ব্যক্তি বিশেষৰ একেলগে থকা মনোভাৱ আনি দিয়ে যিসকলে সমাজৰ পৰা অৱহেলাৰ সন্মুখীন হৈছিল আৰু তেওঁলোকক নিজা পৰিচয়ৰ মনোভাৱ বিকশিত কৰাত সহায় কৰে।\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"source\": \"Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\",\n    \"source_language\": \"en\",\n    \"target_language\": \"as\",\n    \"target_language_name\": \"Assamese\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nTranslate the following:\n\nTo {language}: {source}\nOutput:\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets flores_in \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['flores_in'],\n    dataset_args={\n        'flores_in': {\n            # subset_list: ['en-as', 'en-awa', 'en-bgc']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# FLORES-IN\n\n## 概述\n\nFLORES-IN 评估英语与印度及周边地区29种语言之间的翻译能力。\n\n## 任务描述\n\n- **任务类型**：机器翻译\n- **输入**：一个英文句子（`en-xx` 子集）或配对语言的句子（`xx-en` 子集）\n- **输出**：该句子翻译成另一种语言的结果\n- **领域**：英语与来自印度及周边地区的29种语言之间的通用领域翻译\n\n## 主要特点\n\n- 包含 58,696 个测试句子，分布在 58 个子集中，每个子集对应一种语言和翻译方向。\n- 默认使用论文中的提示词以及来自同一子集 `dev` 拆分的一个示例。\n\n## 评估说明\n\n- 使用语料库 SacreBLEU chrF（字符顺序为 6，单词顺序为 0，beta 为 2）对第一个非空行进行评分。\n- 每个方向的 `macro_score` 对其包含的 29 种语言赋予相等的权重。\n- 根据 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可发布。\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `flores_in` |\n| **数据集ID** | [google/IndicGenBench_flores_in](https://modelscope.cn/datasets/google/IndicGenBench_flores_in/summary) |\n| **论文** | [Paper](https://aclanthology.org/2024.acl-long.595/) |\n| **标签** | `MachineTranslation`, `MultiLingual` |\n| **指标** | `chrf` |\n| **默认示例数** | 1-shot |\n| **评估划分** | `test` |\n| **训练划分** | `dev` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 58,696 |\n| 提示词长度（平均值） | 461.71 字符 |\n| 提示词长度（最小/最大） | 234 / 946 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `en-as` | 1,012 | 581.4 | 486 | 819 |\n| `en-awa` | 1,012 | 554.4 | 459 | 792 |\n| `en-bgc` | 1,012 | 425.4 | 330 | 663 |\n| `en-bho` | 1,012 | 566.4 | 471 | 804 |\n| `en-bn` | 1,012 | 389.4 | 294 | 627 |\n| `en-bo` | 1,012 | 491.4 | 396 | 729 |\n| `en-brx` | 1,012 | 436.4 | 341 | 674 |\n| `en-gbm` | 1,012 | 441.4 | 346 | 679 |\n| `en-gom` | 1,012 | 441.4 | 346 | 679 |\n| `en-gu` | 1,012 | 493.4 | 398 | 731 |\n| `en-hi` | 1,012 | 401.4 | 306 | 639 |\n| `en-hne` | 1,012 | 554.4 | 459 | 792 |\n| `en-hoj` | 1,012 | 425.4 | 330 | 663 |\n| `en-kn` | 1,012 | 507.4 | 412 | 745 |\n| `en-mai` | 1,012 | 418.4 | 323 | 656 |\n| `en-ml` | 1,012 | 454.4 | 359 | 692 |\n| `en-mni` | 1,012 | 540.4 | 445 | 778 |\n| `en-mr` | 1,012 | 398.4 | 303 | 636 |\n| `en-mup` | 1,012 | 422.4 | 327 | 660 |\n| `en-mwr` | 1,012 | 421.4 | 326 | 659 |\n| `en-ne` | 1,012 | 422.4 | 327 | 660 |\n| `en-or` | 1,012 | 386.4 | 291 | 624 |\n| `en-pa` | 1,012 | 448.4 | 353 | 686 |\n| `en-ps` | 1,012 | 496.4 | 401 | 734 |\n| `en-sa` | 1,012 | 423.4 | 328 | 661 |\n| `en-sat` | 1,012 | 400.4 | 305 | 638 |\n| `en-ta` | 1,012 | 558.4 | 463 | 796 |\n| `en-te` | 1,012 | 432.4 | 337 | 670 |\n| `en-ur` | 1,012 | 459.4 | 364 | 697 |\n| `as-en` | 1,012 | 488.44 | 399 | 693 |\n| `awa-en` | 1,012 | 635.65 | 543 | 887 |\n| `bgc-en` | 1,012 | 417.0 | 331 | 625 |\n| `bho-en` | 1,012 | 325.09 | 234 | 565 |\n| `bn-en` | 1,012 | 461.51 | 372 | 667 |\n| `bo-en` | 1,012 | 661.39 | 557 | 946 |\n| `brx-en` | 1,012 | 455.85 | 348 | 708 |\n| `gbm-en` | 1,012 | 436.53 | 347 | 642 |\n| `gom-en` | 1,012 | 436.71 | 348 | 646 |\n| `gu-en` | 1,012 | 483.93 | 397 | 708 |\n| `hi-en` | 1,012 | 424.5 | 336 | 676 |\n| `hne-en` | 1,012 | 465.43 | 382 | 666 |\n| `hoj-en` | 1,012 | 417.48 | 327 | 627 |\n| `kn-en` | 1,012 | 450.4 | 357 | 702 |\n| `mai-en` | 1,012 | 555.87 | 464 | 778 |\n| `ml-en` | 1,012 | 387.57 | 288 | 616 |\n| `mni-en` | 1,012 | 424.16 | 327 | 642 |\n| `mr-en` | 1,012 | 435.47 | 338 | 659 |\n| `mup-en` | 1,012 | 424.53 | 336 | 636 |\n| `mwr-en` | 1,012 | 421.22 | 326 | 636 |\n| `ne-en` | 1,012 | 431.4 | 340 | 668 |\n| `or-en` | 1,012 | 535.24 | 440 | 756 |\n| `pa-en` | 1,012 | 490.84 | 396 | 739 |\n| `ps-en` | 1,012 | 461.0 | 375 | 665 |\n| `sa-en` | 1,012 | 561.74 | 468 | 793 |\n| `sat-en` | 1,012 | 465.13 | 370 | 693 |\n| `ta-en` | 1,012 | 475.31 | 371 | 727 |\n| `te-en` | 1,012 | 348.9 | 257 | 577 |\n| `ur-en` | 1,012 | 408.38 | 314 | 628 |\n\n## 样例示例\n\n**子集**: `en-as`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7c97bce9\",\n      \"content\": \"Translate the following:\\n\\nTo Assamese: In the 1480s, when its construction was begun by Lord Hastings, the country was relatively peaceful and defense was only required against small bands of roving marauders.\\nOutput: 1480 চনত লর্ড হেষ্টিংছে  ... [TRUNCATED 105 chars] ... াওডাৰৰ সৰু সৰু গোটৰ বিৰুদ্ধেহে সেনেবাহিনীৰ দৰকাৰ হৈছিল।\\n\\nTranslate the following:\\n\\nTo Assamese: Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\\nOutput:\"\n    }\n  ],\n  \"target\": \"উপসংস্কৃতিসমূহে ব্যক্তি বিশেষৰ একেলগে থকা মনোভাৱ আনি দিয়ে যিসকলে সমাজৰ পৰা অৱহেলাৰ সন্মুখীন হৈছিল আৰু তেওঁলোকক নিজা পৰিচয়ৰ মনোভাৱ বিকশিত কৰাত সহায় কৰে।\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"source\": \"Subcultures bring together like-minded individuals who feel neglected by societal standards and allow them to develop a sense of identity.\",\n    \"source_language\": \"en\",\n    \"target_language\": \"as\",\n    \"target_language_name\": \"Assamese\"\n  }\n}\n```\n\n*注：为便于显示，部分内容已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nTranslate the following:\n\nTo {language}: {source}\nOutput:\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets flores_in \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['flores_in'],\n    dataset_args={\n        'flores_in': {\n            # subset_list: ['en-as', 'en-awa', 'en-bgc']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "983baa7bddf1987abce21d4d99e948b6",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-27T17:18:43.259243",
+  "translation_updated_at": "2026-11-27T17:18:45"
+}

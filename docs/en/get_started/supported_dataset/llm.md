@@ -54,6 +54,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `contract_nli` | [ContractNLI (classification)](../../benchmarks/contract_nli.md) | `MCQ` |
 | `copious` | [Copious](../../benchmarks/copious.md) | `Knowledge`, `NER` |
 | `cross_ner` | [CrossNER](../../benchmarks/cross_ner.md) | `Knowledge`, `NER` |
+| `crosssum_in` | [CrossSum-IN](../../benchmarks/crosssum_in.md) | `MultiLingual` |
 | `data_collection` | [Data-Collection](../../benchmarks/data_collection.md) | `Custom` |
 | `docmath` | [DocMath](../../benchmarks/docmath.md) | `LongContext`, `Math`, `Reasoning` |
 | `drivel_binary` | [DrivelologyBinaryClassification](../../benchmarks/drivel_binary.md) | `Yes/No` |
@@ -65,6 +66,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `eq_bench` | [EQ-Bench](../../benchmarks/eq_bench.md) | `InstructionFollowing` |
 | `fin_ner` | [FinNER](../../benchmarks/fin_ner.md) | `Knowledge`, `NER` |
 | `finqa` | [FinQA](../../benchmarks/finqa.md) | `Math`, `QA`, `Reasoning` |
+| `flores_in` | [FLORES-IN](../../benchmarks/flores_in.md) | `MachineTranslation`, `MultiLingual` |
 | `frames` | [FRAMES](../../benchmarks/frames.md) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](../../benchmarks/general_arena.md) | `Arena`, `Custom` |
 | `general_decision` | [General Decision](../../benchmarks/general_decision.md) | `Custom`, `Decision` |
@@ -232,6 +234,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/contract_nli.md
 ../../benchmarks/copious.md
 ../../benchmarks/cross_ner.md
+../../benchmarks/crosssum_in.md
 ../../benchmarks/data_collection.md
 ../../benchmarks/docmath.md
 ../../benchmarks/drivel_binary.md
@@ -243,6 +246,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/eq_bench.md
 ../../benchmarks/fin_ner.md
 ../../benchmarks/finqa.md
+../../benchmarks/flores_in.md
 ../../benchmarks/frames.md
 ../../benchmarks/general_arena.md
 ../../benchmarks/general_decision.md

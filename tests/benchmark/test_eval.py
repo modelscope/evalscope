@@ -1073,6 +1073,14 @@ class TestNativeBenchmark(TestBenchmark):
         """Test MMLU-Indic benchmark with mock."""
         self._run_dataset_test('mmlu_indic', dataset_args={'subset_list': ['hi', 'hi_roman']}, limit=2, use_mock=True)
 
+    def test_flores_in_mock(self):
+        """Test FLORES-IN benchmark with mock, one subset per direction."""
+        self._run_dataset_test('flores_in', dataset_args={'subset_list': ['en-hi', 'sat-en']}, limit=2, use_mock=True)
+
+    def test_crosssum_in_mock(self):
+        """Test CrossSum-IN benchmark with mock, English and an Indic language."""
+        self._run_dataset_test('crosssum_in', dataset_args={'subset_list': ['en', 'hi']}, limit=2, use_mock=True)
+
     def test_global_mmlu_mock(self):
         """Test Global-MMLU benchmark with mock."""
         self._run_dataset_test('global_mmlu', dataset_args={'subset_list': ['en', 'hi']}, limit=2, use_mock=True)
