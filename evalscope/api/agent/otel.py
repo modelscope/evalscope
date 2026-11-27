@@ -783,7 +783,8 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_sample
     from evalscope.api.model import ModelOutput
 
     path = Path(config.trace_path)
-    if path.is_dir():
+    from_directory = path.is_dir()
+    if from_directory:
         candidate = path / f'{sample.id}.otlp.json'
         if not candidate.exists():
             raise OTLPImportError(f'No OTLP export for sample {sample.id!r} in {path} (expected {candidate.name})')
@@ -813,9 +814,10 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_sample
 
     # One export per sample unless the export is explicitly tagged: an untagged
     # file with several runs cannot be bound to this sample, and scoring the last
-    # run would silently reuse another question's answer.
+    # run would silently reuse another question's answer. A directory already
+    # binds one file per sample, so the single-file check does not apply there.
     if expected is None:
-        if path.is_file() and n_samples is not None and n_samples > 1:
+        if not from_directory and n_samples is not None and n_samples > 1:
             raise OTLPImportError(
                 f'A single OTLP export at {path} cannot serve {n_samples} samples: it carries no '
                 f'{config.sample_id_attribute!r} attribute, so every sample would reuse the same '
