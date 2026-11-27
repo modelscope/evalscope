@@ -99,6 +99,17 @@ def _build_perf_table(result, api_type: str = None) -> str:
         return ''
 
 
+def _all_requests_failed(result: dict) -> bool:
+    """Return True if requests were sent across all runs and none of them succeeded.
+
+    Expects a serialized result; runs without request counts are ignored.
+    """
+    metrics = [run.get('metrics') or {} for run in result.values() if isinstance(run, dict)]
+    total = sum(m.get(Metrics.TOTAL_REQUESTS, 0) for m in metrics)
+    succeeded = sum(m.get(Metrics.SUCCEED_REQUESTS, 0) for m in metrics)
+    return total > 0 and succeeded == 0
+
+
 bp_perf = Blueprint('perf', __name__, url_prefix='/api/v1/perf')
 
 
@@ -188,12 +199,18 @@ def run_performance_test():
     task_meta = build_task_info(task_id, 'perf', perf_args, perf_args.alias)
     try:
         result = run_in_subprocess(run_perf_wrapper, perf_args, task_id=task_id, task_meta=task_meta)
+        serialized = serialize_result(result)
+        if isinstance(serialized, dict) and _all_requests_failed(serialized):
+            error_msg = 'All requests failed. Check the task log for details.'
+            finish_task(task_id, 'error')
+            logger.error(f'[{task_id}] Task failed: {error_msg}')
+            return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
         table_str = _build_perf_table(result, api_type=perf_args.api)
         finish_task(task_id, 'completed')
         logger.info(f'[{task_id}] Task completed successfully')
         return json_response(
             EvalInvokeResponse,
-            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str},
+            {'status': 'completed', 'task_id': task_id, 'result': serialized, 'table': table_str},
         )
     except TaskStoppedError:
         finish_task(task_id, 'stopped')
