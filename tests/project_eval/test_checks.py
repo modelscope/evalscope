@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from evalscope.project_eval.checks import run_checks
+from evalscope.project_eval.checks import DEFAULT_HTTP_PREFIXES, _url_allowed, run_checks
 from evalscope.project_eval.schema import EvalTask
 
 
@@ -78,6 +78,7 @@ def test_http_prefix_is_enforced(tmp_path: Path) -> None:
         'expect_status': 200,
     }), tmp_path)[0]
     assert result.ok is False
+    assert result.error is not None
     assert 'not allowed' in result.error
 
 
@@ -109,6 +110,7 @@ def test_http_prefix_cannot_be_bypassed_by_host_suffix(
         'expect': True,
     }), tmp_path)[0]
     assert result.ok is False
+    assert result.error is not None
     assert 'not allowed' in result.error
     assert calls == []
 
@@ -126,6 +128,7 @@ def test_empty_http_prefix_is_rejected(tmp_path: Path) -> None:
         allowed_http_prefixes=('',),
     )[0]
     assert result.ok is False
+    assert result.error is not None
     assert 'not allowed' in result.error
 
 
@@ -148,6 +151,16 @@ def test_http_prefix_path_must_match_a_segment(tmp_path: Path, monkeypatch: pyte
     )[0]
     assert result.ok is False
     assert calls == []
+
+
+def test_url_allowlist_uses_effective_default_port() -> None:
+    assert _url_allowed('https://state.example/x', ('https://state.example:443',))
+    assert _url_allowed('http://state.example/x', ('http://state.example:80',))
+    assert not _url_allowed('https://state.example:444/x', ('https://state.example:443',))
+
+
+def test_invalid_bracketed_host_fails_closed() -> None:
+    assert _url_allowed('http://[::1].evil.com/x', DEFAULT_HTTP_PREFIXES) is False
 
 
 class _RemoteStateResponse:
@@ -176,6 +189,7 @@ def test_remote_state_api_needs_explicit_prefix(tmp_path: Path, monkeypatch: pyt
 
     rejected = run_checks(remote_task, tmp_path)[0]
     assert rejected.ok is False
+    assert rejected.error is not None
     assert 'not allowed' in rejected.error
     assert calls == []
 
@@ -215,6 +229,7 @@ def test_symlink_is_rejected(tmp_path: Path) -> None:
     link.symlink_to(target)
     result = run_checks(task({'id': 'f-link', 'type': 'file_exists', 'path': 'link.txt'}), tmp_path)[0]
     assert result.ok is False
+    assert result.error is not None
     assert 'symlink' in result.error
 
 
@@ -238,7 +253,7 @@ class _StateHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, *args: Any) -> None:
+    def log_message(self, format: str, *args: Any) -> None:
         pass
 
 
@@ -283,6 +298,7 @@ def test_sensitive_directory_is_rejected(tmp_path: Path) -> None:
     result = run_checks(task({'id': 's-1', 'type': 'file_exists',
                               'path': '.ssh/config'}), tmp_path)[0]
     assert result.ok is False
+    assert result.error is not None
     assert 'sensitive' in result.error
 
 

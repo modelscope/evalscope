@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 import requests
@@ -12,14 +13,17 @@ from pydantic import BaseModel
 
 from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.judge import (
+    CaseVerdict,
     JudgeCase,
     JudgeContext,
     JudgeDefinition,
     JudgeRequest,
+    JudgeReview,
     OutputContract,
+    Placement,
     ReducedVerdict,
 )
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageUser, dict_to_chat_message
@@ -48,10 +52,13 @@ from evalscope.project_eval.schema import (
     RUNTIME_CHECKS_KEY,
     EvalTask,
     ProjectEvalRunConfig,
+    RubricCriterion,
 )
 
 
 class RubricVerdict(BaseModel):
+    """Judge verdict for one rubric criterion."""
+
     explanation: str = ''
     criteria_met: bool
 
@@ -75,21 +82,28 @@ def _trace_context(trace: AgentTrace | None) -> tuple[str, str]:
     return trace_summary, '\n'.join(conversation_lines)
 
 
+def _actual_question(task: EvalTask) -> str:
+    """Return the user turns that the Agent actually received."""
+    if task.messages:
+        return '\n'.join(message.content for message in task.messages)
+    return task.question
+
+
 def _render_judge_prompt(
     task: EvalTask,
-    criterion: dict[str, Any],
+    criterion: RubricCriterion,
     trace: AgentTrace | None,
     prediction: str,
     check_records: list[dict[str, Any]],
-    agent_state: Any,
+    agent_state: dict[str, Any] | None,
     instruction: str,
 ) -> str:
     trace_summary, conversation_block = _trace_context(trace)
     state_block = f'\n# Agent state\n{agent_state}\n' if agent_state else ''
     return (
         f'You are evaluating a business agent against one rubric criterion.\n\n'
-        f'# Question (the user request being evaluated)\n{task.question}\n\n'
-        f'# Criterion (judge only this)\n{criterion["criterion"]}\n\n'
+        f'# Question (the user request being evaluated)\n{_actual_question(task)}\n\n'
+        f'# Criterion (judge only this)\n{criterion.criterion}\n\n'
         f'# Reference answer (context only; do not require unrelated facts)\n'
         f'{task.reference_answer or "(not provided)"}\n\n'
         f'# Expected facts (context only; use only when the criterion names them)\n'
@@ -118,7 +132,8 @@ def _render_judge_prompt(
             'and read-only end-state checks.\n\n'
             '## Task Description\n'
             '- **Task Type**: Business-agent conversation with optional multi-turn user scripts.\n'
-            '- **Input**: A JSONL task with a question or messages, reference answer, rubric and read-only checks.\n'
+            '- **Input**: A JSONL task with a required question plus optional user messages, '
+            'reference answer, rubric and read-only checks.\n'
             '- **Output**: Agent reply, trace, rubric verdicts and end-state check evidence.\n'
             '- **Domain**: Enterprise business agents with local or remote business state.\n\n'
             '## Key Features\n'
@@ -147,16 +162,17 @@ class ProjectEvalAdapter(AgentAdapter):
     scoring_policy = ScoringPolicy.JUDGE_ONLY
     _runtime_keys = {PROJECT_ROOT_KEY, RUNTIME_CHECKS_KEY, AGENT_CAPABILITY_KEY, AGENT_STATE_KEY}
 
-    def load_from_disk(self, **kwargs: Any) -> Any:
+    def load_from_disk(self, use_local_loader: bool = False) -> tuple[DatasetDict, DatasetDict | None]:
+        # project_eval eval sets are always local JSONL files.
         dataset_dict, fewshot_dataset = super().load_from_disk(use_local_loader=True)
         self._validate_task_ids(dataset_dict)
         return dataset_dict, fewshot_dataset
 
     @staticmethod
-    def _validate_task_ids(dataset_dict: Any) -> None:
+    def _validate_task_ids(dataset_dict: DatasetDict) -> None:
         seen: set[str] = set()
         for _, dataset in dataset_dict.items():
-            for sample in dataset.samples:
+            for sample in getattr(dataset, 'samples', []):
                 task_id = str(sample.metadata.get('id') or '').strip()
                 if not task_id:
                     raise ValueError('task id must be non-empty')
@@ -178,6 +194,7 @@ class ProjectEvalAdapter(AgentAdapter):
                 input_messages.append(ChatMessageSystem(content=task.system))
             input_messages.append(ChatMessageUser(content=task.question))
         return Sample(
+            # The standard loader assigns sequential ids; 0 is a placeholder for direct adapter use.
             id=0,
             input=input_messages,
             target=task.reference_answer,
@@ -226,9 +243,10 @@ class ProjectEvalAdapter(AgentAdapter):
                 raise AgentProtocolError('http task requires HttpTaskClient')
             turn = client.call(task.exec.request)
         else:
-            turn = client.chat(task, session_id=str(sample.metadata['id']))
+            turn = cast(AgentClient, client).chat(task, session_id=str(sample.metadata['id']))
         if task.exec.trace.mode == 'none':
             turn.steps = []
+            turn.trace_id = None
             turn.trace_available = False
         elif task.exec.trace.mode == 'inline' and not turn.steps:
             raise AgentProtocolError('trace.mode=inline requires inline steps')
@@ -240,7 +258,8 @@ class ProjectEvalAdapter(AgentAdapter):
 
         output = ModelOutput.from_content(model=getattr(model, 'name', None) or 'project-eval', content=turn.reply)
         output.usage = model_usage(turn.usage)
-        messages = list(sample.input) + [ChatMessageAssistant(content=turn.reply)]
+        base_messages = sample.input if isinstance(sample.input, list) else [ChatMessageUser(content=sample.input)]
+        messages = [*base_messages, ChatMessageAssistant(content=turn.reply)]
         return InferenceResult(
             output=output,
             messages=messages,
@@ -272,14 +291,18 @@ class ProjectEvalAdapter(AgentAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         task = self._task_from_metadata(context.task_state.metadata)
         saved = saved_checks_from_metadata(context.task_state.metadata)
-        if saved is None:
-            raise AgentProtocolError(
-                'missing saved end-state checks; refusing to review a cached run against live state'
-            )
+        if task.checks:
+            if saved is None or [result.check_id for result in saved] != [check.id for check in task.checks]:
+                raise AgentProtocolError(
+                    'missing saved end-state checks: cached evidence does not match the task checks'
+                )
+        elif saved is None:
+            saved = []
         checks = saved
         check_records = [result.model_dump() for result in checks]
         capability = context.task_state.metadata.get(AGENT_CAPABILITY_KEY)
-        agent_state = context.task_state.metadata.get(AGENT_STATE_KEY)
+        raw_agent_state = context.task_state.metadata.get(AGENT_STATE_KEY)
+        agent_state = raw_agent_state if isinstance(raw_agent_state, dict) else None
 
         trace_available = self._trace_available(context.task_state.agent_trace)
         evaluable = []
@@ -289,7 +312,7 @@ class ProjectEvalAdapter(AgentAdapter):
                 not_evaluable.append(criterion.id)
             else:
                 evaluable.append(criterion)
-        coverage = len(evaluable) / len(task.rubric) if task.rubric else 0.0
+        coverage = len(evaluable) / len(task.rubric)
         needs_review = any(criterion.must_pass and criterion.id in not_evaluable for criterion in task.rubric)
 
         has_must_pass_outcome = any(
@@ -336,13 +359,14 @@ class ProjectEvalAdapter(AgentAdapter):
 
         def request(
             case: JudgeCase,
-            placement: str,
-            completed_cases: list[JudgeCase],
+            placement: Placement,
+            completed_cases: Sequence[CaseVerdict],
             judge_context: JudgeContext,
         ) -> JudgeRequest:
+            criterion = RubricCriterion.model_validate(case.metadata['criterion'])
             prompt = _render_judge_prompt(
                 task,
-                case.metadata['criterion'],
+                criterion,
                 judge_context.task_state.agent_trace,
                 judge_context.original_prediction,
                 check_records,
@@ -351,7 +375,7 @@ class ProjectEvalAdapter(AgentAdapter):
             )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        def reduce(case_verdicts: list[Any], judge_context: JudgeContext) -> ReducedVerdict:
+        def reduce(case_verdicts: Sequence[CaseVerdict], judge_context: JudgeContext) -> ReducedVerdict:
             by_case = {verdict.case_id: verdict for verdict in case_verdicts}
             verdicts = []
             weighted = 0.0
@@ -413,8 +437,8 @@ class ProjectEvalAdapter(AgentAdapter):
                 },
             )
 
-        def finalize(score: Score, review: Any, judge_context: JudgeContext) -> Score:
-            score.metadata.update(review.metadata)
+        def finalize(score: Score, review: JudgeReview, judge_context: JudgeContext) -> Score:
+            score.metadata = {**(score.metadata or {}), **review.metadata}
             return score
 
         return JudgeDefinition.workflow(
@@ -426,4 +450,4 @@ class ProjectEvalAdapter(AgentAdapter):
         )
 
 
-__all__ = ['ProjectEvalAdapter', 'build_agent_trace']
+__all__ = ['ProjectEvalAdapter']

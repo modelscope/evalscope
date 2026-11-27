@@ -77,6 +77,22 @@ def test_rejects_empty_id(tmp_path: Path) -> None:
         load_eval_set(write_jsonl(tmp_path, [task(id='')]))
 
 
+def test_rejects_duplicate_rubric_ids(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError, match='rubric ids must be unique'):
+        load_eval_set(write_jsonl(tmp_path, [task(rubric=[
+            {'id': 'c1', 'criterion': 'a'},
+            {'id': 'c1', 'criterion': 'b'},
+        ])]))
+
+
+def test_rejects_duplicate_check_ids(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError, match='check ids must be unique'):
+        load_eval_set(write_jsonl(tmp_path, [task(checks=[
+            {'id': 'j-1', 'type': 'file_exists', 'path': 'a.txt'},
+            {'id': 'j-1', 'type': 'file_exists', 'path': 'b.txt'},
+        ])]))
+
+
 def test_rejects_unknown_evidence_requirement(tmp_path: Path) -> None:
     with pytest.raises(ValidationError):
         load_eval_set(write_jsonl(tmp_path, [task(rubric=[{
@@ -129,3 +145,14 @@ def test_run_config_rejects_unsafe_http_prefixes() -> None:
             ProjectEvalRunConfig(check_url_prefixes=[prefix])
     config = ProjectEvalRunConfig(check_url_prefixes=['https://state.example'])
     assert config.check_url_prefixes == ['https://state.example']
+
+
+def test_run_config_ignores_loader_keys() -> None:
+    config = ProjectEvalRunConfig.model_validate({
+        'local_path': '/tmp/eval.jsonl',
+        'filters': {'remove_until': 'x'},
+        'agent_url': 'http://127.0.0.1:8080',
+        'project_root': '/tmp/state',
+    })
+    assert config.agent_url == 'http://127.0.0.1:8080'
+    assert config.project_root == '/tmp/state'

@@ -59,10 +59,11 @@ Content-Type: application/json
 {"session_id":"refund-001","message":"把充值款退 45 元，先预览。","system":"客服"}
 ```
 
-响应需要字符串 `reply`；`steps` / `tool_calls` 可选携带内联工具调用。单轮任务
-若 `system` 非空，会作为 `system` 字段一起发送；有 `messages` 时则逐条发送 user
-消息。`exec.type: http` 直接发送配置的请求，响应 JSON 保存为 `agent_state` 并
-展示给 Judge。每个任务前会调用 loopback `reset_url` 恢复 seed 状态。
+响应需要字符串 `reply`；`steps` / `tool_calls` 可选携带内联工具调用。`system`
+非空时会在每次 REST 请求中发送；单轮任务的 `message` 是 question，有
+`messages` 时则逐条发送 user 消息。`exec.type: http` 直接发送配置的请求，响应
+JSON 保存为 `agent_state` 并展示给 Judge。每个任务前会调用 loopback `reset_url`
+恢复 seed 状态。
 
 ### 3. 保存终态证据
 
@@ -79,8 +80,9 @@ predictions/*.jsonl
 ```
 
 `judge_definition()` 读取 `metadata.runtime_checks`，不再重新读取实时业务状态。
-因此缓存 `rerun_review` 使用的是该次 Agent 运行保存的证据。预测里没有保存检查，
-或保存的检查记录无法解析时，review 会明确失败，而不是静默按另一份状态打分。
+因此缓存 `rerun_review` 使用的是该次 Agent 运行保存的证据。任务声明了 checks 时，
+预测里没有保存检查、保存为空、记录无法解析，或 check id 与任务 checks 不一致，
+review 会明确失败，而不是静默按另一份状态打分。
 
 ### 4. 报告
 
@@ -95,13 +97,14 @@ verdicts 和检查证据写入 `reviews/*.jsonl`，属于报告产物；渲染�
   且 URL 必须是 http(s)。
 - 带 `must_pass` outcome criterion 的任务，只要任意检查失败就判失败；只放必须通过的检查。
 - 支持 L0 和 L2 inline trace；`trace.mode` 接受 `auto`、`inline`、`none`；
-  `inline` 要求内联 steps，`auto` 接受 L0，`none` 关闭 trace 证据。L1（从外部
-  trace 系统 fetch）是后续改动，schema 不接受。
+  `inline` 要求内联 steps，`auto` 接受 L0，`none` 关闭 trace 证据并清空内联
+  trace id。L1（从外部 trace 系统 fetch）是后续改动，schema 不接受。
 - Agent 不返回 trace 时，process 类判据为 `not_evaluable`；`must_pass` 的
   process 判据把本次运行标记为 `needs_review`，但不会直接判失败。若所有判据都是
   process 且没有 trace，该样本不计入指标并标记 `needs_review`。
-- 题目生成、题目/Rubric 编辑和版本管理仍在 EvalScope 外部。Judge 看到的是问题、
-  参考答案、预期/禁止事实、rubric、agent state 和检查证据，不会看到原始源码。
+- 题目生成、题目/Rubric 编辑和版本管理仍在 EvalScope 外部。Judge 看到的是实际
+  user 轮次（有 `messages` 用 messages，否则用 question）、参考答案、预期/禁止
+  事实、rubric、agent state 和检查证据，不会看到原始源码。
 - 外部编码 Agent skill
   [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) 负责生成并校验
   JSONL、对 Agent 做 dry-run；自动导入依赖后续的 Eval Sets 管理改动。

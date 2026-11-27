@@ -77,16 +77,31 @@ def assert_within_root(path: str, root: Path) -> Path:
 
 def _url_allowed(url: str, prefixes: Iterable[str]) -> bool:
     """Match a URL against trusted origins, not a raw string prefix."""
-    target = urlsplit(url)
+    try:
+        target = urlsplit(url)
+    except ValueError:
+        return False
     if target.scheme not in {'http', 'https'} or not target.hostname:
         return False
+    try:
+        target_port = target.port
+    except ValueError:
+        return False
+    effective_target_port = target_port if target_port is not None else (443 if target.scheme == 'https' else 80)
     for prefix in prefixes:
-        allowed = urlsplit(prefix)
+        try:
+            allowed = urlsplit(prefix)
+        except ValueError:
+            continue
         if allowed.scheme not in {'http', 'https'} or not allowed.hostname:
             continue
         if target.scheme != allowed.scheme or target.hostname.lower() != allowed.hostname.lower():
             continue
-        if allowed.port is not None and target.port != allowed.port:
+        try:
+            allowed_port = allowed.port
+        except ValueError:
+            continue
+        if allowed_port is not None and effective_target_port != allowed_port:
             continue
         allowed_path = allowed.path or '/'
         if allowed_path == '/':
@@ -121,7 +136,8 @@ def _elapsed_ms(started: float) -> float:
     return (time.perf_counter() - started) * 1000
 
 
-def _file_exists(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+def handle_file_exists(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    """Check whether a file exists inside the state root."""
     candidate = assert_within_root(check.path, root)
     return CheckResult(
         check_id=check.id,
@@ -130,21 +146,26 @@ def _file_exists(check: CheckSpec, root: Path, _: tuple[str, ...], started: floa
     )
 
 
-def _file_content(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+def handle_file_content(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    """Check whether a file contains the expected text."""
+    contains = check.contains
+    if contains is None:
+        raise ValueError('file_content check requires contains')
     candidate = assert_within_root(check.path, root)
     text = candidate.read_text(encoding='utf-8', errors='replace')
     return CheckResult(
         check_id=check.id,
-        ok=check.contains in text,
+        ok=contains in text,
         evidence={
             'path': str(candidate.relative_to(root.resolve())),
-            'contains': check.contains,
+            'contains': contains,
             'elapsed_ms': _elapsed_ms(started),
         },
     )
 
 
-def _json_file(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+def handle_json_path(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    """Compare a dotted JSON path in a file with the expected value."""
     candidate = assert_within_root(check.path, root)
     document = json.loads(candidate.read_text(encoding='utf-8'))
     value = _json_path_value(document, check.json_path)
@@ -161,7 +182,8 @@ def _json_file(check: CheckSpec, root: Path, _: tuple[str, ...], started: float)
     )
 
 
-def _sqlite(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+def handle_sqlite(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) -> CheckResult:
+    """Run a read-only SQLite query and compare its first value."""
     candidate = assert_within_root(check.dsn, root)
     connection = sqlite3.connect(f'{candidate.as_uri()}?mode=ro', uri=True)
     try:
@@ -181,7 +203,8 @@ def _sqlite(check: CheckSpec, root: Path, _: tuple[str, ...], started: float) ->
     )
 
 
-def _http(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+def handle_http(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+    """Send one read-only HTTP request and compare its status."""
     if not _url_allowed(check.url, prefixes):
         raise ValueError('http url is not allowed')
     response = requests.request(check.method, check.url, timeout=10, allow_redirects=False)
@@ -197,7 +220,8 @@ def _http(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) 
     )
 
 
-def _http_json(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+def handle_http_json(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: float) -> CheckResult:
+    """Fetch a read-only JSON endpoint and compare a dotted path value."""
     if not _url_allowed(check.url, prefixes):
         raise ValueError('http url is not allowed')
     response = requests.get(check.url, timeout=10, allow_redirects=False)
@@ -217,12 +241,12 @@ def _http_json(check: CheckSpec, _: Path, prefixes: tuple[str, ...], started: fl
 
 
 _CHECK_HANDLERS: dict[str, Callable[[CheckSpec, Path, tuple[str, ...], float], CheckResult]] = {
-    'file_exists': _file_exists,
-    'file_content': _file_content,
-    'json_path': _json_file,
-    'sqlite': _sqlite,
-    'http': _http,
-    'http_json': _http_json,
+    'file_exists': handle_file_exists,
+    'file_content': handle_file_content,
+    'json_path': handle_json_path,
+    'sqlite': handle_sqlite,
+    'http': handle_http,
+    'http_json': handle_http_json,
 }
 
 

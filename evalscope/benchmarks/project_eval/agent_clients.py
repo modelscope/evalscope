@@ -28,7 +28,8 @@ def _json_request(
     return response.json()
 
 
-def _as_int(value: Any) -> int:
+def as_int(value: Any) -> int:
+    """Coerce a usage counter, treating malformed values as zero."""
     try:
         return int(value or 0)
     except (TypeError, ValueError):
@@ -72,12 +73,13 @@ Transport = Callable[..., Any]
 
 
 def _messages(task: EvalTask) -> list[dict[str, str]]:
-    if task.messages:
-        return [message.model_dump() for message in task.messages]
     messages: list[dict[str, str]] = []
     if task.system:
         messages.append({'role': 'system', 'content': task.system})
-    messages.append({'role': 'user', 'content': task.question})
+    if task.messages:
+        messages.extend(message.model_dump() for message in task.messages)
+    else:
+        messages.append({'role': 'user', 'content': task.question})
     return messages
 
 
@@ -142,7 +144,7 @@ class RestStepsClient:
                 'session_id': session_id,
                 'message': message.get('content', ''),
             }
-            if task.system and not task.messages:
+            if task.system:
                 payload['system'] = task.system
             data = self.transport(f'{self.base_url}/v1/eval/chat', payload, self.timeout)
             if not isinstance(data, dict) or not isinstance(data.get('reply'), str):
@@ -157,7 +159,7 @@ class RestStepsClient:
                 state.update(data['state'])
             if isinstance(data.get('usage'), dict):
                 for key in usage:
-                    usage[key] += _as_int(data['usage'].get(key))
+                    usage[key] += as_int(data['usage'].get(key))
             if data.get('trace_id'):
                 trace_id = str(data['trace_id'])
 
@@ -209,9 +211,9 @@ class OpenAICompatClient:
             trace_id=None,
             state={},
             usage={
-                'input_tokens': _as_int(usage.get('prompt_tokens')),
-                'output_tokens': _as_int(usage.get('completion_tokens')),
-                'total_tokens': _as_int(usage.get('total_tokens')),
+                'input_tokens': as_int(usage.get('prompt_tokens')),
+                'output_tokens': as_int(usage.get('completion_tokens')),
+                'total_tokens': as_int(usage.get('total_tokens')),
             },
             trace_available=False,
         )
@@ -279,6 +281,7 @@ __all__ = [
     'HttpTaskClient',
     'OpenAICompatClient',
     'RestStepsClient',
+    'as_int',
     'build_client',
     'detect_capability',
 ]

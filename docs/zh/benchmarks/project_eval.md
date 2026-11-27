@@ -7,7 +7,7 @@
 ## 任务描述
 
 - **任务类型**：业务 Agent 对话，支持可选的 user 多轮脚本。
-- **输入**：包含问题或消息、参考答案、rubric 和只读检查的 JSONL 任务。
+- **输入**：包含必填 question、可选 user messages、参考答案、rubric 和只读检查的 JSONL 任务。
 - **输出**：Agent 回复、trace、rubric 判定和终态检查证据。
 - **领域**：拥有本地或远程业务状态的企业业务 Agent。
 

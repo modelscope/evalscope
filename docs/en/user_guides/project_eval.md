@@ -64,11 +64,12 @@ Content-Type: application/json
 ```
 
 The response needs a string `reply`; `steps` / `tool_calls` optionally carry
-inline tool calls. For a single-turn task, a non-empty `system` is sent as the
-`system` field; when `messages` is present, each user turn is sent instead. For
-`exec.type: http`, the configured request is sent directly, its JSON body is
-saved as `agent_state`, and that state is shown to the Judge. A loopback
-`reset_url` is called before each task to restore the seed state.
+inline tool calls. A non-empty `system` is sent on every REST request. For a
+single-turn task the `message` is the question; when `messages` is present,
+each user turn is sent as the `message` instead. For `exec.type: http`, the
+configured request is sent directly, its JSON body is saved as `agent_state`,
+and that state is shown to the Judge. A loopback `reset_url` is called before
+each task to restore the seed state.
 
 ### 3. Saved end-state evidence
 
@@ -87,9 +88,9 @@ predictions/*.jsonl
 
 `judge_definition()` reads `metadata.runtime_checks`; it does not re-read live
 business state. A cached `rerun_review` therefore uses the evidence captured
-with that Agent run. If a prediction has no saved checks, or any saved check
-record is invalid, review fails loudly instead of silently scoring a different
-state.
+with that Agent run. When a task declares checks, a prediction with no saved
+checks, an empty list, a corrupt record, or check ids that do not match the task
+checks fails review loudly instead of silently scoring a different state.
 
 ### 4. Report
 
@@ -109,15 +110,16 @@ per-sample evidence.
   fails; include only checks that must pass for the outcome.
 - L0 and L2 inline trace are supported. `trace.mode` accepts `auto`, `inline`
   and `none`; `inline` requires inline steps, `auto` accepts L0, and `none`
-  disables trace evidence. L1 (`fetch` an external trace store) is a follow-up
-  and is not accepted by the schema.
+  disables trace evidence and clears the inline trace id. L1 (`fetch` an
+  external trace store) is a follow-up and is not accepted by the schema.
 - Process criteria are `not_evaluable` when the Agent returns no trace; a
   `must_pass` process criterion marks the run `needs_review` without failing it.
   If every criterion is a process criterion and no trace exists, the sample is
   excluded from metrics and marked `needs_review`.
 - Generation, task/Rubric editing and versioning stay outside EvalScope. The
-  Judge sees the question, reference answer, expected/forbidden facts, rubric
-  criteria, agent state and check evidence, not raw source.
+  Judge sees the actual user turns (`messages` when present, otherwise
+  `question`), reference answer, expected/forbidden facts, rubric criteria,
+  agent state and check evidence, not raw source.
 - The external coding-agent skill
   [evalscope-evalgen](https://github.com/frostloom/evalgen-skill) generates and
   validates the JSONL and can dry-run it against the Agent. Its automatic import

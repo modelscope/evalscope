@@ -5,7 +5,7 @@ Evaluate externally generated business-agent eval sets with rubric judging and r
 
 ## Task Description
 - **Task Type**: Business-agent conversation with optional multi-turn user scripts.
-- **Input**: A JSONL task with a question or messages, reference answer, rubric and read-only checks.
+- **Input**: A JSONL task with a required question plus optional user messages, reference answer, rubric and read-only checks.
 - **Output**: Agent reply, trace, rubric verdicts and end-state check evidence.
 - **Domain**: Enterprise business agents with local or remote business state.
 

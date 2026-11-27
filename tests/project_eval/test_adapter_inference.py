@@ -196,6 +196,19 @@ def test_inline_trace_mode_requires_steps() -> None:
         adapter._on_inference(None, adapter.record_to_sample(row))
 
 
+def test_trace_mode_none_clears_trace_id_and_capability() -> None:
+    turn = AgentTurn(reply='ok', trace_id='tr-1', steps=[], trace_available=False)
+    adapter = adapter_with(turn)
+    row = {
+        **ROW,
+        'exec': {**ROW['exec'], 'trace': {'mode': 'none'}},
+    }
+    sample = adapter.record_to_sample(row)
+    result = adapter._on_inference(None, sample)
+    assert sample.metadata['agent_capability'] == 'L0'
+    assert result.trace.trial_id is None
+
+
 def test_duplicate_task_ids_are_rejected_at_load(tmp_path: Path) -> None:
     eval_set = tmp_path / 'eval_set.v1.jsonl'
     eval_set.write_text('\n'.join(json.dumps(ROW) for _ in range(2)), encoding='utf-8')

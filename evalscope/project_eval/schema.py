@@ -20,7 +20,7 @@ class RubricCriterion(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    id: str
+    id: str = Field(min_length=1)
     criterion: str
     weight: float = Field(default=1.0, ge=0)
     must_pass: bool = False
@@ -32,7 +32,7 @@ class CheckSpec(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    id: str
+    id: str = Field(min_length=1)
     type: Literal['file_exists', 'file_content', 'http', 'http_json', 'sqlite', 'json_path']
     path: str = ''
     contains: str | None = None
@@ -136,11 +136,15 @@ class ExecSpec(BaseModel):
 
 
 class ProjectEvalRunConfig(BaseModel):
-    """Typed dataset_args.project_eval configuration for the adapter."""
+    """Adapter view of `dataset_args.project_eval`.
 
-    model_config = ConfigDict(extra='forbid')
+    Only the adapter-owned keys are read. Framework loader keys such as
+    `local_path` and `filters` are handled by the standard dataset loader and
+    are intentionally ignored here.
+    """
 
-    local_path: str = ''
+    model_config = ConfigDict(extra='ignore')
+
     agent_url: str = ''
     project_root: str = ''
     check_url_prefixes: list[str] = Field(default_factory=list)
@@ -198,6 +202,16 @@ class EvalTask(BaseModel):
     origin: Literal['fact', 'inference'] = 'fact'
     materials: list[Material] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='after')
+    def _validate_unique_ids(self) -> 'EvalTask':
+        rubric_ids = [criterion.id for criterion in self.rubric]
+        if len(set(rubric_ids)) != len(rubric_ids):
+            raise ValueError('rubric ids must be unique')
+        check_ids = [check.id for check in self.checks]
+        if len(set(check_ids)) != len(check_ids):
+            raise ValueError('check ids must be unique')
+        return self
 
 
 def load_eval_set(path: str | Path) -> list[EvalTask]:

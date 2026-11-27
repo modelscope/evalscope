@@ -68,6 +68,21 @@ def test_openai_compat_has_no_steps() -> None:
     assert detect_capability(turn) == 'L0'
 
 
+def test_openai_compat_keeps_system_with_messages() -> None:
+    multi = EvalTask.model_validate({
+        **TASK.model_dump(),
+        'messages': [{'role': 'user', 'content': '第一轮'}],
+    })
+    calls: list[dict[str, Any]] = []
+
+    def transport(url: str, payload: dict[str, Any], timeout: float) -> dict[str, Any]:
+        calls.append(payload)
+        return {'choices': [{'message': {'content': 'done'}}]}
+
+    OpenAICompatClient('http://agent', 'm', transport=transport).chat(multi, 't1')
+    assert calls[0]['messages'][0] == {'role': 'system', 'content': 's'}
+
+
 def test_trace_id_without_steps_is_l1() -> None:
     response = {'reply': 'done', 'trace_id': 'tr-1', 'steps': [], 'state': {}, 'usage': {}}
     turn = RestStepsClient('http://agent', transport=lambda *a, **k: response).chat(TASK, 't1')
@@ -96,7 +111,7 @@ def test_multi_turn_sends_each_user_message_and_aggregates_usage() -> None:
 
     turn = RestStepsClient('http://agent', transport=transport).chat(multi, 't1')
     assert [call['message'] for call in calls] == ['第一轮', '确认']
-    assert all('system' not in call for call in calls)
+    assert all(call['system'] == 's' for call in calls)
     assert turn.reply == 'reply-2'
     assert len(turn.steps) == 2
     assert turn.usage['total_tokens'] == 6
@@ -111,7 +126,11 @@ def test_http_task_client_returns_state() -> None:
             'url': url,
             'method': method,
         },
-    ).call(HttpRequestSpec(method='POST', path='/release', json_body={'id': 'doc-1'}))
+    ).call(HttpRequestSpec.model_validate({
+        'method': 'POST',
+        'path': '/release',
+        'json': {'id': 'doc-1'},
+    }))
     assert turn.reply == 'ok'
     assert turn.state['status'] == 'published'
     assert turn.trace_available is False

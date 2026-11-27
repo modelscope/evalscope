@@ -6,7 +6,7 @@ from typing import Any
 
 from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.model import ModelUsage
-from evalscope.benchmarks.project_eval.agent_clients import AgentTurn
+from evalscope.benchmarks.project_eval.agent_clients import AgentTurn, as_int
 from evalscope.project_eval.schema import EvalTask
 
 
@@ -14,13 +14,6 @@ def model_usage(usage: dict[str, Any]) -> ModelUsage | None:
     """Convert agent usage counters into a ModelUsage, ignoring malformed values."""
     if not usage:
         return None
-
-    def as_int(value: Any) -> int:
-        try:
-            return int(value or 0)
-        except (TypeError, ValueError):
-            return 0
-
     return ModelUsage(
         input_tokens=as_int(usage.get('input_tokens')),
         output_tokens=as_int(usage.get('output_tokens')),
@@ -32,9 +25,7 @@ def build_agent_trace(turn: AgentTurn, task: EvalTask) -> AgentTrace:
     """Convert one business-agent turn into EvalScope's structured trace."""
     trace = AgentTrace(
         framework='business_agent',
-        strategy=task.exec.protocol,
         environment=None,
-        max_steps=len(turn.steps),
         trial_id=turn.trace_id,
         total_usage=model_usage(turn.usage),
         events=[],

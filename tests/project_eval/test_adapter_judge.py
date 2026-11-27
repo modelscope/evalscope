@@ -100,6 +100,7 @@ def _definition_with(
     threshold: float = 0.6,
     trace_available: bool = False,
     agent_state: dict[str, Any] | None = None,
+    messages: list[dict[str, Any]] | None = None,
 ) -> tuple[JudgeDefinition, JudgeContext]:
     row = {
         **ROW,
@@ -110,6 +111,8 @@ def _definition_with(
             'json_path': 'balance_cent', 'expect': 200000,
         }],
     }
+    if messages is not None:
+        row['messages'] = messages
     (tmp_path / 'state.json').write_text(json.dumps({'balance_cent': 200000}))
     adapter = ProjectEvalAdapter(benchmark_meta=META, task_config=None)
     sample = adapter.record_to_sample(row)
@@ -230,6 +233,25 @@ def test_judge_request_includes_question_and_state(tmp_path: Path) -> None:
     assert '200000' in prompt
 
 
+def test_judge_request_uses_messages_instead_of_question(tmp_path: Path) -> None:
+    definition, ctx = _definition_with(
+        tmp_path,
+        [
+            {'id': 'c1', 'criterion': '余额正确', 'weight': 1, 'must_pass': True,
+             'evidence_requirement': 'outcome'},
+        ],
+        messages=[
+            {'role': 'user', 'content': '第一轮：查余额'},
+            {'role': 'user', 'content': '第二轮：确认'},
+        ],
+    )
+    request = definition.request(definition.cases[0], 'original', [], ctx)
+    prompt = request.messages[0].content
+    assert '第一轮：查余额' in prompt
+    assert '第二轮：确认' in prompt
+    assert '查余额' not in prompt.replace('第一轮：查余额', '')
+
+
 def test_judge_request_includes_reference_and_expected_facts(tmp_path: Path) -> None:
     row = {
         **ROW,
@@ -337,5 +359,21 @@ def test_cached_review_uses_saved_end_state_checks(tmp_path: Path) -> None:
 def test_corrupt_saved_checks_fail_loudly(tmp_path: Path) -> None:
     adapter, ctx = context(tmp_path, 200000)
     ctx.task_state.metadata['runtime_checks'] = [1]
+    with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
+        adapter.judge_definition(ctx)
+
+
+def test_empty_saved_checks_for_declared_check_fail_loudly(tmp_path: Path) -> None:
+    adapter, ctx = context(tmp_path, 200000)
+    ctx.task_state.metadata['runtime_checks'] = []
+    with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
+        adapter.judge_definition(ctx)
+
+
+def test_saved_check_ids_must_match_task_checks(tmp_path: Path) -> None:
+    adapter, ctx = context(tmp_path, 200000)
+    saved = list(ctx.task_state.metadata['runtime_checks'])
+    saved[0]['check_id'] = 'other'
+    ctx.task_state.metadata['runtime_checks'] = saved
     with pytest.raises(AgentProtocolError, match='missing saved end-state checks'):
         adapter.judge_definition(ctx)
