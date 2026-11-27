@@ -756,7 +756,7 @@ def import_otlp_trace(
 # ---------------------------------------------------------------------------
 
 
-def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
+def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_samples: Optional[int] = None) -> Any:
     """Load the OTLP export for one sample and turn it into an ``InferenceResult``.
 
     ``config.trace_path`` may be one OTLP JSON file (one export per sample) or
@@ -764,6 +764,11 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
     ``config.sample_id_attribute`` on any span, it is treated as multi-sample
     and filtered by ``sample.id``; otherwise the file is taken as this
     sample's export.
+
+    ``n_samples`` is the dataset size under evaluation. A single file without
+    sample tags can only serve one sample; with ``n_samples > 1`` the binding is
+    ambiguous (every sample would reuse the same run's answer), so it is
+    rejected before any score exists.
 
     Raises:
         OTLPImportError: The export is missing, has no content, cannot be
@@ -810,6 +815,12 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any) -> Any:
     # file with several runs cannot be bound to this sample, and scoring the last
     # run would silently reuse another question's answer.
     if expected is None:
+        if path.is_file() and n_samples is not None and n_samples > 1:
+            raise OTLPImportError(
+                f'A single OTLP export at {path} cannot serve {n_samples} samples: it carries no '
+                f'{config.sample_id_attribute!r} attribute, so every sample would reuse the same '
+                f"run's answer. Use a directory of <sample_id>.otlp.json or tag each run."
+            )
         runs = _run_ids(spans)
         if len(runs) > 1:
             raise OTLPImportError(

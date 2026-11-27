@@ -581,7 +581,12 @@ class DefaultDataAdapter(DataAdapter):
         missing = [requirement for requirement in required if requirement not in PROVIDABLE_EVIDENCE]
         if missing:
             raise missing_evidence_error(type(self).__name__, missing)
-        return load_otlp_trace_for_sample(ac, model, sample)
+
+        n_samples = None
+        test_dataset = getattr(self, 'test_dataset', None)
+        if test_dataset is not None:
+            n_samples = sum(len(dataset) for dataset in test_dataset.datasets.values())
+        return load_otlp_trace_for_sample(ac, model, sample, n_samples=n_samples)
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         """

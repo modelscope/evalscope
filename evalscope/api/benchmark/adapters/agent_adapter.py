@@ -239,10 +239,6 @@ class AgentLoopAdapter(AgentAdapter):
         the prediction artifact before the env closes.
         """
         ac = self._task_config.agent_config if self._task_config is not None else None
-        otel_result = self._maybe_import_otel_trace(ac, model, sample)
-        if otel_result is not None:
-            return otel_result
-
         external_result = self._maybe_run_external_agent(ac, model, sample)
         if external_result is not None:
             return external_result

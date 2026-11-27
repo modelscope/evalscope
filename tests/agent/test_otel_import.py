@@ -1249,3 +1249,63 @@ def test_consecutive_assistant_answers_are_rejected(tmp_path):
             SimpleNamespace(name='model'),
             SimpleNamespace(id='sample-1'),
         )
+
+
+def test_single_untagged_export_cannot_serve_multiple_samples(tmp_path):
+    """One untagged run must not be reused as every sample's answer."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('first question')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('first answer')]}),
+            },
+        )
+    )
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='cannot serve 2 samples'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id=1),
+            n_samples=2,
+        )
+
+
+def test_single_untagged_export_serves_one_sample(tmp_path):
+    """A single-sample dataset may use one untagged export."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        )
+    )
+    path = tmp_path / 'only.otlp.json'
+    path.write_text(_json(payload))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id=0),
+        n_samples=1,
+    )
+    assert result.output.completion == 'a'
