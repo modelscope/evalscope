@@ -74,7 +74,7 @@ def sentence_chrf(hypothesis: str, reference: str) -> float:
 
 
 class IndicGenBenchAdapter(DefaultDataAdapter):
-    """Reads each subset's released JSON file and builds the paper's n-shot prompts.
+    """Read released JSON files and score the paper's generation tasks with corpus chrF.
 
     Every IndicGenBench file keeps its rows under a top-level `examples` key, next to a canary string, so the files
     are read directly. An n-shot example uses the same template as the test item followed by its reference, and
@@ -136,10 +136,6 @@ class IndicGenBenchAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         return first_line(prediction)
-
-
-class CorpusChrfMixin:
-    """chrF per sample for inspection, and corpus-level chrF per subset as the reported score."""
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState

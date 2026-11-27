@@ -8,7 +8,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 
-from .utils import LANGUAGE_NAMES, LANGUAGES, PAPER_URL, CorpusChrfMixin, IndicGenBenchAdapter, language_name
+from .utils import LANGUAGE_NAMES, LANGUAGES, PAPER_URL, IndicGenBenchAdapter, language_name
 
 EN_TO_XX = 'en-xx'
 XX_TO_EN = 'xx-en'
@@ -26,12 +26,6 @@ def subset_languages(subset: str) -> Tuple[str, str]:
     if 'en' not in (source, target) or source == target or (source if target == 'en' else target) not in LANGUAGE_NAMES:
         raise ValueError(f'Unknown FLORES-IN subset `{subset}`. Expected one of: {", ".join(SUBSET_LIST)}.')
     return source, target
-
-
-def subset_file(subset: str, split: str) -> str:
-    """Name of the released file for a subset and split, e.g. `flores_en_hi_test.json`."""
-    source, target = subset_languages(subset)
-    return f'flores_{source}_{target}_{split}.json'
 
 
 def subset_direction(subset: str) -> str:
@@ -80,13 +74,14 @@ FLORES-IN evaluates translation between English and 29 languages from India and 
         prompt_template=PROMPT_TEMPLATE,
     )
 )
-class FloresINAdapter(CorpusChrfMixin, IndicGenBenchAdapter):
+class FloresINAdapter(IndicGenBenchAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.category_map = {subset: subset_direction(subset) for subset in SUBSET_LIST}
 
     def subset_file(self, subset: str, split: str) -> str:
-        return subset_file(subset, split)
+        source, target = subset_languages(subset)
+        return f'flores_{source}_{target}_{split}.json'
 
     def check_record(self, subset: str, record: Dict[str, Any]) -> Optional[str]:
         source, target = subset_languages(subset)

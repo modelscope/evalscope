@@ -13,7 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.indicgenbench.crosssum_in_adapter import SUBSET_LIST, subset_file
+from evalscope.benchmarks.indicgenbench.crosssum_in_adapter import SUBSET_LIST
 from evalscope.config import TaskConfig
 from evalscope.report import ReportGenerator
 
@@ -32,9 +32,9 @@ def _record(text: str, summary: str, lang: str) -> dict:
 def test_subsets() -> None:
     assert len(SUBSET_LIST) == len(set(SUBSET_LIST)) == 30
     assert SUBSET_LIST[0] == 'en'
-    assert subset_file('hi', 'test') == 'crosssum_english-hi_test.json'
-    assert subset_file('en', 'train') == 'crosssum_english-en_train.json'
     adapter = _adapter()
+    assert adapter.subset_file('hi', 'test') == 'crosssum_english-hi_test.json'
+    assert adapter.subset_file('en', 'train') == 'crosssum_english-en_train.json'
     assert adapter.few_shot_num == 1
     assert adapter.train_split == 'train' and adapter.eval_split == 'test'
     assert adapter.category_map['en'] == 'english'
@@ -44,7 +44,7 @@ def test_subsets() -> None:
 @pytest.mark.parametrize('subset', ['xx', 'en-hi', 'english-hi'])
 def test_unknown_subset_is_rejected(subset: str) -> None:
     with pytest.raises(ValueError, match='Unknown CrossSum-IN subset'):
-        subset_file(subset, 'test')
+        _adapter().subset_file(subset, 'test')
 
 
 def test_prompts() -> None:

@@ -8,7 +8,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 
-from .utils import LANGUAGES, PAPER_URL, CorpusChrfMixin, IndicGenBenchAdapter, language_name
+from .utils import LANGUAGES, PAPER_URL, IndicGenBenchAdapter, language_name
 
 ENGLISH = 'english'
 INDIC = 'indic'
@@ -21,13 +21,6 @@ PROMPT_TEMPLATE = (
     'I will first show a news article in English and then provide a summary of it in the {language} language.'
     '\n\nSummarize the following article: {article}\nSummary:'
 )
-
-
-def subset_file(subset: str, split: str) -> str:
-    """Name of the released file for a subset and split, e.g. `crosssum_english-hi_test.json`."""
-    if subset not in SUBSET_LIST:
-        raise ValueError(f'Unknown CrossSum-IN subset `{subset}`. Expected one of: {", ".join(SUBSET_LIST)}.')
-    return f'crosssum_english-{subset}_{split}.json'
 
 
 @register_benchmark(
@@ -72,13 +65,15 @@ CrossSum-IN evaluates summarization of English BBC news in English and 29 langua
         prompt_template=PROMPT_TEMPLATE,
     )
 )
-class CrossSumINAdapter(CorpusChrfMixin, IndicGenBenchAdapter):
+class CrossSumINAdapter(IndicGenBenchAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.category_map = {subset: ENGLISH if subset == 'en' else INDIC for subset in SUBSET_LIST}
 
     def subset_file(self, subset: str, split: str) -> str:
-        return subset_file(subset, split)
+        if subset not in SUBSET_LIST:
+            raise ValueError(f'Unknown CrossSum-IN subset `{subset}`. Expected one of: {", ".join(SUBSET_LIST)}.')
+        return f'crosssum_english-{subset}_{split}.json'
 
     def check_record(self, subset: str, record: Dict[str, Any]) -> Optional[str]:
         if record['lang'] != subset:

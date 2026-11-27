@@ -13,12 +13,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.indicgenbench.flores_in_adapter import (
-    LANGUAGE_NAMES,
-    SUBSET_LIST,
-    subset_direction,
-    subset_file,
-)
+from evalscope.benchmarks.indicgenbench.flores_in_adapter import LANGUAGE_NAMES, SUBSET_LIST, subset_direction
 from evalscope.benchmarks.indicgenbench.utils import first_line
 from evalscope.config import TaskConfig
 from evalscope.report import ReportGenerator
@@ -37,11 +32,11 @@ def test_subsets() -> None:
     assert len(LANGUAGE_NAMES) == 29
     assert len(SUBSET_LIST) == len(set(SUBSET_LIST)) == 58
     assert SUBSET_LIST[0] == 'en-as' and SUBSET_LIST[-1] == 'ur-en'
-    assert subset_file('en-hi', 'test') == 'flores_en_hi_test.json'
-    assert subset_file('sat-en', 'dev') == 'flores_sat_en_dev.json'
+    adapter = _adapter()
+    assert adapter.subset_file('en-hi', 'test') == 'flores_en_hi_test.json'
+    assert adapter.subset_file('sat-en', 'dev') == 'flores_sat_en_dev.json'
     assert subset_direction('en-hi') == 'en-xx'
     assert subset_direction('hi-en') == 'xx-en'
-    adapter = _adapter()
     assert adapter.few_shot_num == 1
     assert adapter.train_split == 'dev' and adapter.eval_split == 'test'
     assert sorted(set(adapter.category_map.values())) == ['en-xx', 'xx-en']
@@ -50,7 +45,7 @@ def test_subsets() -> None:
 @pytest.mark.parametrize('subset', ['en-zz', 'hi-ta', 'hi', 'en-en'])
 def test_unknown_subset_is_rejected(subset: str) -> None:
     with pytest.raises(ValueError, match='Unknown FLORES-IN subset'):
-        subset_file(subset, 'test')
+        _adapter().subset_file(subset, 'test')
 
 
 @pytest.mark.parametrize(
