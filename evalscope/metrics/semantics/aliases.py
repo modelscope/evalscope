@@ -74,6 +74,9 @@ METRIC_ALIASES: Dict[str, MetricAlias] = {
     'cvtgword_accuracy': MetricAlias(
         'cvtg_word_accuracy', 'quality.accuracy.ratio', scopes=frozenset({AliasScope.READ_OLD, AliasScope.PRODUCER})
     ),
+    'dpgscore': MetricAlias(
+        'dpg_score', 'quality.accuracy.ratio', scopes=frozenset({AliasScope.READ_OLD, AliasScope.PRODUCER})
+    ),
     'long_text_score': MetricAlias(
         'text_score', 'quality.accuracy.ratio', scopes=frozenset({AliasScope.READ_OLD, AliasScope.PRODUCER})
     ),

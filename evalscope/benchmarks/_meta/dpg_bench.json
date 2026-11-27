@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "pretty_name": "DPG-Bench",
+    "dataset_id": "evalscope/DPG-Bench",
+    "paper_url": "https://arxiv.org/abs/2403.05135",
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "dpg_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nDPG-Bench evaluates how well generated images follow dense prompts about objects, attributes, and relations.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Dense prompt describing a multi-object scene\n- **Output**: Image scored through atomic yes/no questions decomposed from the prompt\n- **Domain**: Dense prompt semantic alignment\n\n## Key Features\n\n- 1,065 official prompts and 14,392 yes/no questions with dependencies.\n- The ModelScope mirror includes the exact prompts. For a local CSV, place the original text files in `prompts/`.\n\n## Evaluation Notes\n\n- Configure a vision judge with `--judge`. Missing or invalid verdicts exclude the image. The official judge is mPLUG.\n- Overall score averages dependency-adjusted image scores. Category scores pool raw verdicts across images.\n- EvalScope retains all CSV rows and uses every image for category scoring. The reference script skips its first CSV\n  row and uses the final crop for category scoring. Use `repeats=4` to generate four images per prompt.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc",
+    "primary_metric": {
+      "name": "dpg_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
+    "requires_judge": true,
+    "eval_type": "text2image",
+    "requires_local_dataset": false
+  },
+  "statistics": {
+    "total_samples": 1065,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1065,
+        "prompt_length_mean": 407.9,
+        "prompt_length_min": 234,
+        "prompt_length_max": 891,
+        "prompt_length_std": 84.69,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 407.9,
+      "min": 234,
+      "max": 891,
+      "std": 84.69
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-11-27T17:18:35.155305"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "27494d92",
+          "content": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control."
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "partiprompts97",
+        "prompt": "An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.",
+        "questions": [
+          {
+            "proposition_id": 1,
+            "question": "Is there an empty space?",
+            "dependency": [
+              0
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 2,
+            "question": "Is there an invisible man?",
+            "dependency": [
+              1
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 3,
+            "question": "Are there glasses?",
+            "dependency": [
+              1
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 4,
+            "question": "Is there a necklace?",
+            "dependency": [
+              1
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 5,
+            "question": "Is there a smartphone?",
+            "dependency": [
+              1
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 6,
+            "question": "Is there a room?",
+            "dependency": [
+              0
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 7,
+            "question": "Is there a couch?",
+            "dependency": [
+              6
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 8,
+            "question": "Is there a coffee table?",
+            "dependency": [
+              6
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 9,
+            "question": "Are there magazines?",
+            "dependency": [
+              6
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          {
+            "proposition_id": 10,
+            "question": "Is there a remote control?",
+            "dependency": [
+              6
+            ],
+            "category_broad": "entity",
+            "category_detailed": "whole"
+          },
+          "... [TRUNCATED 9 more items] ..."
+        ],
+        "category": "",
+        "tags": [],
+        "image_path": ""
+      }
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DPG-Bench\n\n\n## Overview\n\nDPG-Bench evaluates how well generated images follow dense prompts about objects, attributes, and relations.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Dense prompt describing a multi-object scene\n- **Output**: Image scored through atomic yes/no questions decomposed from the prompt\n- **Domain**: Dense prompt semantic alignment\n\n## Key Features\n\n- 1,065 official prompts and 14,392 yes/no questions with dependencies.\n- The ModelScope mirror includes the exact prompts. For a local CSV, place the original text files in `prompts/`.\n\n## Evaluation Notes\n\n- Configure a vision judge with `--judge`. Missing or invalid verdicts exclude the image. The official judge is mPLUG.\n- Overall score averages dependency-adjusted image scores. Category scores pool raw verdicts across images.\n- EvalScope retains all CSV rows and uses every image for category scoring. The reference script skips its first CSV\n  row and uses the final crop for category scoring. Use `repeats=4` to generate four images per prompt.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `dpg_bench` |\n| **Dataset ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2403.05135) |\n| **Tags** | `TextToImage` |\n| **Metrics** | `dpg_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,065 |\n| Prompt Length (Mean) | 407.9 chars |\n| Prompt Length (Min/Max) | 234 / 891 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"27494d92\",\n      \"content\": \"An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"partiprompts97\",\n    \"prompt\": \"An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.\",\n    \"questions\": [\n      {\n        \"proposition_id\": 1,\n        \"question\": \"Is there an empty space?\",\n        \"dependency\": [\n          0\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 2,\n        \"question\": \"Is there an invisible man?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 3,\n        \"question\": \"Are there glasses?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 4,\n        \"question\": \"Is there a necklace?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 5,\n        \"question\": \"Is there a smartphone?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 6,\n        \"question\": \"Is there a room?\",\n        \"dependency\": [\n          0\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 7,\n        \"question\": \"Is there a couch?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 8,\n        \"question\": \"Is there a coffee table?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 9,\n        \"question\": \"Are there magazines?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 10,\n        \"question\": \"Is there a remote control?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      \"... [TRUNCATED 9 more items] ...\"\n    ],\n    \"category\": \"\",\n    \"tags\": [],\n    \"image_path\": \"\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets dpg_bench \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['dpg_bench'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DPG-Bench\n\n\n## 概述\n\nDPG-Bench 评估生成的图像在多大程度上遵循了关于对象、属性和关系的密集提示词。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成\n- **输入**：描述多对象场景的密集提示词\n- **输出**：通过从提示词分解出的原子级是/否问题进行评分的图像\n- **领域**：密集提示词语义对齐\n\n## 主要特点\n\n- 包含 1,065 个官方提示词和 14,392 个具有依赖关系的是/否问题。\n- ModelScope 镜像包含了确切的提示词。若需本地 CSV，请将原始文本文件放置在 `prompts/` 目录下。\n\n## 评估说明\n\n- 使用 `--judge` 配置视觉评判器。缺失或无效的判定结果将排除该图像。官方评判器为 mPLUG。\n- 总体分数是对经过依赖调整后的图像分数取平均值。类别分数则汇总所有图像的原始判定结果。\n- EvalScope 保留所有 CSV 行，并使用每张图像进行类别评分。参考脚本会跳过其第一行 CSV，并使用最终裁剪区域进行类别评分。使用 `repeats=4` 可为每个提示词生成四张图像。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `dpg_bench` |\n| **数据集ID** | [evalscope/DPG-Bench](https://modelscope.cn/datasets/evalscope/DPG-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2403.05135) |\n| **标签** | `TextToImage` |\n| **指标** | `dpg_score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,065 |\n| 提示词长度（平均） | 407.9 字符 |\n| 提示词长度（最小/最大） | 234 / 891 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"27494d92\",\n      \"content\": \"An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.\"\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"partiprompts97\",\n    \"prompt\": \"An empty space where an invisible man would be, with a pair of horn-rimmed glasses seemingly floating in mid-air, and a pearl bead necklace draped in the space below them. In the space where his hands would be, a smartphone is held, as if being operated by the unseen figure. Around this curious scene, the room appears ordinary, with a couch and a coffee table nearby, upon which rests a scattering of magazines and a remote control.\",\n    \"questions\": [\n      {\n        \"proposition_id\": 1,\n        \"question\": \"Is there an empty space?\",\n        \"dependency\": [\n          0\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 2,\n        \"question\": \"Is there an invisible man?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 3,\n        \"question\": \"Are there glasses?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 4,\n        \"question\": \"Is there a necklace?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 5,\n        \"question\": \"Is there a smartphone?\",\n        \"dependency\": [\n          1\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 6,\n        \"question\": \"Is there a room?\",\n        \"dependency\": [\n          0\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 7,\n        \"question\": \"Is there a couch?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 8,\n        \"question\": \"Is there a coffee table?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 9,\n        \"question\": \"Are there magazines?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      {\n        \"proposition_id\": 10,\n        \"question\": \"Is there a remote control?\",\n        \"dependency\": [\n          6\n        ],\n        \"category_broad\": \"entity\",\n        \"category_detailed\": \"whole\"\n      },\n      \"... [TRUNCATED 9 more items] ...\"\n    ],\n    \"category\": \"\",\n    \"tags\": [],\n    \"image_path\": \"\"\n  }\n}\n```\n\n*注意：部分内容为显示目的已截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets dpg_bench \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['dpg_bench'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "bf02e95c9a884e3f597cb57f7d56f322",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-27T17:18:35.405144",
+  "translation_updated_at": "2026-11-27T17:18:41"
+}

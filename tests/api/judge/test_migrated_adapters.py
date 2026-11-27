@@ -29,6 +29,54 @@ class TransportFailingJudge(ScriptedJudge):
         raise RuntimeError('judge transport unavailable')
 
 
+@pytest.mark.parametrize(
+    ('replies', 'expected'),
+    [
+        (['{"answer":"yes"}', '{"answer":"no"}'], 0.0),
+        (['{"answer":"yes"}', '{"answer":"yes"}'], 1.0),
+        (['{"answer":"yes"}', '```json\n{"answer":"yes"}\n```'], 1.0),
+        (['{"answer":"yes"}', '{"answer":"Yes"}'], None),
+        (['{"answer":"yes"}', 'not JSON'], None),
+        (['{"answer":"yes"}', '[ERROR] judge transport unavailable'], None),
+    ],
+)
+def test_dpg_judge_contract(tmp_path: Path, replies: List[str], expected: float | None) -> None:
+    image = tmp_path / 'sample.png'
+    Image.new('RGB', (8, 12)).save(image)
+    adapter = get_benchmark('dpg_bench', TaskConfig(
+        datasets=['dpg_bench'], judge={'models': [{'model_id': 'scripted'}]},
+    ))
+    judge = ScriptedJudge(replies)
+    adapter.llm_judge = judge
+    sample = adapter.record_to_sample({
+        'item_id': 'test-item',
+        'prompt': 'a red cube',
+        'questions': [
+            {'proposition_id': 1, 'question': 'Is the object red?', 'dependency': [2], 'category_broad': 'attribute'},
+            {'proposition_id': 2, 'question': 'Is there a cube?', 'dependency': [0], 'category_broad': 'entity'},
+        ],
+    })
+    sample.metadata['image_path'] = str(image)
+    sample.id = 0
+    task = TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', ''), completed=True)
+    scored = adapter.calculate_metrics(task)
+
+    assert len(judge.calls) == 2
+    assert all(call[0].content[0].image == str(image) for call in judge.calls)
+    assert scored.score.prediction == str(image)
+    if expected is None:
+        assert scored.score.status is ScoreStatus.EXCLUDED
+        assert not scored.score.value
+        assert not adapter.aggregate_scores([scored])
+    else:
+        assert scored.score.status is ScoreStatus.SUCCESS
+        assert scored.score.main_value == expected
+        rows = {item.dimensions.get('component'): item for item in adapter.aggregate_scores([scored])}
+        assert rows[None].score == expected
+        assert rows['attribute'].score == 1.0
+        assert rows['entity'].score == expected
+
+
 def test_qwen_image_bench_uses_chinese_prompts_without_task_config() -> None:
     adapter = get_benchmark('qwen_image_bench')
     sample = adapter.record_to_sample({

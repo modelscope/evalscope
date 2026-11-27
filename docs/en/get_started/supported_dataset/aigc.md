@@ -5,6 +5,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name for de
 | Benchmark Name | Pretty Name | Task Categories |
 |------------|----------|----------|
 | `cvtg_2k` | [CVTG-2K](../../benchmarks/cvtg_2k.md) | `TextToImage` |
+| `dpg_bench` | [DPG-Bench](../../benchmarks/dpg_bench.md) | `TextToImage` |
 | `evalmuse` | [EvalMuse](../../benchmarks/evalmuse.md) | `TextToImage` |
 | `gedit` | [GEdit-Bench](../../benchmarks/gedit.md) | `ImageEditing` |
 | `genai_bench` | [GenAI-Bench](../../benchmarks/genai_bench.md) | `TextToImage` |
@@ -19,6 +20,7 @@ Below is the list of supported AIGC benchmarks. Click on a benchmark name for de
 :maxdepth: 1
 
 ../../benchmarks/cvtg_2k.md
+../../benchmarks/dpg_bench.md
 ../../benchmarks/evalmuse.md
 ../../benchmarks/gedit.md
 ../../benchmarks/genai_bench.md
