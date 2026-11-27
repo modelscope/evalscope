@@ -383,7 +383,11 @@ class DefaultEvaluator(Evaluator):
             ``(task_state, sample_score)`` where ``sample_score`` is ``None``
             for batch-scoring benchmarks (review deferred).
         """
-        task_state = self._predict_sample(item.sample, model_prediction_dir, item.subset) if item.needs_predict else item.task_state
+        task_state = (
+            self._predict_sample(item.sample, model_prediction_dir, item.subset)
+            if item.needs_predict
+            else item.task_state
+        )
         if item.needs_predict:
             # A review can fail independently of inference. Persist prediction first so offline
             # re-review never has to regenerate an already completed answer.
