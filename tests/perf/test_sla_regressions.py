@@ -16,6 +16,7 @@ from evalscope.perf.sla.sla_run import (
     parse_sla_params,
     run_sla_auto_tune,
 )
+from evalscope.perf.utils.benchmark_util import BenchmarkData, MetricsAccumulator
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 
@@ -69,6 +70,47 @@ def test_missing_percentile_fails_without_turning_into_zero() -> None:
     assert not check_sla(missing, parse_sla_params([{'p99_ttft': '<=10ms'}]))
     assert get_metric_values(_result(0.0))['p99_ttft'] == 0.0
     assert check_sla(_result(0.0), parse_sla_params([{'p99_ttft': '<=10ms'}]))
+
+
+def _streamed_run(replies: list[tuple[int, float]]) -> dict:
+    accumulator = MetricsAccumulator(concurrency=1)
+    for start, (tokens, decode_seconds) in enumerate(replies):
+        latency = 0.125 + decode_seconds
+        accumulator.update(
+            BenchmarkData(
+                start_time=start, completed_time=start + latency, success=True, is_stream=True,
+                first_chunk_latency=0.125, query_latency=latency, prompt_tokens=10, completion_tokens=tokens,
+            ),
+            api_plugin=None,
+        )
+    summary = BenchmarkSummary.from_dict(accumulator.to_result().create_message(api_type='openai'))
+    return {'metrics': summary.to_dict(), 'percentiles': {}}
+
+
+@pytest.mark.parametrize(
+    ('replies', 'expected_ms', 'selected'),
+    [
+        ([(1, 0.0), (1, 0.0)], None, None),
+        ([(1, 0.0), (2, 0.040)], 40.0, None),
+        ([(2, 0.0), (2, 0.0)], 0.0, 1),
+    ],
+)
+def test_streamed_avg_tpot_sla(
+    replies: list[tuple[int, float]], expected_ms: float | None, selected: int | None
+) -> None:
+    run = _streamed_run(replies)
+    criteria = [{'avg_tpot': '<=1ms'}]
+    assert check_sla(run, parse_sla_params(criteria)) is (selected is not None)
+    assert get_metric_values(run).get('avg_tpot') == expected_ms
+    assert _tune({1: run}, criteria).selections[0].selected_value == selected
+
+
+def test_repeated_tpot_probe_requires_a_measurement_in_every_run() -> None:
+    runs = iter([_streamed_run([(2, 0.0)]), _streamed_run([(1, 0.0)])])
+    criteria = [{'avg_tpot': '<=1ms'}]
+    result = _tune({1: lambda: next(runs)}, criteria, runs=2)
+    assert result.selections[0].selected_value is None
+    assert not check_sla(next(iter(result.values())), parse_sla_params(criteria))
 
 
 def test_one_missing_run_fails_the_pressure_point_and_keeps_exact_counts() -> None:

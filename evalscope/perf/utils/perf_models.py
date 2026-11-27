@@ -60,7 +60,7 @@ class BenchmarkSummary(BaseModel):
     output_token_throughput_per_device: Optional[float] = Field(None, alias=Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE)
     total_token_throughput_per_device: Optional[float] = Field(None, alias=Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE)
     avg_ttft: float = Field(0.0, alias=Metrics.AVERAGE_TIME_TO_FIRST_TOKEN)
-    avg_tpot: float = Field(0.0, alias=Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN)
+    avg_tpot: Optional[float] = Field(None, alias=Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN)
     avg_itl: float = Field(0.0, alias=Metrics.AVERAGE_INTER_TOKEN_LATENCY)
     avg_steady_itl: Optional[float] = Field(None, alias=Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY)
     avg_pd_handoff_latency: Optional[float] = Field(None, alias=Metrics.AVERAGE_PD_HANDOFF_LATENCY)
@@ -150,7 +150,7 @@ class BenchmarkSummary(BaseModel):
         rows.append((Metrics.AVERAGE_LATENCY, _fmt(Metrics.AVERAGE_LATENCY, self.avg_latency)))
         if self.avg_ttft:
             rows.append((Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, _fmt(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, self.avg_ttft)))
-        if self.avg_tpot:
+        if self.avg_tpot is not None:
             rows.append(
                 (Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, _fmt(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, self.avg_tpot))
             )

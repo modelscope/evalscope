@@ -365,9 +365,7 @@ class MetricsAccumulator:
             # fall back to the all-request computation so their values are unchanged.
             if self.n_stream_success > 0:
                 avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency_stream, self.n_stream_success)
-                avg_time_per_output_token = _safe_div(
-                    self.total_time_per_output_token_stream, self.n_stream_tpot, default=0.0
-                )
+                avg_time_per_output_token = _safe_div(self.total_time_per_output_token_stream, self.n_stream_tpot)
             else:
                 avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency, n)
                 avg_time_per_output_token = _safe_div(self.total_time_per_output_token, n)
@@ -609,10 +607,11 @@ class BenchmarkMetrics:
             Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_throughput, r),
             Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_throughput, r),
             Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency * 1000, 2),
-            Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN: round(self.avg_time_per_output_token * 1000, 2),
             Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency * 1000, 2),
             Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, r),
         }
+        if self.avg_time_per_output_token >= 0:
+            fields[Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN] = round(self.avg_time_per_output_token * 1000, 2)
         if self.device_count is not None and self.device_count >= 1:
             fields[Metrics.DEVICE_COUNT] = self.device_count
             if self.avg_output_token_throughput >= 0:

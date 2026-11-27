@@ -436,9 +436,8 @@ def average_results(results_list: List[Dict]):
     metric_dicts = [_to_metrics_dict(r.get('metrics', r.get('summary', {}))) for r in results_list]
     metric_keys = metric_dicts[0].keys() if metric_dicts else []
     for k in metric_keys:
-        vals = [d.get(k, 0) for d in metric_dicts]
-        vals = [v for v in vals if isinstance(v, (int, float))]
-        if vals:
+        vals = [d.get(k) for d in metric_dicts]
+        if all(isinstance(v, (int, float)) for v in vals):
             avg_metrics[k] = sum(vals) / len(vals)
 
     # --- Percentile averaging ---
