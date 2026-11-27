@@ -146,7 +146,7 @@ class DatasetHub:
         options: Mapping[str, Any],
         snapshot_cache_dir: Optional[Callable[[], str]],
     ) -> 'Union[HFDataset, HFIterableDataset]':
-        """Try the SDK snapshot, falling back only when cached files or splits are missing."""
+        """Try the SDK snapshot before the SDK's remote dataset loader."""
         import datasets
 
         snapshot = None
@@ -162,8 +162,8 @@ class DatasetHub:
                     cached_snapshot=True,
                     snapshot_cache_dir=snapshot_cache_dir,
                 )
-            except (FileNotFoundError, ValueError) as exc:
-                if not _is_missing_cached_data(exc):
+            except (FileNotFoundError, TypeError, ValueError) as exc:
+                if not _can_retry_modelscope_snapshot(exc, snapshot):
                     raise
                 logger.info(
                     f'Cached ModelScope dataset {self.data_id_or_path} cannot provide subset {subset}, '
@@ -311,9 +311,14 @@ def _persistent_download_config(load_kwargs: Mapping[str, Any]) -> 'DownloadConf
     return config
 
 
-def _is_missing_cached_data(exc: Exception) -> bool:
+def _can_retry_modelscope_snapshot(exc: Exception, snapshot: str) -> bool:
     if isinstance(exc, FileNotFoundError):
         return True
+    if isinstance(exc, TypeError):
+        # Older ModelScope snapshots may have dataset_infos.json with Value features that omit dtype.
+        return str(exc) == "Value.__init__() missing 1 required positional argument: 'dtype'" and os.path.isfile(
+            os.path.join(snapshot, 'dataset_infos.json')
+        )
     if not isinstance(exc, ValueError):
         return False
     # datasets exposes missing splits through ValueError messages.
