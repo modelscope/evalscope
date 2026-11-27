@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiTurnAdapter
-from evalscope.api.dataset import DatasetHub, Sample
+from evalscope.api.dataset import DatasetDict, DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -100,21 +100,23 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         self.prompt_template = SUBPROBLEM_PROMPT_PROVIDE_BACKGROUND if self.provide_background else SUBPROBLEM_PROMPT
         self.docker_path = Path(__file__).parent / 'docker'
 
-    def load(self):
-        """
-        Download the test data if it does not exist.
-        """
-        test_data_path = self.docker_path / 'test_data.h5'
-        source_path = DatasetHub(
+    def load(self) -> tuple[DatasetDict, Optional[DatasetDict]]:
+        """Prepare the grading data before loading the standard evaluation split."""
+        hub = DatasetHub(
             data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
             revision=self.dataset_revision,
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
-        ).download_file('test_data.h5')
+        )
+        self._prepare_grading_data(hub)
+        return super().load()
+
+    def _prepare_grading_data(self, hub: DatasetHub) -> None:
+        test_data_path = self.docker_path / 'test_data.h5'
+        source_path = hub.download_file('test_data.h5')
         if Path(source_path).resolve() != test_data_path.resolve():
             shutil.copyfile(source_path, test_data_path)
-        return super().load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

@@ -151,6 +151,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `salad_bench_mcq` | [SALAD-Bench MCQ](../../benchmarks/salad_bench_mcq.md) | `MCQ`, `Safety` |
 | `sanskriti` | [Sanskriti](../../benchmarks/sanskriti.md) | `Knowledge`, `MCQ` |
 | `scicode` | [SciCode](../../benchmarks/scicode.md) | `Coding` |
+| `scicode_verified` | [SciCode-Verified](../../benchmarks/scicode_verified.md) | `Coding` |
 | `sciq` | [SciQ](../../benchmarks/sciq.md) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `seed_tts_eval` | [Seed-TTS-Eval](../../benchmarks/seed_tts_eval.md) | `Audio`, `TextToSpeech` |
 | `simple_qa` | [SimpleQA](../../benchmarks/simple_qa.md) | `Knowledge`, `QA` |
@@ -327,6 +328,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/salad_bench_mcq.md
 ../../benchmarks/sanskriti.md
 ../../benchmarks/scicode.md
+../../benchmarks/scicode_verified.md
 ../../benchmarks/sciq.md
 ../../benchmarks/seed_tts_eval.md
 ../../benchmarks/simple_qa.md
