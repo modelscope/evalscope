@@ -55,7 +55,7 @@ InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evalu
         metric_list=['anls'],
         eval_split='validation',
         prompt_template=PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class InfoVQAAdapter(VisionLanguageAdapter):
@@ -64,7 +64,8 @@ class InfoVQAAdapter(VisionLanguageAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
 
-        input_text = PROMPT.format(question=record['question'])
+        template = self.prompt_template if self.prompt_template is not None else PROMPT
+        input_text = template.format(question=record['question'])
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:

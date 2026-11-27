@@ -23,7 +23,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.3',
+        evaluation_version='v1.4',
         name='chartqa',
         pretty_name='ChartQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -75,8 +75,9 @@ class ChartQAAdapter(VisionLanguageAdapter):
         image_data = record['image']
         image = self._normalize_media_value({'bytes': image_data['bytes']}, media_type='image')
 
+        template = self.prompt_template if self.prompt_template is not None else OPEN_PROMPT
         content_list: List[Content] = [
-            ContentText(text=OPEN_PROMPT.format(question=question)),
+            ContentText(text=template.format(question=question)),
             self._content_image_from_value(image),
         ]
 
