@@ -49,13 +49,15 @@ README_TEMPLATE = """# {pretty_name}
 """
 
 
-def _format_dataset_link(dataset_id: str) -> str:
+def _format_dataset_link(dataset_id: str, dataset_hub: Optional[str] = None) -> str:
     """Format dataset ID as a clickable link."""
     if not dataset_id:
         return 'N/A'
     if dataset_id.startswith(('http://', 'https://')):
         return f'[{os.path.basename(dataset_id)}]({dataset_id})'
     elif '/' in dataset_id:
+        if dataset_hub == 'huggingface':
+            return f'[{dataset_id}](https://huggingface.co/datasets/{dataset_id})'
         # ModelScope format: org/name
         return f'[{dataset_id}](https://modelscope.cn/datasets/{dataset_id}/summary)'
     return f'`{dataset_id}`'
@@ -202,6 +204,7 @@ def _format_usage_section(
     requires_judge: bool = False,
     eval_type: Optional[str] = None,
     requires_local_dataset: bool = False,
+    dataset_hub: Optional[str] = None,
 ) -> str:
     """
     Format the usage section with CLI and Python examples.
@@ -215,6 +218,7 @@ def _format_usage_section(
         requires_judge: Whether this benchmark requires a configured Native Judge
         eval_type: Required inference protocol for typed benchmark adapters
         requires_local_dataset: Whether an example must provide a local dataset directory
+        dataset_hub: Required dataset hub for benchmarks without a ModelScope mirror
 
     Returns:
         Formatted usage section markdown string
@@ -244,6 +248,8 @@ def _format_usage_section(
         cli_lines = [line.replace('OPENAI_API_COMPAT_URL', 'http://127.0.0.1:18131/v1') for line in cli_lines]
     if eval_type == 'text2image':
         cli_lines.insert(2, '    --model-task image_generation ' + '\\')
+    if dataset_hub:
+        cli_lines.append(f'    --dataset-hub {dataset_hub} ' + '\\')
     if requires_local_dataset:
         local_args = json.dumps({name: {'local_path': '/path/to/data'}})
         cli_lines.append(f"    --dataset-args '{local_args}' " + '\\')
@@ -291,6 +297,7 @@ def _format_usage_section(
         python_judge_config = "    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n"
 
     python_eval_type = f"    eval_type='{eval_type}',\n" if eval_type else ''
+    python_dataset_hub = f"    dataset_hub='{dataset_hub}',\n" if dataset_hub else ''
     if eval_type == 'text2image':
         python_eval_type += "    model_task='image_generation',\n"
     api_url = 'http://127.0.0.1:18131/v1' if eval_type else 'OPENAI_API_COMPAT_URL'
@@ -301,7 +308,7 @@ task_cfg = TaskConfig(
 {python_eval_type}    api_url='{api_url}',
     api_key='EMPTY_TOKEN',
     datasets=['{name}'],
-{python_use_sandbox}{python_agent_config}{python_judge_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
+{python_dataset_hub}{python_use_sandbox}{python_agent_config}{python_judge_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)"""
@@ -516,7 +523,7 @@ def generate_readme_from_dict(
         pretty_name=meta.get('pretty_name') or name,
         description=meta.get('description') or '*No description available.*',
         name=name,
-        dataset_id_link=_format_dataset_link(meta.get('dataset_id', '')),
+        dataset_id_link=_format_dataset_link(meta.get('dataset_id', ''), meta.get('dataset_hub')),
         paper_link=_format_link(meta.get('paper_url'), 'Paper'),
         tags=_format_tags(meta.get('tags', [])),
         metrics=_format_metrics(meta.get('metrics', [])),
@@ -544,6 +551,7 @@ def generate_readme_from_dict(
             requires_judge=meta.get('requires_judge', False),
             eval_type=meta.get('eval_type'),
             requires_local_dataset=meta.get('requires_local_dataset', False),
+            dataset_hub=meta.get('dataset_hub'),
         ),
     )
 
