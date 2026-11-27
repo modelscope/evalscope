@@ -69,6 +69,10 @@ _TRIAL_TOKEN_PREFIX = 'trial-'
 #: CLIs like Hermes may request very large values derived from context_length.
 _MAX_OPENAI_MAX_TOKENS_CAP = 16384
 
+#: Request body limit of the bridge. Agent requests carry the whole history, tool
+#: output and base64 images, which easily exceeds aiohttp's 1 MiB default.
+_MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024
+
 #: Env names whose runtime is a Docker container — for these we rewrite
 #: the bridge's loopback host to ``host.docker.internal`` so the agent
 #: inside the container can reach the bridge on the host. Shared with
@@ -252,7 +256,7 @@ class ModelProxyServer:
         if self._phase is not _ProxyPhase.STARTING:
             raise _ProxyClosingError('ModelProxyServer is shutting down.')
 
-        app = web.Application()
+        app = web.Application(client_max_size=_MAX_REQUEST_BODY_BYTES)
         app.router.add_post('/anthropic/v1/messages', self._handle_anthropic_messages)
         app.router.add_post('/openai/v1/chat/completions', self._handle_openai_chat_completions)
         app.router.add_post('/openai/v1/responses', self._handle_openai_responses)
