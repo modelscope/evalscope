@@ -52,6 +52,10 @@ FRAMEWORK = 'otel-import'
 #: share one export. Absent means "one export per sample" (the default).
 DEFAULT_SAMPLE_ID_ATTRIBUTE = 'evalscope.sample_id'
 
+#: Attribute naming the eval subset. A sample id is unique only within its
+#: subset, so a multi-subset export must also tag the subset.
+DEFAULT_SUBSET_ATTRIBUTE = 'evalscope.subset'
+
 # GenAI semantic-convention attribute names (stable across v1.36-v1.43).
 _OP_NAME = 'gen_ai.operation.name'
 _USAGE_INPUT = 'gen_ai.usage.input_tokens'
@@ -517,7 +521,9 @@ def import_otlp_trace(
     payload: Dict[str, Any],
     *,
     sample_id_attribute: str = DEFAULT_SAMPLE_ID_ATTRIBUTE,
+    subset_attribute: str = DEFAULT_SUBSET_ATTRIBUTE,
     expected_sample_id: Optional[str] = None,
+    expected_subset: Optional[str] = None,
 ) -> Tuple[AgentTrace, List[ChatMessage]]:
     """Convert an OTLP JSON export into ``(AgentTrace, messages)``.
 
@@ -526,9 +532,14 @@ def import_otlp_trace(
             ``scopeSpans`` → ``spans``).
         sample_id_attribute: Attribute carrying the eval sample id when several
             samples share one export.
+        subset_attribute: Attribute carrying the eval subset name. A sample id
+            is unique only within its subset, so a multi-subset export must
+            also tag the subset.
         expected_sample_id: When set, the export must contain at least one span
             whose ``sample_id_attribute`` equals this value; spans for other
             samples are dropped.
+        expected_subset: When set and the export carries ``subset_attribute``,
+            spans for other subsets are dropped.
 
     Returns:
         The ``AgentTrace`` (``framework='otel-import'``) and the reconstructed
@@ -562,6 +573,15 @@ def import_otlp_trace(
                 f'No span carries {sample_id_attribute}={expected_sample_id!r}; found sample ids: {sorted(tagged)}'
             )
         spans = [span for span in spans if resolved.get(_span_id(span)) == expected]
+
+    # A sample id is unique only within its subset: when the export also tags
+    # the subset, drop the other subsets' runs so two subsets sharing an id do
+    # not both score the same recorded answer.
+    if expected_subset is not None:
+        by_id = {_span_id(span): span for span in spans}
+        resolved_subset = {_span_id(span): _owning_sample_id(span, by_id, subset_attribute) for span in spans}
+        if any(value is not None for value in resolved_subset.values()):
+            spans = [span for span in spans if resolved_subset.get(_span_id(span)) == str(expected_subset)]
 
     ordered = sorted(spans, key=_start_ns)
     steps = _chat_steps(ordered)
@@ -755,19 +775,34 @@ def import_otlp_trace(
 # ---------------------------------------------------------------------------
 
 
-def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_samples: Optional[int] = None) -> Any:
+def load_otlp_trace_for_sample(
+    config: Any,
+    model: Any,
+    sample: Any,
+    *,
+    n_samples: Optional[int] = None,
+    subset: Optional[str] = None,
+    n_subsets_with_id: int = 1,
+) -> Any:
     """Load the OTLP export for one sample and turn it into an ``InferenceResult``.
 
     ``config.trace_path`` may be one OTLP JSON file (one export per sample) or
-    a directory containing ``<sample_id>.otlp.json``. When the export carries
-    ``config.sample_id_attribute`` on any span, it is treated as multi-sample
-    and filtered by ``sample.id``; otherwise the file is taken as this
-    sample's export.
+    a directory containing ``<sample_id>.otlp.json`` (or
+    ``<subset>/<sample_id>.otlp.json`` for a multi-subset dataset). When the
+    export carries ``config.sample_id_attribute`` on any span, it is treated as
+    multi-sample and filtered by ``sample.id`` (and ``config.subset_attribute``
+    when present).
 
     ``n_samples`` is the dataset size under evaluation. A single file without
     sample tags can only serve one sample; with ``n_samples > 1`` the binding is
     ambiguous (every sample would reuse the same run's answer), so it is
     rejected before any score exists.
+
+    ``subset`` is the sample's own subset and ``n_subsets_with_id`` counts how
+    many subsets contain this ``sample.id``. A sample id is unique only within
+    its subset, so when the id appears in several subsets a bare
+    ``<sample_id>.otlp.json`` cannot be bound unambiguously and is rejected;
+    name the file ``<subset>/<sample_id>.otlp.json`` instead.
 
     Raises:
         OTLPImportError: The export is missing, has no content, cannot be
@@ -783,11 +818,35 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_sample
 
     path = Path(config.trace_path)
     from_directory = path.is_dir()
+    used_bare_id = False
     if from_directory:
-        candidate = path / f'{sample.id}.otlp.json'
-        if not candidate.exists():
-            raise OTLPImportError(f'No OTLP export for sample {sample.id!r} in {path} (expected {candidate.name})')
-        path = candidate
+        resolved_path: Optional[Path] = None
+        if subset is not None:
+            subset_candidate = path / str(subset) / f'{sample.id}.otlp.json'
+            if subset_candidate.exists():
+                resolved_path = subset_candidate
+        if resolved_path is None:
+            bare_candidate = path / f'{sample.id}.otlp.json'
+            if bare_candidate.exists():
+                resolved_path = bare_candidate
+                used_bare_id = True
+        if resolved_path is None:
+            expected_names = [f'{sample.id}.otlp.json']
+            if subset is not None:
+                expected_names.insert(0, f'{subset}/{sample.id}.otlp.json')
+            raise OTLPImportError(
+                f'No OTLP export for sample {sample.id!r} in {path} (expected one of {expected_names})'
+            )
+        path = resolved_path
+
+    # A sample id is unique only within its subset. A bare ``<id>.otlp.json``
+    # that matches several subsets cannot say which one answered, so reject the
+    # binding rather than let two subsets score the same run.
+    if used_bare_id and n_subsets_with_id > 1:
+        raise OTLPImportError(
+            f'Sample id {sample.id!r} appears in {n_subsets_with_id} subsets; a bare '
+            f'{path.name!r} cannot be bound unambiguously. Use <subset>/<sample_id>.otlp.json.'
+        )
 
     try:
         payload = json.loads(path.read_text(encoding='utf-8'))
@@ -807,9 +866,21 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_sample
         raise OTLPImportError('OTLP export contains no spans')
 
     expected = None
+    expected_subset = None
     tagged = any(_span_attributes(span).get(config.sample_id_attribute) is not None for span in spans)
     if sample.id is not None and tagged:
         expected = str(sample.id)
+        # A multi-subset export must also tag the subset, or two subsets sharing
+        # an id would both score the same run.
+        subset_tagged = any(_span_attributes(span).get(config.subset_attribute) is not None for span in spans)
+        if n_subsets_with_id > 1:
+            if subset is None or not subset_tagged:
+                raise OTLPImportError(
+                    f'Sample id {sample.id!r} appears in {n_subsets_with_id} subsets but the export '
+                    f'carries no {config.subset_attribute!r} attribute; cannot bind one run to subset '
+                    f'{subset!r}. Tag each run with {config.subset_attribute!r} as well.'
+                )
+            expected_subset = str(subset)
 
     # One export per sample unless the export is explicitly tagged: an untagged
     # file with several runs cannot be bound to this sample, and scoring the last
@@ -832,7 +903,9 @@ def load_otlp_trace_for_sample(config: Any, model: Any, sample: Any, *, n_sample
     trace, messages = import_otlp_trace(
         payload,
         sample_id_attribute=config.sample_id_attribute,
+        subset_attribute=config.subset_attribute,
         expected_sample_id=expected,
+        expected_subset=expected_subset,
     )
 
     # Two consecutive assistant answers with no turn boundary between them:

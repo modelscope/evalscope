@@ -136,6 +136,9 @@ class _TerminalBenchBase(AgentAdapter):
     hub_dataset_name: str = ''
     _suppress_doc_sample_example = True
     _suppress_doc_prompt_statistics = True
+    # The scorer reads ``task_state.metadata['result']`` and the task needs a
+    # Docker/E2B sandbox; a static trace provides neither.
+    scoring_requires = ('sandbox', 'benchmark_metadata')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

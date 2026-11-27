@@ -6,6 +6,8 @@ Covers the mapping matrix from the feature issue: operation → EventType,
 boundary, skipped-but-counted operations, and the fail-loud paths (missing
 operation name, missing message content, unresolvable sample id).
 """
+import importlib.util
+
 import pytest
 
 from evalscope.api.agent.otel import FRAMEWORK, OTLPImportError, import_otlp_trace
@@ -678,6 +680,23 @@ def _json(payload) -> str:
     import json
 
     return json.dumps(payload)
+
+
+def test_benchmark_requiring_unprovable_evidence_is_rejected_before_scoring():
+    """A benchmark needing a sandbox/metadata is rejected at dispatch, not KeyError."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+    from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
+
+    class _SandboxedAdapter(DefaultDataAdapter):
+        scoring_requires = ('sandbox', 'benchmark_metadata')
+
+    adapter = object.__new__(_SandboxedAdapter)
+    adapter._task_config = SimpleNamespace(agent_config=OTelTraceConfig(trace_path='/nonexistent'))
+
+    with pytest.raises(OTLPImportError, match='cannot provide'):
+        adapter._maybe_import_otel_trace(SimpleNamespace(name='model'), SimpleNamespace(id=0))
 
 
 def test_high_level_loader_accepts_integer_sample_ids(tmp_path):
@@ -1378,6 +1397,134 @@ def test_single_untagged_export_serves_one_sample(tmp_path):
     assert result.output.completion == 'a'
 
 
+def test_bare_id_export_is_rejected_when_id_repeats_across_subsets(tmp_path):
+    """A bare <id>.otlp.json cannot bind when the id is in several subsets."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        )
+    )
+    (tmp_path / '0.otlp.json').write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='appears in 2 subsets'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(tmp_path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id=0),
+            subset='subset_a',
+            n_subsets_with_id=2,
+        )
+
+
+def test_subset_subdir_binds_the_run_for_that_subset(tmp_path):
+    """<subset>/<id>.otlp.json is the unambiguous binding for a multi-subset dataset."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a')]}),
+            },
+        )
+    )
+    (tmp_path / 'subset_a').mkdir()
+    (tmp_path / 'subset_a' / '0.otlp.json').write_text(_json(payload))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(tmp_path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id=0),
+        subset='subset_a',
+        n_subsets_with_id=2,
+    )
+    assert result.output.completion == 'a'
+
+
+def test_tagged_export_with_shared_id_binds_by_subset(tmp_path):
+    """evalscope.subset disambiguates two runs that share evalscope.sample_id."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def _run(span_id, start, subset, answer):
+        return _chat_span(
+            span_id,
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _str('0'),
+                'evalscope.subset': _str(subset),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part(f'q-{subset}')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(answer)]}),
+            },
+        )
+
+    payload = _export(_run('a1', 1, 'subset_a', 'answer_a'), _run('b1', 3, 'subset_b', 'answer_b'))
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(payload))
+
+    result = load_otlp_trace_for_sample(
+        OTelTraceConfig(trace_path=str(path)),
+        SimpleNamespace(name='model'),
+        SimpleNamespace(id=0),
+        subset='subset_b',
+        n_subsets_with_id=2,
+    )
+    assert result.output.completion == 'answer_b'
+
+
+def test_multi_subset_export_without_subset_tag_is_rejected(tmp_path):
+    """Two subsets sharing an id but no evalscope.subset tag is ambiguous."""
+    from types import SimpleNamespace
+
+    from evalscope.api.agent.otel import load_otlp_trace_for_sample
+    from evalscope.api.agent.otel_config import OTelTraceConfig
+
+    def _run(span_id, start, answer):
+        return _chat_span(
+            span_id,
+            start=start,
+            end=start + 1,
+            **{
+                'evalscope.sample_id': _str('0'),
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part(answer)]}),
+            },
+        )
+
+    payload = _export(_run('a1', 1, 'answer_a'), _run('b1', 3, 'answer_b'))
+    path = tmp_path / 'shared.otlp.json'
+    path.write_text(_json(payload))
+
+    with pytest.raises(OTLPImportError, match='carries no .*evalscope.subset'):
+        load_otlp_trace_for_sample(
+            OTelTraceConfig(trace_path=str(path)),
+            SimpleNamespace(name='model'),
+            SimpleNamespace(id=0),
+            subset='subset_a',
+            n_subsets_with_id=2,
+        )
+
+
 def test_exporter_fixture_scores_known_answer_and_tool_result(tmp_path):
     """End-to-end: an exporter-produced fixture scores its recorded run.
 
@@ -1451,3 +1598,56 @@ def test_exporter_fixture_scores_known_answer_and_tool_result(tmp_path):
     metric = scores[name].metrics[0]
     assert metric.num == 2
     assert metric.num_correct == 2
+
+
+def test_native_path_is_untouched_when_otel_is_disabled():
+    """With no otel_trace agent_config, the import dispatch returns None.
+
+    This is the "verify the existing agent path with OTel disabled" case: the
+    intercept must be a no-op, so ``run_inference`` falls through to the
+    adapter's normal ``_on_inference``.
+    """
+    from types import SimpleNamespace
+
+    from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
+
+    adapter = object.__new__(DefaultDataAdapter)
+    adapter._task_config = SimpleNamespace(agent_config=None)
+
+    assert adapter._maybe_import_otel_trace(SimpleNamespace(name='model'), SimpleNamespace(id=0)) is None
+
+
+def _load_generator():
+    from pathlib import Path
+
+    path = Path(__file__).parent / 'fixtures' / 'otel' / '_generate.py'
+    spec = importlib.util.spec_from_file_location('otel_fixture_generator', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _span_structure(payload):
+    """Structure that must not drift (ids and timestamps are random per run)."""
+    spans = payload['resourceSpans'][0]['scopeSpans'][0]['spans']
+    return sorted((span['name'], tuple(sorted(attr['key'] for attr in span.get('attributes', [])))) for span in spans)
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec('opentelemetry.sdk') is None, reason='opentelemetry-sdk is not installed'
+)
+def test_committed_fixture_stays_in_sync_with_the_generator():
+    """Re-running the generator must reproduce the committed fixtures' structure.
+
+    Guards against silent drift when semantic-convention attribute names change:
+    a rename in ``_generate.py`` that is not re-exported fails here.
+    """
+    import json
+    from pathlib import Path
+
+    generator = _load_generator()
+    fixture_dir = Path(__file__).parent / 'fixtures' / 'otel'
+    for name, recorder in generator.RUNS.items():
+        regenerated = generator.build_payload(recorder)
+        committed = json.loads((fixture_dir / name).read_text(encoding='utf-8'))
+        assert _span_structure(regenerated) == _span_structure(committed), name

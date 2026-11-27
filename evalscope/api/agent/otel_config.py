@@ -30,3 +30,11 @@ class OTelTraceConfig(BaseAgentConfig):
 
     sample_id_attribute: str = Field(default='evalscope.sample_id')
     """Span attribute carrying the eval sample id when several samples share one export."""
+
+    subset_attribute: str = Field(default='evalscope.subset')
+    """Span attribute carrying the eval subset name.
+
+    A sample id is unique only within its subset, so an export that serves
+    several subsets must also tag the subset; otherwise the binding is
+    ambiguous and the import is rejected.
+    """

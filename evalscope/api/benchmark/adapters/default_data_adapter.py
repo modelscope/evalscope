@@ -561,7 +561,9 @@ class DefaultDataAdapter(DataAdapter):
         )
 
     @override
-    def _maybe_import_otel_trace(self, model: Model, sample: Sample) -> Optional[InferenceResult]:
+    def _maybe_import_otel_trace(
+        self, model: Model, sample: Sample, subset: Optional[str] = None
+    ) -> Optional[InferenceResult]:
         """Import a recorded OTel trace as this sample's inference result.
 
         Returns ``None`` for every other agent-config mode, so the normal
@@ -583,10 +585,23 @@ class DefaultDataAdapter(DataAdapter):
             raise missing_evidence_error(type(self).__name__, missing)
 
         n_samples = None
+        n_subsets_with_id = 1
         test_dataset = getattr(self, 'test_dataset', None)
         if test_dataset is not None:
             n_samples = sum(len(dataset) for dataset in test_dataset.datasets.values())
-        return load_otlp_trace_for_sample(ac, model, sample, n_samples=n_samples)
+            # A sample id is unique only within its subset; count the subsets
+            # that contain this id so an ambiguous bare binding is rejected.
+            n_subsets_with_id = (
+                sum(1 for dataset in test_dataset.datasets.values() if any(s.id == sample.id for s in dataset)) or 1
+            )
+        return load_otlp_trace_for_sample(
+            ac,
+            model,
+            sample,
+            n_samples=n_samples,
+            subset=subset,
+            n_subsets_with_id=n_subsets_with_id,
+        )
 
     def run_inference(self, model: Model, sample: Sample, output_dir: str, **kwargs) -> TaskState:
         """
@@ -609,7 +624,7 @@ class DefaultDataAdapter(DataAdapter):
         # Importing a recorded trace executes nothing: intercept before the
         # polymorphic dispatch so adapters that override ``_on_inference``
         # (cybench, bfcl, tau_bench, ...) still accept ``mode='otel_trace'``.
-        result = self._maybe_import_otel_trace(model, sample)
+        result = self._maybe_import_otel_trace(model, sample, subset=kwargs.get('subset'))
         if result is None:
             result = self._on_inference(model, sample)
 
