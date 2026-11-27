@@ -63,6 +63,26 @@ describe('Evaluation form → TaskConfig payload', () => {
     expect(submit.mock.calls[0][0]).not.toHaveProperty('timeout')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('stream')
   })
+  it.each([
+    ['openai_responses', 'openai_responses_api'],
+    ['anthropic', 'anthropic_api'],
+  ] as const)('validates and maps the %s evaluation connection', (api, evalType) => {
+    const submit = evalForm()
+    change('connection-api', api)
+    expect(screen.getByRole('textbox', { name: /Model API URL/ })).toBeVisible()
+    expect(screen.getByLabelText('Model API Key')).toBeVisible()
+    change('connection-url', '')
+    submitEval()
+    expect(submit).not.toHaveBeenCalled()
+    change('connection-url', ' http://localhost:18101/v1 ')
+    change('connection-apiKey', 'remote-key')
+    submitEval()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      eval_type: evalType,
+      api_url: 'http://localhost:18101/v1',
+      api_key: 'remote-key',
+    }))
+  })
   it('routes the thinking switch into generation_config.extra_body', () => {
     const submit = evalForm()
     fireEvent.click(screen.getByLabelText('Enable Thinking'))
@@ -245,9 +265,9 @@ describe('Performance form → Arguments payload', () => {
       max_prompt_length: 100, min_prompt_length: 0, tokenizer_path: '/tmp/tokenizer',
     })
   })
-  it('offers only the protocols the form can execute and omits unused local connection fields', () => {
+  it('offers every protocol and omits unused local connection fields', () => {
     const submit = perfForm()
-    expect([...document.querySelectorAll('#connection-api option')].map((item) => (item as HTMLOptionElement).value)).toEqual(['openai', 'local'])
+    expect([...document.querySelectorAll('#connection-api option')].map((item) => (item as HTMLOptionElement).value)).toEqual(['openai', 'openai_responses', 'anthropic', 'local'])
     change('connection-apiKey', 'must-not-leak')
     change('connection-api', 'local')
     expect(screen.queryByRole('textbox', { name: /Model API URL/ })).not.toBeInTheDocument()
@@ -256,6 +276,26 @@ describe('Performance form → Arguments payload', () => {
     expect(submit.mock.calls[0][0].api).toBe('local')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('url')
     expect(submit.mock.calls[0][0]).not.toHaveProperty('api_key')
+  })
+  it('maps Anthropic and OpenAI Responses performance connections', () => {
+    const submit = perfForm()
+    change('connection-api', 'anthropic')
+    change('connection-apiKey', 'anthropic-key')
+    expect(screen.getByRole('button', { name: 'Start Performance Test' })).toBeEnabled()
+    submitPerf()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      api: 'anthropic',
+      url: 'http://localhost:18101/v1',
+      api_key: 'anthropic-key',
+    }))
+    change('connection-api', 'openai_responses')
+    change('connection-apiKey', 'responses-key')
+    submitPerf()
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({
+      api: 'openai_responses',
+      url: 'http://localhost:18101/v1',
+      api_key: 'responses-key',
+    }))
   })
   it.each(['', '-1', '.1', '2.5'])('accepts supported rate %j', (value) => {
     const submit = perfForm()

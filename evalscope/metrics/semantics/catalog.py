@@ -248,6 +248,9 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'success_rate',
         'task_averaged_acc',
         'text_acc',
+        'text_score',
+        'cvtg_ned',
+        'cvtg_word_accuracy',
         'unit_acc',
         'xl_puzzle_acc',
     ),
@@ -383,6 +386,11 @@ METRIC_DEFINITIONS.update(
             baseline='quality.judge_score.unbounded',
             metric_name='Quality Score',
             value_range=ValueRange(min=0, max=5),
+        ),
+        'qwen_image_bench_score': MetricEntry(
+            baseline='quality.judge_score.unbounded',
+            metric_name='Qwen-Image-Bench Score',
+            value_range=ValueRange(min=0, max=100),
         ),
         # MASK: 1 - P(lie) under pressure, and the share of pressured statements that match the belief.
         'honesty_score': MetricEntry(baseline='quality.score.ratio', metric_name='Honesty Score'),

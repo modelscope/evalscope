@@ -1,6 +1,6 @@
+from .anthropic_api import AnthropicMessagesPlugin
 from .base import ApiPluginBase
 from .custom_api import CustomPlugin
-from .dashscope_api import DashScopeApiPlugin
 from .decision_api import AutoTrustPerfPlugin, SystemOnePerfPlugin
 from .openai_api import OpenaiPlugin
 from .openai_embedding_api import OpenaiEmbeddingPlugin

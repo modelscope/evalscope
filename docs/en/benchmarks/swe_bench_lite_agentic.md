@@ -22,6 +22,7 @@ SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focus
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically for each repository
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
@@ -70,7 +71,7 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
 {
   "input": [
     {
-      "id": "c8f45390",
+      "id": "8af72cb4",
       "content": "Modeling's `separability_matrix` does not compute separability correctly for nested CompoundModels\nConsider the following model:\r\n\r\n```python\r\nfrom astropy.modeling import models as m\r\nfrom astropy.modeling.separable import separability_matri ... [TRUNCATED 762 chars] ...       [ True,  True, False, False],\r\n       [False, False,  True,  True],\r\n       [False, False,  True,  True]])\r\n```\r\nSuddenly the inputs and outputs are no longer separable?\r\n\r\nThis feels like a bug to me, but I might be missing something?\n"
     }
   ],
@@ -130,6 +131,8 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

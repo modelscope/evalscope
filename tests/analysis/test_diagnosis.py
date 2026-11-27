@@ -2,6 +2,7 @@
 
 import json
 import time
+from hashlib import sha256
 from pathlib import Path
 from typing import Callable
 
@@ -30,6 +31,9 @@ def test_facts_are_offline_and_preserve_source_scores(make_run: Callable, monkey
     )
     [report] = diagnose_run(str(root), config())
     assert report.cost.calls == 0 and report.coverage.samples == 2 and report.coverage.task_failed == 1
+    assert report.coverage.unexplained_failures == 1
+    [failed] = [json.loads(line) for line in (root / 'analysis/m/demo/samples.jsonl').read_text().splitlines()]
+    assert failed['task_success'] is False and failed['findings'] == failed['observed_types'] == []
     assert (root / 'reviews/m/demo_default.jsonl').read_bytes() == original
     persisted = json.loads((root / 'reports/m/demo.json').read_text())
     assert persisted['metrics'] == [] and persisted['analysis'] == render_markdown(report)
@@ -60,7 +64,7 @@ def test_every_consumed_source_invalidates_cache(make_run: Callable, dependency:
         path.write_text(json.dumps(data))
     else:
         path = root / 'configs/task_config.yaml'
-        path.write_text(path.read_text().replace('16', '32'))
+        path.write_text(path.read_text().replace('repeats: 1', 'repeats: 2'))
     assert load_diagnosis(str(root), 'm', 'demo')[0] == 'stale'
     after = diagnose_benchmark(str(root), 'm', 'demo', config())
     assert before.data_fingerprint != after.data_fingerprint
@@ -88,17 +92,18 @@ def test_unknown_scores_and_missing_predictions_are_not_safe_zeroes(make_run: Ca
     assert not any(f.id == 'F-truncation' for f in report.facts)
 
 
-def test_stop_reason_overrides_token_budget_heuristic(make_run: Callable) -> None:
-    root = make_run()
+def test_truncation_counts_only_recorded_endings(make_run: Callable) -> None:
+    root = make_run(rows=[review(0, 1), review(1), review(2)])
     p = root / 'predictions/m/demo_default.jsonl'
     data = [json.loads(line) for line in p.open()]
     for item in data:
         item['model_output']['usage']['output_tokens'] = 16
     data[1]['model_output']['choices'][0]['stop_reason'] = 'max_tokens'
+    data[2]['model_output']['choices'][0]['stop_reason'] = 'unknown'
     p.write_text(''.join(json.dumps(x) + '\n' for x in data))
     [report] = diagnose_run(str(root), config())
     fact = next(f for f in report.facts if f.id == 'F-truncation')
-    assert fact.value == 0.5 and fact.data['heuristic_denominator'] == 0
+    assert fact.value == 0.5 and fact.numerator == 1 and fact.denominator == 2
     assert any(p.failure_type == 'truncated' for p in report.patterns)
 
 
@@ -153,25 +158,23 @@ def test_model_analysis_requires_explicit_model_without_hidden_downgrades(make_r
     )
 
 
+@pytest.mark.parametrize('level', ['facts', 'diagnose'])
 def test_cli_accepts_json_configuration(
-    make_run: Callable, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, level: str
 ) -> None:
     from evalscope.cli.cli import run_cmd
 
-    root = make_run()
-    monkeypatch.setattr(
-        'sys.argv',
-        [
-            'evalscope',
-            'analyze',
-            '--run-dir',
-            str(root),
-            '--analysis-config',
-            '{"trace":{"use_providers":false},"language":"zh"}',
-        ],
-    )
+    root = make_run(rows=[review(0, 1)])
+    config = {'trace': {'use_providers': False}, 'language': 'zh', 'level': level}
+    if level == 'diagnose':
+        config['model'] = {'model_id': 'unused'}
+    monkeypatch.setattr('sys.argv', ['evalscope', 'analyze', '--run-dir', str(root), '--analysis-config', json.dumps(config)])
     run_cmd()
-    assert 'calls=0' in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert 'calls=0' in output
+    base = root / 'analysis/m/demo'
+    artifact = (base / 'diagnose' if level == 'diagnose' else base) / 'diagnosis.json'
+    assert artifact.is_file() and f'output={artifact.resolve()}' in output
     assert '自动诊断' in (root / 'reports/m/demo.json').read_text()
 
 
@@ -318,10 +321,13 @@ def test_lower_is_better_and_unknown_direction_are_respected(make_run: Callable)
 def test_nontext_answers_are_not_reported_as_empty_text_generations(make_run: Callable, media: dict) -> None:
     row = review(0)
     row.messages[-1] = ChatMessageAssistant(content=[media])
+    row.sample_score.score.prediction = ''
     row.sample_score.score.extracted_prediction = ''
     root = make_run(rows=[row])
     report = diagnose_benchmark(str(root), 'm', 'demo', config())
     assert not any(f.id in ('F-empty', 'F-extraction', 'F-length') for f in report.facts)
+    assert report.coverage.unexplained_failures == 1
+    assert all(pattern.failure_type != 'empty_output' for pattern in report.patterns)
     assert 'nontext-output' in report.coverage.skipped_facts
     persisted = (root / 'analysis/m/demo/samples.jsonl').read_text()
     assert 'empty_output' not in persisted and 'extraction_failure' not in persisted
@@ -335,21 +341,22 @@ def test_binary_primary_and_continuous_secondary_keep_the_failure_population(mak
     assert report.coverage.task_failed == report.coverage.task_success_known == 1
 
 
-@pytest.mark.parametrize('semantic_id,known', [
-    ('quality.accuracy.ratio', 2),
-    ('quality.exact_match.ratio', 2),
-    ('quality.score.ratio', 0),
-    ('quality.pass_at_k.ratio', 0),
+@pytest.mark.parametrize('name,semantic_id,known', [
+    ('custom_result', 'quality.accuracy.ratio', 2),
+    ('custom_result', 'quality.exact_match.ratio', 2),
+    ('custom_result', 'quality.score.ratio', 0),
+    ('custom_result', 'quality.pass_at_k.ratio', 0),
+    ('accuracy', 'quality.score.ratio', 0),
 ])
-def test_custom_score_name_uses_report_correctness_semantics(make_run: Callable, semantic_id: str, known: int) -> None:
+def test_task_outcome_uses_report_semantics(make_run: Callable, name: str, semantic_id: str, known: int) -> None:
     rows = [review(index) for index in range(3)]
     for row, value in zip(rows, (0, 1, 0.5)):
-        row.sample_score.score.value = {'custom_result': value}
+        row.sample_score.score.value = {name: value}
     root = make_run(rows=rows)
     path = root / 'reports/m/demo.json'
     report = json.loads(path.read_text())
     report['metrics'] = [{
-        'identity': {'name': 'custom_result', 'aggregation': 'mean'},
+        'identity': {'name': name, 'aggregation': 'mean'},
         'semantics': {
             'semantic_id': semantic_id,
             'metric_name': 'Custom result',
@@ -435,10 +442,10 @@ def test_correct_answer_can_keep_tool_findings_without_becoming_a_task_failure(
     ]
     root = make_run(rows=[row])
     result = diagnose_benchmark(str(root), 'm', 'demo', config())
-    assert result.coverage.task_failed == 0 and result.coverage.needs_attention == 1
+    assert result.coverage.task_failed == 0
     assert not result.patterns
     sample = json.loads((root / 'analysis/m/demo/samples.jsonl').read_text())
-    assert issue in sample['observed_types']
+    assert issue in sample['observed_types'] and sample['needs_attention']
     assert sample['task_success'] is True and sample['findings'][0]['call_ids'] == ['call-7']
 
 
@@ -463,10 +470,10 @@ def test_safe_refusals_of_harmful_tasks_are_not_failure_patterns(
     options = config()
     options.trace.use_providers = True
     report = diagnose_benchmark(str(root), 'm', 'demo', options)
-    assert report.coverage.needs_attention == 0 and not report.patterns
+    assert not report.patterns
     sample = json.loads((root / 'analysis/m/demo/samples.jsonl').read_text())
     assert any(f['category'] == 'refusal' for f in sample['findings'])
-    assert sample['failure_type'] is None
+    assert not sample['needs_attention'] and sample['observed_types'] == []
 
 
 def test_patterns_preserve_multiple_observations_without_assigning_a_cause(make_run: Callable) -> None:
@@ -640,9 +647,7 @@ def test_html_distinguishes_unknown_outcomes_and_escapes_subset_names(make_run: 
     assert 'Failed samples' in html and 'Unscored samples' in html
 
 
-def test_service_priorities_and_navigation_use_the_same_distinct_samples(
-    make_run: Callable, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_service_priorities_and_navigation_use_the_same_distinct_samples(make_run: Callable) -> None:
     from evalscope.analysis.diagnosis import _review_issues
     from evalscope.api.analysis import SampleDiagnosis
     from evalscope.service.app import create_app
@@ -655,15 +660,15 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     }
     rows = [
         SampleDiagnosis(key={'subset': 'a', 'index': 1}, task_success=False, score_status='success',
-                        failure_type='tool_error', observed_types=['tool_error', 'bad_arguments'], findings=[finding, finding]),
+                        observed_types=['tool_error', 'bad_arguments'], findings=[finding, finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 2}, task_success=False, score_status='success',
-                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
+                        observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 3}, task_success=True, score_status='success',
-                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
+                        observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 4}, score_status='parse_error',
-                        failure_type='judge_failure'),
+                        observed_types=['judge_failure']),
         SampleDiagnosis(key={'subset': 'b', 'index': 5}, score_status='success',
-                        failure_type='tool_error', observed_types=['tool_error'], findings=[finding]),
+                        observed_types=['tool_error'], findings=[finding]),
         SampleDiagnosis(key={'subset': 'b', 'index': 6}, task_success=True, score_status='success',
                         safety_violation=True),
     ]
@@ -674,7 +679,8 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     report.patterns = _review_issues(rows, 5)
     report.coverage.risk_samples = sum(row.has_risk for row in rows)
     path.write_text('\n'.join(row.model_dump_json() for row in rows) + '\n')
-    monkeypatch.setattr('evalscope.report.diagnosis.load_diagnosis', lambda *args: ('ready', report))
+    report.samples_sha256 = sha256(path.read_bytes()).hexdigest()
+    path.with_name('diagnosis.json').write_text(report.model_dump_json())
     client = create_app(outputs=str(root.parent)).test_client()
     base = '/api/v1/reports/runs/run/models/m'
     response = client.get(base + '/diagnosis', query_string={'dataset_name': 'demo'})
@@ -716,7 +722,31 @@ def test_service_priorities_and_navigation_use_the_same_distinct_samples(
     assert single == full[:1]
 
 
-@pytest.mark.parametrize('version', [1, 2, 3, 4])
+def test_prediction_etag_distinguishes_subset_and_single_sample(make_run: Callable) -> None:
+    from evalscope.service.app import create_app
+
+    root = make_run()
+    client = create_app(outputs=str(root.parent)).test_client()
+    url = '/api/v1/reports/runs/run/models/m/predictions'
+    query = {'dataset_name': 'demo', 'subset_name': 'default'}
+    whole = client.get(url, query_string=query)
+    assert len(whole.json['predictions']) == 2
+
+    selected = {**query, 'index': 1}
+    one = client.get(url, query_string=selected, headers={'If-None-Match': whole.headers['ETag']})
+    assert one.status_code == 200
+    assert [row['Index'] for row in one.json['predictions']] == ['1']
+    assert client.get(url, query_string=selected, headers={'If-None-Match': one.headers['ETag']}).status_code == 304
+    other = client.get(url, query_string={**query, 'index': 0}, headers={'If-None-Match': one.headers['ETag']})
+    assert other.status_code == 200
+    assert [row['Index'] for row in other.json['predictions']] == ['0']
+
+    (root / 'reviews/m/demo_default.jsonl').write_text('')
+    empty = client.get(url, query_string=selected)
+    assert empty.status_code == 200 and empty.json['predictions'] == []
+
+
+@pytest.mark.parametrize('version', [1, 2, 3, 4, 5, 6])
 def test_old_diagnostic_schema_is_stale_instead_of_silently_mixing_old_cause_counts(make_run: Callable, version: int) -> None:
     from evalscope.report.diagnosis import load_diagnosis
 
@@ -740,3 +770,53 @@ def test_malformed_artifact_root_is_an_error_without_breaking_report_loading(mak
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(payload))
     assert load_diagnosis(str(root), 'm', 'demo') == ('error', None)
+
+
+def test_web_generates_analysis_for_an_existing_dataset(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.service.app import create_app
+    from evalscope.service.blueprints import reports
+
+    root = make_run(rows=[review(0)])
+    client = create_app(outputs=str(root.parent)).test_client()
+    url = '/api/v1/reports/runs/run/models/m/diagnosis'
+    query = {'dataset_name': 'demo'}
+
+    def inline(func: Callable, *args: object) -> object:
+        return func(*args)
+
+    monkeypatch.setattr(reports, 'run_in_subprocess', inline)
+    assert client.get(url, query_string=query).get_json()['status'] == 'missing'
+    assert client.post(url, query_string=query, json={'level': 'diagnose'}).status_code == 400
+    assert client.post(url, query_string=query, json={}, headers={'Sec-Fetch-Site': 'cross-site'}).status_code == 403
+    assert client.post(url, query_string=query, json={'max_diagnosed_samples': 51}).status_code == 400
+    assert client.post(url, query_string={'dataset_name': '../demo'}, json={}).status_code == 400
+    assert client.post(url, query_string={'dataset_name': 'missing'}, json={}).status_code == 404
+    response = client.post(url, query_string=query, json={})
+    assert response.status_code == 200
+    assert response.get_json()['report']['level'] == 'facts'
+    assert response.get_json()['report']['cost']['calls'] == 0
+    assert client.get(url + '/samples', query_string=query).get_json()['items'][0]['key']['index'] == 0
+
+
+
+def test_web_diagnosis_only_uses_the_credential_supplied_in_the_form(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from evalscope.service.app import create_app
+    from evalscope.service.blueprints import reports
+
+    root = make_run()
+    client = create_app(outputs=str(root.parent)).test_client()
+    url = '/api/v1/reports/runs/run/models/m/diagnosis?dataset_name=demo'
+    supplied_keys = []
+    monkeypatch.setenv('EVALSCOPE_API_KEY', 'unused-server-key')
+
+    def collect(_func: Callable, _root: str, _model: str, _dataset: str, config: AnalysisReportConfig) -> None:
+        supplied_keys.append(config.model.api_key.get_secret_value())
+
+    monkeypatch.setattr(reports, 'run_in_subprocess', collect)
+    payload = {'level': 'diagnose', 'model_id': 'analyst', 'api_url': 'http://localhost/v1'}
+    assert client.post(url, json={**payload, 'api_key': 'env:EVALSCOPE_API_KEY'}).status_code == 400
+    assert client.post(url, json=payload).status_code == 200
+    assert client.post(url, json={**payload, 'api_key': 'explicit-test-key'}).status_code == 200
+    assert supplied_keys == ['EMPTY', 'explicit-test-key']

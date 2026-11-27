@@ -1,5 +1,7 @@
 import argparse
 import asyncio
+import threading
+from itertools import islice
 from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
@@ -347,3 +349,22 @@ def test_seeded_replenishment_preserves_random_stream_and_prefix_rotation(
         assert [prompt[0] - 100 for prompt in prompts] == [index % prefix_count for index in range(13)]
     else:
         assert prompts[5] != prompts[0]
+
+
+def test_replacement_iterator_matches_legacy_batches() -> None:
+    args = _make_args(
+        dataset='random', prefix_count=10, prefix_length=1, tokenize_prompt=True,
+        min_prompt_length=3, max_prompt_length=7, seed=42, tokenizer_path='test-tokenizer',
+    ).model_copy(update={'number': 17, 'parallel': 8})
+    plugin = _make_random_plugin(args)
+    plugin.prefix_pool = [[100 + i] for i in range(10)]
+    rng = np.random.RandomState(np.random.SeedSequence(42, spawn_key=(0,)).generate_state(4))
+    expected = []
+    for index in (17, 27, 37):
+        expected.extend(plugin.build_messages_parallel(10, 1, rng, start_index=index))
+
+    stream = plugin.replacement_messages(17, threading.Event())
+    reserve = list(islice(stream, 16))
+    overflow = list(islice(stream, 14))
+    assert reserve + overflow == expected
+    assert [p[0] for p in expected] == [100 + i % 10 for i in range(17, 47)]

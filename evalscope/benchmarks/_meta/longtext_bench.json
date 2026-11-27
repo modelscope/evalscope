@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "pretty_name": "LongText-Bench",
+    "dataset_id": "evalscope/LongText-Bench",
+    "paper_url": "https://arxiv.org/abs/2507.22058",
+    "tags": [
+      "TextToImage"
+    ],
+    "metrics": [
+      "LongTextScore"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "zh"
+    ],
+    "description": "\n## Overview\n\nLongText-Bench evaluates whether text-to-image models accurately render long English and Chinese text.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Prompt describing a scene with specified text\n- **Output**: Image containing the requested text\n- **Domain**: Long text rendering\n\n## Key Features\n\n- 160 English and 160 Chinese prompts from X-Omni, covering 8 scenes including posters,\n  webpages and slides.\n- Loads the ModelScope mirror by default; the official Hugging Face source is also supported.\n\n## Evaluation Notes\n\n- A vision API transcribes the image. Text Score is matched tokens divided by ground-truth\n  tokens (English words or Chinese characters). A bilingual overall score requires a scored result\n  for each language; otherwise the report shows available language scores.\n- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are needed.\n  The official evaluator uses Qwen2.5-VL-7B, so results from different transcription models\n  are not directly comparable.\n- Scoring follows the official matching rules; use repeats=4 for its repeated-image protocol.\n  Text Score does not assess layout or aesthetics. API failures and truncated replies are excluded;\n  valid empty transcriptions score zero.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "aigc",
+    "primary_metric": {
+      "name": "text_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
+    "eval_type": "text2image",
+    "requires_local_dataset": false
+  },
+  "statistics": {
+    "total_samples": 320,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 160,
+        "prompt_length_mean": 964.03,
+        "prompt_length_min": 631,
+        "prompt_length_max": 1368,
+        "prompt_length_std": 192.59,
+        "target_length_mean": 184.07
+      },
+      {
+        "name": "zh",
+        "sample_count": 160,
+        "prompt_length_mean": 265.32,
+        "prompt_length_min": 181,
+        "prompt_length_max": 393,
+        "prompt_length_std": 45.78,
+        "target_length_mean": 56.49
+      }
+    ],
+    "prompt_length": {
+      "mean": 614.67,
+      "min": 181,
+      "max": 1368,
+      "std": 376.78
+    },
+    "target_length_mean": 120.28,
+    "computed_at": "2026-11-18T10:33:37.914551"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a3412209",
+          "content": "A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \"CENTRAL PARK - 2 BLOCKS\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere."
+        }
+      ],
+      "target": "FRESH BREWS, EVERY MORNING, EVERY DAY Locally Roasted Since 1998 CENTRAL PARK - 2 BLOCKS",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "category": "sign",
+        "length": "short",
+        "prompt": "A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \"CENTRAL PARK - 2 BLOCKS\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere.",
+        "text": [
+          "FRESH BREWS, EVERY MORNING, EVERY DAY",
+          "Locally Roasted Since 1998",
+          "CENTRAL PARK - 2 BLOCKS"
+        ],
+        "text_length": 15,
+        "prompt_id": 0,
+        "tags": [],
+        "id": "",
+        "image_path": ""
+      }
+    },
+    "subset": "en",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# LongText-Bench\n\n\n## Overview\n\nLongText-Bench evaluates whether text-to-image models accurately render long English and Chinese text.\n\n## Task Description\n\n- **Task Type**: Text-to-image generation\n- **Input**: Prompt describing a scene with specified text\n- **Output**: Image containing the requested text\n- **Domain**: Long text rendering\n\n## Key Features\n\n- 160 English and 160 Chinese prompts from X-Omni, covering 8 scenes including posters,\n  webpages and slides.\n- Loads the ModelScope mirror by default; the official Hugging Face source is also supported.\n\n## Evaluation Notes\n\n- A vision API transcribes the image. Text Score is matched tokens divided by ground-truth\n  tokens (English words or Chinese characters). A bilingual overall score requires a scored result\n  for each language; otherwise the report shows available language scores.\n- Defaults to qwen3.8-flash on DashScope: set DASHSCOPE_API_KEY; no local VLM weights are needed.\n  The official evaluator uses Qwen2.5-VL-7B, so results from different transcription models\n  are not directly comparable.\n- Scoring follows the official matching rules; use repeats=4 for its repeated-image protocol.\n  Text Score does not assess layout or aesthetics. API failures and truncated replies are excluded;\n  valid empty transcriptions score zero.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `longtext_bench` |\n| **Dataset ID** | [evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2507.22058) |\n| **Tags** | `TextToImage` |\n| **Metrics** | `LongTextScore` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 320 |\n| Prompt Length (Mean) | 614.67 chars |\n| Prompt Length (Min/Max) | 181 / 1368 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 160 | 964.03 | 631 | 1368 |\n| `zh` | 160 | 265.32 | 181 | 393 |\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a3412209\",\n      \"content\": \"A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \\\"CENTRAL PARK - 2 BLOCKS\\\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere.\"\n    }\n  ],\n  \"target\": \"FRESH BREWS, EVERY MORNING, EVERY DAY Locally Roasted Since 1998 CENTRAL PARK - 2 BLOCKS\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"sign\",\n    \"length\": \"short\",\n    \"prompt\": \"A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \\\"CENTRAL PARK - 2 BLOCKS\\\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere.\",\n    \"text\": [\n      \"FRESH BREWS, EVERY MORNING, EVERY DAY\",\n      \"Locally Roasted Since 1998\",\n      \"CENTRAL PARK - 2 BLOCKS\"\n    ],\n    \"text_length\": 15,\n    \"prompt_id\": 0,\n    \"tags\": [],\n    \"id\": \"\",\n    \"image_path\": \"\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longtext_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['longtext_bench'],\n    dataset_args={\n        'longtext_bench': {\n            # subset_list: ['en', 'zh']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LongText-Bench\n\n\n## 概述\n\nLongText-Bench 评估文本到图像模型是否准确渲染长英文和中文文本。\n\n## 任务描述\n\n- **任务类型**：文本到图像生成\n- **输入**：描述包含指定文本的场景的提示词\n- **输出**：包含所请求文本的图像\n- **领域**：长文本渲染\n\n## 主要特点\n\n- 来自 X-Omni 的 160 个英文和 160 个中文提示词，涵盖海报、网页和幻灯片等 8 种场景。\n- 默认加载 ModelScope 镜像；同时也支持官方 Hugging Face 源。\n\n## 评估说明\n\n- 使用视觉 API 转录图像。文本分数（Text Score）为匹配 token 数除以 ground-truth token 数（英文单词或中文字符）。双语总体分数要求每种语言都有评分结果；否则报告将显示可用语言的分数。\n- 默认在 DashScope 上使用 qwen3.8-flash：需设置 DASHSCOPE_API_KEY；无需本地 VLM 权重。官方评估器使用 Qwen2.5-VL-7B，因此不同转录模型的结果不可直接比较。\n- 评分遵循官方匹配规则；对于其重复图像协议，请使用 repeats=4。文本分数不评估布局或美学效果。API 失败和截断回复将被排除；有效的空转录得分为零。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `longtext_bench` |\n| **数据集ID** | [evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2507.22058) |\n| **标签** | `TextToImage` |\n| **指标** | `LongTextScore` |\n| **默认 Shots** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 320 |\n| 提示词长度（平均值） | 614.67 字符 |\n| 提示词长度（最小/最大值） | 181 / 1368 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `en` | 160 | 964.03 | 631 | 1368 |\n| `zh` | 160 | 265.32 | 181 | 393 |\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a3412209\",\n      \"content\": \"A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \\\"CENTRAL PARK - 2 BLOCKS\\\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere.\"\n    }\n  ],\n  \"target\": \"FRESH BREWS, EVERY MORNING, EVERY DAY Locally Roasted Since 1998 CENTRAL PARK - 2 BLOCKS\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"category\": \"sign\",\n    \"length\": \"short\",\n    \"prompt\": \"A lively and bustling urban street scene captured at daytime, featuring a colorful assortment of vibrant storefronts lining the busy sidewalk, with diverse groups of pedestrians leisurely strolling past shop windows, chatting or hurrying alon ... [TRUNCATED 551 chars] ... ed \\\"CENTRAL PARK - 2 BLOCKS\\\", guiding visitors with its distinctly readable font. All signage is brightly lit, eye-catching, and clearly contrasts against the detailed backdrop of dynamic city buildings, enhancing the lively urban atmosphere.\",\n    \"text\": [\n      \"FRESH BREWS, EVERY MORNING, EVERY DAY\",\n      \"Locally Roasted Since 1998\",\n      \"CENTRAL PARK - 2 BLOCKS\"\n    ],\n    \"text_length\": 15,\n    \"prompt_id\": 0,\n    \"tags\": [],\n    \"id\": \"\",\n    \"image_path\": \"\"\n  }\n}\n```\n\n*注意：部分内容为展示目的已截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --model-task image_generation \\\n    --eval-type text2image \\\n    --api-url http://127.0.0.1:18131/v1 \\\n    --api-key EMPTY_TOKEN \\\n    --datasets longtext_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    eval_type='text2image',\n    model_task='image_generation',\n    api_url='http://127.0.0.1:18131/v1',\n    api_key='EMPTY_TOKEN',\n    datasets=['longtext_bench'],\n    dataset_args={\n        'longtext_bench': {\n            # subset_list: ['en', 'zh']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d699f2ffb6c28b3d13fa3924cde9173c",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-18T10:33:38.054022",
+  "translation_updated_at": "2026-11-18T10:33:40"
+}

@@ -1,121 +1,98 @@
-/**
- * Performance comparison data model — pure logic, no rendering.
- *
- * This module turns a set of `PerfDetailResponse` records into a decision-surface
- * model for the Performance_Compare_View: per-metric deltas (baseline / candidate
- * / absolute delta / percent delta) with a direction-aware verdict, low-sample
- * classification, symmetric config diff, always-recorded sample counts, and a
- * workload-mismatch flag.
- *
- * It has no dependency on React, the DOM, the network, the system clock or
- * randomness, so it is covered by property-based tests. The
- * rendering (delta table, baseline swap, low-sample de-emphasis, mismatch hint)
- * lives in the component layer; this module only produces the data
- * contract.
- *
- * Formatting is delegated to the single metric-formatting entry point
- * `formatMetric` so the same metric rounds identically everywhere.
- * `metricFormat.ts` is a forward dependency and may not exist yet;
- * this module imports it per the design contract and the checkpoint validates
- * the wiring once both are present.
- */
-
 import type { PerfDetailResponse } from '../../api/types'
 import { formatDifference, formatMetric, getComparisonVerdict } from '../metric'
 import type { FormattedMetric, MetricSemantics } from '../metric'
 
-/**
- * Direction-aware verdict for a single metric delta.
- *
- * This is an informational direction annotation, never a hard pass/fail gate:
- * - `improvement` / `regression` — candidate moved in the better / worse
- *   direction relative to baseline given the metric's `direction`;
- * - `neutral` — candidate equals baseline;
- * - `incomputable` — a value is missing on either side.
- */
 export type DeltaVerdict = 'improvement' | 'regression' | 'neutral' | 'incomputable'
-
-/** Per-metric comparison entry between baseline and candidate. */
-export interface MetricDelta {
-  /** Stable implementation-level metric key. */
-  metricKey: string
-  /** Human-readable label supplied by the API. */
-  metricLabel: string
-  /** Baseline value, formatted for display. */
-  baseline: FormattedMetric
-  /** Candidate value, formatted for display. */
-  candidate: FormattedMetric
-  /** Absolute delta (`candidate - baseline`), formatted in the metric's own form. */
-  absoluteDelta: FormattedMetric
-  /** Percent delta (`(candidate - baseline) / |baseline| * 100`), formatted as a `%` value. */
-  percentDelta: FormattedMetric
-  /** Direction-aware, informational verdict. */
-  verdict: DeltaVerdict
-  /** Effective observations used by this metric on each side. */
-  sampleCounts: { baseline: number; candidate: number }
-}
-
-/**
- * Low-sample tier for percentile statistics:
- * - `critical` — `n < 30` (strong warning, de-emphasize P90/P95/P99);
- * - `warn` — `30 <= n < 100` (warn/de-emphasize P95/P99);
- * - `ok` — `n >= 100` (show normally).
- */
 export type SampleTier = 'critical' | 'warn' | 'ok'
 
-/** A single differing entry in the config diff. */
-export interface ConfigDiffEntry {
-  /** Config key that differs or exists on only one side. */
-  key: string
-  /** Baseline value, or `''` when the key is absent on the baseline side. */
-  baseline: string
-  /** Candidate value, or `''` when the key is absent on the candidate side. */
-  candidate: string
+export interface MetricCell {
+  value: number | null
+  formatted: FormattedMetric
+  sampleCount: number
+  ambiguous: boolean
 }
 
-/**
- * Full comparison model consumed by the Performance_Compare_View.
- *
- * The model is always between a single `baselineId` and `candidateId`; sample
- * counts are always recorded and the config diff is a symmetric
- * difference over the two runs' configs.
- */
+export interface PerfMetricRow {
+  key: string
+  configIndex: number
+  metricKey: string
+  metricLabel: string
+  semantics: MetricSemantics
+  values: Record<string, MetricCell>
+}
+
+export interface WorkloadConfigEntry {
+  key: string
+  label: string
+  value: string
+}
+
+export interface WorkloadGroup {
+  key: string
+  index: number
+  config: WorkloadConfigEntry[]
+  rows: PerfMetricRow[]
+}
+
+export interface ConfigDiffEntry {
+  key: string
+  label: string
+  values: Record<string, string | null>
+}
+
 export interface PerfCompareModel {
-  /** Id (run path) of the baseline run — defaults to the oldest run. */
   baselineId: string
-  /** Id (run path) of the candidate run. */
-  candidateId: string
-  /** Per-metric deltas across the union of both runs' metrics. */
-  deltas: MetricDelta[]
-  /** Sample count per run id; always recorded. */
-  sampleCounts: Record<string, number>
-  /** True when the two runs used different workloads. */
+  groups: WorkloadGroup[]
   workloadMismatch: boolean
-  /** Symmetric config differences between the two runs. */
+  duplicateWorkloads: boolean
   configDiff: ConfigDiffEntry[]
 }
 
-/** Lower bound (exclusive) for the `warn` tier / upper bound (exclusive) for `critical`. */
-const CRITICAL_SAMPLE_THRESHOLD = 30
-/** Lower bound (exclusive) for the `ok` tier / upper bound (exclusive) for `warn`. */
-const WARN_SAMPLE_THRESHOLD = 100
-
-/**
- * Classify a percentile sample size into a low-sample tier.
- *
- * Boundaries are explicit: `29 → 'critical'`, `30 → 'warn'`, `99 → 'warn'`,
- * `100 → 'ok'`. Non-positive / non-finite inputs collapse to `'critical'`.
- *
- * @param n - Non-negative percentile sample count.
- * @returns The low-sample tier for `n`.
- */
-export function classifySampleSize(n: number): SampleTier {
-  if (!Number.isFinite(n) || n < CRITICAL_SAMPLE_THRESHOLD) return 'critical'
-  if (n < WARN_SAMPLE_THRESHOLD) return 'warn'
-  return 'ok'
+export interface MetricComparison {
+  absoluteValue: number | null
+  percentValue: number | null
+  absoluteDelta: FormattedMetric
+  percentDelta: FormattedMetric
+  verdict: DeltaVerdict
 }
 
-/** Semantics of a percent-change value: a plain `%`-suffixed number, 2 decimals. */
+export type InputLengthIssueCode =
+  | 'missingConfiguration'
+  | 'notRandom'
+  | 'variableLength'
+  | 'openLoop'
+  | 'missingWorkload'
+  | 'duplicatePoint'
+
+export interface InputLengthIssue {
+  code: InputLengthIssueCode
+  runPath?: string
+}
+
+export interface InputLengthPoint {
+  runPath: string
+  inputLength: number
+  concurrency: number
+  requests: number
+}
+
+export interface InputLengthEligibility {
+  eligible: boolean
+  issue: InputLengthIssue | null
+  points: InputLengthPoint[]
+}
+
+type SummaryRow = PerfDetailResponse['summary_rows'][number]
+type SummaryColumn = PerfDetailResponse['summary_columns'][number]
+type MetricColumn = SummaryColumn & { semantics: MetricSemantics }
+
+type PendingMetricCell = { value: number | null; sampleCount: number; ambiguous: boolean }
+type PendingMetricRow = Omit<PerfMetricRow, 'values'> & { values: Record<string, PendingMetricCell> }
+type PendingWorkloadGroup = Omit<WorkloadGroup, 'rows'> & {
+  identity: string
+  rowsByMetric: Map<string, PendingMetricRow>
+}
+
 const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
   semantic_id: 'diagnostic.unspecified',
   metric_name: 'Change',
@@ -126,286 +103,231 @@ const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
   display_precision: 2,
 }
 
-type SummaryRow = PerfDetailResponse['summary_rows'][number]
+const CONFIG_LABELS: Record<string, string> = {
+  api: 'API',
+  dataset: 'Dataset',
+  parallel: 'Concurrency',
+  number: 'Number of requests',
+  rate: 'Request rate',
+  max_tokens: 'Max tokens',
+  min_tokens: 'Min tokens',
+  max_prompt_length: 'Max prompt length',
+  min_prompt_length: 'Min prompt length',
+}
 
-interface WideMetricColumn { key: string; semantics: MetricSemantics }
+export function classifySampleSize(n: number): SampleTier {
+  if (!Number.isFinite(n) || n < 30) return 'critical'
+  if (n < 100) return 'warn'
+  return 'ok'
+}
 
-function getWideMetricColumns(run: PerfDetailResponse): WideMetricColumn[] {
+function metricColumns(run: PerfDetailResponse): MetricColumn[] {
+  return run.summary_columns.filter((column): column is MetricColumn => column.semantics !== null)
+}
+
+function workloadConfig(run: PerfDetailResponse, row: SummaryRow): WorkloadConfigEntry[] {
+  const metricKeys = new Set(metricColumns(run).map((column) => column.key))
   return run.summary_columns.flatMap((column) => {
-    return column.semantics ? [{ key: column.key, semantics: column.semantics }] : []
+    if (metricKeys.has(column.key)) return []
+    return [{ key: column.key, label: column.label, value: String(row.values[column.key] ?? '').trim() }]
   })
 }
 
-function toMetricMap(run: PerfDetailResponse, wideRow?: SummaryRow): Map<string, number | null> {
-  const map = new Map<string, number | null>()
-  for (const { key } of getWideMetricColumns(run)) {
-    const value = wideRow?.values[key]
-    map.set(key, typeof value === 'number' && Number.isFinite(value) ? value : null)
-  }
-  return map
+function configIdentity(config: WorkloadConfigEntry[]): string {
+  return JSON.stringify(config.map(({ key, value }) => [key, value]).sort(([a], [b]) => a.localeCompare(b)))
 }
 
-function wideRowConfig(run: PerfDetailResponse, row: SummaryRow): Record<string, string> {
-  const metricKeys = new Set(getWideMetricColumns(run).map(({ key }) => key))
-  const config: Record<string, string> = {}
-  run.summary_columns.forEach((column) => {
-    if (metricKeys.has(column.key)) return
-    config[column.key] = String(row.values[column.key] ?? '').trim()
-  })
-  return config
-}
-
-function configIdentity(config: Record<string, string>): string {
-  return JSON.stringify(Object.entries(config).sort(([a], [b]) => a.localeCompare(b)))
-}
-
-function matchingWideRows(
-  baseline: PerfDetailResponse,
-  candidate: PerfDetailResponse,
-): {
-  baseline: SummaryRow
-  baselineIndex: number
-  candidate: SummaryRow
-  candidateIndex: number
-} | null {
-  const candidates = new Map(
-    candidate.summary_rows.map((row, index) => [
-      configIdentity(wideRowConfig(candidate, row)),
-      { row, index },
-    ]),
-  )
-  for (const [baselineIndex, row] of baseline.summary_rows.entries()) {
-    const match = candidates.get(configIdentity(wideRowConfig(baseline, row)))
-    if (match) {
-      return {
-        baseline: row,
-        baselineIndex,
-        candidate: match.row,
-        candidateIndex: match.index,
-      }
-    }
-  }
-  return null
-}
-
-/** Build a single `MetricDelta` for one metric key across both runs. */
-function buildMetricDelta(
-  metricKey: string,
-  metricLabel: string,
-  baselineValue: number | null,
-  candidateValue: number | null,
-  semantics: MetricSemantics | null | undefined,
-  sampleCounts: { baseline: number; candidate: number },
-): MetricDelta {
-  const baseline = formatMetric(baselineValue, semantics)
-  const candidate = formatMetric(candidateValue, semantics)
-
-  const computable = baselineValue !== null && candidateValue !== null
-  const absoluteValue = computable ? candidateValue - baselineValue : null
-  // Percent change is undefined when the baseline is zero.
-  const percentValue =
-    computable && baselineValue !== 0 ? ((candidateValue - baselineValue) / Math.abs(baselineValue)) * 100 : null
-
-  // A delta of a percent-rendered metric is expressed in percentage points, not re-scaled.
-  const absoluteDelta = formatDifference(absoluteValue, semantics)
-  const percentDelta = formatMetric(percentValue, PERCENT_DELTA_SEMANTICS)
-  // Diagnostic fields (request counts, cache details, failures) return 'incomparable', which is
-  // what keeps them out of the winner decision.
-  const rawVerdict = computable ? getComparisonVerdict(candidateValue - baselineValue, semantics) : 'incomparable'
-  const verdict: DeltaVerdict = !computable || rawVerdict === 'incomparable'
-    ? 'incomputable'
-    : rawVerdict === 'equal' ? 'neutral' : rawVerdict === 'better' ? 'improvement' : 'regression'
-
-  return { metricKey, metricLabel, baseline, candidate, absoluteDelta, percentDelta, verdict, sampleCounts }
-}
-
-/** Parse a run timestamp into epoch millis; unparseable timestamps sort as "oldest". */
 function timestampOf(run: PerfDetailResponse): number {
-  const parsed = Date.parse(run?.generated_at ?? '')
+  const parsed = Date.parse(run.generated_at ?? '')
   return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed
 }
 
-/**
- * Pick the oldest run (smallest timestamp). Ties are broken by original index,
- * so the earliest-listed run wins, keeping the choice deterministic.
- */
-function pickOldest(runs: PerfDetailResponse[]): PerfDetailResponse {
-  return runs.reduce((oldest, run) => (timestampOf(run) < timestampOf(oldest) ? run : oldest))
+function pickBaseline(runs: PerfDetailResponse[], baselineId: string): PerfDetailResponse {
+  return runs.find((run) => run.path === baselineId)
+    ?? runs.reduce((oldest, run) => (timestampOf(run) < timestampOf(oldest) ? run : oldest))
 }
 
-/**
- * Pick the newest run (largest timestamp). Ties are broken by original index,
- * so the earliest-listed run wins on a tie.
- */
-function pickNewest(runs: PerfDetailResponse[]): PerfDetailResponse {
-  return runs.reduce((newest, run) => (timestampOf(run) > timestampOf(newest) ? run : newest))
+function sampleCount(metricKey: string, row: SummaryRow): number {
+  const count = row.sample_counts[metricKey]
+  return typeof count === 'number' && Number.isFinite(count) ? count : 0
 }
 
-/** Extract a metric's effective sample count from one summary row. */
-function getSampleCount(run: PerfDetailResponse, metricKey: string, rowIndex?: number): number {
-  const rowCount = rowIndex === undefined ? undefined : run.summary_rows[rowIndex]?.sample_counts[metricKey]
-  return typeof rowCount === 'number' && Number.isFinite(rowCount) ? rowCount : 0
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
-function wideConfig(run: PerfDetailResponse): Record<string, string> {
-  const metricKeys = new Set(getWideMetricColumns(run).map(({ key }) => key))
-  const config: Record<string, string> = {}
-  run.summary_columns.forEach((column) => {
-    if (metricKeys.has(column.key)) return
-    const values = Array.from(new Set(run.summary_rows.map((row) => String(row.values[column.key] ?? '')).filter(Boolean)))
-    config[column.key] = values.join(', ')
+function buildConfigDiff(runs: PerfDetailResponse[]): ConfigDiffEntry[] {
+  const configs: Record<string, string>[] = runs.map((run) => ({
+    ...run.configuration,
+    number: run.configuration?.number ?? String(run.total_requests),
+  }))
+  const keys = [...new Set(configs.flatMap((config) => Object.keys(config)))]
+  return keys.flatMap((key) => {
+    const values = configs.map((config) => Object.prototype.hasOwnProperty.call(config, key) ? config[key] : null)
+    const comparable = values.map((value) => value === null ? '<missing>' : value)
+    if (new Set(comparable).size <= 1) return []
+    return [{
+      key,
+      label: CONFIG_LABELS[key] ?? key,
+      values: Object.fromEntries(runs.map((run, index) => [run.path, values[index]])),
+    }]
   })
-  config.number_of_requests = String(run.total_requests)
-  return config
 }
 
-function selectedWideConfig(
-  run: PerfDetailResponse,
-  row?: SummaryRow,
-  rowIndex?: number,
-): Record<string, string> {
-  if (!row) return wideConfig(run)
-  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run, 'success_rate', rowIndex)) }
+function hasWorkloadMismatch(runs: PerfDetailResponse[]): boolean {
+  const datasets = new Set(runs.map((run) => run.dataset.trim().toLowerCase()))
+  if (datasets.size > 1) return true
+  const identities = runs.flatMap((run) => {
+    if (run.summary_rows.length === 0) return []
+    const configs = run.summary_rows.map((row) => configIdentity(workloadConfig(run, row))).sort()
+    return [JSON.stringify(configs)]
+  })
+  return new Set(identities).size > 1
 }
 
-/**
- * Compute the symmetric config difference between two runs.
- *
- * A key is included when it exists on only one side, or exists on both sides
- * with different values. Keys present on both sides with equal values are
- * excluded. The determination is based on key presence and value, not on the
- * emitted string representation.
- */
-function computeConfigDiff(
-  baselineConfig: Record<string, string>,
-  candidateConfig: Record<string, string>,
-): ConfigDiffEntry[] {
-  const keys = new Set<string>([...Object.keys(baselineConfig), ...Object.keys(candidateConfig)])
-  const diff: ConfigDiffEntry[] = []
-  for (const key of keys) {
-    const inBaseline = Object.prototype.hasOwnProperty.call(baselineConfig, key)
-    const inCandidate = Object.prototype.hasOwnProperty.call(candidateConfig, key)
-    const baselineValue = inBaseline ? baselineConfig[key] : ''
-    const candidateValue = inCandidate ? candidateConfig[key] : ''
-    if (inBaseline && inCandidate && baselineValue === candidateValue) {
-      continue // identical on both sides — not a difference.
-    }
-    diff.push({ key, baseline: baselineValue, candidate: candidateValue })
-  }
-  return diff
-}
-
-/** Empty model returned when there are no runs to compare. */
-function emptyModel(): PerfCompareModel {
+export function buildMetricComparison(
+  value: number | null,
+  baselineValue: number | null,
+  semantics: MetricSemantics | null | undefined,
+): MetricComparison {
+  const computable = value !== null && baselineValue !== null
+  const absoluteValue = computable ? value - baselineValue : null
+  const percentValue = computable && baselineValue !== 0
+    ? (absoluteValue! / Math.abs(baselineValue)) * 100
+    : null
+  const rawVerdict = computable ? getComparisonVerdict(absoluteValue!, semantics) : 'incomparable'
+  const verdict: DeltaVerdict = !computable || rawVerdict === 'incomparable'
+    ? 'incomputable'
+    : rawVerdict === 'equal'
+      ? 'neutral'
+      : rawVerdict === 'better' ? 'improvement' : 'regression'
   return {
-    baselineId: '',
-    candidateId: '',
-    deltas: [],
-    sampleCounts: {},
-    workloadMismatch: false,
-    configDiff: [],
+    absoluteValue,
+    percentValue,
+    absoluteDelta: formatDifference(absoluteValue, semantics),
+    percentDelta: formatMetric(percentValue, PERCENT_DELTA_SEMANTICS),
+    verdict,
   }
 }
 
-/**
- * Build the performance comparison model between a baseline and a candidate run.
- *
- * Baseline selection: the run whose `path` equals `baselineId`, or the
- * oldest run when `baselineId` is empty or does not match any run. The candidate
- * is the newest of the remaining runs (or the baseline itself when only one run
- * is supplied).
- *
- * For every metric in the union of both runs' summary rows a `MetricDelta` is
- * produced with baseline / candidate / absolute delta / percent delta and a
- * direction-aware verdict. Metrics missing on either side are
- * marked `incomputable` while metrics present on both sides still yield deltas.
- * Sample counts are always recorded, workload mismatch is
- * flagged and the config diff is a symmetric difference.
- *
- * @param runs - Performance run details participating in the comparison.
- * @param baselineId - Explicitly selected baseline run id (path); empty selects the default.
- * @returns The comparison model, or an empty model when `runs` is empty.
- */
 export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string): PerfCompareModel {
-  if (!Array.isArray(runs) || runs.length === 0) {
-    return emptyModel()
+  if (runs.length === 0) {
+    return { baselineId: '', groups: [], workloadMismatch: false, duplicateWorkloads: false, configDiff: [] }
   }
 
-  const baseline = runs.find((run) => run.path === baselineId) ?? pickOldest(runs)
-  const others = runs.filter((run) => run !== baseline)
-  const candidate = others.length > 0 ? pickNewest(others) : baseline
+  const groups: PendingWorkloadGroup[] = []
+  const groupsByIdentity = new Map<string, PendingWorkloadGroup>()
+  let duplicateWorkloads = false
 
-  const semanticsByField = new Map<string, MetricSemantics>()
-  const labelsByField = new Map<string, string>()
-  for (const run of [baseline, candidate]) {
-    for (const column of run.summary_columns) {
-      if (column.semantics) {
-        semanticsByField.set(column.key, column.semantics)
-        labelsByField.set(column.key, column.label)
+  for (const run of runs) {
+    const seenConfigs = new Set<string>()
+    const duplicateConfigs = new Set<string>()
+    for (const summaryRow of run.summary_rows) {
+      const identity = configIdentity(workloadConfig(run, summaryRow))
+      if (seenConfigs.has(identity)) duplicateConfigs.add(identity)
+      seenConfigs.add(identity)
+    }
+    duplicateWorkloads ||= duplicateConfigs.size > 0
+
+    for (const summaryRow of run.summary_rows) {
+      const config = workloadConfig(run, summaryRow)
+      const identity = configIdentity(config)
+      let group = groupsByIdentity.get(identity)
+      if (!group) {
+        group = { key: `workload-${groups.length}`, index: groups.length, identity, config, rowsByMetric: new Map() }
+        groupsByIdentity.set(identity, group)
+        groups.push(group)
+      }
+      const ambiguous = duplicateConfigs.has(identity)
+
+      for (const metric of metricColumns(run)) {
+        let row = group.rowsByMetric.get(metric.key)
+        if (!row) {
+          row = {
+            key: `${group.index}:${metric.key}`,
+            configIndex: group.index,
+            metricKey: metric.key,
+            metricLabel: metric.label,
+            semantics: metric.semantics,
+            values: {},
+          }
+          group.rowsByMetric.set(metric.key, row)
+        }
+        row.values[run.path] = {
+          value: ambiguous ? null : finiteNumber(summaryRow.values[metric.key]),
+          sampleCount: ambiguous ? 0 : sampleCount(metric.key, summaryRow),
+          ambiguous,
+        }
       }
     }
   }
 
-  const matchedRows = matchingWideRows(baseline, candidate)
-  const oneSideMissing = baseline.summary_rows.length === 0 || candidate.summary_rows.length === 0
-  const baselineRowIndex = matchedRows?.baselineIndex ?? (oneSideMissing && baseline.summary_rows.length ? 0 : undefined)
-  const candidateRowIndex = matchedRows?.candidateIndex ?? (oneSideMissing && candidate.summary_rows.length ? 0 : undefined)
-  const baselineMetrics = matchedRows || oneSideMissing
-    ? toMetricMap(baseline, baselineRowIndex === undefined ? undefined : baseline.summary_rows[baselineRowIndex])
-    : new Map<string, number | null>()
-  const candidateMetrics = matchedRows || oneSideMissing
-    ? toMetricMap(candidate, candidateRowIndex === undefined ? undefined : candidate.summary_rows[candidateRowIndex])
-    : new Map<string, number | null>()
-
-  // Union of metric keys, baseline order first then candidate-only keys.
-  const metricKeys: string[] = [...baselineMetrics.keys()]
-  for (const key of candidateMetrics.keys()) {
-    if (!baselineMetrics.has(key)) metricKeys.push(key)
-  }
-
-  const deltas = metricKeys.map((key) =>
-    buildMetricDelta(
-      key,
-      labelsByField.get(key) ?? key,
-      baselineMetrics.get(key) ?? null,
-      candidateMetrics.get(key) ?? null,
-      semanticsByField.get(key),
-      {
-        baseline: getSampleCount(baseline, key, baselineRowIndex),
-        candidate: getSampleCount(candidate, key, candidateRowIndex),
-      },
-    ),
-  )
-
-  const sampleCounts: Record<string, number> = {
-    [baseline.path]: getSampleCount(baseline, 'success_rate', baselineRowIndex),
-    [candidate.path]: getSampleCount(candidate, 'success_rate', candidateRowIndex),
-  }
-
-  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline, baselineRowIndex)
-  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate, candidateRowIndex)
-  const configLabels = new Map<string, string>([['number_of_requests', 'Number of requests']])
-  for (const run of [baseline, candidate]) {
-    for (const column of run.summary_columns) {
-      if (!column.semantics) configLabels.set(column.key, column.label)
-    }
-  }
-  const configDiff = computeConfigDiff(baselineConfig, candidateConfig).map((entry) => ({
-    ...entry,
-    key: configLabels.get(entry.key) ?? entry.key,
+  const builtGroups = groups.map((group) => ({
+    key: group.key,
+    index: group.index,
+    config: group.config,
+    rows: [...group.rowsByMetric.values()].map((row) => ({
+      key: row.key,
+      configIndex: row.configIndex,
+      metricKey: row.metricKey,
+      metricLabel: row.metricLabel,
+      semantics: row.semantics,
+      values: Object.fromEntries(runs.map((run) => {
+        const cell = row.values[run.path] ?? { value: null, sampleCount: 0, ambiguous: false }
+        return [run.path, { ...cell, formatted: formatMetric(cell.value, row.semantics) }]
+      })),
+    })),
   }))
-  const workloadMismatch = baseline !== candidate && (
-    matchedRows === null
-    || baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()
-    || sampleCounts[baseline.path] !== sampleCounts[candidate.path]
-  )
 
   return {
-    baselineId: baseline.path,
-    candidateId: candidate.path,
-    deltas,
-    sampleCounts,
-    workloadMismatch,
-    configDiff,
+    baselineId: pickBaseline(runs, baselineId).path,
+    groups: builtGroups,
+    workloadMismatch: hasWorkloadMismatch(runs),
+    duplicateWorkloads,
+    configDiff: buildConfigDiff(runs),
   }
+}
+
+function parsePositiveInteger(value: string | undefined): number | null {
+  if (value === undefined || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+export function getFixedInputLength(run: PerfDetailResponse): number | null {
+  if (run.configuration?.dataset?.trim().toLowerCase() !== 'random') return null
+  const min = parsePositiveInteger(run.configuration?.min_prompt_length)
+  const max = parsePositiveInteger(run.configuration?.max_prompt_length)
+  return min !== null && min === max ? min : null
+}
+
+export function getInputLengthEligibility(runs: PerfDetailResponse[]): InputLengthEligibility {
+  const points: InputLengthPoint[] = []
+  const pointKeys = new Set<string>()
+  for (const run of runs) {
+    if (!run.configuration) return { eligible: false, issue: { code: 'missingConfiguration', runPath: run.path }, points }
+    if (run.configuration.dataset?.trim().toLowerCase() !== 'random') {
+      return { eligible: false, issue: { code: 'notRandom', runPath: run.path }, points }
+    }
+    const inputLength = getFixedInputLength(run)
+    if (inputLength === null) {
+      return { eligible: false, issue: { code: 'variableLength', runPath: run.path }, points }
+    }
+    if (run.summary_rows.length === 0) {
+      return { eligible: false, issue: { code: 'missingWorkload', runPath: run.path }, points }
+    }
+
+    for (const row of run.summary_rows) {
+      const config = workloadConfig(run, row)
+      const concurrency = parsePositiveInteger(config.find((entry) => entry.key === 'concurrency')?.value)
+      if (concurrency === null) {
+        return { eligible: false, issue: { code: 'openLoop', runPath: run.path }, points }
+      }
+      const key = `${inputLength}:${concurrency}`
+      if (pointKeys.has(key)) return { eligible: false, issue: { code: 'duplicatePoint', runPath: run.path }, points }
+      pointKeys.add(key)
+      points.push({ runPath: run.path, inputLength, concurrency, requests: sampleCount('success_rate', row) })
+    }
+  }
+  return { eligible: runs.length > 0, issue: null, points }
 }

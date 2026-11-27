@@ -360,7 +360,6 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
                       'attack_goal_action',
                       'tainted_side_effect',
                       'side_effect',
-                      'outcome',
                     ].map((value) => ({ value, label: t(`diagnosis.finding.${value}`) })),
                   ]}
                   onChange={(finding_category) =>

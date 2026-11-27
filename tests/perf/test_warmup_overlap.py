@@ -16,6 +16,7 @@ import pytest
 from evalscope.perf import benchmark as benchmark_module
 from evalscope.perf.benchmark import get_requests
 from evalscope.perf.core.pipeline import run_benchmark_pipeline
+from evalscope.perf.core.strategies import closed_loop
 from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics
 from evalscope.perf.utils.workload_timeline import WorkloadTimeline
@@ -126,14 +127,12 @@ def test_random_replenishment_runs_off_event_loop_thread(monkeypatch: pytest.Mon
         def build_messages(self) -> Iterator[str]:
             yield from ['initial-a', 'initial-b']
 
-        def build_messages_parallel(
-            self, total_count: int, workers: int, *, rng: Any, start_index: int, stop: threading.Event
-        ) -> list[str]:
-            assert rng is not None
+        def replacement_messages(self, start_index: int, stop: threading.Event) -> Iterator[str]:
+            assert start_index == 2
             generation_threads.append(threading.get_ident())
             replacement_started.set()
             assert allow_replacement.wait(timeout=2)
-            return ['replacement']
+            yield 'replacement'
 
     monkeypatch.setattr(benchmark_module.DatasetRegistry, 'get_class', lambda _: Dataset)
     args = _make_args(
@@ -317,6 +316,7 @@ def test_failed_measured_request_consumes_quota() -> None:
 
 
 def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', 0)
     worker_stopped = threading.Event()
     args = _make_args(
         number=2, parallel=2, warmup_num=1, dataset='random', prompt=None,
@@ -338,9 +338,8 @@ def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyP
             def build_messages(self) -> Iterator[str]:
                 yield from ['warmup', 'transition', 'measured']
 
-            def build_messages_parallel(
-                self, total_count: int, workers: int, *, rng: Any, start_index: int, stop: threading.Event
-            ) -> list[str]:
+            def replacement_messages(self, start_index: int, stop: threading.Event) -> Iterator[str]:
+                yield from ()
                 loop.call_soon_threadsafe(replacement_started.set)
                 if stop.wait(timeout=2):
                     worker_stopped.set()
@@ -361,5 +360,105 @@ def test_duration_stops_blocked_random_replenishment(monkeypatch: pytest.MonkeyP
         assert worker_stopped.is_set()
         rows = [queue.get_nowait() for _ in range(queue.qsize())]
         assert [row.prompt for row in rows if not row.is_warmup and not row.is_transition] == ['measured']
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(('token_budget', 'expected_prepared'), [(128, 4), (31, 1), (15, 0)])
+def test_random_overflow_dispatches_in_order(
+    monkeypatch: pytest.MonkeyPatch, token_budget: int, expected_prepared: int
+) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', token_budget)
+    args = _make_args(number=5, parallel=2, warmup_num=2, dataset='random', prefix_length=8,
+                      min_prompt_length=8, max_prompt_length=8, exclude_warmup_overlap=True)
+    prepared = []
+    sent = []
+
+    async def run() -> None:
+        release = asyncio.Event()
+        closed = asyncio.Event()
+
+        async def source() -> AsyncIterator[tuple[dict, bool]]:
+            try:
+                while True:
+                    i = len(prepared)
+                    prepared.append(i)
+                    yield {'index': i}, i < 2
+            finally:
+                closed.set()
+
+        class Client:
+            async def post(self, request: dict) -> SimpleNamespace:
+                index = request['index']
+                sent.append(index)
+                if index == 0:
+                    assert len(prepared) == args.total_count + expected_prepared
+                    await release.wait()
+                elif index == 14:
+                    release.set()
+                await asyncio.sleep(0)
+                return SimpleNamespace(is_transition=False)
+
+        results = asyncio.Queue()
+        await asyncio.wait_for(ClosedLoopStrategy(args, None, Client(), results, source()).run(), 3)
+        rows = [results.get_nowait() for _ in range(results.qsize())]
+        assert sum(row.is_warmup for row in rows) == 2
+        assert sum(row.is_transition for row in rows) > expected_prepared
+        assert sum(not row.is_warmup and not row.is_transition for row in rows) == 5
+        assert prepared == sent == list(range(len(rows)))
+        assert closed.is_set()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize('token_budget', [0, 48])
+def test_required_replacement_propagates_generation_failure(monkeypatch: pytest.MonkeyPatch, token_budget: int) -> None:
+    monkeypatch.setattr(closed_loop, '_RANDOM_RESERVE_TOKEN_BUDGET', token_budget)
+    args = _make_args(number=2, parallel=2, warmup_num=1, dataset='random', prefix_length=8,
+                      min_prompt_length=8, max_prompt_length=8, exclude_warmup_overlap=True)
+
+    async def run() -> None:
+        release = asyncio.Event()
+        finished = asyncio.Event()
+
+        async def source() -> AsyncIterator[tuple[dict, bool]]:
+            try:
+                for i in range(args.total_count):
+                    yield {'index': i}, i == 0
+                raise ValueError('broken random candidate')
+            finally:
+                finished.set()
+
+        class Client:
+            async def post(self, request: dict) -> SimpleNamespace:
+                if request['index'] == 0:
+                    await release.wait()
+                return SimpleNamespace(is_warmup=False)
+
+        strategy = ClosedLoopStrategy(args, None, Client(), asyncio.Queue(), source())
+        with pytest.raises(ValueError, match='broken random candidate'):
+            await asyncio.wait_for(strategy.run(), timeout=2)
+        assert finished.is_set()
+
+    asyncio.run(run())
+
+
+def test_unused_reserve_failure_does_not_abort_a_complete_run() -> None:
+    args = _make_args(number=2, parallel=2, warmup_num=2, dataset='random', exclude_warmup_overlap=True)
+
+    async def source() -> AsyncIterator[tuple[dict, bool]]:
+        for i in range(args.total_count):
+            yield {'index': i}, i < args.warmup_count
+        raise ValueError('unused reserve')
+
+    class Client:
+        async def post(self, request: dict) -> SimpleNamespace:
+            return SimpleNamespace(index=request['index'], is_warmup=False)
+
+    async def run() -> None:
+        queue: asyncio.Queue = asyncio.Queue()
+        strategy = ClosedLoopStrategy(args, None, Client(), queue, source())
+        await asyncio.wait_for(strategy.run(), timeout=1)
+        assert [queue.get_nowait().index for _ in range(queue.qsize())] == list(range(args.total_count))
 
     asyncio.run(run())

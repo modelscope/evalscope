@@ -164,6 +164,10 @@ run_task(task_config)
 - `id` 为使用的评测基准中的样本唯一标识ID
 - `image_path` 为生成图片的存储路径
 
+相对图片路径以 JSONL 文件所在目录为基准解析。例如，`outputs/example_edit.jsonl` 中的 `"image_path": "images/result.png"` 指向 `outputs/images/result.png`。也支持绝对路径；清单字段名不同时，可通过 `extra_params.id_key` 和 `extra_params.image_key` 指定。
+
+设置 `local_file` 后，只评测清单中有对应 ID 且符合所选语言的样本。空清单不选择任何样本；图片文件不存在时，会在加载清单阶段报错。
+
 ### 配置任务
 
 使用如下脚本可以加载本地数据进行评测：

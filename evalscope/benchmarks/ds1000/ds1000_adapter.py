@@ -51,6 +51,7 @@ the answer is checked by running it against the problem's test cases.
 
 ## Evaluation Notes
 
+- Supports E2B with an image or template containing the official dependencies and test data; provider-specific template requirements are described in the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - `accuracy` (primary): the problem passes when the official test program
   (`code_context` + `test_execution(code)` [+ `test_string(code)`]) runs without error
 - Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag

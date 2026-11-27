@@ -1,13 +1,14 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import pandas as pd
 import pytest
 from pydantic import ValidationError
 
 from evalscope.api.judge import summarize_judge_runs
-from evalscope.api.metric import AggScore, JudgeSummary, SampleScore, Score
+from evalscope.api.metric import Aggregator, AggScore, JudgeSummary, SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector
 from evalscope.constants import ScoreStatus
+from evalscope.metrics.aggregators import MeanPassAtK, MeanPassHatK, MeanVoteAtK
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
@@ -47,6 +48,25 @@ def test_generator_groups_by_identity_and_selects_primary() -> None:
     assert [metric.identity.name for metric in report.metrics] == ['f1', 'precision']
     assert report.primary_metric_identity == MetricIdentity(name='f1', aggregation='mean')
     assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
+
+
+@pytest.mark.parametrize('aggregator_cls', [MeanPassAtK, MeanVoteAtK, MeanPassHatK])
+def test_mean_and_k_aggregators_default_report_primary_to_mean(aggregator_cls: Type[Aggregator]) -> None:
+    scores = [
+        SampleScore(
+            score=Score(value={'accuracy': value}, extracted_prediction=str(index)),
+            sample_id=f'sample-{index}',
+            group_id='group',
+            generation_index=index,
+        ) for index, value in enumerate([1.0, 0.0])
+    ]
+
+    aggregates = aggregator_cls()(scores)
+    report = ReportGenerator.generate_report({'test': aggregates}, 'model', _StubAdapter('gsm8k'))
+
+    assert len(aggregates) == 3
+    assert report.primary_metric_identity == MetricIdentity(name='accuracy', aggregation='mean')
+    assert report.score == 0.5
 
 
 def test_generator_preserves_scores() -> None:

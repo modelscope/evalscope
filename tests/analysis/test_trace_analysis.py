@@ -290,12 +290,10 @@ def test_refusal_without_side_effects():
     assert 'refusal:refusal_pattern' in _subtypes(case)
 
 
-def test_task_failure_without_findings_is_outcome_only_and_excluded_status():
+def test_official_task_failure_does_not_create_a_trace_finding():
     case = _analyze(_record([ChatMessageUser(content='q'), ChatMessageAssistant(content='wrong')], value={'acc': 0.0}))
-    assert _subtypes(case) == ['outcome:benchmark_task_failed']
+    assert not case.findings
     assert case.outcome.task_success is False
-    assert case.findings[0].attribution == Attribution.UNKNOWN
-    assert case.findings[0].rule_id == 'outcome.unexplained'
     excluded = _analyze(_record([ChatMessageUser(content='q')], value={}, status=ScoreStatus.EXCLUDED))
     assert 'termination:score_excluded' in _subtypes(excluded) and excluded.outcome.task_success is None
 
@@ -443,3 +441,18 @@ def test_excluded_provider_metrics_do_not_establish_a_task_or_safety_outcome(ben
     record=_record([ChatMessageUser(content='q'),ChatMessageAssistant(content='a')],value=value,status=ScoreStatus.EXCLUDED)
     case=analyze_records([(_ref(benchmark),record)])[0]
     assert case.outcome.task_success is None and case.outcome.safety_violation is None
+
+
+@pytest.mark.parametrize(('benchmark', 'task_success', 'safety', 'source'), [
+    ('agentharm', True, True, 'threshold'),
+    ('agentharm_benign', False, None, 'provider'),
+])
+def test_explicit_threshold_fills_only_a_missing_provider_outcome(
+    benchmark: str, task_success: bool, safety: Optional[bool], source: str
+) -> None:
+    record = _record([], value={'task_completion_score': 0.25, 'refusal_rate': 0.0})
+    config = TraceAnalysisConfig(outcome_thresholds={benchmark: {'task_completion_score': 0.25}})
+    directions = {'task_completion_score': 'lower_is_better'}
+    outcome = analyze_records([(_ref(benchmark), record)], config, directions)[0].outcome
+    assert (outcome.task_success, outcome.safety_violation, outcome.source) == (task_success, safety, source)
+    assert outcome.refused is False

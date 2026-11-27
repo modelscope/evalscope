@@ -24,6 +24,8 @@ The EvalScope framework supports a variety of evaluation metrics, allowing users
 | `ssim`            | Built-in | [-1, 1] (Higher is better) | Full-reference structural similarity. Requires a reference image |
 | `psnr`            | Built-in | [0, 100] (Higher is better) | Full-reference peak signal-to-noise ratio. Identical images are capped at 100. Requires a reference image |
 | `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞) (Lower is better) | Learned perceptual similarity. Requires a reference image and `evalscope[aigc]` |
+| `CVTGWordAccuracy` / `CVTGNED` | [TextCrafter](https://github.com/NJU-PCALab/TextCrafter) | [0, 1] (Higher is better) | CVTG-2K text rendering: word membership accuracy and normalized edit similarity, weighted by ground-truth word count |
+| `LongTextScore` | [X-Omni](https://github.com/X-Omni-Team/X-Omni) | [0, 1] (Higher is better) | LongText-Bench: matched English words or Chinese characters divided by the ground-truth token count |
 
 ### Choosing and Interpreting Metrics
 
@@ -46,6 +48,72 @@ Users can install the necessary dependencies using the following command:
 ```bash
 pip install evalscope[aigc] -U
 ```
+
+## Text Rendering Benchmarks
+
+[CVTG-2K](../../benchmarks/cvtg_2k.md) and [LongText-Bench](../../benchmarks/longtext_bench.md)
+measure whether a generated image renders the requested text. They load from the public ModelScope
+mirrors [evalscope/CVTG-2K](https://modelscope.cn/datasets/evalscope/CVTG-2K) and
+[evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench) by default.
+CVTG and CVTG-Style contain 1,002 and 998 prompts; LongText-Bench contains 160 prompts per language.
+
+Install the CVTG-2K scorer on Python 3.11 or 3.12 with a supported PaddlePaddle wheel:
+
+```bash
+pip install 'evalscope[cvtg_2k]'
+```
+
+For local image generation, install `evalscope[aigc,cvtg_2k]`.
+
+LongText-Bench transcribes images through a vision API and does not require local VLM weights or
+an accelerator. Its default is `qwen3.8-flash` on DashScope with thinking disabled. Set
+`DASHSCOPE_API_KEY`; the default scorer then works without extra `dataset_args`. To override it:
+
+```python
+dataset_args = {
+    'longtext_bench': {
+        'metric_list': [{'LongTextScore': {
+            'model': 'qwen3.8-flash',
+            'generation_config': {'extra_body': {'enable_thinking': False}},
+        }}],
+    },
+}
+```
+
+Pass this `dataset_args` to `TaskConfig`. For another OpenAI-compatible vision service, set the scorer's
+`api_url` and `api_key` explicitly. These settings belong to the transcription service; the top-level
+`api_url` and `api_key` still configure the image generation service. API transport failures and
+token-limit truncation exclude the sample from this metric.
+
+The scorer transcribes the image; deterministic rules calculate the text matching score. The official
+transcription model is Qwen2.5-VL-7B. Using `qwen3.8-flash` or another model can change the score, so
+record the transcription model alongside your results and do not directly compare them with the
+official Qwen2.5-VL-7B results. No transformers or VLM inference dependencies are needed for this scorer.
+
+For an OpenAI-compatible image generation service:
+
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='YOUR_IMAGE_MODEL',
+    model_task='image_generation',
+    eval_type='text2image',
+    api_url='http://localhost:8895/v1',
+    api_key='EMPTY',
+    datasets=['cvtg_2k', 'longtext_bench'],
+    dataset_hub='modelscope',
+    limit=1,  # Per subset; remove for a full evaluation.
+))
+```
+
+CVTG scores combine all ground-truth words across both subsets. LongText-Bench aggregates words
+within English and characters within Chinese, then averages the two language scores for its overall
+result. When both languages are requested and one has no usable scores, the report shows the available
+language scores without an overall score. Use `repeats=4` for the official LongText sampling protocol.
+Scoring failures are excluded from the affected metric. Check the metric's sample count and the
+run's execution summary. Successful recognition with no text counts as missing text.
+Use `rerun_review=True` to rescore cached images with the current scoring version.
 
 ## OpenAI-Compatible Image Service
 

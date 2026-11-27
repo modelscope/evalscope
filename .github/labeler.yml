@@ -1,0 +1,21 @@
+'area:benchmark':
+  - changed-files:
+      - any-glob-to-any-file: ['evalscope/benchmarks/**', 'tests/benchmark/**']
+'area:perf':
+  - changed-files:
+      - any-glob-to-any-file: ['evalscope/perf/**', 'tests/perf/**']
+'area:web':
+  - changed-files:
+      - any-glob-to-any-file: ['evalscope/web/**', 'evalscope/service/**', 'tests/service/**']
+'area:docs':
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', 'README*.md', 'CONTRIBUTING.md']
+'area:core':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'evalscope/*.py'
+          - 'evalscope/{agent,api,backend,cli,collections,evaluator,filters,metrics,models,report,summarizer,third_party,utils}/**'
+          - 'tests/{agent,api,cli,evaluator,metrics,models,report}/**'
+          - '.github/workflows/**'
+          - 'requirements/**'
+          - 'pyproject.toml'

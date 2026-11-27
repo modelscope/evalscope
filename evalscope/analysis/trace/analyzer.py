@@ -4,11 +4,7 @@ from functools import lru_cache
 from typing import AbstractSet, Dict, Iterable, List, Optional, Tuple
 
 from evalscope.api.analysis import (
-    INFORMATIONAL_CATEGORIES,
-    Confidence,
     FailureCase,
-    Finding,
-    FindingCategory,
     ProviderSignals,
     SampleRef,
     TraceSignalProvider,
@@ -84,18 +80,6 @@ def analyze_sample(
         finding.call_ids = [calls[p] for p in finding.positions if calls.get(p)]
     apply_attribution(findings, rules)
     outcome = resolve_outcome(view, signals, config, findings, metric_directions, correctness_metrics)
-    if outcome.task_success is False and all(f.category in INFORMATIONAL_CATEGORIES for f in findings):
-        # A failed benchmark result alone does not establish abnormal termination or its cause.
-        outcome_finding = Finding(
-            category=FindingCategory.OUTCOME,
-            subtype='benchmark_task_failed',
-            confidence=Confidence.LOW,
-            detector='outcome@2',
-            data={'source': outcome.source},
-        )
-        apply_attribution([outcome_finding], rules)
-        findings.append(outcome_finding)
-
     return FailureCase(
         labels=signals.labels,
         outcome=outcome,

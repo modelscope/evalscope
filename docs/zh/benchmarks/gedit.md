@@ -116,6 +116,9 @@ GEdit-Bench（Grounded Edit Benchmark）是一个基于真实世界使用场景�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `language` | `str` | `en` | 指令语言。可选值：['en', 'cn']。可选值：['en', 'cn'] |
+| `local_file` | `str` | `None` | 本地生成图像的 JSONL 清单文件。相对图像路径以 JSONL 文件所在目录为基准。 |
+| `id_key` | `str` | `id` | 清单文件中包含基准测试样本 ID 的字段。 |
+| `image_key` | `str` | `image_path` | 清单文件中包含生成图像路径的字段。 |
 
 ## 使用方法
 

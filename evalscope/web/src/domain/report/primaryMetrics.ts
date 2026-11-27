@@ -30,6 +30,11 @@ export function primaryMetricOf(report: ReportData): ReportMetric | null {
   ) ?? null
 }
 
+/** Include unscored samples when the run records how many it requested. */
+export function reportSampleCount(report: ReportData): number {
+  return report.execution_summary?.requested ?? report.num ?? primaryMetricOf(report)?.num ?? 0
+}
+
 /** One dataset's primary metric as reported by the API. */
 export interface PrimaryMetricRef {
   dataset_name: string

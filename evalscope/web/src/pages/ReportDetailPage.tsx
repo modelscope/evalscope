@@ -5,7 +5,7 @@ import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import type { ReportData } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
-import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricOf, reportSampleCount } from '@/domain/report/primaryMetrics'
 import { formatMetricLabels, metricIdentityKey } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
@@ -23,7 +23,11 @@ import type { SampleKey } from '@/api/types'
 
 type TabKey = 'results' | 'diagnosis' | 'predictions'
 
-const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed', 'outcome', 'step']
+const SAMPLE_PARAMS = ['subset', 'pattern', 'sample', 'failure_type', 'attribution', 'finding_category', 'diagnosed', 'outcome', 'step', 'position']
+
+function sampleNumber(value: string | null): number | undefined {
+  return value !== null && /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : undefined
+}
 
 export default function ReportDetailPage() {
   const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
@@ -38,8 +42,9 @@ export default function ReportDetailPage() {
 
   const tab = searchParams.get('tab')
   const activeTab: TabKey = tab === 'diagnosis' || tab === 'predictions' ? tab : 'results'
-  const stepParam = searchParams.get('step')
-  const focusStep = stepParam !== null && /^\d+$/.test(stepParam) && Number.isSafeInteger(Number(stepParam)) ? Number(stepParam) : undefined
+  const focusStep = sampleNumber(searchParams.get('step'))
+  const sampleIndex = sampleNumber(searchParams.get('sample'))
+  const samplePosition = sampleNumber(searchParams.get('position'))
   const initialSubset = searchParams.get('subset') || undefined
   const setActiveTab = (value: TabKey) => setSearchParams(previous => {
     const next = new URLSearchParams(previous); next.set('tab', value); return next
@@ -77,7 +82,7 @@ export default function ReportDetailPage() {
   const modelName = reportList[0]?.model_name ?? modelId ?? ''
   // Prefer the loaded model name; fall back to the URL model id while the report loads.
   const breadcrumbLabel = reportList[0]?.model_name ?? modelId ?? ''
-  const totalSamples = reportList.reduce((sum, report) => sum + (report.num ?? primaryMetricOf(report)?.num ?? 0), 0)
+  const totalSamples = reportList.reduce((sum, report) => sum + reportSampleCount(report), 0)
 
   const datasets = data?.datasets ?? []
   const datasetLabels = useMemo(
@@ -120,18 +125,22 @@ export default function ReportDetailPage() {
     setSearchParams(next)
   }
 
-  const handleDiagnosisSamples = (filters: DiagnosisFilters, sample?: SampleKey, step?: number) => {
+  const locateSample = (target: TabKey, filters: DiagnosisFilters, sample?: SampleKey, step?: number, position?: number) => {
     const next = new URLSearchParams(searchParams)
     for (const key of SAMPLE_PARAMS) next.delete(key)
-    next.set('tab','predictions'); next.set('dataset',activeDataset)
+    next.set('tab', target)
+    next.set('dataset', activeDataset)
     for (const [key,value] of Object.entries(filters)) {
-      if (value) next.set(key==='index' ? 'sample' : key==='subset_name' ? 'subset' : key,
-        value===true ? '1' : String(value))
+      if (value !== undefined && value !== '') next.set(key === 'index' ? 'sample' : key === 'subset_name' ? 'subset' : key, String(value))
     }
     if (sample) { next.set('subset',sample.subset); next.set('sample',String(sample.index)) }
     if (step !== undefined) next.set('step', String(step))
-    setSearchParams(next)
+    if (position !== undefined) next.set('position', String(position))
+    if (next.toString() !== searchParams.toString()) setSearchParams(next)
   }
+
+  const handleDiagnosisSamples = (filters: DiagnosisFilters, sample?: SampleKey, step?: number, position?: number) =>
+    locateSample('predictions', filters, sample, step, position)
 
   const tabs = [
     { key: 'results', label: t('reportDetail.results'), panelId: 'report-results-panel' },
@@ -251,6 +260,13 @@ export default function ReportDetailPage() {
                     reportName={reportName}
                     datasetName={activeDataset}
                     onSamples={handleDiagnosisSamples}
+                    onLocate={(filters, sample, step, position) => locateSample('diagnosis', filters, sample, step, position)}
+                    location={{
+                      filters: diagnosisFilters,
+                      sample: initialSubset && sampleIndex !== undefined ? { subset: initialSubset, index: sampleIndex } : undefined,
+                      position: samplePosition,
+                      step: focusStep,
+                    }}
                     legacyAnalysis={activeReport?.report.analysis}
                     metrics={activeReport?.report.metrics}
                   />
@@ -264,7 +280,7 @@ export default function ReportDetailPage() {
                     datasetName={activeDataset}
                     rootPath={rootPath}
                     initialSubset={initialSubset}
-                    initialIndex={searchParams.has('sample') ? Number(searchParams.get('sample')) : undefined}
+                    initialIndex={sampleIndex}
                     focusStep={focusStep}
                     diagnosisFilters={diagnosisFilters}
                     onDiagnosisFiltersChange={handleDiagnosisSamples}

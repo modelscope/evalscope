@@ -49,6 +49,7 @@ BigCodeBench is an easy-to-use benchmark for solving practical and challenging t
 - Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)
 - Default timeout is 240 seconds per problem
 - `calibrate` option prepends code_prompt to align function signatures
+- Supports official E2B through `TaskConfig.sandbox.engine='e2b'`; Aliyun Agent Sandbox requires a suitable evaluation template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
 """  # noqa: E501
 
@@ -78,6 +79,7 @@ BigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that 
 - Two modes available via `split` parameter: `complete` (docstring completion) or `instruct` (NL instruction)
 - Default timeout is 240 seconds per problem
 - `calibrate` option prepends code_prompt to align function signatures
+- Supports official E2B through `TaskConfig.sandbox.engine='e2b'`; Aliyun Agent Sandbox requires a suitable evaluation template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
 """  # noqa: E501
 

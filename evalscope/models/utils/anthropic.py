@@ -326,7 +326,7 @@ def anthropic_chat_messages(
     for message in messages:
         if message.role == 'system':
             # Anthropic requires system message as a separate parameter
-            system_message = _merge_system_message(system_message, _system_param_from_message(message))
+            system_message = merge_anthropic_system_messages(system_message, _system_param_from_message(message))
         else:
             message_params.append(anthropic_message_param(message))
 
@@ -365,10 +365,11 @@ def _system_param_from_message(message: ChatMessage) -> AnthropicSystemParam:
     return blocks if blocks else message.text
 
 
-def _merge_system_message(
+def merge_anthropic_system_messages(
     current: Optional[AnthropicSystemParam],
     new_value: AnthropicSystemParam,
 ) -> AnthropicSystemParam:
+    """Combine Anthropic system messages, preserving any structured text blocks."""
     if current is None:
         return new_value
     if isinstance(current, str) and isinstance(new_value, str):

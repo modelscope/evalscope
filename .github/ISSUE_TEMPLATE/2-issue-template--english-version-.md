@@ -1,7 +1,8 @@
 ---
-name: 2-Issue template (English Version)
-about: Issues encountered during model evaluation
+name: 2-Bug report (English)
+about: Report a reproducible problem during evaluation
 title: ''
+type: Bug
 labels: ''
 assignees: ''
 

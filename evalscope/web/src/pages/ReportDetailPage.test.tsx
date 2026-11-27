@@ -17,7 +17,7 @@ import ReportDetailPage from './ReportDetailPage'
 const REPORT = loadFixture<LoadReportResponse>('report-multi-dataset')
 const PREDICTIONS = loadFixture<PredictionsResponse>('predictions-tool-trace')
 const DIAGNOSIS: DiagnosisReport = {
-  schema_version: 5,
+  schema_version: 7,
   analyzer_version: '1',
   taxonomy_version: '1',
   run_dir: '/outputs/run',
@@ -40,7 +40,6 @@ const DIAGNOSIS: DiagnosisReport = {
     excluded: 0,
     errored_without_record: 0,
     unreadable: 0,
-    needs_attention: 1,
     unexplained_failures: 0,
     risk_samples: 0,
     proposals_without_rule_clues: 0,
@@ -132,7 +131,7 @@ beforeEach(() => {
       ? { status: 'missing', items: [], total: 0, page: 1, page_size: 200 }
       : ({
           status: 'ready',
-          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] }],
+          items: [{ key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', llm_status: 'not_selected', safety_violation: null, stop_reason: null, needs_attention: true, observed_types: ['tool_error'], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] }],
           total: 1,
           page: 1,
           page_size: 200,
@@ -224,8 +223,20 @@ describe('report workspace', () => {
     await settle()
     expect(screen.getByRole('tab', { name: 'Diagnosis', selected: true })).toBeInTheDocument()
   })
+  it('restores the issue and the second sample from a diagnosis URL', async () => {
+    vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: DIAGNOSIS })
+    const first = await api.getSampleDiagnoses('', '', '')
+    vi.mocked(api.getSampleDiagnoses).mockResolvedValue({
+      ...first, total: 2, items: [{ ...first.items[0], key: { subset: 'example', index: 1 } }, first.items[0]],
+    })
+    await renderDetail('?tab=diagnosis&dataset=gsm8k&failure_type=tool_error&outcome=failed&subset=example&sample=7&position=1')
+    const panel = screen.getByRole('complementary', { name: 'Related sample' })
+    expect(within(panel).getByText('example · Sample 7')).toBeInTheDocument()
+    expect(within(panel).getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Tool errors during execution/ })).toHaveAttribute('aria-pressed', 'true')
+  })
   it('opens the exact cited sample and step, preserves it in Samples, and restores Diagnosis', async () => {
-    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', failure_type: 'tool_error', llm_status: 'not_selected', safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true, observed_types: [], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] } as SampleDiagnosesResponse['items'][number]
+    const item = { key: { subset: 'example', index: 7 }, findings: [], task_success: false, score_status: 'success', llm_status: 'not_selected', safety_violation: null, stop_reason: null, needs_attention: true, observed_types: ['tool_error'], llm: null, sources: [], context_omitted: false, invalid_evidence: 0, recorded_error: null, evidence_errors: [] } as SampleDiagnosesResponse['items'][number]
     vi.mocked(api.getSampleDiagnoses).mockResolvedValue({ status: 'ready', items: [item], total: 1, page: 1, page_size: 200 })
     vi.mocked(api.getDiagnosis).mockResolvedValue({ status: 'ready', report: { ...DIAGNOSIS, level: 'diagnose',
       narrative_status: 'ok', narrative_samples: { 'S-exact': { sample: item.key, step: 0 } },

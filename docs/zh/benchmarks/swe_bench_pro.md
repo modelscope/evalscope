@@ -1,52 +1,51 @@
 # SWE-bench_Pro
 
-
 ## 概述
 
-SWE-bench_Pro 是由 Scale AI 提供的一项具有挑战性的基准测试，用于评估大语言模型（LLM）或智能体在多种编程语言环境下执行长周期软件工程任务的能力。给定一个代码库和一个问题描述，模型必须在每个实例专属的 Docker 容器内，通过多轮智能体交互循环，自主探索代码仓库、编辑源文件，并最终提交补丁。
+SWE-bench_Pro 是由 Scale AI 推出的一个高难度基准测试，用于评估大语言模型（LLM）/智能体（Agent）在跨多种编程语言的长周期软件工程任务中的表现。给定一个代码库和一个问题描述，模型必须自主探索仓库、编辑源文件，并在每个实例独立的 Docker 容器内通过多轮智能体循环提交补丁。
 
 ## 任务描述
 
-- **任务类型**：自动化软件工程 / 缺陷修复（智能体驱动）
+- **任务类型**：自动化软件工程 / Bug 修复（智能体式）
 - **输入**：GitHub issue 描述
-- **输出**：自主编辑后生成的代码补丁（diff 格式）
-- **支持语言**：多种（由 `repo_language` 字段指定；例如 JavaScript/TypeScript、Python、Go）
+- **输出**：代码补丁（diff 格式），在自主编辑后收集
+- **语言**：多种（`repo_language` 字段；例如 JavaScript/TypeScript、Python、Go）
 
-## 核心特性
+## 主要特点
 
-- 基于每实例 DockerHub 镜像（`jefzda/sweap-images:{tag}`）的多轮智能体循环
-- 基于哨兵（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
-- 容器内评估流程：应用 `git apply` 打补丁，运行实例对应的 `run_script.sh` 脚本，通过 `parser.py` 解析结果，并验证 `(fail_to_pass | pass_to_pass) ⊆ PASSED`
-- 同时支持 `toolcall`（函数调用）和 `backticks`（文本动作）两种动作协议
+- 多轮代理循环，每个实例使用独立的 DockerHub 镜像 (`jefzda/sweap-images:{tag}`)
+- 基于哨兵标记的补丁提交协议 (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
+- 容器端评估流程：应用 `git apply` 补丁，运行实例的 `run_script.sh`，使用 `parser.py` 进行解析，然后检查 `(fail_to_pass | pass_to_pass) ⊆ PASSED`
+- 支持两种动作协议：`toolcall`（函数调用）和 `backticks`（基于文本）
 
 ## 评估说明
 
-- 需要安装 `pip install evalscope[sandbox]`（通过 ms-enclave 提供 Docker SDK）
-- 需要 `scaleapi/SWE-bench_Pro-os` 仓库以获取每实例的运行脚本和 Dockerfile。默认情况下，该仓库会自动克隆至 `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` 并固定到 commit `ca10a60`。若要使用已有克隆，请设置 `extra_params.swe_bench_pro_repo_path`。
-- 智能体循环与每实例评估共享同一个沙箱配置（通过 `TaskConfig.sandbox.default_config` 直接传入 ms_enclave 的 `DockerSandboxConfig`）。建议在此处设置 `memory_limit` / `cpu_limit` 以避免因内存不足导致测试被终止（例如 NodeBB 实例）；`platform` 默认为 `linux/amd64`，因此仅支持 amd64 架构的 sweap-images 可在 Apple Silicon 设备上开箱即用。
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 需要 `pip install evalscope[sandbox]`（通过 ms-enclave 提供沙箱运行时）
+- 需要 `scaleapi/SWE-bench_Pro-os` 仓库以获取每个实例的运行脚本和 Dockerfiles。默认情况下，该仓库会自动克隆到 `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` 并固定到 commit `ca10a60`。若要使用现有的克隆副本，请设置 `extra_params.swe_bench_pro_repo_path`。
+- agent loop 和每个实例的评估通过 `TaskConfig.sandbox.default_config` 共享单个沙箱配置，并将其传递给所选引擎的 ms-enclave。对于 Docker，请在此处设置 `memory_limit` / `cpu_limit` 以避免测试运行被 OOM-Killed（例如 NodeBB）；`platform` 默认为 `linux/amd64`，因此仅限 amd64 的 sweap-images 可以在 Apple Silicon 上开箱即用。
 
-更多设置、参数及故障排查信息，请参阅 [用户指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html)。
+有关设置、参数和故障排除，请参阅 [user guide](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html)。
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `swe_bench_pro` |
-| **数据集 ID** | [ScaleAI/SWE-bench_Pro](https://modelscope.cn/datasets/ScaleAI/SWE-bench_Pro/summary) |
+| **数据集ID** | [ScaleAI/SWE-bench_Pro](https://modelscope.cn/datasets/ScaleAI/SWE-bench_Pro/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
-| 指标 | 值 |
+| 指标 | 数值 |
 |--------|-------|
-| 总样本数 | 731 |
-| 提示词长度（平均） | 1297.47 字符 |
-| 提示词长度（最小/最大） | 419 / 8036 字符 |
+| 总样本数 | 642 |
+| 提示词长度（平均值） | 1013.12 字符 |
+| 提示词长度（最小/最大） | 191 / 8010 字符 |
 
 ## 样例示例
 
@@ -56,8 +55,8 @@ SWE-bench_Pro 是由 Scale AI 提供的一项具有挑战性的基准测试，�
 {
   "input": [
     {
-      "id": "3874fd29",
-      "content": "\"**Title: Email Validation Status Not Handled Correctly in ACP and Confirmation Logic**\\n\\n**Description:**\\n\\nThe Admin Control Panel (ACP) does not accurately reflect the email validation status of users. Also, validation and confirmation p ... [TRUNCATED 846 chars] ... mail validation.\\n\\nThe email status was unclear or incorrect in ACP.\\n\\n\\\"Validate\\\" and \\\"Send validation email\\\" actions failed when the expected data was missing.\\n\\n**Labels:**\\n\\nbug, back-end, authentication, ui/ux, email-confirmation\""
+      "id": "10506721",
+      "content": "## Title: Post cache access and slug existence checks behave inconsistently\n\n\n### Description\nPost cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.\nSlug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently."
     }
   ],
   "id": 0,
@@ -85,26 +84,28 @@ SWE-bench_Pro 是由 Scale AI 提供的一项具有挑战性的基准测试，�
     }
   ],
   "metadata": {
-    "instance_id": "instance_NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5-vnan",
+    "instance_id": "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
     "repo": "NodeBB/NodeBB",
-    "base_commit": "1e137b07052bc3ea0da44ed201702c94055b8ad2",
-    "problem_statement": "\"**Title: Email Validation Status Not Handled Correctly in ACP and Confirmation Logic**\\n\\n**Description:**\\n\\nThe Admin Control Panel (ACP) does not accurately reflect the email validation status of users. Also, validation and confirmation p ... [TRUNCATED 846 chars] ... mail validation.\\n\\nThe email status was unclear or incorrect in ACP.\\n\\n\\\"Validate\\\" and \\\"Send validation email\\\" actions failed when the expected data was missing.\\n\\n**Labels:**\\n\\nbug, back-end, authentication, ui/ux, email-confirmation\"",
-    "patch": "diff --git a/public/language/en-GB/admin/manage/users.json b/public/language/en-GB/admin/manage/users.json\nindex 6b668a31ef8e..9486295bc3ef 100644\n--- a/public/language/en-GB/admin/manage/users.json\n+++ b/public/language/en-GB/admin/manage/us ... [TRUNCATED 12136 chars] ... class=\"notvalidated fa fa-check text-muted\" title=\"not validated\"></i>\n+\t\t\t\t\t\t\t\t<i class=\"noemail fa fa-fw fa-ban text-muted\"\"></i>\n \t\t\t\t\t\t\t\t<em class=\"text-muted\">[[admin/manage/users:users.no-email]]</em>\n \t\t\t\t\t\t\t\t{{{ end }}}\n \t\t\t\t\t\t\t</td>\n",
-    "test_patch": "diff --git a/test/database/keys.js b/test/database/keys.js\nindex 3941edb65a93..fde4bbc442cf 100644\n--- a/test/database/keys.js\n+++ b/test/database/keys.js\n@@ -35,6 +35,17 @@ describe('Key methods', () => {\n \t\t});\n \t});\n \n+\tit('should return m ... [TRUNCATED 952 chars] ... {uid}`, 1000);\n+\t\t\tconst code = await db.get(`confirm:byUid:${uid}`);\n+\t\t\tawait db.setObjectField(`confirm:${code}`, 'expires', Date.now() + 1000);\n \t\t\tconst ok = await user.email.canSendValidation(uid, email);\n-\n \t\t\tassert(ok);\n \t\t});\n \t});\n",
-    "fail_to_pass": "[\"test/database.js | Test database test/database/keys.js::Key methods should return multiple keys and null if key doesn't exist\", 'test/database.js | Test database test/database/keys.js::Key methods should return empty array if keys is empty array or falsy', 'test/user/emails.js | email confirmation (library methods) canSendValidation should return true if it has been long enough to re-send confirmation']",
-    "pass_to_pass": "[\"test/database.js | Test database should work\", \"test/database.js | Test database info should return info about database\", \"test/database.js | Test database info should not error and return info if client is falsy\", \"test/database.js | Test  ... [TRUNCATED 45280 chars] ... pending or set\", \"test/user/emails.js | email confirmation (v3 api) should confirm their email (using the pending validation)\", \"test/user/emails.js | email confirmation (v3 api) should still confirm the email (as email is set in user hash)\"]",
-    "before_repo_set_cmd": "git reset --hard 1e137b07052bc3ea0da44ed201702c94055b8ad2\ngit clean -fd \ngit checkout 1e137b07052bc3ea0da44ed201702c94055b8ad2 \ngit checkout 04998908ba6721d64eba79ae3b65a351dcfbc5b5 -- test/database/keys.js test/user/emails.js",
-    "selected_test_files_to_run": "[\"test/database.js\", \"test/database/keys.js\", \"test/user/emails.js\"]",
+    "base_commit": "ae3fa85f40db0dca83d19dda1afb96064dffcc83",
+    "problem_statement": "## Title: Post cache access and slug existence checks behave inconsistently\n\n\n### Description\nPost cache availability depends on when different application modules load and access the cache, which can cause configuration-dependent initialization and inconsistent cache operations.\nSlug existence checks also only handle a single slug reliably. Supplying multiple slugs does not return an ordered result for each input, and arrays containing invalid values are not rejected consistently.",
+    "patch": "diff --git a/src/controllers/admin/cache.js b/src/controllers/admin/cache.js\nindex 43d6f4ddcab4..2faad03fc2bb 100644\n--- a/src/controllers/admin/cache.js\n+++ b/src/controllers/admin/cache.js\n@@ -6,7 +6,7 @@ const utils = require('../../utils' ... [TRUNCATED 7281 chars] ... ess-useragent');\n const favicon = require('serve-favicon');\n-const detector = require('spider-detector');\n+const detector = require('@nodebb/spider-detector');\n const helmet = require('helmet');\n \n const Benchpress = require('benchpressjs');\n",
+    "test_patch": "diff --git a/test/mocks/databasemock.js b/test/mocks/databasemock.js\nindex 5cb8af1d34..507f29d6fc 100644\n--- a/test/mocks/databasemock.js\n+++ b/test/mocks/databasemock.js\n@@ -194,7 +194,7 @@ async function setupMockDefaults() {\n \tmeta.config. ... [TRUNCATED 4772 chars] ...  } });\n+\t\t\tassert.strictEqual(await meta.slugTaken('test-category-handle'), true);\n+\t\t\tassert.deepStrictEqual(await meta.slugTaken(['test-category-handle', 'doesnot exist']), [true, false]);\n \t\t});\n \n \t\tit('should delete user', async () => {\n",
+    "fail_to_pass": "[\"test/user.js | User | socket methods | should return true/false if user/group exists or not\", \"test/socket.io.js | socket.io | should toggle caches\"]",
+    "pass_to_pass": "[]",
+    "before_repo_set_cmd": "git reset --hard ae3fa85f40db0dca83d19dda1afb96064dffcc83\ngit clean -fd\ngit checkout ae3fa85f40db0dca83d19dda1afb96064dffcc83\ngit apply --verbose /tests/test_patch.patch",
+    "selected_test_files_to_run": "[\"test/mocks/databasemock.js\", \"test/translator.js\", \"test/user.js\", \"test/socket.io.js\", \"test/database.js\", \"test/meta.js\"]",
     "repo_language": "js",
-    "requirements": "\"- The loadUserInfo(callerUid, uids) function should include logic to retrieve and attach `email:pending` and `email:expired` flags to each user object. These flags must be derived by resolving `confirm:byUid:<uid>` keys via the new `getConfi ... [TRUNCATED 3170 chars] ... rval check must compare the stored TTL timestamp if available (or, if TTL is unavailable, use the current time as the baseline) plus the configured interval against the max confirmation period, ensuring the system prevents excessive resends.\"",
-    "interface": "\"Type: Method\\n\\nName: db.mget\\n\\nPath: src/database/mongo/main.js, src/database/postgres/main.js, src/database/redis/main.js\\n\\nInput: keys: string[] (An array of database keys to retrieve.)\\n\\nOutput: Promise<(string | null)[]> (A promise t ... [TRUNCATED 487 chars] ...  to the email address string, or `null` if no suitable email is found.)\\n\\nDescription: A utility function that retrieves the most appropriate email address for an administrative action like \\\"force validate\\\" or \\\"resend validation email\\\".\"",
-    "issue_specificity": "[\"major_bug\",\"data_bug\",\"ui_ux_bug\"]",
-    "issue_categories": "[\"back_end_knowledge\",\"database_knowledge\",\"authentication_authorization_knowledge\",\"ui_ux_knowledge\"]",
-    "dockerhub_tag": "nodebb.nodebb-NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5",
-    "docker_image": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-04998908ba6721d64eba79ae3b65a351dcfbc5b5"
+    "requirements": "- The post cache must use a shared instance so all cache operations observe the same state.\n\n- The post cache module must expose `getOrCreate()`, which returns the shared cache instance and creates it only when first requested.\n\n- All modules ... [TRUNCATED 1394 chars] ... er with display name `John Smith` exists.\n\n- `User.getUidsByUserslugs` must return `null` for each slug that matches no user, and for known slugs each value must be strictly equal (`===`) to what `User.getUidByUserslug` returns for that slug.",
+    "interface": "- Path: `src/posts/cache.js`\n- Name: `getOrCreate`\n- Type: function\n- Input: `NA`\n- Output: `Cache instance object`\n- Description: Returns the shared post cache instance, creating it on first use.\n\n- Path: `src/posts/cache.js`\n- Name: `reset` ... [TRUNCATED 365 chars] ...  other entry in place.\n\n- Path: `src/user/index.js`\n- Name: `getUidsByUserslugs`\n- Type: function\n- Input: `userslugs (string array)`\n- Output: `array of uid values`\n- Description: Returns the user ids corresponding to each userslug in order.",
+    "issue_specificity": "[\"integration_bug\"]",
+    "issue_categories": "[\"back_end_knowledge\",\"database_knowledge\",\"performance_knowledge\"]",
+    "dockerhub_tag": "nodebb.nodebb-NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac",
+    "docker_image": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac"
   }
 }
 ```
+
+*注意：为便于显示，部分内容已截断。*
 
 ## 提示模板
 
@@ -117,13 +118,13 @@ SWE-bench_Pro 是由 Scale AI 提供的一项具有挑战性的基准测试，�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `swe_bench_pro_repo_path` | `str` | `` | `scaleapi/SWE-bench_Pro-os` 仓库的本地路径。若为空，则自动克隆至 `~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os` 并固定到 commit `ca10a60`。 |
-| `dockerhub_username` | `str` | `jefzda` | 托管 sweap-images 镜像仓库的 DockerHub 用户或组织名。 |
-| `eval_timeout` | `int` | `3600` | 每个实例的评估超时时间（秒）。 |
+| `swe_bench_pro_repo_path` | `str` | `` | scaleapi/SWE-bench_Pro-os 克隆的本地路径。如果为空，则自动克隆到 ~/.cache/evalscope/swe_bench_pro/SWE-bench_Pro-os 并固定到提交 ca10a60。 |
+| `dockerhub_username` | `str` | `jefzda` | 托管 sweap-images 仓库的 DockerHub 用户/组织。 |
+| `eval_timeout` | `int` | `3600` | 每个实例评估的超时时间（秒）。 |
 
 ## 使用方法
 
-### 通过 CLI 使用
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -135,7 +136,7 @@ evalscope eval \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 通过 Python 使用
+### 使用 Python
 
 ```python
 from evalscope import TaskConfig, run_task

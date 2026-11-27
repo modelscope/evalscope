@@ -38,6 +38,10 @@ The Python entry points `evalscope.analysis.diagnose_run()` and `diagnose_benchm
 
 ## Reading the results
 
+Open **Diagnosis** in the Web report to generate or update basic analysis on saved results. To run model analysis for the current dataset, configure an OpenAI-compatible endpoint and model, choose the sample scope and limit, and start it explicitly. The form shows the maximum number of model requests and lets you omit intermediate steps and tool output. Web analysis supports up to 50 samples per request; use the CLI or Python for other configurations.
+
+When scores are available without a pass threshold, **Review sample scores** shows the distribution and links to samples prioritized by the primary metric's direction. Diagnosis links preserve the issue, sample position and referenced step.
+
 Diagnostics read saved evaluation records without requiring a benchmark adapter. A mean metric declared as accuracy or exact match can provide binary outcomes even if its score key uses a different name. Optional benchmark providers add benchmark-specific signals such as a safety verdict; they are not required for basic analysis.
 
 Reports use three tabs: **Results → Diagnosis → Samples**. The shared dataset navigator shows each dataset’s metric, score and sample count. Switching tabs preserves the dataset; switching datasets clears old subset, diagnostic filters and sample selection. Narrow screens use a dataset dropdown. Token counts use compact K/M notation with exact values in tooltips. Latency/token details and task configuration are expanded by default and can be collapsed.
@@ -48,7 +52,7 @@ The **Diagnosis** tab starts with failed tasks and their known-outcome denominat
 - **Facts** cover score distributions, weaker subsets, scoring statuses, judge coverage, recorded performance and token usage; empty generations, missing extracted answers, truncation, refusal text and output-length groups; single-letter choice distributions and confusion pairs; outcome stability of complete repeat groups; and Agent tool/trace findings.
 - **Sample observations** appear in Samples, with filters for issue type, related component and finding category. Issue entries open the matching sample collection. Use the sample header to open that exact record in the Samples tab. Sample links survive refresh and can be opened directly; a return action leads back to Diagnosis. Step badges require recorded tool-call IDs; unknown locations are not guessed.
 
-Truncation uses prediction `stop_reason` first, then token-budget proximity only when the reason is missing and both token usage and the budget are available. Unavailable checks are listed as skipped. Continuous scores without an explicit threshold may have unknown outcomes. Weaker subsets require declared metric direction and bounded range.
+The output-limit rate uses only predictions with a recorded ending reason. An answer can be complete even when the output limit is reached. Unavailable checks are listed as skipped. Continuous scores without an explicit threshold may have unknown outcomes. Weaker subsets require declared metric direction and bounded range.
 
 Task outcomes use explicit benchmark results first, configured thresholds next, and then the main score’s recorded 0/1 result for binary accuracy or exact match. Continuous auxiliary scores do not invalidate a binary main score. Continuous scores without a pass threshold remain unknown and are excluded from the default failed-task scope. Set `trace={'outcome_thresholds': {'your_benchmark': {'quality': 0.8}}}` to declare a threshold, using the threshold metric’s declared direction (or an explicit `outcome_directions` override); alternatively use `scope='all'` or explicit `samples`. Nontext outputs are excluded from empty-text, answer-extraction and text-length statistics rather than mislabeled as empty answers.
 
@@ -58,9 +62,13 @@ The taxonomy is extensible and cannot enumerate every failure cause. Failed samp
 
 ## Artifacts and cache
 
+Basic and model analysis are stored separately. Updating basic analysis preserves current model proposals. If the source records change, regenerate basic analysis to see fresh observations and run model analysis again when needed.
+
 ```text
 <run>/analysis/<model>/<benchmark>/diagnosis.json
 <run>/analysis/<model>/<benchmark>/samples.jsonl
+<run>/analysis/<model>/<benchmark>/diagnose/diagnosis.json
+<run>/analysis/<model>/<benchmark>/diagnose/samples.jsonl
 <run>/reports/<model>/<benchmark>.json  # only analysis is updated
 <run>/reports/report.html
 ```
@@ -107,7 +115,8 @@ Evidence has two separate checks:
   withheld as a whole. Explicit scoring exclusion reasons and execution errors are shown directly
   from the record (with secrets redacted) in either mode. These samples do not use the model or take
   a sample budget slot. Default failed-task selection also skips samples whose only recorded issue is
-  a generation budget stop. Use an explicit sample selection or `scope='all'` to investigate those further.
+  a generation budget stop and whose score explicitly records an empty extracted answer.
+  Use an explicit sample selection or `scope='all'` to investigate those further.
   A model summary is requested only when at least one usable sample proposal can be included; rule facts are already in the report.
   Failed requests, invalid formats and low confidence also prevent proposals from being used. Official scores and reference answers remain unchanged;
   suspected reference errors are only marked for review.

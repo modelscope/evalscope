@@ -19,6 +19,17 @@ import pytest
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
 
+def _chart_figure(html: str) -> tuple[list[dict], dict]:
+    """Read the trace data and layout Plotly receives in the chart iframe."""
+    args = html.split('Plotly.newPlot(', 1)[1].lstrip()
+    decoder = json.JSONDecoder()
+    _, end = decoder.raw_decode(args)  # chart div id
+    args = args[end:].lstrip(', \r\n\t')
+    traces, end = decoder.raw_decode(args)
+    layout, _ = decoder.raw_decode(args[end:].lstrip(', \r\n\t'))
+    return traces, layout
+
+
 def _write_json(path: str, obj: object) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8') as f:
@@ -32,6 +43,8 @@ def _make_run(
     with_tokens: bool = True,
     with_pd: bool = False,
     sub_name: str = 'parallel_1_number_2',
+    args: dict | None = None,
+    summary_values: dict | None = None,
 ) -> None:
     """Create a minimal perf-run directory with one parallel_* sub-run."""
     sub = os.path.join(run_dir, sub_name)
@@ -50,16 +63,19 @@ def _make_run(
             'Avg PD Handoff Latency (ms)': 30.0,
             'Avg PD Handoff Overhead (ms)': 5.0,
         })
+    if summary_values:
+        summary.update(summary_values)
     _write_json(os.path.join(sub, 'benchmark_summary.json'), summary)
     _write_json(os.path.join(sub, 'benchmark_percentile.json'), [])
-    _write_json(
-        os.path.join(sub, 'benchmark_args.json'), {
-            'model': 'my-model',
-            'api': 'openai',
-            'dataset': 'openqa',
-            'url': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-        }
-    )
+    run_args = {
+        'model': 'my-model',
+        'api': 'openai',
+        'dataset': 'openqa',
+        'url': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    }
+    if args:
+        run_args.update(args)
+    _write_json(os.path.join(sub, 'benchmark_args.json'), run_args)
     if with_html:
         with open(os.path.join(run_dir, 'perf_report.html'), 'w', encoding='utf-8') as f:
             f.write('<html><body>perf report</body></html>')
@@ -402,6 +418,161 @@ class TestPerfArchive(unittest.TestCase):
             res = self.client.delete('/api/v1/perf/run', query_string={'root_path': self.tmp, 'path': self.svc_rel})
         self.assertEqual(res.status_code, 409)
         self.assertTrue(os.path.isdir(os.path.join(self.tmp, self.svc_rel)))
+
+    def _compare(self, rel_paths: list[str], **params):
+        query = {'root_path': self.tmp, 'paths': ';'.join(rel_paths), 'chart_type': 'latency'}
+        query.update(params)
+        return self.client.get('/api/v1/perf/compare/chart', query_string=query)
+
+    def _make_input_length_run(
+        self,
+        rel: str,
+        length: int = 1024,
+        *,
+        sub_name: str = 'parallel_1_number_2',
+        args: dict | None = None,
+    ) -> None:
+        run_args = {
+            'dataset': 'random',
+            'min_prompt_length': length,
+            'max_prompt_length': length,
+            'rate': -1,
+        }
+        if args:
+            run_args.update(args)
+        _make_run(os.path.join(self.tmp, rel), with_html=False, sub_name=sub_name, args=run_args)
+
+    def test_compare_chart_default_axis_is_backward_compatible(self):
+        default = self._compare([self.cli_rel, self.svc_rel])
+        explicit = self._compare([self.cli_rel, self.svc_rel], x_axis='workload')
+        self.assertEqual(default.status_code, 200)
+        self.assertEqual(default.data, explicit.data)
+        traces, _ = _chart_figure(default.get_data(as_text=True))
+        self.assertEqual(traces[0]['name'], 'R1 · my-model')
+        self.assertIn(b'connectgaps', default.data)
+
+        invalid = self._compare([self.cli_rel, self.svc_rel], x_axis='tokens')
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('Unknown x_axis', invalid.get_json()['error'])
+
+    def test_workload_chart_separates_concurrency_and_rate_axes(self):
+        from evalscope.perf.utils.perf_constants import Metrics
+
+        for path, sub, rate, latency in [
+            ('closed', 'parallel_8_number_2', 4.0, 0.4),
+            ('open', 'rate_8_number_2', 8.0, 0.8),
+            ('mixed', 'parallel_8_number_2', 4.0, 0.4),
+            ('mixed', 'rate_8_number_2', 8.0, 0.8),
+        ]:
+            _make_run(os.path.join(self.tmp, path), with_html=False, sub_name=sub,
+                      summary_values={Metrics.REQUEST_RATE: rate, Metrics.AVERAGE_LATENCY: latency})
+
+        for paths in (['closed', 'open'], ['open', 'closed'], ['mixed'], ['closed'], ['open']):
+            with self.subTest(paths=paths):
+                result = self._compare(paths)
+                self.assertEqual(result.status_code, 200)
+                traces, layout = _chart_figure(result.get_data(as_text=True))
+                axes = {}
+                for trace in traces:
+                    self.assertEqual(trace['x'], [8])
+                    self.assertEqual(trace.get('yaxis', 'y'), 'y')
+                    axis = trace.get('xaxis', 'x').replace('x', 'xaxis', 1)
+                    title = layout[axis]['title']['text']
+                    run_id = trace['name'].split(' · ', 1)[0]
+                    self.assertEqual(trace['hovertemplate'], f'%{{y}}<extra>{run_id}</extra>')
+                    axes[trace['y'][0]] = title
+
+                if paths in (['closed'], ['open']):
+                    self.assertNotIn('xaxis2', layout)
+                    self.assertEqual(axes, {0.4: 'Concurrency'} if paths == ['closed'] else {0.8: 'Rate (req/s)'})
+                else:
+                    self.assertEqual(axes, {0.4: 'Concurrency', 0.8: 'Rate (req/s)'})
+                    self.assertEqual(layout['xaxis']['title']['text'], 'Concurrency')
+                    self.assertEqual(layout['xaxis']['dtick'], 1)
+                    self.assertLess(layout['xaxis']['domain'][1], layout['xaxis2']['domain'][0])
+                    self.assertEqual(sum(trace.get('showlegend', True) for trace in traces), len(paths))
+
+    def test_compare_chart_input_length_mode(self):
+        rels = []
+        for length in (4096, 1024, 8192, 2048):
+            rel = f'input-{length}'
+            self._make_input_length_run(rel, length)
+            rels.append(rel)
+
+        response = self._compare(rels, x_axis='input_length')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Configured input length', response.data)
+        self.assertIn(b'C=1', response.data)
+        traces, _ = _chart_figure(response.get_data(as_text=True))
+        self.assertNotIn('R1 · my-model', [trace['name'] for trace in traces])
+
+    def test_compare_chart_input_length_accepts_rate_limited_concurrency_run(self):
+        self._make_input_length_run(
+            'rated-closed-loop',
+            1024,
+            sub_name='parallel_8_number_16',
+            args={'parallel': 8, 'rate': 10},
+        )
+
+        response = self._compare(['rated-closed-loop'], x_axis='input_length')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'C=8', response.data)
+
+    def test_compare_chart_input_length_rejects_ineligible_runs(self):
+        self._make_input_length_run('valid-input', 2048)
+        cases = (
+            ('non-random', {'dataset': 'openqa'}, 'parallel_1_number_2'),
+            ('range-length', {'max_prompt_length': 2048}, 'parallel_1_number_2'),
+            ('missing-length', {'min_prompt_length': None}, 'parallel_1_number_2'),
+            ('open-loop', {}, 'rate_10_number_2'),
+        )
+        for name, args, sub_name in cases:
+            with self.subTest(case=name):
+                self._make_input_length_run(name, 1024, sub_name=sub_name, args=args)
+                response = self._compare(['valid-input', name], x_axis='input_length')
+                self.assertEqual(response.status_code, 400)
+
+    def test_detail_exposes_mixed_sub_run_input_length_configuration(self):
+        self._make_input_length_run('mixed-config', 1024)
+        self._make_input_length_run('mixed-config', 2048, sub_name='parallel_2_number_2', args={'dataset': 'openqa'})
+        response = self.client.get(
+            '/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': 'mixed-config'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        configuration = response.get_json()['configuration']
+        self.assertEqual(configuration['dataset'], 'random, openqa')
+        self.assertEqual(configuration['min_prompt_length'], '1024, 2048')
+        self.assertEqual(configuration['max_prompt_length'], '1024, 2048')
+
+        self._make_input_length_run('consistent-config', 1024)
+        self._make_input_length_run('consistent-config', 1024, sub_name='parallel_2_number_2')
+        response = self.client.get(
+            '/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': 'consistent-config'}
+        )
+        self.assertEqual(response.get_json()['configuration']['min_prompt_length'], '1024')
+
+    def test_compare_chart_input_length_rejects_duplicate_and_inconsistent_points(self):
+        self._make_input_length_run('duplicate-a', 1024)
+        self._make_input_length_run('duplicate-b', 1024)
+        duplicate = self._compare(['duplicate-a', 'duplicate-b'], x_axis='input_length')
+        self.assertEqual(duplicate.status_code, 400)
+        self.assertIn('Duplicate input-length and concurrency', duplicate.get_json()['error'])
+
+        self._make_input_length_run('inconsistent', 1024)
+        self._make_input_length_run('inconsistent', 2048, sub_name='parallel_2_number_2')
+        inconsistent = self._compare(['inconsistent', 'duplicate-a'], x_axis='input_length')
+        self.assertEqual(inconsistent.status_code, 400)
+        self.assertIn('inconsistent within', inconsistent.get_json()['error'])
+
+    def test_compare_chart_input_length_preserves_input_only_rules(self):
+        self._make_input_length_run('decision-input', 1024, args={'api': 'systemone'})
+        self._make_input_length_run('decision-reference', 2048, args={'api': 'systemone'})
+        latency = self._compare(['decision-input', 'decision-reference'], x_axis='input_length')
+        self.assertEqual(latency.status_code, 200)
+        ttft = self._compare(['decision-input', 'decision-reference'], x_axis='input_length', chart_type='ttft')
+        self.assertEqual(ttft.status_code, 404)
 
 
 if __name__ == '__main__':

@@ -70,3 +70,11 @@ class TestLogEveryNQuery:
 
     def test_default_preserved(self):
         assert _args().log_every_n_query == 100
+
+
+class TestModelIdFromPath:
+
+    @pytest.mark.parametrize('model', ['/models/Qwen2.5-7B-Instruct', '/models/Qwen2.5-7B-Instruct/'])
+    def test_model_id_ignores_a_trailing_separator(self, model):
+        args = Arguments(model=model, url='http://localhost:8080/v1/chat/completions')
+        assert args.model_id == 'Qwen2.5-7B-Instruct'

@@ -106,6 +106,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                     output.is_stream = True
                     handler = StreamedResponseHandler()
                     stream_failed = False
+                    stream_finished = False
                     async for chunk_bytes in response.content.iter_any():
                         if not chunk_bytes:
                             continue
@@ -135,6 +136,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                                 if event_type in _DELTA_EVENT_TYPES:
                                     generated_text += delta
                             elif event_type in ('response.completed', 'response.incomplete'):
+                                stream_finished = True
                                 response_payload = payload.get('response', {})
                                 usage = response_usage_from_dict(response_payload)
                                 if usage is not None:
@@ -148,6 +150,11 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
 
                             output.response_messages.append(payload)
                             most_recent_timestamp = timestamp
+
+                    if not stream_failed and not stream_finished:
+                        stream_failed = True
+                        output.error = 'Responses SSE stream ended without a terminal response event.'
+                        most_recent_timestamp = time.perf_counter()
 
                     output.generated_text = generated_text
                     output.success = not stream_failed

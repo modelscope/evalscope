@@ -10,11 +10,12 @@ import mimetypes
 import os
 import shutil
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import plotly.express as px
 import plotly.graph_objects as go
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
 
@@ -27,6 +28,7 @@ from evalscope.report.data_frames import (
     get_compare_report_df,
     get_comparison_quality_report_df,
     get_model_prediction,
+    get_prediction_source_paths,
     get_quality_metric_df,
     get_quality_report_df,
     get_report_analysis,
@@ -53,6 +55,7 @@ from evalscope.service.api_models import (
     LoadReportResponse,
     PredictionsResponse,
 )
+from evalscope.service.prediction_cache import prediction_etag
 from evalscope.service.report_meta_cache import (
     Fingerprint,
     build_report_meta_cached,
@@ -62,10 +65,10 @@ from evalscope.service.report_meta_cache import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
-from evalscope.utils.uri_utils import sanitize_endpoint
+from evalscope.utils.uri_utils import sanitize_endpoint, validate_http_endpoint
 
 from ..responses import json_response
-from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, recorded_start_time
+from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, recorded_start_time, run_in_subprocess
 
 logger = get_logger()
 
@@ -669,17 +672,26 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'dataset_name and subset_name are required'}), 400
 
     try:
-        work_dir = os.path.join(_root_path(), ref.run_id)
-        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+        root = _root_path()
+        work_dir = os.path.join(root, ref.run_id)
+
+        # Fingerprint the source cache files so an unchanged subset revalidates
+        # as 304 before any expensive loading or response serialization.
+        review_path, prediction_path = get_prediction_source_paths(work_dir, ref.model_id, dataset_name, subset_name)
+        cache_key = f'{os.path.realpath(root)}\x00{ref.run_id}\x00{ref.model_id}\x00{dataset_name}\x00{subset_name}'
         index = request.args.get('index')
-        if index is not None:
-            df = df[df['Index'].astype(str) == index]
-        return json_response(
-            PredictionsResponse,
-            {
-                'predictions': _df_to_records(df),
-            },
-        )
+        etag = prediction_etag(f'{cache_key}\x00{index!r}', review_path, prediction_path)
+
+        if request.if_none_match.contains_weak(etag) and os.path.isfile(review_path):
+            resp = Response()
+        else:
+            df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
+            if index is not None and not df.empty:
+                df = df[df['Index'].astype(str) == index]
+            resp = json_response(PredictionsResponse, {'predictions': _df_to_records(df)})
+        resp.set_etag(etag)
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp.make_conditional(request)
     except Exception:
         logger.error('Failed to get predictions', exc_info=True)
         return jsonify({'error': 'Failed to get predictions'}), 500
@@ -711,11 +723,79 @@ def get_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
         return jsonify({'error': 'Diagnostic samples unavailable; rerun evalscope analyze.'}), 409
 
 
+@bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis', methods=['POST'])
+def run_diagnosis(run_id: str, model_id: str) -> ResponseReturnValue:
+    """Analyze one completed dataset without rerunning evaluation."""
+    from evalscope.analysis import diagnose_benchmark
+    from evalscope.api.analysis import AnalysisModelConfig, AnalysisReportConfig
+    from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
+    from evalscope.service.api_models import DiagnosisResponse, DiagnosisRunRequest
+
+    if request.headers.get('Sec-Fetch-Site') in ('same-site', 'cross-site'):
+        return jsonify({'error': 'Open the report in EvalScope to start analysis'}), 403
+
+    dataset = request.args.get('dataset_name', '')
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+        if not dataset or os.path.basename(dataset) != dataset or dataset in ('.', '..'):
+            raise ValueError('Invalid dataset_name')
+        options = DiagnosisRunRequest.model_validate(request.get_json(silent=True))
+        model = None
+        if options.level == 'diagnose':
+            if not options.model_id or not options.model_id.strip():
+                raise ValueError('Enter an explicit analysis model')
+            validate_http_endpoint(options.api_url)
+            key = options.api_key.get_secret_value().strip() if options.api_key else ''
+            if key.startswith('env:'):
+                raise ValueError('Enter a literal API key in the Web form')
+            # An empty form field must not forward the server's evaluation key to a user-selected endpoint.
+            model = AnalysisModelConfig(
+                model_id=options.model_id.strip(), api_url=options.api_url.strip(), api_key=key or 'EMPTY'
+            )
+        elif any(value is not None for value in (options.model_id, options.api_url, options.api_key)):
+            raise ValueError('Basic analysis does not take a model configuration')
+    except ValidationError:
+        return jsonify({'error': 'Invalid analysis configuration'}), 400
+    except ValueError as error:
+        return jsonify({'error': str(error)}), 400
+
+    if ref.run_id in active_task_ids():
+        return jsonify({'error': 'Wait for the evaluation to finish before analyzing its results'}), 409
+    root = Path(_root_path()).resolve()
+    run_dir = (root / ref.run_id).resolve()
+    source = (run_dir / 'reports' / ref.model_id / f'{dataset}.json').resolve()
+    base = diagnosis_dir(str(run_dir), ref.model_id, dataset)
+    if (
+        not run_dir.is_relative_to(root)
+        or not source.is_relative_to(run_dir)
+        or any(not path.resolve().is_relative_to(run_dir) for path in (base, base / 'cache', base / 'diagnose'))
+    ):
+        return jsonify({'error': 'Invalid report path'}), 400
+    if not source.is_file():
+        return jsonify({'error': 'Dataset report not found'}), 404
+
+    try:
+        config = AnalysisReportConfig(
+            level=options.level,
+            model=model,
+            max_diagnosed_samples=options.max_diagnosed_samples,
+            scope=options.scope,
+            include_trace=options.include_trace,
+        )
+        run_in_subprocess(diagnose_benchmark, str(run_dir), ref.model_id, dataset, config)
+        _refresh_html_report(str(run_dir / 'reports'))
+        status, report = load_diagnosis(str(run_dir), ref.model_id, dataset)
+        return json_response(DiagnosisResponse, {'status': status, 'report': report})
+    except Exception as error:
+        logger.warning(f'Could not analyze report {ref.key}: {type(error).__name__}')
+        return jsonify({'error': 'Analysis could not finish. Check the report and model connection, then retry.'}), 500
+
+
 @bp_reports.route('/runs/<run_id>/models/<model_id>/diagnosis/samples', methods=['GET'])
 def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
     """Filter before paging; stale sample identities are never joined to current predictions."""
     from evalscope.api.analysis import SampleDiagnosis
-    from evalscope.report.diagnosis import diagnosis_dir, load_diagnosis
+    from evalscope.report.diagnosis import load_diagnosis_snapshot
     from evalscope.service.api_models import SampleDiagnosesResponse
 
     dataset = request.args.get('dataset_name', '')
@@ -729,12 +809,13 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
         page, size = int(request.args.get('page', 1)), int(request.args.get('page_size', 50))
         if page < 1 or not 1 <= size <= 200:
             raise ValueError('Invalid page')
+        subset = request.args.get('subset_name')
         root = os.path.join(_root_path(), ref.run_id)
-        status, report = load_diagnosis(root, ref.model_id, dataset)
+        status, _, target = load_diagnosis_snapshot(root, ref.model_id, dataset)
         items, total = [], 0
         seen = set()
         if status == 'ready':
-            with (diagnosis_dir(root, ref.model_id, dataset) / 'samples.jsonl').open() as stream:
+            with (target / 'samples.jsonl').open() as stream:
                 for line in stream:
                     if not line.strip():
                         continue
@@ -743,16 +824,13 @@ def get_sample_diagnoses(run_id: str, model_id: str) -> ResponseReturnValue:
                     if identity in seen:
                         continue
                     seen.add(identity)
-                    if any(
-                        request.args.get(name) and request.args[name] != value
-                        for name, value in (('subset_name', sample.key.subset),)
-                    ):
+                    if subset and subset != sample.key.subset:
                         continue
                     component = request.args.get('attribution')
                     observed_components = {
                         finding.attribution.value
                         for finding in sample.findings
-                        if finding.category.value not in ('side_effect', 'tainted_side_effect', 'outcome')
+                        if finding.category.value not in ('side_effect', 'tainted_side_effect')
                     } or {'unknown'}
                     if component and component not in observed_components:
                         continue

@@ -1,11 +1,10 @@
-import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Union
 
 from .dataset import DatasetDict, FieldSpec, MemoryDataset, Sample, validate_dataset_repeats
 from .hub import DatasetHub
-from .loader import LocalDataLoader, _shuffle_in_place
-from .utils import data_to_samples, record_to_sample_fn
+from .loader import LocalDataLoader, _build_memory_dataset, _shuffle_in_place
+from .utils import record_to_sample_fn
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -45,19 +44,19 @@ def build_dataset_from_records(
             limit = int(len(record_list) * limit)
         elif isinstance(limit, int) and limit < 0:
             raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-        record_list = record_list[:limit]
 
     data_to_sample = record_to_sample_fn(sample_fields)
-    samples = data_to_samples(data=record_list, data_to_sample=data_to_sample)
-    if repeats > 1:
-        samples = [copy.deepcopy(sample) for sample in samples for _ in range(repeats)]
-
-    dataset = MemoryDataset(samples=samples, name=name, location=location, shuffled=shuffle)
-    if filter_func is not None:
-        dataset = dataset.filter(filter_func)
-    if auto_id:
-        dataset.reindex(group_size=repeats)
-    return dataset
+    return _build_memory_dataset(
+        data=record_list,
+        data_to_sample=data_to_sample,
+        filter_func=filter_func,
+        limit=limit,
+        repeats=repeats,
+        auto_id=auto_id,
+        name=name,
+        location=location,
+        shuffled=shuffle,
+    )
 
 
 def build_dataset_dict_from_record_map(

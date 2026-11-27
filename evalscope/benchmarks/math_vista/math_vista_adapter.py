@@ -11,7 +11,12 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import (
+    MULTI_CHOICE_ANSWER_PARSER_VERSION,
+    MultipleChoiceTemplate,
+    parse_answers,
+    prompt,
+)
 
 logger = get_logger()
 
@@ -25,7 +30,7 @@ OPEN_TYPE = 'free_form'
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='math_vista',
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',
@@ -66,6 +71,8 @@ MathVista is a comprehensive benchmark for mathematical reasoning in visual cont
     )
 )
 class MathVistaAdapter(VisionLanguageAdapter):
+    answer_parser_version = MULTI_CHOICE_ANSWER_PARSER_VERSION
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -148,11 +155,22 @@ class MathVistaAdapter(VisionLanguageAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        """Keep categorical answers on exact matching; open answers use Math-Verify."""
+        """Keep categorical answers exact; round free-form floats before Math-Verify."""
         if task_state.metadata.get('question_type') == 'multi_choice':
             return Score(
                 prediction=original_prediction,
                 extracted_prediction=filtered_prediction,
                 value={'accuracy': float(bool(filtered_prediction) and filtered_prediction == reference)},
             )
+        if (
+            task_state.metadata.get('question_type') == OPEN_TYPE
+            and task_state.metadata.get('answer_type') == 'float'
+            and task_state.metadata.get('precision') is not None
+        ):
+            try:
+                filtered_prediction = str(
+                    round(float(filtered_prediction.strip()), int(task_state.metadata['precision']))
+                )
+            except (ValueError, TypeError):
+                pass
         return super().match_score(original_prediction, filtered_prediction, reference, task_state)

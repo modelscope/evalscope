@@ -3,31 +3,33 @@
 
 ## 概述
 
-LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成模型在真实世界竞赛编程问题上的表现。它持续从编程平台收集新问题，以确保模型在训练阶段未见过测试数据。
+LiveCodeBench 是一个无数据污染的基准测试，用于在真实世界的竞赛编程问题上评估代码生成模型。它持续从编程平台收集新问题，以确保模型在训练期间未见过测试数据。
 
 ## 任务描述
 
 - **任务类型**：竞赛编程 / 代码生成
 - **输入**：包含输入/输出格式的编程问题描述
 - **输出**：完整的解决方案代码
-- **来源**：LeetCode、Codeforces 和 AtCoder 的题目
+- **来源**：来自 LeetCode、Codeforces 和 AtCoder 的问题
 
-## 主要特性
+## 主要特点
 
 - 在模型训练截止日期后持续更新新问题
-- 题目来自主流竞赛编程平台
-- 每道题包含多个测试用例，以进行全面评估
-- 支持基于日期的过滤，防止数据污染
-- 支持本地和沙箱环境下的代码执行
+- 问题源自主要的竞赛编程平台
+- 每个问题包含多个测试用例以进行全面评估
+- 基于日期的过滤机制以控制数据污染
+- 支持本地和沙箱代码执行
 
 ## 评估说明
 
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
 - 默认配置使用 **0-shot** 评估
-- 提示词遵循官方 LiveCodeBench runner 格式：通用的“专家 Python 程序员”系统消息，加上 `### Question` / `### Format` 用户消息
-- **安全警告**：默认情况下，代码会在本地环境中执行。我们建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
-- 使用 `start_date` 和 `end_date` 参数按日期筛选题目
-- 每个测试用例默认超时时间为 6 秒
+- 提示词遵循官方 LiveCodeBench 运行器：一个通用的“专家 Python 程序员”系统消息加上 `### Question` / `### Format` 用户消息
+- **安全警告**：默认情况下，代码在本地环境中执行。我们建议使用沙箱执行。有关详细信息，请参阅[沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- 使用 `start_date` 和 `end_date` 参数按日期过滤问题
+- 默认超时时间为每个测试用例 6 秒
 - 支持 `pass@k` 指标计算
+
 
 ## 属性
 
@@ -38,9 +40,10 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认 Shots** | 0-shot |
-| **评估分割** | `test` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
+
 
 ## 数据统计
 
@@ -72,11 +75,11 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注意：为显示目的，部分内容已截断。*
 
 ## 提示模板
 
-**系统提示词：**
+**系统提示：**
 ```text
 You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.
 ```
@@ -95,13 +98,13 @@ You are an expert Python programmer. You will be given a question (problem speci
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `start_date` | `str | null` | `None` | 从该日期（YYYY-MM-DD）开始筛选题目。设为 null 则保留所有题目。 |
-| `end_date` | `str | null` | `None` | 筛选截至该日期（YYYY-MM-DD）的题目。设为 null 则保留所有题目。 |
-| `debug` | `bool` | `False` | 启用详细调试日志并绕过某些安全检查。 |
+| `start_date` | `str | null` | `None` | 从此日期开始过滤问题 (YYYY-MM-DD)。Null 保留所有。 |
+| `end_date` | `str | null` | `None` | 过滤直到此日期的问题 (YYYY-MM-DD)。Null 保留所有。 |
+| `debug` | `bool` | `False` | 启用详细调试日志记录并绕过某些安全检查。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要沙箱环境进行代码执行。
 
 ```json
 {

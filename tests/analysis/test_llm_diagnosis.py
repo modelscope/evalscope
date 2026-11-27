@@ -16,7 +16,9 @@ from evalscope.api.analysis import (
     SampleDiagnosis,
     SampleKey,
 )
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool
 from evalscope.api.model import ModelOutput, ModelUsage
+from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
 from tests.analysis.helpers import review
 
 
@@ -53,9 +55,17 @@ def test_unique_quotes_support_unicode_and_whitespace_but_not_ambiguity_or_phant
     assert not parsed.evidence and errors==['quote_missing_or_ambiguous']
 
 
+def test_whitespace_range_is_not_evidence() -> None:
+    diagnosis = verdict().model_copy(update={'evidence': [
+        EvidenceReference(source_id='m:1', quote=' ', start=0, end=1),
+    ]})
+    parsed, errors = validate_evidence(diagnosis, [DiagnosticSource(id='m:1', text=' ANSWER: B')])
+    assert not parsed.evidence and errors == ['blank_quote']
+
+
 def sample(index: int,subset: str='large',failed: bool=True) -> SampleDiagnosis:
     return SampleDiagnosis(key=SampleKey(subset=subset,index=index),task_success=not failed,
-                           score_status='success',needs_attention=True,failure_type='unexplained')
+                           score_status='success',needs_attention=True)
 
 
 def test_scoped_selection_is_repeatable_and_never_spends_failure_budget_on_passing_rows() -> None:
@@ -100,6 +110,50 @@ def fake_model(monkeypatch: pytest.MonkeyPatch,reply: Callable, calls: list) -> 
     monkeypatch.setattr('evalscope.analysis.llm.get_model',lambda *a,**kw:FakeModel())
 
 
+@pytest.mark.parametrize('include_trace', [True, False])
+def test_known_secrets_are_redacted_in_both_model_requests(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, include_trace: bool
+) -> None:
+    secret = 'synthetic-"token-with-quote"-1234'
+    monkeypatch.setenv('DIAGNOSIS_TEST_TOKEN', secret)
+    row = review(0)
+    row.messages[1:1] = [
+        ChatMessageAssistant(content='', tool_calls=[
+            ToolCall(id='lookup-1', function=ToolFunction(name='lookup', arguments={'value': secret})),
+        ]),
+        ChatMessageTool(
+            content=secret, tool_call_id='lookup-1', function='lookup',
+            error=ToolCallError(type='timeout', message=secret),
+        ),
+    ]
+    calls = []
+    def reply(prompt: str, _: int) -> str:
+        if 'Summarize evaluation' in prompt:
+            return '{}'
+        return verdict().model_copy(update={
+            'explanation': f'The tool failed: {secret}',
+            'evidence': [EvidenceReference(source_id='m:3', quote='ANSWER: B')],
+        }).model_dump_json()
+
+    fake_model(monkeypatch, reply, calls)
+    report = diagnose_benchmark(str(make_run(rows=[row])), 'm', 'demo', options(include_trace=include_trace))
+    assert report.coverage.diagnosed_ok == 1 and len(calls) == 2
+    assert all('token-with-quote' not in prompt for prompt in calls)
+    assert ('lookup-1' in calls[0]) is include_trace
+
+
+def test_locatable_quote_cannot_override_known_score_status(make_run: Callable, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    diagnosis = verdict().model_copy(update={'failure_type': 'judge_failure'})
+    fake_model(monkeypatch, lambda prompt, _: diagnosis.model_dump_json(), calls)
+    root = make_run(rows=[review(0)])
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    row = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/diagnose/samples.jsonl').read_text())
+    assert report.coverage.citations_valid == 1 and report.coverage.diagnosed_ok == 0
+    assert row.llm_status == 'unexplained' and row.evidence_errors == ['contradicts_recorded_score_status']
+    assert report.narrative_status == 'no_findings' and len(calls) == 1
+
+
 def test_default_selection_skips_only_recorded_stops_with_no_other_issue() -> None:
     stopped, estimated, other, extraction, risk = [sample(i) for i in range(5)]
     stopped.stop_reason = other.stop_reason = risk.stop_reason = 'max_tokens'
@@ -109,10 +163,27 @@ def test_default_selection_skips_only_recorded_stops_with_no_other_issue() -> No
     extraction.observed_types = ['extraction_failure']
     rows = [stopped, estimated, other, extraction, risk]
 
-    selected, population = select_samples(rows, options())
+    no_answer = {(stopped.key.subset, stopped.key.index)}
+    selected, population = select_samples(rows, options(), no_answer)
     assert population == 4 and {row.key.index for row in selected} == {1, 2, 3, 4}
-    assert select_samples(rows, options(samples=[stopped.key])) == ([stopped], 1)
-    assert select_samples(rows, options(scope='all'))[1] == 5
+    assert select_samples(rows, options())[1] == 5
+    assert select_samples(rows, options(samples=[stopped.key]), no_answer) == ([stopped], 1)
+    assert select_samples(rows, options(scope='all'), no_answer)[1] == 5
+
+
+def test_output_limit_does_not_hide_a_failed_sample_with_an_extracted_answer(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_run(rows=[review(0), review(1, prediction='')])
+    path = root / 'predictions/m/demo_default.jsonl'
+    path.write_text(path.read_text().replace('"stop"', '"max_tokens"'))
+    calls = []
+    fake_model(monkeypatch, lambda prompt, _: '{}' if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls)
+    report = diagnose_benchmark(str(root), 'm', 'demo', options())
+    with (root / 'analysis/m/demo/diagnose/samples.jsonl').open(encoding='utf-8') as stream:
+        samples = [json.loads(line) for line in stream]
+    assert report.coverage.diagnosis_population == report.coverage.diagnosed_ok == 1
+    assert [sample['llm_status'] for sample in samples] == ['ok', 'not_selected']
 
 
 def test_model_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run: Callable,monkeypatch: pytest.MonkeyPatch) -> None:
@@ -132,12 +203,12 @@ def test_model_diagnosis_preserves_scores_and_resumes_per_request_cache(make_run
     assert report.coverage.diagnosis_population == 1
     assert report.coverage.selection_scope == 'failed'
     assert (root/'reviews/m/demo_default.jsonl').read_bytes()==original
-    rows=[json.loads(line) for line in (root/'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
+    rows=[json.loads(line) for line in (root/'analysis/m/demo/diagnose/samples.jsonl').read_text().split('\n') if line.strip()]
     assert rows[0]['llm']['evidence'][0]['quote']=='ANSWER: B'
-    assert rows[0]['failure_type'] == 'unexplained' and rows[0]['observed_types'] == []
+    assert rows[0]['observed_types'] == []
     assert rows[0]['llm']['failure_type'] == 'reasoning_error'
     assert report.patterns[0].failure_type == 'unexplained'
-    (root/'analysis/m/demo/diagnosis.json').unlink()
+    (root/'analysis/m/demo/diagnose/diagnosis.json').unlink()
     resumed=diagnose_benchmark(str(root),'m','demo',options())
     assert resumed.cost.calls==0 and resumed.cost.cached_calls==2 and len(calls)==2
     changed=diagnose_benchmark(str(root),'m','demo',options(seed=43))
@@ -166,7 +237,7 @@ def test_failed_diagnoses_never_count_as_explained(make_run: Callable,monkeypatc
     assert report.coverage.diagnosis_statuses=={status:1}
     assert report.coverage.diagnosed_ok == 0 and report.coverage.unexplained_failures == 1
     assert report.patterns[0].failure_type=='unexplained'
-    if mode in ('parse','transport'):
+    if mode in ('parse', 'transport', 'evidence'):
         diagnose_benchmark(str(root),'m','demo',options())
         assert sum('Summarize evaluation' not in prompt for prompt in calls) == 2
 
@@ -185,7 +256,7 @@ def test_partial_sample_references_do_not_promote_an_explanation(
     fake_model(monkeypatch, reply, calls)
     root = make_run(rows=[review(0)])
     report = diagnose_benchmark(str(root), 'm', 'demo', options())
-    row = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    row = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/diagnose/samples.jsonl').read_text())
     assert row.llm_status == 'invalid_evidence'
     assert row.evidence_errors == ['quote_missing_or_ambiguous']
     assert report.coverage.diagnosed_ok == 0
@@ -227,7 +298,7 @@ def test_recorded_error_is_shown_without_spending_model_budget(
     root = make_run(rows=[row, review(1)] if has_other_sample else [row])
     keys = [SampleKey(subset='default', index=i) for i in range(2 if has_other_sample else 1)]
     report = diagnose_benchmark(str(root), 'm', 'demo', options(samples=keys, max_diagnosed_samples=1))
-    artifacts = (root / 'analysis/m/demo/samples.jsonl').read_text()
+    artifacts = (root / 'analysis/m/demo/diagnose/samples.jsonl').read_text()
     persisted = next(
         sample for line in artifacts.split('\n') if line
         if (sample := SampleDiagnosis.model_validate_json(line)).key.index == 0
@@ -339,7 +410,9 @@ def test_trace_can_be_omitted_without_inventing_step_references(make_run: Callab
     data=load_inputs(str(root),'m','demo',options().trace)
     item=data.samples[0]
     item.record.agent_trace=AgentTrace(events=[AgentTraceEvent(type='model_generate',step=4,message_id=item.record.messages[1].id)])
+    item.record.sample_score.score.metadata = {'tool_output': 'private middle step'}
     sources=build_sources(item,data,options(include_trace=False))
+    assert not any('private middle step' in source.text for source in sources)
     assert all(source.step is None for source in sources)
     assert not any(source.id.startswith(('event:','calls:')) for source in sources)
 
@@ -456,10 +529,10 @@ def test_explicit_passing_sample_is_retained_without_becoming_a_failure(make_run
     fake_model(monkeypatch, lambda *args: verdict().model_dump_json(), calls)
     root = make_run(rows=[review(0, 1)])
     result = diagnose_benchmark(str(root), 'm', 'demo', options(samples=[SampleKey(subset='default', index=0)]))
-    rows = [json.loads(line) for line in (root / 'analysis/m/demo/samples.jsonl').read_text().split('\n') if line.strip()]
+    rows = [json.loads(line) for line in (root / 'analysis/m/demo/diagnose/samples.jsonl').read_text().split('\n') if line.strip()]
     assert result.coverage.task_failed == 0 and len(rows) == 1
     assert result.coverage.selection_scope == 'specified'
-    assert rows[0]['task_success'] is True and rows[0]['failure_type'] is None
+    assert rows[0]['task_success'] is True and rows[0]['observed_types'] == []
     assert rows[0]['llm']['failure_type'] == 'reasoning_error'
 
 
@@ -618,7 +691,7 @@ def test_saved_reasoning_is_citable_and_omissions_are_explicit(
                if 'Summarize evaluation' in prompt else d.model_dump_json(), calls)
     root = make_run(rows=[row])
     report = diagnose_benchmark(str(root), 'm', 'demo', options(include_trace=include_trace))
-    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/diagnose/samples.jsonl').read_text())
     assert ('I calculate 2 + 2 = 5.' in calls[0]) is expected
     assert persisted.context_omitted is (not expected)
     if expected:
@@ -648,7 +721,7 @@ def test_media_is_not_silently_treated_as_complete_text_context(
                if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls)
     root = make_run(rows=[row])
     diagnose_benchmark(str(root), 'm', 'demo', options())
-    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/samples.jsonl').read_text())
+    persisted = SampleDiagnosis.model_validate_json((root / 'analysis/m/demo/diagnose/samples.jsonl').read_text())
     assert persisted.context_omitted
     note = next(s for s in persisted.sources if s.id == 'omitted-content')
     assert media['type'] in note.text
@@ -766,3 +839,42 @@ def test_summary_uses_short_whitelisted_refs_without_repairing_real_reference_ty
     assert report.narrative.recommendations == []
     assert report.narrative_samples['S-1'].sample == row.key
     assert set(report.narrative_samples) == {'S-1'}
+
+
+@pytest.mark.parametrize('legacy_layout', [False, True])
+def test_new_facts_keep_model_analysis_and_hide_it_when_sources_change(
+    make_run: Callable, monkeypatch: pytest.MonkeyPatch, legacy_layout: bool
+) -> None:
+    from evalscope.report.diagnosis import load_diagnosis_snapshot
+
+    calls = []
+    fake_model(
+        monkeypatch, lambda prompt, _: '{}' if 'Summarize evaluation' in prompt else verdict().model_dump_json(), calls
+    )
+    root = make_run(rows=[review(0)])
+    model = diagnose_benchmark(str(root), 'm', 'demo', options())
+    assert model.coverage.diagnosed_ok == 1
+    base = root / 'analysis/m/demo'
+    target = base / 'diagnose'
+    original = (target / 'samples.jsonl').read_bytes()
+    if legacy_layout:
+        for file in ('diagnosis.json', 'samples.jsonl'):
+            (target / file).rename(base / file)
+    report_path = root / 'reports/m/demo.json'
+    before_report = json.loads(report_path.read_text())
+
+    facts = diagnose_benchmark(str(root), 'm', 'demo', force=True)
+    assert facts.level == 'facts' and facts.cost.calls == 0
+    assert (target / 'samples.jsonl').read_bytes() == original and len(calls) == 2
+    assert load_diagnosis_snapshot(str(root), 'm', 'demo') == ('ready', model, target)
+    assert json.loads(report_path.read_text()) == before_report
+
+    (root / 'reviews/m/demo_default.jsonl').write_text('')
+    assert load_diagnosis_snapshot(str(root), 'm', 'demo')[0] == 'stale'
+    new_facts = diagnose_benchmark(str(root), 'm', 'demo')
+    assert load_diagnosis_snapshot(str(root), 'm', 'demo') == ('ready', new_facts, base)
+    assert (target / 'samples.jsonl').read_bytes() == original
+    after_report = json.loads(report_path.read_text())
+    assert {k: v for k, v in after_report.items() if k != 'analysis'} == {
+        k: v for k, v in before_report.items() if k != 'analysis'
+    }

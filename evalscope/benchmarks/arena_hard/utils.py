@@ -6,10 +6,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
-
 
 def get_judge_score(result, reverse=False):
     """
@@ -126,14 +122,13 @@ def compute_mle_elo(df, SCALE=400, BASE=10, INIT_RATING=1000):
     tie_idx[len(tie_idx) // 2 :] = False
     Y[tie_idx] = 1.0
 
-    if len(np.unique(Y)) < 2:
-        logger.info('Warning: Only one class in the data')
-        elo_scores = pd.Series(INIT_RATING, index=models.index)
-        if np.all(Y == 1.0):
-            elo_scores[df['model_a'].iloc[0]] += SCALE  # Boost the winning model
-        elif np.all(Y == 0.0):
-            elo_scores[df['model_b'].iloc[0]] += SCALE  # Boost the winning model
-        return elo_scores.sort_values(ascending=False)
+    # Reverse non-tie second copies to keep both outcome classes for one-sided battles.
+    # Ties retain their original one-win/one-loss encoding.
+    half = n // 2
+    reverse_idx = ~((df['winner'] == 'tie') | (df['winner'] == 'tie (bothbad)'))
+    reverse_idx[:half] = False
+    X[reverse_idx] = -X[reverse_idx]
+    Y[reverse_idx] = 1.0 - Y[reverse_idx]
 
     from sklearn.linear_model import LogisticRegression
 

@@ -3,7 +3,7 @@
 
 MultiTurnStrategy._worker routes the per-turn output cap through
 ApiPluginBase.set_request_max_tokens; protocols that do not use a top-level
-``max_tokens`` override it (DashScope nests it, OpenAI Responses renames it).
+``max_tokens`` override it.
 """
 import asyncio
 import json
@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.multi_turn import MultiTurnStrategy
-from evalscope.perf.plugin.api.dashscope_api import DashScopeApiPlugin
 from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
 from evalscope.perf.plugin.api.openai_responses_api import OpenAIResponsesPlugin
 from evalscope.perf.plugin.datasets.base import Turn
@@ -23,17 +22,13 @@ def test_set_request_max_tokens_uses_protocol_native_field() -> None:
     OpenaiPlugin(Arguments(model='m', api='openai')).set_request_max_tokens(openai_req, 42)
     assert openai_req == {'max_tokens': 42}
 
-    dashscope_req: Dict[str, Any] = {}
-    DashScopeApiPlugin(Arguments(model='m', api='dashscope')).set_request_max_tokens(dashscope_req, 42)
-    assert dashscope_req == {'parameters': {'max_tokens': 42}}
-
     responses_req: Dict[str, Any] = {}
     OpenAIResponsesPlugin(Arguments(model='m', api='openai_responses')).set_request_max_tokens(responses_req, 42)
     assert responses_req == {'max_output_tokens': 42}
 
 
 class _CapPlugin:
-    """Records the per-turn cap and nests it the way DashScope does."""
+    """Records the per-turn cap and nests it in a custom protocol field."""
 
     def __init__(self) -> None:
         self.caps: List[int] = []

@@ -2,7 +2,7 @@
 
 import os
 import re
-from typing import List
+from typing import Any, List
 
 from evalscope.api.analysis import Finding
 from evalscope.api.analysis.config import TraceAnalysisConfig
@@ -36,6 +36,20 @@ def redact(text: str, env_secrets: List[str]) -> str:
     text = _SECRET_PATTERNS[1].sub('Bearer ***', text)
     text = _SECRET_PATTERNS[2].sub(lambda m: f'{m.group(1)}{m.group(2)}***', text)
     return text
+
+
+def redact_data(value: Any, secrets: List[str]) -> Any:
+    """Redact keys and values before JSON escaping can hide a secret from exact matching."""
+    if isinstance(value, str):
+        return redact(value, secrets)
+    if isinstance(value, dict):
+        return {
+            redact(key, secrets) if isinstance(key, str) else key: redact_data(item, secrets)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [redact_data(item, secrets) for item in value]
+    return value
 
 
 def export_findings(findings: List[Finding], config: TraceAnalysisConfig) -> List[Finding]:

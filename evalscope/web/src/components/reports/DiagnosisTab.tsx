@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { AlertTriangle, ArrowRight, ChevronDown, FileText } from 'lucide-react'
 import DiagnosisSamplePanel from './DiagnosisSamplePanel'
+import DiagnosisActions from './DiagnosisActions'
 import type { ReportMetric } from '@/domain/report/primaryMetrics'
 import { formatMetric, formatProportion } from '@/domain/metric'
 import { getDiagnosis, type DiagnosisFilters } from '@/api/reports'
@@ -21,48 +22,13 @@ interface Props {
   rootPath: string
   reportName: string
   datasetName: string
-  onSamples: (filters: DiagnosisFilters, sample?: SampleKey, step?: number) => void
-}
-
-function numericEntries(value: unknown): [string, number][] {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return []
-  return Object.entries(value).filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+  location: { filters: DiagnosisFilters; sample?: SampleKey; step?: number; position?: number }
+  onLocate: (filters: DiagnosisFilters, sample?: SampleKey, step?: number, position?: number) => void
+  onSamples: Props['onLocate']
 }
 
 function FactData({ fact }: { fact: Fact }) {
   const { t } = useLocale()
-  if (fact.id === 'F-mcq')
-    return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(['gold', 'prediction'] as const).map((key) => (
-          <div key={key}>
-            <h5>{t(`diagnosis.${key}`)}</h5>
-            {numericEntries(fact.data[key]).map(([label, count]) => (
-              <div key={label} className="flex items-center gap-2 text-sm">
-                <span>{label}</span>
-                <ScoreBar
-                  score={count / (Number(fact.data.total) || 1)}
-                  variant="proportion"
-                  ariaLabel={`${label}: ${count}`}
-                  track="fixed"
-                />
-                {count}
-              </div>
-            ))}
-          </div>
-        ))}
-        <p className="text-sm">
-          {t('diagnosis.choiceCoverage')}: {String(fact.data.covered)}/{String(fact.data.total)}
-        </p>
-        <ul className="text-sm">
-          {(fact.data.confusions as { gold: string; prediction: string; count: number }[]).map((row) => (
-            <li key={`${row.gold}:${row.prediction}`}>
-              {row.gold} → {row.prediction}: {row.count}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
   if (fact.id === 'F-scores' && Array.isArray(fact.data.metrics))
     return (
       <ul className="text-sm">
@@ -112,94 +78,6 @@ function FactData({ fact }: { fact: Fact }) {
           </li>
         ))}
       </ul>
-    )
-  if (fact.id === 'F-length')
-    return (
-      <ul className="text-sm">
-        {rows('bins').map((row) => (
-          <li key={String(row.length)}>
-            {t(`diagnosis.${row.length}`)}: {formatProportion(Number(row.success_rate)).primary} ·{' '}
-            {t('diagnosis.sampleCount', { count: Number(row.n) })}
-          </li>
-        ))}
-      </ul>
-    )
-  if (fact.id === 'F-score-status')
-    return (
-      <ul className="text-sm">
-        {numericEntries(fact.data.statuses).map(([key, value]) => (
-          <li key={key}>
-            {t(`diagnosis.status.${key}`) === `diagnosis.status.${key}`
-              ? t('diagnosis.otherStatus')
-              : t(`diagnosis.status.${key}`)}
-            : {value}
-          </li>
-        ))}
-        {numericEntries(fact.data.reasons).map(([key, value]) => (
-          <li key={key}>
-            {key}: {value}
-          </li>
-        ))}
-      </ul>
-    )
-  if (fact.id === 'F-truncation')
-    return (
-      <p className="text-xs">
-        {t('diagnosis.exactStops')}: {String(fact.data.exact_denominator)} · {t('diagnosis.inferredStops')}:{' '}
-        {String(fact.data.heuristic_denominator)}
-      </p>
-    )
-  if (fact.id === 'F-judge')
-    return (
-      <ul>
-        {numericEntries(fact.data.failures).map(([key, count]) => (
-          <li key={key}>
-            {t(`diagnosis.status.${key}`) === `diagnosis.status.${key}`
-              ? t('diagnosis.otherStatus')
-              : t(`diagnosis.status.${key}`)}
-            : {count}
-          </li>
-        ))}
-      </ul>
-    )
-  if (fact.id === 'F-repeats')
-    return (
-      <p className="text-sm">
-        {t('diagnosis.unstable')}: {String(fact.data.unstable_groups)} · {t('diagnosis.incomplete')}:{' '}
-        {String(fact.data.incomplete_groups)}
-      </p>
-    )
-  if (fact.id === 'F-agent')
-    return (
-      <ul className="text-sm">
-        <li>
-          {t('diagnosis.toolCalls')}: {String(fact.data.tool_calls)}
-        </li>
-        {numericEntries(fact.data.sample_categories).map(([key, value]) => (
-          <li key={key}>
-            {t(`diagnosis.finding.${key}`)}: {value}
-          </li>
-        ))}
-      </ul>
-    )
-  if (fact.id === 'F-perf')
-    return (
-      <dl className="flex flex-wrap gap-4 text-sm">
-        {[
-          ['requests', 'requests'],
-          ['input_tokens', 'inputTokens'],
-          ['output_tokens', 'outputTokens'],
-          ['latency_mean_s', 'latency'],
-        ].map(
-          ([key, label]) =>
-            typeof fact.data[key] === 'number' && (
-              <div key={key}>
-                <dt>{t(`diagnosis.${label}`)}</dt>
-                <dd className="font-mono">{Number(fact.data[key]).toLocaleString()}</dd>
-              </div>
-            ),
-        )}
-      </dl>
     )
   return null
 }
@@ -268,12 +146,10 @@ interface IssueSelection {
   filters: DiagnosisFilters
   description: string
   suggestion: string
-  focusStep?: number
 }
 
-export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamples, legacyAnalysis, metrics }: Props) {
+export default function DiagnosisTab({ rootPath, reportName, datasetName, location, onLocate, onSamples, legacyAnalysis, metrics }: Props) {
   const { t } = useLocale()
-  const [selection, setSelection] = useState<IssueSelection | null>(null)
   const [factReference, setFactReference] = useState<string | null>(null)
   const resource = useAsyncResource(
     (signal) => getDiagnosis(rootPath, reportName, datasetName, signal),
@@ -283,6 +159,9 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
   if (resource.loading) return <Skeleton lines={6} />
   if (resource.error) return <ErrorAlert>{resource.error}</ErrorAlert>
   const state = resource.data
+  const ready = state?.status === 'ready' && Boolean(state.report)
+  const actions = <DiagnosisActions rootPath={rootPath} reportName={reportName} datasetName={datasetName}
+    ready={ready} onFinished={resource.setData} />
   const ref = parseReportRef(reportName)
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
   const command = `evalscope analyze --run-dir ${quote(`${rootPath}/${ref.runId}`)} --model ${quote(ref.modelId)} --benchmark ${quote(datasetName)} --level facts`
@@ -290,12 +169,19 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     return (
       <div className="space-y-3" role="status">
         <p>{t(`diagnosis.${state?.status === 'stale' ? 'stale' : state?.status === 'error' ? 'error' : 'missing'}`)}</p>
+        {actions}
+        <details className="text-sm">
+          <summary className="diagnosis-link w-fit cursor-pointer">{t('diagnosis.commandLine')}</summary>
+          <code className="mt-2 block select-all overflow-x-auto whitespace-pre-wrap rounded bg-[var(--bg-deep)] p-3">
+            {command}
+          </code>
+        </details>
         {state?.status === 'missing' && legacyAnalysis && legacyAnalysis !== 'N/A' && (
-          <Card title={t('diagnosis.summary')}><MarkdownRenderer content={legacyAnalysis} /></Card>
+          <details className="text-sm">
+            <summary className="diagnosis-link w-fit cursor-pointer">{t('diagnosis.summary')}</summary>
+            <Card><MarkdownRenderer content={legacyAnalysis} /></Card>
+          </details>
         )}
-        <code className="block select-all overflow-x-auto whitespace-pre-wrap rounded bg-[var(--bg-deep)] p-3 text-sm">
-          {command}
-        </code>
       </div>
     )
 
@@ -322,9 +208,17 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     ? makeEntry('unscored', t('diagnosis.unscored'), c.excluded, { outcome: 'unscored' }) : null
   const risk = c.risk_samples
     ? makeEntry('risk', t('diagnosis.riskTitle'), c.risk_samples, { outcome: 'risk' }) : null
-  const selected = selection ?? issues[0] ?? pending ?? unscored ?? risk
+  const selectedGroup = [...issues, pending, unscored, risk].find(entry =>
+    entry && entry.filters.failure_type === location.filters.failure_type && entry.filters.outcome === location.filters.outcome)
+  const selected: Omit<IssueSelection, 'count'> | null = location.sample && (location.position === undefined || !selectedGroup)
+    ? { id: 'sample', filters: { subset_name: location.sample.subset, index: location.sample.index },
+      title: '', description: '', suggestion: '' }
+    : selectedGroup ?? issues[0] ?? pending ?? unscored ?? risk
+  const focusStep = location.step
+  const position = selectedGroup === selected ? location.position ?? 0 : 0
   const tools = selected?.filters.failure_type
     ? Object.keys(report.patterns.find(issue => issue.failure_type === selected.filters.failure_type)?.tools ?? {}) : []
+  const scoreFact = c.outcome_unknown > 0 ? report.facts.find(fact => fact.id === 'F-scores') : undefined
   const referencedFact = report.facts.find(fact => fact.id === factReference)
   const narrativeGroups = report.narrative ? [
     { key: 'summaryFindings', items: report.narrative.findings },
@@ -337,8 +231,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
     return t(key) === key ? fact.title : t(key)
   }
   const openSample = (sample: SampleKey, step?: number) => {
-    setSelection({ id: 'sample', title: '', count: 0, description: '', suggestion: '',
-      filters: { subset_name: sample.subset, index: sample.index }, focusStep: step })
+    onLocate({}, sample, step)
     document.getElementById('diagnosis-issues')?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
   }
   const issueButton = (entry: IssueSelection) => (
@@ -346,7 +239,7 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
       key={entry.id}
       type="button"
       aria-pressed={selected?.id === entry.id}
-      onClick={() => setSelection(entry)}
+      onClick={() => onLocate(entry.filters)}
       className={`w-full rounded-md border-l-4 px-3 py-3 text-left transition-colors ${selected?.id === entry.id
         ? 'border-[var(--accent)] bg-[var(--accent-dim)]'
         : 'border-transparent hover:bg-[var(--bg-card2)]'}`}
@@ -370,13 +263,14 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           })}</p>}
         </div>
         {risk && <button type="button" className="flex items-center gap-2 text-sm text-[var(--yellow)]"
-          aria-pressed={selected?.id === 'risk'} onClick={() => setSelection(risk)}>
+          aria-pressed={selected?.id === 'risk'} onClick={() => onLocate(risk.filters)}>
           <AlertTriangle size={16} />{t('diagnosis.riskCount', { count: risk.count })}<ArrowRight size={14} />
         </button>}
         {(c.outcome_unknown > 0 || c.errored_without_record > 0 || c.unreadable > 0) && <p className="w-full text-xs text-[var(--text-muted)]">{[
           ['unknown', c.outcome_unknown], ['executionErrors', c.errored_without_record], ['unreadable', c.unreadable],
         ].filter(([, count]) => Number(count) > 0).map(([key, count]) => `${t(`diagnosis.${key}`)} ${count}`).join(' · ')}</p>}
       </div>
+      {actions}
       {issues.length > 1 && <p className="text-xs text-[var(--text-muted)]">{t('diagnosis.overlappingIssues')}</p>}
       <div id="diagnosis-issues" className="grid scroll-mt-20 grid-cols-[220px_minmax(0,1fr)] items-start gap-5">
         <section aria-label={t('diagnosis.majorIssues')} className="min-w-0 space-y-2 border-r border-[var(--border)] pr-4">
@@ -392,6 +286,10 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
             {t(c.task_failed ? 'diagnosis.noIdentifiedIssues' : c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}
           </p>}
           {unscored && issueButton(unscored)}
+          {scoreFact && <a href="#diagnosis-scores" className="diagnosis-link inline-block px-3 py-2 text-sm"
+            onClick={() => { const details = document.getElementById('diagnosis-scores'); if (details instanceof HTMLDetailsElement) details.open = true }}>
+            {t('diagnosis.scoreEvidence')}
+          </a>}
           <a href="#diagnosis-analysis-info" className="diagnosis-link mt-6 flex items-center gap-2 border-t border-[var(--border)] pt-4 text-xs"
             onClick={() => { const record = document.getElementById('diagnosis-analysis-info'); if (record instanceof HTMLDetailsElement) record.open = true }}>
             <FileText size={14} />{t('diagnosis.analysisInformation')}
@@ -405,8 +303,9 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
               <p className="text-sm leading-relaxed">{selected.description}</p>
               {selected.suggestion && <p className="text-sm leading-relaxed text-[var(--text-muted)]">{selected.suggestion}</p>}
             </header>}
-            <DiagnosisSamplePanel key={JSON.stringify([selected.filters, selected.focusStep])} rootPath={rootPath} reportName={reportName}
-              datasetName={datasetName} filters={selected.filters} metrics={metrics} focusStep={selected.focusStep} onSamples={onSamples} />
+            <DiagnosisSamplePanel key={report.generated_at} rootPath={rootPath} reportName={reportName}
+              datasetName={datasetName} filters={selected.filters} metrics={metrics} focusStep={focusStep} onSamples={onSamples}
+              position={position} expectedSample={location.sample} onPositionChange={next => onLocate(selected.filters, undefined, undefined, next)} />
           </> : <p className="py-6 text-sm text-[var(--text-muted)]">{t(c.task_success_known ? 'diagnosis.noFailures' : 'diagnosis.noTaskOutcome')}</p>}
         </div>
       </div>
@@ -438,6 +337,14 @@ export default function DiagnosisTab({ rootPath, reportName, datasetName, onSamp
           {referencedFact.samples.length > 0 && <div className="flex flex-wrap gap-3">{referencedFact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs" onClick={() => openSample(sample)}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}</div>}
         </aside>}
       </section>}
+      {scoreFact && <details id="diagnosis-scores" className="scroll-mt-20 space-y-2 rounded-md border border-[var(--border)] p-3">
+        <summary className="cursor-pointer text-sm font-semibold">{factTitle(scoreFact)}</summary>
+        {scoreFact.samples.length > 0 && <div className="flex flex-wrap gap-3">
+          {scoreFact.samples.map(sample => <button type="button" key={`${sample.subset}:${sample.index}`} className="diagnosis-link text-xs"
+            onClick={() => openSample(sample)}>{sample.subset} · {t('diagnosis.sampleLink', { index: sample.index })}</button>)}
+        </div>}
+        <FactData fact={scoreFact} />
+      </details>}
       <AnalysisInformation report={report} />
     </div>
   )

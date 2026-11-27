@@ -80,6 +80,7 @@
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hellaswag_hi` | [HellaSwag-Hindi](../../benchmarks/hellaswag_hi.md) | `MCQ`, `Reasoning` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
+| `hle_diamond` | [Humanity's-Last-Exam-Diamond](../../benchmarks/hle_diamond.md) | `Knowledge`, `QA`, `Reasoning` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
 | `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `hmmt_nov25` | [HMMT-Nov-2025](../../benchmarks/hmmt_nov25.md) | `Math`, `Reasoning` |
@@ -115,6 +116,7 @@
 | `mit_movie_trivia` | [MIT-Movie-Trivia](../../benchmarks/mit_movie_trivia.md) | `Knowledge`, `NER` |
 | `mit_restaurant` | [MIT-Restaurant](../../benchmarks/mit_restaurant.md) | `Knowledge`, `NER` |
 | `mmlu` | [MMLU](../../benchmarks/mmlu.md) | `Knowledge`, `MCQ` |
+| `mmlu_indic` | [MMLU-Indic](../../benchmarks/mmlu_indic.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `mmlu_pro` | [MMLU-Pro](../../benchmarks/mmlu_pro.md) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](../../benchmarks/mmlu_redux.md) | `Knowledge`, `MCQ` |
 | `mmmlu` | [MMMLU](../../benchmarks/mmmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
@@ -254,6 +256,7 @@
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hellaswag_hi.md
 ../../benchmarks/hle.md
+../../benchmarks/hle_diamond.md
 ../../benchmarks/hmmt25.md
 ../../benchmarks/hmmt26.md
 ../../benchmarks/hmmt_nov25.md
@@ -289,6 +292,7 @@
 ../../benchmarks/mit_movie_trivia.md
 ../../benchmarks/mit_restaurant.md
 ../../benchmarks/mmlu.md
+../../benchmarks/mmlu_indic.md
 ../../benchmarks/mmlu_pro.md
 ../../benchmarks/mmlu_redux.md
 ../../benchmarks/mmmlu.md

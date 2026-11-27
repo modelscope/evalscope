@@ -43,7 +43,6 @@ export type FindingCategory =
   | "tool_failure"
   | "repetition"
   | "termination"
-  | "outcome"
   | "side_effect"
   | "tainted_side_effect"
   | "attack_goal_action"
@@ -73,6 +72,7 @@ export interface WebApiContracts {
   delete_perf_run_response: DeletePerfRunResponse;
   delete_report_response: DeleteReportResponse;
   diagnosis_response: DiagnosisResponse;
+  diagnosis_run_request: DiagnosisRunRequest;
   eval_invoke_response: EvalInvokeResponse;
   execution_summary: ExecutionSummary;
   judge_attempt: JudgeAttempt;
@@ -244,7 +244,7 @@ export interface DeleteReportResponse {
   success: boolean;
 }
 /**
- * Read-only diagnostic artifact and freshness state.
+ * Diagnostic artifact and freshness state.
  */
 export interface DiagnosisResponse {
   report?: DiagnosisReport | null;
@@ -306,7 +306,6 @@ export interface DiagnosisCoverage {
   };
   errored_without_record: number;
   excluded: number;
-  needs_attention: number;
   outcome_unknown: number;
   proposals_without_rule_clues: number;
   risk_samples: number;
@@ -407,6 +406,18 @@ export interface FailurePattern {
     [k: string]: number;
   };
   unscored: number;
+}
+/**
+ * Options for analyzing one existing dataset report.
+ */
+export interface DiagnosisRunRequest {
+  api_key?: string | null;
+  api_url?: string | null;
+  include_trace?: boolean;
+  level?: "facts" | "diagnose";
+  max_diagnosed_samples?: number;
+  model_id?: string | null;
+  scope?: "failed" | "unscored" | "risk" | "all";
 }
 export interface EvalInvokeResponse {
   error?: string | null;
@@ -858,7 +869,6 @@ export interface SampleDiagnosesResponse {
 export interface SampleDiagnosis {
   context_omitted: boolean;
   evidence_errors: string[];
-  failure_type: string | null;
   findings: Finding[];
   invalid_evidence: number;
   key: SampleKey;
@@ -869,9 +879,6 @@ export interface SampleDiagnosis {
   recorded_error: string | null;
   safety_violation: boolean | null;
   score_status: string;
-  score_value: {
-    [k: string]: number;
-  };
   sources: DiagnosticSource[];
   stop_reason: string | null;
   task_success: boolean | null;

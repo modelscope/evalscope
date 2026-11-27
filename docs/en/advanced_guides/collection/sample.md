@@ -52,7 +52,7 @@ $$
 n_i \approx N \cdot \frac{m_i}{\sum_{j=1}^{K} m_j}
 $$
 **Use case**: Preserve original distribution (e.g., let datasets with larger corpus sizes be more representative).  
-**Characteristics**: Doesn't reflect business bias; avoids over-amplifying small datasets. Guarantees at least ≥1 sample per dataset.
+Each nonempty dataset receives at least one sample when the budget allows. If the budget is smaller than the number of nonempty datasets, the largest datasets receive one sample each, with ties resolved in schema order.
 
 ### 3. Uniform Sampling
 Formula:
@@ -116,5 +116,5 @@ Expected: arc : ceval = 5 : 5
 
 ## Common Issues
 - Weights don't affect Uniform / Stratified allocation (only Weighted uses them).
-- Dataset with too few samples: Stratified sampling will force at least 1 sample; increase N or switch to Weighted.
+- Stratified sampling draws without replacement. If the budget exceeds the total number of available samples, it returns all available samples.
 - The `weight` field in JSONL is the leaf normalized weight, not equal to the sample's appearance probability (especially for Stratified and Uniform strategies).

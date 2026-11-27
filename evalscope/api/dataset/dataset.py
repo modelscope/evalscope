@@ -20,6 +20,10 @@ def validate_dataset_limit(limit: Optional[Union[int, float]]) -> Optional[Union
     """Validate a dataset sample count or fraction without changing its value."""
     if limit is None:
         return None
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        # bool is an int subclass: without this guard, limit=True passes the int
+        # branch below and samples[:True] silently slices to one sample.
+        raise ValueError(_LIMIT_ERROR)
     if isinstance(limit, int):
         if limit < 0:
             raise ValueError(_LIMIT_ERROR)

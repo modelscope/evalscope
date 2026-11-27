@@ -1,15 +1,20 @@
 import asyncio
 import base64
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 from typing import Any, Dict, List, Optional
 
 import pytest
 
+from evalscope.api.agent import AgentEnvironment
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessageUser
+from evalscope.api.model import GenerateConfig, Model
 from evalscope.api.registry import get_benchmark
 from evalscope.api.sandbox import DockerImageResult
 from evalscope.benchmarks.gdpval.gdpval_adapter import GDPvalAdapter
@@ -20,6 +25,8 @@ from evalscope.benchmarks.gdpval.utils import (
 )
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import HubType
+from evalscope.models.mockllm import MockLLM
+from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 def make_adapter(
@@ -147,6 +154,64 @@ def test_relative_deliverable_path_rejects_unsafe_paths() -> None:
     assert relative_deliverable_path('deliverable_files/nested/report.pdf') == 'nested/report.pdf'
     assert relative_deliverable_path('/tmp/report.pdf') == ''
     assert relative_deliverable_path('deliverable_files/../report.pdf') == ''
+
+
+@pytest.mark.parametrize('shared_root', [True, False], ids=['same-root', 'distinct-roots'])
+@pytest.mark.parametrize('finish_first', [0, 1], ids=['first-finishes-first', 'second-finishes-first'])
+def test_concurrent_deliverables_stay_in_the_requested_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, shared_root: bool, finish_first: int
+) -> None:
+    adapter = make_adapter()
+    adapter.max_steps = 1
+    roots = [tmp_path / 'first', tmp_path / ('first' if shared_root else 'second')]
+    cache = tmp_path / 'cache'
+    entered = [Event(), Event()]
+    release = [Event(), Event()]
+    environments = iter(
+        FakeEnvironment({'deliverable_files/report.txt': f'report {i}'.encode()})
+        for i in (finish_first, 1 - finish_first)
+    )
+    build_environment = adapter.build_environment
+
+    def wait_then_build(sample: Sample) -> Optional[AgentEnvironment]:
+        entered[sample.id].set()
+        assert release[sample.id].wait(10)
+        return build_environment(sample)
+
+    monkeypatch.setattr(adapter, 'build_environment', wait_then_build)
+    monkeypatch.setattr(adapter, '_ensure_docker_image', lambda: None)
+    monkeypatch.setattr('evalscope.benchmarks.gdpval.gdpval_adapter.require_docker_engine', lambda _: None)
+    monkeypatch.setattr('evalscope.agent.environments.enclave.EnclaveAgentEnvironment', lambda **_: next(environments))
+    monkeypatch.setattr('evalscope.benchmarks.gdpval.utils.DEFAULT_EVALSCOPE_CACHE_DIR', str(cache))
+    model = Model(api=MockLLM(model_name='mock'), config=GenerateConfig())
+
+    def run(i: int) -> TaskState:
+        sample = Sample(id=i, input=[ChatMessageUser(content='Write a report')], metadata={'task_id': f'task-{i}'})
+        try:
+            return adapter.run_inference(model, sample, str(roots[i]))
+        finally:
+            AsyncioLoopRunner.shutdown_for_thread()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = []
+        try:
+            for i in range(2):
+                futures.append(pool.submit(run, i))
+                assert entered[i].wait(10)
+            release[finish_first].set()
+            futures[finish_first].result(timeout=10)
+        finally:
+            for event in release:
+                event.set()
+
+    for i, future in enumerate(futures):
+        metadata = future.result().metadata
+        directory = roots[i] / 'artifacts' / 'gdpval' / f'task-{i}'
+        path = directory / 'deliverable_files/report.txt'
+        assert metadata['artifact_dir'] == str(directory)
+        assert metadata['deliverable_files'] == [{'path': 'deliverable_files/report.txt', 'local_path': str(path)}]
+        assert path.read_text() == f'report {i}'
+    assert not cache.exists()
 
 
 def test_artifact_runtime_extracts_deliverables(tmp_path: Path) -> None:

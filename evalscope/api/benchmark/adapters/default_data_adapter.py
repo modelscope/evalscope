@@ -315,7 +315,7 @@ class DefaultDataAdapter(DataAdapter):
             if not self.reformat_subset
             else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
-            shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
+            shuffle_choices=False,
             seed=self.seed,
             data_source=self.dataset_hub,  # Data source configuration
             version=self.dataset_revision,  # Remote dataset revision when pinned

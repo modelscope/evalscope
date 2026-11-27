@@ -153,7 +153,7 @@ evalscope service
 `analysis_report=True` 现在生成免费基础分析，不调用模型。需要模型分析时，请[显式配置分析模型](../user_guides/diagnosis.md)。模型分析只使用文字和已保存的评分信息，无法解读生成图片。
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_report.png)
-*基础分析*
+*评测报告*
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_overall_score.png)
 *模型得分分布*

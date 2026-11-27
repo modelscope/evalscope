@@ -162,9 +162,7 @@ class SampleDiagnosis(DiagnosticData):
     safety_violation: Optional[bool] = None
     score_status: str
     stop_reason: Optional[str] = None
-    score_value: Dict[str, float] = Field(default_factory=dict)
     needs_attention: bool = False
-    failure_type: Optional[str] = None
     findings: List[Finding] = Field(default_factory=list)
     observed_types: List[str] = Field(default_factory=list)
     recorded_error: Optional[str] = None
@@ -192,8 +190,6 @@ class SampleDiagnosis(DiagnosticData):
     def issue_types(self) -> List[str]:
         if self.observed_types:
             return self.observed_types
-        if self.failure_type:
-            return [self.failure_type]
         return ['unexplained'] if self.task_success is False or self.is_unscored else []
 
 
@@ -217,7 +213,6 @@ class DiagnosisCoverage(DiagnosticData):
     excluded: int = 0
     errored_without_record: int = 0
     unreadable: int = 0
-    needs_attention: int = 0
     unexplained_failures: int = 0
     risk_samples: int = 0
     proposals_without_rule_clues: int = 0
@@ -247,7 +242,7 @@ class DiagnosisCost(DiagnosticData):
 class DiagnosisReport(DiagnosticData):
     """One analysis of a persisted (run, model, benchmark), with cache provenance."""
 
-    schema_version: int = 5
+    schema_version: int = 7
     analyzer_version: str
     taxonomy_version: str = TAXONOMY_VERSION
     run_dir: str

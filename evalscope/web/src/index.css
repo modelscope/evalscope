@@ -555,15 +555,6 @@ body {
   }
 }
 
-.diagnosis-pattern-bar { min-width: 160px; }
-.diagnosis-pattern-bar > div { height: 10px; }
 .diagnosis-link { color: var(--cyan); }
 [data-theme="light"] .diagnosis-link { color: var(--accent); }
 .diagnosis-link:hover { text-decoration: underline; }
-.diagnosis-segment-rule { background: #38bdf8; }
-.diagnosis-segment-model { background: #f97316; }
-.diagnosis-segment-guard { background: var(--accent); }
-.diagnosis-segment-environment { background: #22c55e; }
-.diagnosis-segment-benchmark { background: #eab308; }
-.diagnosis-segment-unknown { background: #64748b; }
-[data-theme="light"] .diagnosis-heat-low { --diagnosis-heat-text: var(--text); }

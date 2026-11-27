@@ -24,6 +24,8 @@ EvalScope框架支持多种评测指标，用户可以根据需求选择合适�
 | `ssim`            | 内置 | [-1, 1]（越高越好） | 全参考结构相似性指标，需要提供参考图像 |
 | `psnr`            | 内置 | [0, 100]（越高越好） | 全参考峰值信噪比指标，完全相同图像上限为100。需要提供参考图像 |
 | `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞)（越低越好） | 学习型感知相似度指标，需要提供参考图像，并安装`evalscope[aigc]` |
+| `CVTGWordAccuracy` / `CVTGNED` | [TextCrafter](https://github.com/NJU-PCALab/TextCrafter) | [0, 1]（越高越好） | CVTG-2K 文字渲染：按参考词数汇总的词匹配准确率和归一化编辑相似度 |
+| `LongTextScore` | [X-Omni](https://github.com/X-Omni-Team/X-Omni) | [0, 1]（越高越好） | LongText-Bench：匹配的英文词或中文字符数占参考词或字符总数的比例 |
 
 ### 如何选择和解读指标
 
@@ -93,6 +95,68 @@ data URI。`api_url` 可以传基础地址、完整的 `/images/generations` 地
 请求会把 `EMPTY` 作为本地服务的占位密钥。请求默认串行发送，调高 `eval_batch_size` 即为并发请求数。
 这一模式暂不支持 DashScope/Model Studio 图像生成 API 等厂商私有协议、使用 `images` 字段的响应、
 异步提交后轮询的接口和图像编辑。这些协议需要单独适配。
+
+## 文字渲染评测
+
+[CVTG-2K](../../benchmarks/cvtg_2k.md) 和 [LongText-Bench](../../benchmarks/longtext_bench.md)
+用于评估生成图像是否正确呈现提示词要求的文字，默认分别从 ModelScope 的
+[evalscope/CVTG-2K](https://modelscope.cn/datasets/evalscope/CVTG-2K) 和
+[evalscope/LongText-Bench](https://modelscope.cn/datasets/evalscope/LongText-Bench) 加载。
+CVTG 和 CVTG-Style 分别包含 1,002 和 998 条提示词；LongText-Bench 的中英文各有 160 条。
+
+在有 PaddlePaddle wheel 的平台上，使用 Python 3.11 或 3.12 安装 CVTG-2K 的评分依赖：
+
+```bash
+pip install 'evalscope[cvtg_2k]'
+```
+
+如果在本地运行文生图模型，安装 `evalscope[aigc,cvtg_2k]`。
+
+LongText-Bench 通过视觉模型 API 转写图中文字，不需要本地 VLM 权重或加速器。
+默认调用 DashScope 的 `qwen3.8-flash`，关闭思考模式。设置 `DASHSCOPE_API_KEY` 后，
+无需额外配置 `dataset_args` 即可使用默认评分器。如需覆盖配置：
+
+```python
+dataset_args = {
+    'longtext_bench': {
+        'metric_list': [{'LongTextScore': {
+            'model': 'qwen3.8-flash',
+            'generation_config': {'extra_body': {'enable_thinking': False}},
+        }}],
+    },
+}
+```
+
+将这个 `dataset_args` 传给 `TaskConfig`。使用其他 OpenAI 兼容的视觉模型服务时，显式指定评分器的
+`api_url` 和 `api_key`。这些参数属于文字转写服务，顶层的同名参数仍用于图像生成服务。
+API 传输失败或输出达到 token 上限时，会从该指标中排除样本。
+
+评分器只负责转写，之后由确定性规则计算文字匹配率。官方使用的转写模型是 Qwen2.5-VL-7B，
+改用 `qwen3.8-flash` 等模型可能改变分数，因此应在结果中记录转写模型，不能与官方成绩直接比较。
+这个评分器不需要安装 transformers 或其他本地 VLM 推理依赖。
+
+通过 OpenAI 兼容的图像生成服务评测：
+
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='YOUR_IMAGE_MODEL',
+    model_task='image_generation',
+    eval_type='text2image',
+    api_url='http://localhost:8895/v1',
+    api_key='EMPTY',
+    datasets=['cvtg_2k', 'longtext_bench'],
+    dataset_hub='modelscope',
+    limit=1,  # 每个子集取一条；完整评测时移除。
+))
+```
+
+CVTG 将两个子集的所有参考词合并计分。LongText-Bench 在英文内按词、中文内按字符汇总，
+总分取中英文得分的平均值。按官方 LongText 多图协议评测时，单独运行 `longtext_bench` 并设置 `repeats=4`。
+如果同时评估中英文，而其中一种语言没有有效分数，报告只展示可用的单语结果。
+评分失败的样本会从受影响的指标中排除，请同时检查指标样本数和运行摘要。识别成功但没有读出文字的图像按缺失文字计分。
+如需用当前评分版本重新评审缓存的图像，请设置 `rerun_review=True`。
 
 ## 本地模型评测
 

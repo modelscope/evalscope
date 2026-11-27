@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "pretty_name": "Humanity's-Last-Exam-Diamond",
+    "dataset_id": "cais/hle-diamond",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "QA",
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "reasoning",
+      "knowledge"
+    ],
+    "description": "\n## Overview\n\nHumanity's Last Exam Diamond (HLE-Diamond) is the official refined 1,000-question subset of Humanity's Last Exam. It retains the original expert-level question format while providing separate reasoning and knowledge partitions.\n\n## Task Description\n\n- **Task Type**: Expert-Level Question Answering\n- **Input**: Question with an optional image\n- **Output**: Answer with explanation and confidence score\n- **Domain**: Broad academic and professional disciplines, with reasoning and knowledge partitions\n\n## Key Features\n\n- 1,000 questions: 500 reasoning and 500 knowledge questions\n- Uses the original HLE answer types and multimodal questions\n- Reports overall accuracy and separate reasoning/knowledge partition results\n- Preserves the original question metadata, including subject category and rationale\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with the same JSON C/I LLM judge contract as HLE\n- Response format includes: Explanation, Answer, and Confidence (0-100%)\n- Set `extra_params[\"include_multi_modal\"]` to `False` for text-only models\n- Hugging Face access requires accepting the dataset conditions and providing an access token; an authenticated or local dataset path is also supported\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "include_multi_modal": {
+        "type": "bool",
+        "description": "Include multi-modal (image) questions during evaluation.",
+        "value": true
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm",
+    "requires_judge": true
+  },
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "reasoning",
+        "sample_count": 500,
+        "prompt_length_mean": 1065.99,
+        "prompt_length_min": 263,
+        "prompt_length_max": 10668,
+        "prompt_length_std": 1136.81,
+        "target_length_mean": 16.3,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 153,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x700",
+              "1000x990",
+              "1008x871",
+              "1020x886",
+              "1024x768",
+              "1034x1226",
+              "1050x266",
+              "1064x314",
+              "1080x1078",
+              "1080x1095"
+            ],
+            "resolution_range": {
+              "min": "329x12",
+              "max": "14950x2780"
+            },
+            "formats": [
+              "jpeg",
+              "png",
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "knowledge",
+        "sample_count": 500,
+        "prompt_length_mean": 715.89,
+        "prompt_length_min": 232,
+        "prompt_length_max": 18201,
+        "prompt_length_std": 965.07,
+        "target_length_mean": 14.55,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 119,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x400",
+              "1018x550",
+              "1024x1024",
+              "1050x1400",
+              "1051x1055",
+              "1070x766",
+              "107x99",
+              "1080x783",
+              "1089x568",
+              "1089x970"
+            ],
+            "resolution_range": {
+              "min": "90x90",
+              "max": "2848x4288"
+            },
+            "formats": [
+              "gif",
+              "jpeg",
+              "png",
+              "webp"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 890.94,
+      "min": 232,
+      "max": 18201,
+      "std": 1068.37
+    },
+    "target_length_mean": 15.43,
+    "computed_at": "2026-11-24T16:03:08.235292",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 272,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1000x400",
+          "1000x700",
+          "1000x990",
+          "1008x871",
+          "1018x550",
+          "1020x886",
+          "1024x1024",
+          "1024x768",
+          "1034x1226",
+          "1050x1400"
+        ],
+        "resolution_range": {
+          "min": "329x12",
+          "max": "14950x2780"
+        },
+        "formats": [
+          "gif",
+          "jpeg",
+          "png",
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# Humanity's-Last-Exam-Diamond\n\n\n## Overview\n\nHumanity's Last Exam Diamond (HLE-Diamond) is the official refined 1,000-question subset of Humanity's Last Exam. It retains the original expert-level question format while providing separate reasoning and knowledge partitions.\n\n## Task Description\n\n- **Task Type**: Expert-Level Question Answering\n- **Input**: Question with an optional image\n- **Output**: Answer with explanation and confidence score\n- **Domain**: Broad academic and professional disciplines, with reasoning and knowledge partitions\n\n## Key Features\n\n- 1,000 questions: 500 reasoning and 500 knowledge questions\n- Uses the original HLE answer types and multimodal questions\n- Reports overall accuracy and separate reasoning/knowledge partition results\n- Preserves the original question metadata, including subject category and rationale\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split\n- Primary metric: **Accuracy** with the same JSON C/I LLM judge contract as HLE\n- Response format includes: Explanation, Answer, and Confidence (0-100%)\n- Set `extra_params[\"include_multi_modal\"]` to `False` for text-only models\n- Hugging Face access requires accepting the dataset conditions and providing an access token; an authenticated or local dataset path is also supported\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `hle_diamond` |\n| **Dataset ID** | [cais/hle-diamond](https://modelscope.cn/datasets/cais/hle-diamond/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `QA`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 890.94 chars |\n| Prompt Length (Min/Max) | 232 / 18201 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `reasoning` | 500 | 1065.99 | 263 | 10668 |\n| `knowledge` | 500 | 715.89 | 232 | 18201 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 272 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 329x12 - 14950x2780 |\n| Formats | gif, jpeg, png, webp |\n\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `include_multi_modal` | `bool` | `True` | Include multi-modal (image) questions during evaluation. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hle_diamond \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hle_diamond'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'hle_diamond': {\n            # subset_list: ['reasoning', 'knowledge']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Humanity's-Last-Exam-Diamond\n\n\n## 概述\n\nHumanity's Last Exam Diamond (HLE-Diamond) 是 Humanity's Last Exam 官方精选的包含 1,000 道题目的子集。它在保留原始专家级题目格式的同时，将推理和知识部分进行了独立划分。\n\n## 任务描述\n\n- **任务类型**: 专家级问答\n- **输入**: 问题及可选的图片\n- **输出**: 带有解释和置信度分数的答案\n- **领域**: 广泛的学术和专业学科，分为推理和知识两部分\n\n## 主要特点\n\n- 1,000 道题目：500 道推理题和 500 道知识题\n- 使用原始的 HLE 答案类型和多模态题目\n- 报告整体准确率以及独立的推理/知识分区结果\n- 保留原始题目元数据，包括学科类别和解题依据\n\n## 评估说明\n\n- 默认评估使用 **test** 分割集\n- 主要指标：**Accuracy**（准确率），采用与 HLE 相同的 JSON C/I LLM 评判契约\n- 响应格式包括：Explanation（解释）、Answer（答案）和 Confidence（置信度，0-100%）\n- 对于纯文本模型，请将 `extra_params[\"include_multi_modal\"]` 设置为 `False`\n- 访问 Hugging Face 数据集需要接受数据集条款并提供访问令牌；同时也支持经过身份验证或本地数据集路径\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `hle_diamond` |\n| **数据集ID** | [cais/hle-diamond](https://modelscope.cn/datasets/cais/hle-diamond/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `QA`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割集** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均值） | 890.94 字符 |\n| 提示词长度（最小/最大值） | 232 / 18201 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |\n|--------|---------|-------------|------------|------------|\n| `reasoning` | 500 | 1065.99 | 263 | 10668 |\n| `knowledge` | 500 | 715.89 | 232 | 18201 |\n\n**图片统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图片总数 | 272 |\n| 每样本图片数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 329x12 - 14950x2780 |\n| 格式 | gif, jpeg, png, webp |\n\n\n## 样例示例\n\n*暂无样例示例。*\n\n## 提示模板\n\n**提示模板:**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `include_multi_modal` | `bool` | `True` | 在评估期间是否包含多模态（图片）题目。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets hle_diamond \\\n    --judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}' \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['hle_diamond'],\n    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n    dataset_args={\n        'hle_diamond': {\n            # subset_list: ['reasoning', 'knowledge']  # 可选，用于评估特定子集\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "3b7e59d18c88ab11944ee5958752e6be",
+    "needs_translation": false
+  },
+  "updated_at": "2026-11-24T16:03:08.235591",
+  "translation_updated_at": "2026-11-24T16:03:48"
+}

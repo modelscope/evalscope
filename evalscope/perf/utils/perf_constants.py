@@ -39,6 +39,9 @@ class Metrics:
     # LLM-specific
     OUTPUT_TOKEN_THROUGHPUT = 'Output Throughput (tok/s)'
     TOTAL_TOKEN_THROUGHPUT = 'Total Throughput (tok/s)'
+    DEVICE_COUNT = 'Device Count'
+    OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE = 'Output Throughput per Device (tok/s)'
+    TOTAL_TOKEN_THROUGHPUT_PER_DEVICE = 'Total Throughput per Device (tok/s)'
     AVERAGE_TIME_TO_FIRST_TOKEN = 'Avg TTFT (ms)'
     AVERAGE_TIME_PER_OUTPUT_TOKEN = 'Avg TPOT (ms)'
     AVERAGE_INTER_TOKEN_LATENCY = 'Avg ITL (ms)'

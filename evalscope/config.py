@@ -12,7 +12,7 @@ from pydantic import ConfigDict, Field, SecretStr, field_validator, model_valida
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.analysis import AnalysisReportConfig
-from evalscope.api.dataset.dataset import validate_dataset_limit, validate_dataset_repeats
+from evalscope.api.dataset.dataset import _LIMIT_ERROR, validate_dataset_limit, validate_dataset_repeats
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -402,6 +402,11 @@ class TaskConfig(BaseArgument):
     @classmethod
     def _validate_limit(cls, v: Any) -> Any:
         if v is not None:
+            # bool is an int subclass, and parse_int_or_float below would coerce
+            # True -> 1 / False -> 0 before validate_dataset_limit can see the
+            # original type, so reject it here, before the coercion.
+            if isinstance(v, bool):
+                raise ValueError(_LIMIT_ERROR)
             v = parse_int_or_float(v)
             v = validate_dataset_limit(v)
         return v
@@ -591,7 +596,8 @@ class TaskConfig(BaseArgument):
 
     def _infer_model_id(self) -> str:
         if isinstance(self.model, str):
-            return safe_filename(os.path.basename(self.model))
+            # A trailing separator (as shell completion adds to a directory) must not leave an empty name.
+            return safe_filename(os.path.basename(self.model.rstrip('/\\')))
         elif isinstance(self.model, Model):
             return safe_filename(self.model.name)
         elif isinstance(self.model, ModelAPI):
@@ -742,6 +748,11 @@ class TaskConfig(BaseArgument):
             merged['agent_config'] = self._coerce_agent_config(merged['agent_config'])
         if isinstance(merged.get('judge'), dict):
             merged['judge'] = JudgeConfig.model_validate(merged['judge'])
+        # update() assigns via setattr (validate_assignment is off), so a bool
+        # limit would bypass the _validate_limit field validator and silently
+        # slice to one sample (True) or zero (False); reject it before assignment.
+        if isinstance(merged.get('limit'), bool):
+            raise ValueError(_LIMIT_ERROR)
         for key, value in merged.items():
             setattr(self, key, value)
 

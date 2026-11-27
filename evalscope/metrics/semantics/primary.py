@@ -66,7 +66,8 @@ def select_primary(
 
     An explicit selector may match no emitted identity when the current sample selection cannot
     compute that metric, which is a fact about the run rather than an authoring mistake. Without a
-    selector, implicit selection is allowed only when exactly one non-diagnostic identity exists.
+    selector, implicit selection requires exactly one non-diagnostic identity, except that the
+    ordinary mean is the default for a single metric accompanied only by its pass/vote-at-k results.
 
     Args:
         identities: Distinct identities the report will contain.
@@ -108,12 +109,29 @@ def select_primary(
             status=PrimarySelectionStatus.NO_SCORED_METRICS,
             unavailable_reason='No scored metric was emitted for this run.',
         )
-    if len(graded) != 1:
-        return PrimarySelection(
-            status=PrimarySelectionStatus.AMBIGUOUS,
-            unavailable_reason=(f'Found {len(graded)} non-diagnostic metric identities; no unique primary metric.'),
-        )
-    return PrimarySelection(status=PrimarySelectionStatus.SELECTED, identity=graded[0])
+    if len(graded) == 1:
+        return PrimarySelection(status=PrimarySelectionStatus.SELECTED, identity=graded[0])
+
+    mean_identities = [identity for identity in graded if identity.aggregation == 'mean' and not identity.dimensions]
+    if len(mean_identities) == 1:
+        mean_identity = mean_identities[0]
+        if all(
+            identity.name == mean_identity.name
+            and (
+                identity == mean_identity
+                or (
+                    identity.aggregation in {'pass_at_k', 'vote_at_k', 'pass_hat_k'}
+                    and set(identity.dimensions) == {'k'}
+                )
+            )
+            for identity in graded
+        ):
+            return PrimarySelection(status=PrimarySelectionStatus.SELECTED, identity=mean_identity)
+
+    return PrimarySelection(
+        status=PrimarySelectionStatus.AMBIGUOUS,
+        unavailable_reason=(f'Found {len(graded)} non-diagnostic metric identities; no unique primary metric.'),
+    )
 
 
 @lru_cache(maxsize=256)

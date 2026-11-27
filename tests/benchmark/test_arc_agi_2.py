@@ -56,5 +56,24 @@ def test_task_scores_fraction_of_test_inputs_solved() -> None:
     assert aggregates[('pass_hat_k', 1)].score == pytest.approx(0.75)
 
 
+@pytest.mark.parametrize(
+    ('answer', 'expected_acc'),
+    [
+        ('Draft:\n```json\n[[9]]\n```\nFinal:\n```json\n[[0]]\n```', 1.0),
+        ('Draft:\n```json\n[[0]]\n```\nFinal:\n```json\n[[9]]\n```', 0.0),
+        ('Draft:\n```json\n[[9]]\n```\nFinal: [[0]]', 1.0),
+        (r'Draft: [[9]]. Final: \boxed{[[0]]}. The input was [[9]].', 1.0),
+        (r'Invalid box: \boxed{?}. Final: [[0]]', 1.0),
+        ('Draft: [[0]]. Final: [9]', 0.0),
+        ('Draft: [[0]]. Final: {"grid": [[0]]}', 0.0),
+    ],
+)
+def test_scores_the_final_grid(answer: str, expected_acc: float) -> None:
+    adapter = _adapter()
+    sample, = adapter.record_to_sample(ONE_TEST_TASK)
+    state = TaskState(model='mock', sample=sample, output=ModelOutput.from_content('mock', answer), completed=True)
+    assert adapter.calculate_metrics(state).score.value['acc'] == expected_acc
+
+
 def test_evaluation_version_bumped_for_scoring_change() -> None:
-    assert _adapter()._benchmark_meta.evaluation_version == 'v1.1'
+    assert _adapter()._benchmark_meta.evaluation_version == 'v1.2'

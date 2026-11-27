@@ -1069,6 +1069,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test ARC-Challenge-Indic benchmark with mock."""
         self._run_dataset_test('arc_indic', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)
 
+    def test_mmlu_indic_mock(self):
+        """Test MMLU-Indic benchmark with mock."""
+        self._run_dataset_test('mmlu_indic', dataset_args={'subset_list': ['hi', 'hi_roman']}, limit=2, use_mock=True)
+
     def test_triviaqa_indic_mock(self):
         """Test TriviaQA-Indic-MCQ benchmark with mock."""
         self._run_dataset_test('triviaqa_indic', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)

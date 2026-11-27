@@ -82,6 +82,7 @@ MMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning 
         hf_dataset_id='TIGER-Lab/MMLU-Pro',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
+        evaluation_version='v1.1',
         few_shot_num=5,
         train_split='validation',
         eval_split='test',

@@ -3,7 +3,13 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { SampleDiagnosis, PredictionsResponse } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { loadFixture } from '@/test/loadFixture'
-import DiagnosisSamplePanel from './DiagnosisSamplePanel'
+import { useState, type ComponentProps } from 'react'
+import DiagnosisSamplePanelView from './DiagnosisSamplePanel'
+
+function DiagnosisSamplePanel({ initialPosition = 0, ...props }: Omit<ComponentProps<typeof DiagnosisSamplePanelView>, 'position' | 'onPositionChange'> & { initialPosition?: number }) {
+  const [position, setPosition] = useState(initialPosition)
+  return <DiagnosisSamplePanelView {...props} position={position} onPositionChange={setPosition} />
+}
 
 const { getSampleDiagnoses, getPredictions } = vi.hoisted(() => ({
   getSampleDiagnoses: vi.fn(),
@@ -17,11 +23,9 @@ const sample = (subset: string, index: number): SampleDiagnosis => ({
   safety_violation: null,
   score_status: 'success',
   stop_reason: null,
-  score_value: {},
   needs_attention: true,
-  failure_type: 'tool_error',
   findings: [],
-  observed_types: [],
+  observed_types: ['tool_error'],
   llm: null,
   llm_status: 'not_selected',
   sources: [], context_omitted: false,
@@ -82,7 +86,7 @@ it('browses the issue across subsets, fetches only the selected prediction, and 
   expect(getPredictions).toHaveBeenLastCalledWith('/outputs', 'run/m', 'demo', 'b', expect.any(AbortSignal), 8)
   expect(screen.getByRole('button', { name: 'Next sample' })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: 'Open in sample details' }))
-  expect(onSamples).toHaveBeenCalledWith({ failure_type: 'tool_error', outcome: 'failed' }, { subset: 'b', index: 8 }, undefined)
+  expect(onSamples).toHaveBeenCalledWith({ failure_type: 'tool_error', outcome: 'failed' }, { subset: 'b', index: 8 }, undefined, 1)
   expect(screen.getByRole('navigation', { name: 'Sample contents' })).toBeInTheDocument()
 })
 
@@ -104,13 +108,14 @@ it('continues to the next diagnostic page after 200 matching samples', async () 
         reportName="run/m"
         datasetName="demo"
         filters={{ outcome: 'failed' }}
+        initialPosition={199}
         onSamples={vi.fn()}
       />
     </LocaleProvider>,
   )
   await settle()
   const next = screen.getByRole('button', { name: 'Next sample' })
-  act(() => { for (let i = 0; i < 200; i++) fireEvent.click(next) })
+  fireEvent.click(next)
   await settle()
   expect(screen.getByText('201 / 201')).toBeInTheDocument()
   expect(getSampleDiagnoses).toHaveBeenLastCalledWith(

@@ -883,10 +883,6 @@
           "default": 0,
           "type": "integer"
         },
-        "needs_attention": {
-          "default": 0,
-          "type": "integer"
-        },
         "outcome_unknown": {
           "default": 0,
           "type": "integer"
@@ -957,7 +953,6 @@
         "excluded",
         "errored_without_record",
         "unreadable",
-        "needs_attention",
         "unexplained_failures",
         "risk_samples",
         "proposals_without_rule_clues",
@@ -1067,7 +1062,7 @@
           "type": "string"
         },
         "schema_version": {
-          "default": 5,
+          "default": 7,
           "type": "integer"
         },
         "self_evaluation": {
@@ -1106,7 +1101,7 @@
     },
     "DiagnosisResponse": {
       "additionalProperties": false,
-      "description": "Read-only diagnostic artifact and freshness state.",
+      "description": "Diagnostic artifact and freshness state.",
       "properties": {
         "report": {
           "anyOf": [
@@ -1132,6 +1127,76 @@
       "required": [
         "status"
       ],
+      "type": "object"
+    },
+    "DiagnosisRunRequest": {
+      "additionalProperties": false,
+      "description": "Options for analyzing one existing dataset report.",
+      "properties": {
+        "api_key": {
+          "anyOf": [
+            {
+              "format": "password",
+              "type": "string",
+              "writeOnly": true
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "include_trace": {
+          "default": true,
+          "type": "boolean"
+        },
+        "level": {
+          "default": "facts",
+          "enum": [
+            "facts",
+            "diagnose"
+          ],
+          "type": "string"
+        },
+        "max_diagnosed_samples": {
+          "default": 50,
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scope": {
+          "default": "failed",
+          "enum": [
+            "failed",
+            "unscored",
+            "risk",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "DiagnosticSource": {
@@ -1582,7 +1647,6 @@
         "tool_failure",
         "repetition",
         "termination",
-        "outcome",
         "side_effect",
         "tainted_side_effect",
         "attack_goal_action",
@@ -3572,17 +3636,6 @@
           },
           "type": "array"
         },
-        "failure_type": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
         "findings": {
           "items": {
             "$ref": "#/$defs/Finding"
@@ -3654,12 +3707,6 @@
         "score_status": {
           "type": "string"
         },
-        "score_value": {
-          "additionalProperties": {
-            "type": "number"
-          },
-          "type": "object"
-        },
         "sources": {
           "items": {
             "$ref": "#/$defs/DiagnosticSource"
@@ -3695,9 +3742,7 @@
         "safety_violation",
         "score_status",
         "stop_reason",
-        "score_value",
         "needs_attention",
-        "failure_type",
         "findings",
         "observed_types",
         "recorded_error",
@@ -4203,6 +4248,9 @@
     "diagnosis_response": {
       "$ref": "#/$defs/DiagnosisResponse"
     },
+    "diagnosis_run_request": {
+      "$ref": "#/$defs/DiagnosisRunRequest"
+    },
     "eval_invoke_response": {
       "$ref": "#/$defs/EvalInvokeResponse"
     },
@@ -4303,6 +4351,7 @@
   "required": [
     "config_response",
     "diagnosis_response",
+    "diagnosis_run_request",
     "sample_diagnoses_response",
     "data_frame_response",
     "log_response",

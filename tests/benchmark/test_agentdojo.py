@@ -1944,5 +1944,4 @@ class TestTraceAnalysis:
         _run({(SUITE, USER_TASK_ID): [text_turn('I cannot find the bill.')]}, tmp_path, user_task_ids=[USER_TASK_ID])
         [case] = _analyze_trace(tmp_path)
         assert case.outcome.task_success is False
-        assert [f.subtype for f in case.findings] == ['benchmark_task_failed']
-        assert case.findings[0].attribution == Attribution.UNKNOWN
+        assert not case.findings

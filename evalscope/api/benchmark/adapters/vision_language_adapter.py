@@ -1,6 +1,8 @@
 import re
 from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
+from evalscope.api.dataset import Sample
+from evalscope.api.messages import ChatMessage
 from evalscope.api.messages.content import Content, ContentAudio, ContentImage, ContentText, ContentVideo
 from evalscope.utils import get_logger
 from evalscope.utils.io_utils import bytes_to_base64, compress_image_to_limit, parse_size
@@ -405,3 +407,23 @@ class VisionLanguageAdapter(DefaultDataAdapter):
 
         # return without validation of values/types
         return updated_messages
+
+
+class ImageChoiceAdapter(VisionLanguageAdapter):
+    """Single-question prompts with a leading text part followed by optional images.
+
+    Keep the question in sample metadata so the prompt can be rendered again after
+    the dataset loader permutes the choices and their target label.
+    """
+
+    def process_sample_messages_input(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        messages = super().process_sample_messages_input(sample, subset)
+        if self.shuffle_choices is False or self.shuffle_choices is None:
+            return messages
+
+        from evalscope.utils.multi_choices import prompt
+
+        user = messages[-1]
+        text = prompt(question=sample.metadata['question'], choices=sample.choices, template=self.prompt_template)
+        messages[-1] = user.model_copy(update={'content': [ContentText(text=text), *user.content[1:]]})
+        return messages

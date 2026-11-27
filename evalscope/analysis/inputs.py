@@ -24,7 +24,6 @@ class SampleInput(BaseModel):
     record: ReviewResult
     case: FailureCase
     stop_reason: Optional[str] = None
-    output_tokens: Optional[int] = None
 
     @property
     def recorded_error(self) -> Optional[tuple[str, str]]:
@@ -51,7 +50,6 @@ class BenchmarkInput(BaseModel):
 
     samples: List[SampleInput] = Field(default_factory=list)
     report: Optional[Report] = None
-    max_tokens: Optional[int] = None
     repeats: int = 1
     unreadable: int = 0
     unreadable_predictions: int = 0
@@ -67,16 +65,6 @@ def is_choice_letter(text: str) -> bool:
     """Check only the answer format; the available choice set may not be persisted."""
     value = text.strip()
     return len(value) == 1 and value.isascii() and value.isupper()
-
-
-def has_nontext_output(record: ReviewResult) -> bool:
-    """Media and structured outputs are not eligible for text-only generation checks."""
-    return any(
-        part.type not in ('text', 'reasoning')
-        for message in record.messages
-        if message.role == 'assistant' and isinstance(message.content, list)
-        for part in message.content
-    )
 
 
 def unsupported_content(record: ReviewResult) -> List[str]:
@@ -99,7 +87,6 @@ def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisC
     settings = root / 'configs' / 'task_config.yaml'
     if settings.is_file():
         task = yaml_to_dict(str(settings)) or {}
-        result.max_tokens = (task.get('generation_config') or {}).get('max_tokens')
         result.repeats = task.get('repeats') or 1
     report = root / 'reports' / model / f'{benchmark}.json'
     directions = {}
@@ -137,14 +124,11 @@ def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisC
                         row = json.loads(line)
                         index = row['index']
                         if index in predictions:
-                            predictions[index] = (None, None)
+                            predictions[index] = None
                             raise ValueError('Ambiguous prediction identity')
                         output = row.get('model_output') or {}
                         choices = output.get('choices') or []
-                        predictions[index] = (
-                            choices[0].get('stop_reason') if choices else None,
-                            (output.get('usage') or {}).get('output_tokens'),
-                        )
+                        predictions[index] = choices[0].get('stop_reason') if choices else None
                     except (ValueError, KeyError, TypeError, AttributeError):
                         result.unreadable_predictions += 1
         cases = analyze_records(zip(refs, records), config, directions, correctness_metrics)
@@ -153,14 +137,12 @@ def load_inputs(run_dir: str, model: str, benchmark: str, config: TraceAnalysisC
             if identity in seen:
                 raise ValueError(f'Duplicate review identity: {identity}')
             seen.add(identity)
-            stop, tokens = predictions.get(record.index, (None, None))
             result.samples.append(
                 SampleInput(
                     key=SampleKey(subset=ref.subset, index=ref.index),
                     record=record,
                     case=case,
-                    stop_reason=stop,
-                    output_tokens=tokens,
+                    stop_reason=predictions.get(record.index),
                 )
             )
     return result

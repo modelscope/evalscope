@@ -41,6 +41,7 @@ SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, de
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically for each repository
 - Timeout of 1800 seconds (30 min) per instance
@@ -245,6 +246,7 @@ SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
@@ -320,6 +322,7 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Docker images are built/pulled automatically for each repository
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions

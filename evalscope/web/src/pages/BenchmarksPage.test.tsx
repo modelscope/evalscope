@@ -6,7 +6,7 @@
 // failure surface (a rejected load must not read as "no benchmarks match").
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
@@ -68,6 +68,22 @@ describe('BenchmarksPage', () => {
 
     expect(screen.getByText('GSM8K')).toBeInTheDocument()
     expect(screen.getByText('ARC Challenge')).toBeInTheDocument()
+  })
+
+  it('shows LLM badges for text benchmarks', async () => {
+    vi.mocked(evalApi.listBenchmarks).mockResolvedValue(CATALOG)
+    await renderBenchmarks()
+
+    expect(screen.getAllByText('LLM')).toHaveLength(2)
+  })
+
+  it('shows the LLM badge in a text benchmark detail', async () => {
+    vi.mocked(evalApi.listBenchmarks).mockResolvedValue(CATALOG)
+    await renderBenchmarks()
+
+    fireEvent.click(screen.getByText('GSM8K'))
+
+    expect(within(screen.getByRole('dialog')).getByText('LLM')).toBeInTheDocument()
   })
 
   it('filters the grid by the debounced search', async () => {

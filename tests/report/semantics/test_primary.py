@@ -51,6 +51,57 @@ def test_only_one_quality_identity_can_be_implicit_primary() -> None:
     assert selection.identity == identity
 
 
+def test_explicit_selector_overrides_mean_and_k_default() -> None:
+    identities = [
+        MetricIdentity(name='accuracy', aggregation='mean'),
+        MetricIdentity(name='accuracy', aggregation='vote_at_k', dimensions={'k': 2}),
+    ]
+
+    selection = select_primary(
+        identities,
+        _semantics(identities),
+        MetricSelector(name='accuracy', aggregation='vote_at_k', dimensions={'k': 2}),
+    )
+
+    assert selection.status is PrimarySelectionStatus.SELECTED
+    assert selection.identity == identities[1]
+
+
+def test_mean_and_k_default_does_not_choose_between_metric_names() -> None:
+    identities = [
+        MetricIdentity(name='accuracy', aggregation='mean'),
+        MetricIdentity(name='accuracy', aggregation='vote_at_k', dimensions={'k': 2}),
+        MetricIdentity(name='f1', aggregation='mean'),
+        MetricIdentity(name='f1', aggregation='vote_at_k', dimensions={'k': 2}),
+    ]
+
+    selection = select_primary(identities, _semantics(identities), None)
+
+    assert selection.status is PrimarySelectionStatus.AMBIGUOUS
+    assert selection.identity is None
+
+
+@pytest.mark.parametrize(
+    'other_identities',
+    [
+        [MetricIdentity(name='f1', aggregation='pass_at_k', dimensions={'k': 2})],
+        [
+            MetricIdentity(name='accuracy', aggregation='pass_at_k', dimensions={'k': 2}),
+            MetricIdentity(name='accuracy', aggregation='max'),
+        ],
+        [MetricIdentity(name='accuracy', aggregation='pass_at_k', dimensions={'k': 2, 'scope': 'extra'})],
+    ],
+    ids=['different_metric_name', 'extra_aggregation', 'extra_dimension'],
+)
+def test_mean_default_requires_the_exact_mean_and_k_signature(other_identities: List[MetricIdentity]) -> None:
+    identities = [MetricIdentity(name='accuracy', aggregation='mean'), *other_identities]
+
+    selection = select_primary(identities, _semantics(identities), None)
+
+    assert selection.status is PrimarySelectionStatus.AMBIGUOUS
+    assert selection.identity is None
+
+
 class TestMissingPrimary:
     """A selector that matches nothing describes the run, so a report may still be written."""
 

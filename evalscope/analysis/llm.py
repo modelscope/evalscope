@@ -7,7 +7,7 @@ import re
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import AbstractSet, Callable, Dict, List, Optional, Tuple, Type
 
 from pydantic import BaseModel
 
@@ -28,14 +28,18 @@ from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.utils.logger import get_logger
 
 from .inputs import BenchmarkInput, SampleInput, unsupported_content
-from .trace.export import _env_secrets, redact
+from .trace.export import _env_secrets, redact, redact_data
 
 logger = get_logger()
 PROMPT = Path(__file__).with_name('prompts') / 'sample_diagnosis.md'
 PROTOCOL_VERSION = '3.6'
 
 
-def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig) -> Tuple[List[SampleDiagnosis], int]:
+def select_samples(
+    samples: List[SampleDiagnosis],
+    config: AnalysisReportConfig,
+    missing_extracted_answer: AbstractSet[Tuple[str, int]] = frozenset(),
+) -> Tuple[List[SampleDiagnosis], int]:
     """Select within an explicit review scope; limits are budgets, not population estimates."""
     requested = {(key.subset, key.index) for key in config.samples} if config.samples is not None else None
     if requested is not None:
@@ -44,6 +48,7 @@ def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig)
             raise ValueError(f'Requested analysis samples unavailable: {sorted(requested - available)}')
     groups = defaultdict(list)
     for sample in samples:
+        identity = (sample.key.subset, sample.key.index)
         eligible = {
             'all': True,
             'failed': sample.task_success is False,
@@ -51,13 +56,12 @@ def select_samples(samples: List[SampleDiagnosis], config: AnalysisReportConfig)
             'risk': sample.has_risk,
             'process': sample.task_success is True and sample.needs_attention,
         }
-        matches = (
-            (sample.key.subset, sample.key.index) in requested if requested is not None else eligible[config.scope]
-        )
+        matches = identity in requested if requested is not None else eligible[config.scope]
         recorded_text_stop = (
             requested is None
             and config.scope == 'failed'
             and sample.stop_reason in ('length', 'max_tokens', 'model_length')
+            and identity in missing_extracted_answer
             and sample.observed_types == ['truncated']
             and not sample.has_risk
         )
@@ -99,6 +103,9 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         if text:
             raw.append(DiagnosticSource(id=identity, text=redact(text, secrets), message_index=message, step=step))
 
+    def json_text(value: object) -> str:
+        return json.dumps(redact_data(value, secrets), ensure_ascii=False, default=str)
+
     add('benchmark', inputs.report.dataset_description if inputs.report else '')
     omitted = unsupported_content(item.record)
     if omitted:
@@ -106,14 +113,14 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
             'omitted-content',
             'Not analyzed: ' + ', '.join(omitted) + '. This is an input limitation, not behavioral evidence.',
         )
-    add('gold', json.dumps(item.record.target, ensure_ascii=False))
+    add('gold', json_text(item.record.target))
     score = item.record.sample_score.score
-    metadata = dict(score.metadata or {})
+    metadata = dict(score.metadata or {}) if config.include_trace else {}
     if score.explanation and metadata.get('error') == score.explanation:
         metadata.pop('error')
     add(
         'score',
-        json.dumps(
+        json_text(
             {
                 'status': score.status,
                 'value': score.value,
@@ -121,9 +128,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
                 'generation_stop_reason': item.stop_reason,
                 'extracted': score.extracted_prediction,
                 'metadata': metadata,
-            },
-            ensure_ascii=False,
-            default=str,
+            }
         ),
     )
     users = [i for i, message in enumerate(messages) if message.role == 'user']
@@ -151,7 +156,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
         if config.include_trace and getattr(message, 'tool_calls', None):
             add(
                 f'calls:{i}',
-                json.dumps([call.model_dump(mode='json') for call in message.tool_calls], ensure_ascii=False),
+                json_text([call.model_dump(mode='json') for call in message.tool_calls]),
                 i,
                 steps.get(message.id),
             )
@@ -161,7 +166,7 @@ def build_sources(item: SampleInput, inputs: BenchmarkInput, config: AnalysisRep
             if event.type.value in ('error', 'nudge', 'submit', 'env_exec', 'env_reset', 'run_end') or (
                 event.type.value in ('tool_call', 'tool_result') and event.message_id not in message_ids
             ):
-                add(f'event:{i}', json.dumps(event.payload, ensure_ascii=False, default=str), step=event.step)
+                add(f'event:{i}', json_text(event.payload), step=event.step)
     if sum(len(source.text) for source in raw) <= config.max_input_chars:
         return raw
 
@@ -212,9 +217,10 @@ def validate_evidence(diagnosis: LLMDiagnosis, sources: List[DiagnosticSource]) 
             errors.append('unknown_source')
             continue
 
-        def norm(text: str) -> str:
-            return ' '.join(text.split())
-
+        words = ref.quote.split()
+        if not words:
+            errors.append('blank_quote')
+            continue
         if (ref.start is None) != (ref.end is None):
             errors.append('incomplete_range')
             continue
@@ -222,12 +228,12 @@ def validate_evidence(diagnosis: LLMDiagnosis, sources: List[DiagnosticSource]) 
             if not (0 <= ref.start < ref.end <= len(source.text)):
                 errors.append('out_of_bounds')
                 continue
-            if norm(source.text[ref.start : ref.end]) != norm(ref.quote):
+            if source.text[ref.start : ref.end].split() != words:
                 errors.append('quote_mismatch')
                 continue
             start, end = ref.start, ref.end
         else:
-            matches = list(re.finditer(r'\s+'.join(re.escape(w) for w in ref.quote.split()), source.text))
+            matches = list(re.finditer(r'\s+'.join(re.escape(word) for word in words), source.text))
             if len(matches) != 1:
                 errors.append('quote_missing_or_ambiguous')
                 continue
@@ -250,6 +256,7 @@ def _request(
     force: bool,
     write: Callable[[Path, str], None],
     output_schema: Optional[Dict] = None,
+    cache_accepts: Optional[Callable[[BaseModel], bool]] = None,
 ) -> Tuple[Optional[BaseModel], str, Dict[str, int]]:
     contract = OutputContract(schema_model=schema)
     language = config.language if config.language != 'auto' else DEFAULT_LANGUAGE
@@ -275,7 +282,7 @@ def _request(
     if not force and path.is_file():
         try:
             parsed = contract.parse(path.read_text())
-            if parsed.ok:
+            if parsed.ok and (cache_accepts is None or cache_accepts(parsed.value)):
                 return parsed.value, 'ok', {'cached_calls': 1}
         except OSError:
             pass
@@ -307,9 +314,13 @@ def _request(
     parsed = contract.parse(output.choices[0].message.text or '')
     if not parsed.ok:
         return None, 'parse_error', usage
-    # Only schema-valid replies are reusable; provenance is checked again against exact inputs on every use.
-    write(path, redact(parsed.value.model_dump_json(), _env_secrets()))
+    if cache_accepts is None or cache_accepts(parsed.value):
+        write(path, json.dumps(redact_data(parsed.value.model_dump(mode='json'), _env_secrets()), ensure_ascii=False))
     return parsed.value, 'ok', usage
+
+
+def _has_grounded_evidence(diagnosis: LLMDiagnosis, errors: List[str]) -> bool:
+    return not errors and any(e.source_id not in ('gold', 'benchmark', 'omitted-content') for e in diagnosis.evidence)
 
 
 def enrich(
@@ -320,9 +331,15 @@ def enrich(
     target: Path,
     force: bool,
     write: Callable[[Path, str], None],
-) -> List[SampleDiagnosis]:
+) -> None:
     """Diagnose a fixed sampled population without touching official outcomes or scores."""
-    selected, population = select_samples(samples, config)
+    items = {(s.key.subset, s.key.index): s for s in inputs.samples}
+    missing_extracted_answer = {
+        key
+        for key, item in items.items()
+        if (answer := item.record.sample_score.score.extracted_prediction) is not None and not answer.strip()
+    }
+    selected, population = select_samples(samples, config, missing_extracted_answer)
     c = report.coverage
     c.selection_scope = 'specified' if config.samples is not None else config.scope
     c.diagnosis_population = population
@@ -337,7 +354,7 @@ def enrich(
     report.self_evaluation = config.model.model_id.rsplit('/', 1)[-1] == report.model.rsplit('/', 1)[-1]
     if report.self_evaluation:
         logger.warning('Diagnostic and evaluated model identities match; this is self-evaluation.')
-    items = {(s.key.subset, s.key.index): s for s in inputs.samples}
+    secrets = _env_secrets()
     prompts = []
     for s in selected:
         key = (s.key.subset, s.key.index)
@@ -374,7 +391,9 @@ def enrich(
                 'score_status': s.score_status,
                 'safety_violation': s.safety_violation,
             },
-            'findings': [f.model_dump(mode='json') for f in s.findings],
+            'findings': [redact_data(f.model_dump(mode='json'), secrets) for f in s.findings]
+            if config.include_trace
+            else [],
             'context_omitted': s.context_omitted,
             'types': ISSUE_DEFINITIONS,
             'language': config.language if config.language != 'auto' else DEFAULT_LANGUAGE,
@@ -389,7 +408,15 @@ def enrich(
 
     def diagnose(pair: Tuple[SampleDiagnosis, str]) -> Tuple[SampleDiagnosis, Dict[str, int]]:
         sample, prompt = pair
-        parsed, status, usage = _request(prompt, LLMDiagnosis, config, target, force, write)
+        parsed, status, usage = _request(
+            prompt,
+            LLMDiagnosis,
+            config,
+            target,
+            force,
+            write,
+            cache_accepts=lambda reply: _has_grounded_evidence(*validate_evidence(reply, sample.sources)),
+        )
         sample.llm_status = status
         if parsed is None:
             return sample, usage
@@ -397,11 +424,7 @@ def enrich(
         sample.invalid_evidence = len(parsed.evidence) - len(sample.llm.evidence)
         sample.evidence_errors = errors
         key = (sample.key.subset, sample.key.index)
-        if (
-            errors
-            or not sample.llm.evidence
-            or all(e.source_id in ('gold', 'benchmark', 'omitted-content') for e in sample.llm.evidence)
-        ):
+        if not _has_grounded_evidence(sample.llm, errors):
             sample.llm_status = 'invalid_evidence'
         elif parsed.failure_type == 'truncated' and items[key].stop_reason not in (
             None,
@@ -411,6 +434,9 @@ def enrich(
         ):
             sample.llm_status = 'unexplained'
             sample.evidence_errors.append('contradicts_recorded_ending')
+        elif parsed.failure_type == 'judge_failure' and not sample.is_unscored:
+            sample.llm_status = 'unexplained'
+            sample.evidence_errors.append('contradicts_recorded_score_status')
         elif parsed.failure_type == 'unexplained' or parsed.confidence == 'low':
             sample.llm_status = 'unexplained'
         else:
@@ -425,7 +451,6 @@ def enrich(
             c.diagnosed_ok += sample.llm_status == 'ok'
             c.citations_valid += len(sample.llm.evidence) if sample.llm else 0
             c.citations_total += (len(sample.llm.evidence) + sample.invalid_evidence) if sample.llm else 0
-    return selected
 
 
 def summarize(
@@ -517,7 +542,7 @@ def summarize(
         + '. Return at most 3 key findings and 3 actionable recommendations, prioritizing impact on failed tasks. '
         'Write plain language for an evaluation user; omit internal field names, diagnostic bookkeeping and '
         'inapplicable statistics. '
-        'When supplied, describe sample_hypotheses as model proposals awaiting review and cite their refs. '
+        'Describe sample_hypotheses as model proposals awaiting review and cite their refs. '
         'Do not repeat standalone report statistics; use facts only to contextualize a sample hypothesis. '
         'Do not strengthen a proposal or fill in missing facts. An execution error does not establish answer correctness; '
         'an unavailable score does not establish a task failure or its cause. '
@@ -532,15 +557,28 @@ def summarize(
         'Each item must cite supplied fact/sample IDs using refs only, without empty citation placeholders in text. '
         'Prioritize failed tasks; keep unavailable scores and safety signals separate. '
         'No rule clues is an absence of a deterministic observation, not a failure cause. '
-        'diagnosed_ok counts usable hypotheses, never normal tasks or confirmed causes. '
         'Do not present sampled counts as population counts, '
         'rule clues as proven causes, or model proposals as independently verified explanations. '
         'Do not invent values or assert causation. Use limitations for uncertainties.\n'
-        + json.dumps(payload, ensure_ascii=False)
+        + json.dumps(redact_data(payload, _env_secrets()), ensure_ascii=False)
     )
     output_schema = Narrative.model_json_schema()
     output_schema['$defs']['NarrativeItem']['properties']['refs']['items']['enum'] = sorted(ids)
-    parsed, status, usage = _request(prompt, Narrative, config, target, force, write, output_schema=output_schema)
+
+    def has_usable_summary(reply: Narrative) -> bool:
+        items = reply.findings + reply.recommendations
+        return not items or any(item.refs and set(item.refs) <= ids for item in items)
+
+    parsed, status, usage = _request(
+        prompt,
+        Narrative,
+        config,
+        target,
+        force,
+        write,
+        output_schema=output_schema,
+        cache_accepts=has_usable_summary,
+    )
     for key, value in usage.items():
         setattr(report.cost, key, getattr(report.cost, key) + value)
     report.narrative_status = status

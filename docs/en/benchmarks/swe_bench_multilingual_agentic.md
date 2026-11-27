@@ -21,6 +21,7 @@ SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multi
 
 ## Evaluation Notes
 
+- Supports official E2B and Aliyun Agent Sandbox through `TaskConfig.sandbox.engine='e2b'`, avoiding local Docker and local image downloads. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Requires `pip install swebench==4.1.0` before evaluation
 - Uses the official SWE-bench Multilingual x86_64 instance images and sets Docker platform to `linux/amd64` automatically
 - Docker images are built/pulled automatically for each instance
@@ -71,7 +72,7 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
 {
   "input": [
     {
-      "id": "52ece3cf",
+      "id": "72eec5c7",
       "content": "Support Post aggregation function pow(f1,f2) to cater for square, cube , square root.\n### Description\r\n\r\nPlease describe the feature or change with as much detail as possible. \r\n\r\nAs of now the only supported arithmetic functions are +, -, *, ... [TRUNCATED 284 chars] ... \r\n\r\nThe proposal is to add a `pow` function which enables all the about usecase .  Square of a number can be represent by pow(f1,2) , Cube can be represented as power(f1 ,3)  , Squar root of a number can be represented by power(f1,0.5) ,\r\n\r\n\n"
     }
   ],
@@ -121,6 +122,8 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
   }
 }
 ```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

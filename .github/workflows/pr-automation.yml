@@ -1,0 +1,165 @@
+name: PR Automation
+
+on:
+  workflow_run:
+    workflows: [PR Intake, CI Tests Lite, Lint Test, Frontend checks]
+    types: [completed]
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, reopened, edited, labeled]
+
+permissions: {}
+
+jobs:
+  resolve:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+       github.event.comment.user.type == 'User' && contains(github.event.comment.body, '/review'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      sha: ${{ steps.pr.outputs.sha }}
+      command: ${{ steps.pr.outputs.command }}
+      intake: ${{ steps.pr.outputs.intake }}
+      requeue: ${{ steps.pr.outputs.requeue }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: pr
+        run: python3 .github/scripts/pr_automation.py resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  label:
+    needs: resolve
+    if: needs.resolve.outputs.intake == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: evalscope-ai-review-${{ needs.resolve.outputs.number }}
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          pr-number: ${{ needs.resolve.outputs.number }}
+          sync-labels: true
+      - name: Sync triage and review labels
+        run: python3 .github/scripts/pr_automation.py triage-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.resolve.outputs.number }}
+          PR_SHA: ${{ needs.resolve.outputs.sha }}
+          PR_REQUEUE: ${{ needs.resolve.outputs.requeue }}
+
+  triage:
+    if: >-
+      (github.event_name == 'issues' &&
+       (github.event.action == 'opened' || github.event.action == 'reopened' ||
+        (github.event.action == 'edited' && github.event.changes.body &&
+         github.event.sender.id == github.event.issue.user.id &&
+         contains(github.event.issue.labels.*.name, 'needs-info')) ||
+        (github.event.action == 'labeled' &&
+         contains(fromJSON('["needs-info","accepted","ready-for-review"]'), github.event.label.name)))) ||
+      (github.event_name == 'issue_comment' && github.event.comment.user.type == 'User' &&
+       github.event.comment.user.id == github.event.issue.user.id &&
+       contains(github.event.issue.labels.*.name, 'needs-info'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: evalscope-ai-review-${{ github.event.issue.number }}
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Update triage status
+        run: python3 .github/scripts/pr_automation.py triage-event
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  review:
+    needs: resolve
+    if: >-
+      needs.resolve.outputs.number != '' &&
+      vars.PR_REVIEW_MODEL != '' &&
+      !contains(fromJSON('["PR Intake (labeled)","PR Intake (edited)","PR Intake (converted_to_draft)"]'),
+                github.event.workflow_run.display_title) &&
+      (needs.resolve.outputs.command != '0' || vars.PR_REVIEW_AUTO_START_AT != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 37
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: evalscope-ai-review-${{ needs.resolve.outputs.number }}
+      queue: max
+    env:
+      PR_NUMBER: ${{ needs.resolve.outputs.number }}
+      PR_SHA: ${{ needs.resolve.outputs.sha }}
+      PR_COMMAND: ${{ needs.resolve.outputs.command }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Check eligibility and prepare the review
+        id: prepare
+        run: python3 .github/scripts/pr_automation.py prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_REVIEW_AUTO_START_AT: ${{ vars.PR_REVIEW_AUTO_START_AT }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.prepare.outputs.decision == 'review'
+        with:
+          repository: Lixiaoyiao/DSH-action
+          ref: 497af93119203ca22af4f96f8fe89b3345ad665c # v0.13.0
+          path: .dsh-action
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.prepare.outputs.decision == 'review'
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Stage immutable source and CI evidence
+        id: snapshot
+        if: steps.prepare.outputs.decision == 'review'
+        continue-on-error: true
+        run: python3 .github/scripts/dsh_review_snapshot.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Run DeepSeek Harness review
+        id: dsh
+        if: steps.prepare.outputs.decision == 'review' && steps.snapshot.outcome == 'success'
+        # The publisher distinguishes failures on the current head from superseded reviews.
+        continue-on-error: true
+        run: node .github/scripts/dsh_review.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_REVIEW_API_KEY: ${{ secrets.PR_REVIEW_API_KEY }}
+          PR_REVIEW_MODEL: ${{ vars.PR_REVIEW_MODEL }}
+          PR_REVIEW_REASONING_EFFORT: ${{ vars.PR_REVIEW_REASONING_EFFORT }}
+      - name: Update the PR summary and AI label
+        if: >-
+          !cancelled() &&
+          (steps.prepare.outputs.decision == 'size-skip' || steps.prepare.outputs.decision == 'review')
+        run: python3 .github/scripts/pr_automation.py publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_RESULT: ${{ steps.prepare.outputs.decision == 'size-skip' && 'size-skip' || steps.dsh.outputs.result-json }}

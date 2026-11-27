@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
-import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricOf, reportSampleCount } from '@/domain/report/primaryMetrics'
 import { formatMetric, formatMetricIdentityLabel, getBoundedQualityRatio } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 
@@ -50,7 +50,7 @@ export default function DatasetNav({ reports, active, onChange }: Props) {
               </span>
             </span>
             <span className="mt-1 block text-xs text-[var(--text-muted)]">
-              {t('diagnosis.sampleCount', { count: report.num ?? primary?.num ?? 0 })}
+              {t('diagnosis.sampleCount', { count: reportSampleCount(report) })}
             </span>
           </button>
         )

@@ -21,14 +21,20 @@ from evalscope.api.analysis import (
 )
 from evalscope.api.analysis.taxonomy import ISSUE_NAMES, TAXONOMY_VERSION, finding_type
 from evalscope.constants import DEFAULT_LANGUAGE
-from evalscope.report.diagnosis import data_fingerprint, diagnosis_dir, iter_review_files
+from evalscope.report.diagnosis import (
+    data_fingerprint,
+    diagnosis_dir,
+    iter_review_files,
+    load_diagnosis,
+    read_diagnosis_snapshot,
+)
 
 from .facts import collect_facts
-from .inputs import has_nontext_output, is_choice_letter, load_inputs
-from .trace.export import _env_secrets, export_findings, redact
-from .trace.reader import discover_runs, iter_report_pairs
+from .inputs import is_choice_letter, load_inputs
+from .trace.export import _env_secrets, export_findings, redact, redact_data
+from .trace.reader import discover_runs, has_nontext_output, iter_report_pairs
 
-ANALYZER_VERSION = '3.4.4'
+ANALYZER_VERSION = '3.4.7'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
@@ -57,18 +63,6 @@ def _atomic_write(path: Path, content: str) -> None:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
-
-
-def _redact(value: object, secrets: List[str]) -> object:
-    if isinstance(value, str):
-        return redact(value, secrets)
-    if isinstance(value, dict):
-        return {
-            redact(key, secrets) if isinstance(key, str) else key: _redact(item, secrets) for key, item in value.items()
-        }
-    if isinstance(value, list):
-        return [_redact(item, secrets) for item in value]
-    return value
 
 
 def render_markdown(report: DiagnosisReport, language: str = 'auto') -> str:
@@ -141,12 +135,26 @@ def diagnose_benchmark(
     if config.level != 'facts' and config.model is None:
         raise ValueError('diagnose requires an explicit analysis model; facts makes no model calls.')
     run_dir = str(Path(run_dir).resolve())
-    target = diagnosis_dir(run_dir, model, benchmark)
-    target.mkdir(parents=True, exist_ok=True)
-    with FileLock(str(target / '.lock')):
+    base = diagnosis_dir(run_dir, model, benchmark)
+    target = diagnosis_dir(run_dir, model, benchmark, config.level)
+    base.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(base / '.lock')):
+        model_target = diagnosis_dir(run_dir, model, benchmark, 'diagnose')
+        if not (model_target / 'diagnosis.json').exists():
+            _, legacy = read_diagnosis_snapshot(run_dir, model, benchmark, base)
+            if legacy is not None and legacy.level == 'diagnose':
+                for name in ('samples.jsonl', 'diagnosis.json'):
+                    if (base / name).is_file():
+                        _atomic_write(model_target / name, (base / name).read_text(encoding='utf-8'))
         try:
-            return _diagnose_benchmark(run_dir, model, benchmark, config, force, target)
+            report = _diagnose_benchmark(run_dir, model, benchmark, config, force, target)
+            _, active = load_diagnosis(run_dir, model, benchmark)
+            _write_report_analysis(run_dir, model, benchmark, active or report, config.language)
+            return report
         except Exception as exc:
+            status, _ = read_diagnosis_snapshot(run_dir, model, benchmark, target)
+            if status == 'ready':
+                raise
             failure = DiagnosisReport(
                 analyzer_version=ANALYZER_VERSION,
                 run_dir=run_dir,
@@ -164,7 +172,9 @@ def diagnose_benchmark(
             try:
                 _atomic_write(
                     target / 'diagnosis.json',
-                    json.dumps(_redact(failure.model_dump(mode='json'), _env_secrets()), ensure_ascii=False, indent=2)
+                    json.dumps(
+                        redact_data(failure.model_dump(mode='json'), _env_secrets()), ensure_ascii=False, indent=2
+                    )
                     + '\n',
                 )
             except OSError as persist_error:
@@ -209,15 +219,17 @@ def _diagnose_benchmark(
         if (
             cached is not None
             and not cached.coverage.analysis_errors
-            and not any(cached.coverage.diagnosis_statuses.get(k) for k in ('parse_error', 'transport_error'))
-            and cached.narrative_status not in ('parse_error', 'transport_error')
+            and not any(
+                cached.coverage.diagnosis_statuses.get(k)
+                for k in ('parse_error', 'transport_error', 'invalid_evidence')
+            )
+            and cached.narrative_status not in ('parse_error', 'transport_error', 'invalid_references')
             and cached.schema_version == DiagnosisReport.model_fields['schema_version'].default
             and cached.taxonomy_version == TAXONOMY_VERSION
             and cached.config_fingerprint == config_hash
             and cached.data_fingerprint == fingerprint
             and (cached.samples_sha256 == hashlib.sha256(samples_path.read_bytes()).hexdigest())
         ):
-            _write_report_analysis(run_dir, model, benchmark, cached, config.language)
             return cached
     inputs = load_inputs(run_dir, model, benchmark, config.trace)
     coverage = DiagnosisCoverage(samples=len(inputs.samples), unreadable=inputs.unreadable)
@@ -236,13 +248,13 @@ def _diagnose_benchmark(
             f
             for f in case.findings
             if f.category not in _INFORMATIONAL
-            and f.category != FindingCategory.OUTCOME
             and not (f.category == FindingCategory.REFUSAL and case.labels.get('task_kind') == 'harmful')
         ]
-        observed = {finding_type(finding) for finding in relevant} - {'unexplained'}
-        issue = sorted(observed)[0] if observed else 'unexplained' if case.outcome.task_success is False else None
-        if case.outcome.safety_violation is True and issue is None:
-            issue = 'safety_violation'
+        observed = {finding_type(finding) for finding in relevant}
+        failed = case.outcome.task_success is False
+        additional_issue = (
+            'safety_violation' if case.outcome.safety_violation is True and not observed and not failed else None
+        )
         if (
             not relevant
             and not case.tool_call_count
@@ -250,29 +262,27 @@ def _diagnose_benchmark(
             and not has_nontext_output(item.record)
         ):
             if item.stop_reason in ('length', 'max_tokens', 'model_length'):
-                issue = 'truncated'
+                additional_issue = 'truncated'
             elif any(m.role == 'assistant' for m in item.record.messages):
                 visible = any(m.role == 'assistant' and (m.text or '').strip() for m in item.record.messages)
                 if not visible:
-                    issue = 'empty_output'
+                    additional_issue = 'empty_output'
                 else:
                     prediction = item.record.sample_score.score.extracted_prediction
                     if prediction is not None and (
                         not prediction.strip() or (choice_task and not is_choice_letter(prediction))
                     ):
-                        issue = 'extraction_failure'
+                        additional_issue = 'extraction_failure'
         recorded = item.recorded_error
         if recorded:
-            issue = recorded[0]
-        if issue not in (None, 'unexplained'):
-            observed.add(issue)
+            additional_issue = recorded[0]
+        if additional_issue:
+            observed.add(additional_issue)
         coverage.task_success_known += case.outcome.task_success is not None
-        coverage.task_failed += case.outcome.task_success is False
+        coverage.task_failed += failed
         coverage.outcome_unknown += case.outcome.task_success is None
         coverage.excluded += case.score_status not in ('success', 'fallback', 'degraded')
-        coverage.unexplained_failures += case.outcome.task_success is False and issue == 'unexplained'
-        attention = bool(relevant) or issue is not None
-        coverage.needs_attention += attention
+        coverage.unexplained_failures += failed and not observed
         samples.append(
             SampleDiagnosis(
                 key=item.key,
@@ -280,9 +290,7 @@ def _diagnose_benchmark(
                 safety_violation=case.outcome.safety_violation,
                 score_status=case.score_status,
                 stop_reason=item.stop_reason,
-                score_value=case.score_value,
-                needs_attention=attention,
-                failure_type=issue,
+                needs_attention=failed or bool(observed),
                 observed_types=sorted(observed),
                 recorded_error=recorded[1] if recorded else None,
                 findings=export_findings(case.findings, config.trace),
@@ -314,7 +322,7 @@ def _diagnose_benchmark(
     if config.level != 'facts':
         from .llm import enrich, summarize
 
-        enrich(report, samples, inputs, config, target, force, _atomic_write)
+        enrich(report, samples, inputs, config, target.parent, force, _atomic_write)
     report.patterns = _review_issues(samples, config.max_examples)
     coverage.risk_samples = sum(sample.has_risk for sample in samples)
     coverage.proposals_without_rule_clues = sum(
@@ -322,16 +330,16 @@ def _diagnose_benchmark(
         for sample in samples
     )
     if config.level == 'diagnose':
-        summarize(report, samples, config, target, force, _atomic_write)
+        summarize(report, samples, config, target.parent, force, _atomic_write)
         report.limitations += [
             'Valid citations establish provenance, not semantic support or root-cause accuracy.',
             'Model hypotheses describe only the selected samples; no population cause estimates are made.',
         ]
-    report = DiagnosisReport.model_validate(_redact(report.model_dump(mode='json'), secrets))
+    report = DiagnosisReport.model_validate(redact_data(report.model_dump(mode='json'), secrets))
     if data_fingerprint(run_dir, model, benchmark) != fingerprint:
         raise RuntimeError('Analysis inputs changed during computation; retry on a stable run.')
     sample_text = ''.join(
-        json.dumps(_redact(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
+        json.dumps(redact_data(s.model_dump(mode='json'), secrets), ensure_ascii=False) + '\n'
         for s in samples
         if s.task_success is False
         or s.is_unscored
@@ -342,10 +350,7 @@ def _diagnose_benchmark(
     )
     report.samples_sha256 = hashlib.sha256(sample_text.encode()).hexdigest()
     _atomic_write(samples_path, sample_text)
-    _atomic_write(
-        path, json.dumps(_redact(report.model_dump(mode='json'), secrets), ensure_ascii=False, indent=2) + '\n'
-    )
-    _write_report_analysis(run_dir, model, benchmark, report, config.language)
+    _atomic_write(path, json.dumps(report.model_dump(mode='json'), ensure_ascii=False, indent=2) + '\n')
     return report
 
 

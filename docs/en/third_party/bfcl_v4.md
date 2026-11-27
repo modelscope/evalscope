@@ -51,9 +51,9 @@ SUBSET_LIST = [
 ```{important}
 Please note the following when using this evaluation benchmark:
 - The `live_relevance` task is not included in the final score.
-- When evaluating Web Search tasks, please ensure that `SERPAPI_API_KEY` is set in the environment variables to access the [SerpAPI](https://serpapi.com/dashboard) service, and make sure you have sufficient call credits, otherwise the evaluation results may be all zeros.
-- When evaluating Memory tasks, preprocessing requests will run first to populate the memory, which can be time-consuming, so please be patient.
-- When evaluating the `memory_vector` task, the required model files will be automatically downloaded from the Hugging Face Hub, so please ensure your network connection is stable.
+- Web Search tasks require a valid `SERPAPI_API_KEY` with available [SerpAPI](https://serpapi.com/dashboard) credits. To evaluate without a key, explicitly omit `web_search_base` and `web_search_no_snippet` from `subset_list`. Both subsets are included by default, even when the key is missing.
+- Memory tasks first populate the memory for the scenarios required by the selected samples. If a snapshot is empty, look for failed memory-write calls and check that the endpoint returns structured tool calls in FC mode.
+- `memory_vector` downloads its embedding model from Hugging Face Hub on first use. On macOS, FAISS uses one native thread per rollout to avoid an OpenMP conflict with PyTorch. API requests can still run concurrently.
 ```
 
 ## Installing Dependencies
@@ -65,9 +65,11 @@ Before running the evaluation, you need to install the following dependencies:
 pip install 'evalscope[bfcl]'
 ```
 
+Evaluation version `v1.2` uses `bfcl-eval==2026.3.23`. Use a fresh output directory when upgrading from an earlier evaluation version. When installing from a source checkout, run `pip install -e '.[bfcl]'` to pick up the updated dependency. On a shared machine, set `BFCL_PROJECT_ROOT` to a directory writable only by your account for the upstream package's file locks.
+
 ## Usage
 
-Run the code below to start the evaluation. The following example uses the qwen-plus model for evaluation.
+The following example uses `qwen3.8-flash` with native function calling.
 
 **⚠️ Note: Only API model services are supported. For local model evaluation, it is recommended to use frameworks like vLLM to start the service first.**
 
@@ -76,7 +78,7 @@ import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
-    model='qwen-plus',
+    model='qwen3.8-flash',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     api_key=os.getenv('DASHSCOPE_API_KEY'),
     eval_type='openai_api',  # Using API model service
@@ -120,15 +122,17 @@ task_cfg = TaskConfig(
         }
     },
     generation_config={
-        'temperature': 0, # Only temperature parameter is supported, other parameters will be ignored
+        'temperature': 0,
+        'timeout': 60,
+        'extra_body': {'enable_thinking': False},
     },
-    use_cache='outputs/bfcl_v4', # Setting a cache directory is recommended to speed up re-runs in case of errors
+    use_cache='outputs/bfcl_v4_v1_2', # Reuse predictions and memory snapshots for this evaluation version
     limit=10,  # Limit the evaluation count for quick testing; remove this for formal evaluation
 )
 run_task(task_cfg=task_cfg)
 ```
 
-Output example:
+Example output from an earlier evaluation version with `qwen-plus`:
 
 ```text
 +-----------+-----------+----------+-------------------------+-------+---------+---------+

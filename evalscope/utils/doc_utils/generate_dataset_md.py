@@ -246,7 +246,13 @@ def compute_adapter_statistics(adapter) -> Optional[Dict[str, Any]]:
 
     try:
         stats = compute_benchmark_statistics(adapter)
-        return stats.to_dict()
+        result = stats.to_dict()
+        if getattr(adapter, '_suppress_doc_prompt_statistics', False):
+            result.pop('prompt_length', None)
+            for subset in result.get('subset_stats', []):
+                for key in ('prompt_length_mean', 'prompt_length_min', 'prompt_length_max', 'prompt_length_std'):
+                    subset.pop(key, None)
+        return result
     except Exception as e:
         print(f'Warning: Failed to compute statistics for {adapter.name}: {e}')
         return None

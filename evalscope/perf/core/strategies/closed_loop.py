@@ -15,6 +15,79 @@ if TYPE_CHECKING:
 
 logger = get_logger()
 
+_RANDOM_RESERVE_TOKEN_BUDGET = 8 * 1024 * 1024
+
+
+class _ReplacementBuffer:
+    """Prebuild a reserve and produce one more candidate per excess transition."""
+
+    def __init__(self, source: AsyncIterator[Tuple[dict, bool]], reserve: int) -> None:
+        self.source = source
+        self.reserve = reserve
+        self.ready: asyncio.Queue = asyncio.Queue(maxsize=max(reserve, 1))
+        self.credits = asyncio.Semaphore(0)
+        self.worker: Optional[asyncio.Task] = None
+        self.transitions = 0
+        self.exhausted = False
+        self.wait_seconds = 0.0
+
+    async def prepare(self) -> None:
+        for _ in range(self.reserve):
+            await self._prepare_one()
+            if self.exhausted:
+                break
+
+    def transition(self) -> None:
+        self.transitions += 1
+        if self.transitions > self.reserve and not self.exhausted:
+            self.credits.release()
+            if self.worker is None:
+                self.worker = asyncio.create_task(self._produce())
+
+    async def _prepare_one(self) -> None:
+        try:
+            item = await anext(self.source)
+        except Exception as exc:
+            # An unused reserve must not fail a run that met its measured quota.
+            self.exhausted = True
+            await self.ready.put(exc)
+        else:
+            await self.ready.put(item)
+
+    async def _produce(self) -> None:
+        while not self.exhausted:
+            await self.credits.acquire()
+            await self._prepare_one()
+
+    async def items(self) -> AsyncIterator[Tuple[dict, bool]]:
+        while True:
+            if self.ready.empty():
+                start = time.perf_counter()
+                try:
+                    item = await self.ready.get()
+                finally:
+                    self.wait_seconds += time.perf_counter() - start
+            else:
+                item = self.ready.get_nowait()
+            if isinstance(item, StopAsyncIteration):
+                return
+            if isinstance(item, Exception):
+                raise item
+            yield item
+
+    def stop(self) -> None:
+        if self.worker is not None:
+            self.worker.cancel()
+
+    async def close(self) -> None:
+        self.stop()
+        if self.worker is not None:
+            await asyncio.gather(self.worker, return_exceptions=True)
+        logger.info(
+            f'Random replacement reserve: {self.reserve}, transitions: {self.transitions}, '
+            f'time waiting for an unprepared candidate: {self.wait_seconds:.6f}s.'
+        )
+
 
 @dataclass
 class _MeasurementWindow:
@@ -25,6 +98,7 @@ class _MeasurementWindow:
     duration: Optional[float]
     compute_deadline: Callable[[Optional[float]], Optional[float]]
     exclude_overlap: bool
+    buffer: Optional[_ReplacementBuffer] = None
     measured_sent: int = 0  # Includes requests that later fail.
     queued_candidates: int = 0  # Non-warmup tasks not yet classified at send time.
     deadline: Optional[float] = None
@@ -53,6 +127,8 @@ class _MeasurementWindow:
             self.queued_candidates -= 1
             self.send_progress.set()
             if self.remaining_warmup:
+                if self.buffer is not None:
+                    self.buffer.transition()
                 return 'transition'
             if self.closed:
                 return None
@@ -76,6 +152,8 @@ class _MeasurementWindow:
             self.remaining_warmup -= 1
 
     def _stop(self) -> None:
+        if self.buffer is not None:
+            self.buffer.stop()
         self.stopped.set()
         self.send_progress.set()
 
@@ -152,7 +230,24 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                 requests.append(item)
                 if len(requests) >= self.args.total_count:
                     break
-            await self._run_phase(requests, duration=self.args.duration, replacements=self._request_generator)
+            if (
+                self.args.dataset == 'random'
+                and not self.args.prompt
+                and self.args.number > 0
+                and self.args.parallel > 1
+            ):
+                # Limit the automatic reserve by prompt volume as well as request count.
+                prompt_tokens = max(1, self.args.max_prompt_length + self.args.prefix_length)
+                token_limit = _RANDOM_RESERVE_TOKEN_BUDGET // prompt_tokens
+                reserve = min(2 * self.args.parallel, token_limit)
+                buffer = _ReplacementBuffer(self._request_generator, reserve)
+                try:
+                    await buffer.prepare()
+                    await self._run_phase(requests, self.args.duration, buffer.items(), buffer)
+                finally:
+                    await buffer.close()
+            else:
+                await self._run_phase(requests, duration=self.args.duration, replacements=self._request_generator)
         finally:
             await self._request_generator.aclose()
 
@@ -203,6 +298,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         requests: List[Tuple[dict, bool]],
         duration: Optional[float] = None,
         replacements: Optional[AsyncIterator[Tuple[dict, bool]]] = None,
+        buffer: Optional[_ReplacementBuffer] = None,
     ) -> None:
         """Dispatch ``(request, is_warmup)`` items in order and await completion.
 
@@ -228,6 +324,7 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             duration=duration,
             compute_deadline=self._compute_deadline,
             exclude_overlap=replacements is not None,
+            buffer=buffer,
         )
 
         # Pre-compute absolute dispatch timestamps when pacing is enabled.

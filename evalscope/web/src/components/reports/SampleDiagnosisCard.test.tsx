@@ -14,15 +14,13 @@ it('shows the observation and evidence without internal rule names or disclaimer
     <LocaleProvider>
       <SampleDiagnosisCard
         diagnosis={{
-          llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
+          llm: null, llm_status: 'not_selected', sources: [], context_omitted: false, observed_types: ['truncated'], invalid_evidence: 0, recorded_error: null, evidence_errors: [],
           key: { subset: 'default', index: 7 },
           task_success: false,
           safety_violation: null,
           score_status: 'success',
           stop_reason: 'max_tokens',
-          score_value: { accuracy: 0 },
           needs_attention: true,
-          failure_type: 'truncated',
           findings: [
             {
               category: 'tool_failure',
@@ -49,8 +47,8 @@ it('shows the observation and evidence without internal rule names or disclaimer
 it('shows only grounded proposals and preserves Unicode citation boundaries', () => {
   const diagnosis = {
     key: { subset: 'default', index: 1 }, score_status: 'success', task_success: false,
-    safety_violation: null, stop_reason: null, score_value: {}, needs_attention: true,
-    failure_type: 'reasoning_error', findings: [],
+    safety_violation: null, stop_reason: null, needs_attention: true,
+    findings: [],
     observed_types: [], invalid_evidence: 0, recorded_error: null, evidence_errors: [], llm_status: 'ok',
     context_omitted: false, sources: [{ id: 'm:1', text: '中文🧪 answer B', message_index: 1, step: 2, excerpted: false, original_start: 0 }],
     llm: { failure_type: 'reasoning_error', secondary_types: [], attribution: 'model', root_cause_step: 2,

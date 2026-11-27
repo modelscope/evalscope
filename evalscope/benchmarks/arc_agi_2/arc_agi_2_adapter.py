@@ -73,7 +73,7 @@ PROMPT_TEMPLATE = '{question}'
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         system_prompt=SYSTEM_PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class ArcAgi2Adapter(DefaultDataAdapter):

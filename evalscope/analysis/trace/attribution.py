@@ -48,8 +48,6 @@ def attribute(finding: Finding, rules: CompiledRules) -> Tuple[Attribution, str,
 
     if category in INFORMATIONAL_CATEGORIES:
         return Attribution.MODEL, 'info', None
-    if category == FindingCategory.OUTCOME:
-        return Attribution.UNKNOWN, 'outcome.unexplained', Confidence.LOW
     if category == FindingCategory.TOOL_FAILURE:
         return _attribute_tool_failure(subtype, text, rules)
     if category == FindingCategory.TERMINATION:
@@ -126,8 +124,10 @@ def resolve_outcome(
         outcome = signals.outcome.model_copy(update={'source': 'provider'})
         if outcome.refused is None:
             outcome.refused = refused or None
-        return outcome
-    outcome = Outcome(refused=True if refused else None)
+        if outcome.task_success is not None:
+            return outcome
+    else:
+        outcome = Outcome(refused=True if refused else None)
     if (view.score_status or 'success').lower() not in _USABLE_STATUSES or not view.score_value:
         return outcome
     main = view.main_score_name or next(iter(view.score_value))
@@ -146,8 +146,13 @@ def resolve_outcome(
         value, threshold = view.score_value[metric], thresholds[metric]
         outcome.task_success = value <= threshold if direction == 'lower_is_better' else value >= threshold
         outcome.source = 'threshold'
-    elif not thresholds and (
-        main in correctness_metrics or main in {'accuracy', 'acc', 'exact_match', 'em', 'is_correct'}
+    elif (
+        signals.outcome is None
+        and not thresholds
+        and (
+            main in correctness_metrics
+            or (main not in directions and main in {'accuracy', 'acc', 'exact_match', 'em', 'is_correct'})
+        )
     ):
         value = view.score_value.get(main)
         if value in (0.0, 1.0):

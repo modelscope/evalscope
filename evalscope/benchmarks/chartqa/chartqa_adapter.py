@@ -3,11 +3,10 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import extract_answer_line
 
@@ -24,7 +23,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         name='chartqa',
         pretty_name='ChartQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -74,11 +73,11 @@ class ChartQAAdapter(VisionLanguageAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = record['question']
         image_data = record['image']
-        image_base64 = bytes_to_base64(image_data['bytes'], format='png', add_header=True)
+        image = self._normalize_media_value({'bytes': image_data['bytes']}, media_type='image')
 
         content_list: List[Content] = [
             ContentText(text=OPEN_PROMPT.format(question=question)),
-            ContentImage(image=image_base64),
+            self._content_image_from_value(image),
         ]
 
         return Sample(

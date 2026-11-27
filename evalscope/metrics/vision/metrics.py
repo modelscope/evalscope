@@ -1,11 +1,15 @@
 import base64
 import binascii
 import math
-from typing import Any, List, Optional, Tuple
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.metric import Metric, SingletonMetric, T2IMetric
+from evalscope.api.metric import Metric, Score, SingletonMetric, T2IMetric
 from evalscope.api.registry import register_metric
+from evalscope.constants import ScoreStatus
 from evalscope.utils.import_utils import check_import
+
+from .text_render import extract_quoted_words, text_score_counts, word_accuracy_counts, word_ned_counts
 
 # #######################
 # Image Pair Metrics ####
@@ -415,3 +419,142 @@ class MPS(T2IMetric):
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
         return self.model(images, texts, **kwargs)
+
+
+# ############################
+# Text Rendering Metrics #####
+# ############################
+@lru_cache(maxsize=None)
+def _get_cvtg_ocr(lang: str) -> Any:
+    for module in ('paddle', 'paddleocr'):
+        check_import(module, extra='cvtg_2k', raise_error=True, feature_name='CVTG-2K scoring')
+    from paddleocr import PaddleOCR
+
+    return PaddleOCR(use_angle_cls=True, lang=lang, show_log=False)
+
+
+def _recognize_cvtg_words(image_path: str, lang: str) -> List[str]:
+    """Recognize words with one shared OCR engine per language."""
+    result = _get_cvtg_ocr(lang).ocr(image_path, cls=True) or []
+    return [word for line in (result[0] if result else []) or [] for word in str(line[1][0]).lower().split()]
+
+
+class _TextRenderingMetric(T2IMetric):
+    """Return a sample's value and corpus counts together; exclude scoring failures."""
+
+    def _score_counts(self, image_path: str, text: str) -> Tuple[float, float, int]:
+        raise NotImplementedError
+
+    def apply(self, images: List[str], texts: List[str], **kwargs) -> List[Score]:
+        results = []
+        for image_path, text in zip(images, texts):
+            try:
+                value, numerator, denominator = self._score_counts(image_path, text)
+                if denominator <= 0:
+                    raise ValueError('The ground truth contains no scorable text.')
+                results.append(
+                    Score(
+                        value={'score': value},
+                        metadata={'corpus_counts': {'numerator': numerator, 'denominator': denominator}},
+                    )
+                )
+            except Exception as error:
+                results.append(Score(status=ScoreStatus.EXCLUDED, explanation=str(error)))
+        return results
+
+
+@register_metric(name='CVTGWordAccuracy')
+class CVTGWordAccuracy(_TextRenderingMetric):
+    """CVTG-2K word membership accuracy; OCR loads lazily."""
+
+    _count_words = staticmethod(word_accuracy_counts)
+
+    def _init_once(self, lang: str = 'en') -> None:
+        self.lang = lang
+
+    def _score_counts(self, image_path: str, prompt: str) -> Tuple[float, float, int]:
+        return self._count_words(extract_quoted_words(prompt), _recognize_cvtg_words(image_path, self.lang))
+
+
+@register_metric(name='CVTGNED')
+class CVTGNED(CVTGWordAccuracy):
+    """CVTG-2K best-match normalized edit similarity, sharing the Word Accuracy OCR flow."""
+
+    _count_words = staticmethod(word_ned_counts)
+
+
+@register_metric(name='LongTextScore')
+class LongTextScore(_TextRenderingMetric):
+    """Transcribe through a vision API and match English words or Chinese characters.
+
+    Uses the reference channel for ground-truth text; language is detected per sample by default.
+    """
+
+    image_pair_metric = True
+
+    RECOGNIZE_PROMPT = (
+        'Recognize the text in the image, only reply with the text content, but avoid '
+        'repeating previously mentioned content. If no text is recognized, please reply '
+        "with 'No text recognized'."
+    )
+
+    def _init_once(
+        self,
+        model: str = 'qwen3.8-flash',
+        lang: Optional[str] = None,
+        api_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        generation_config: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.model_name = model
+        self.lang = lang
+        self.api_url = api_url
+        self.api_key = api_key
+        self.generation_config = generation_config or {}
+        self._api_model = None
+
+    def _transcribe(self, image_path: str) -> str:
+        import os
+
+        from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
+        from evalscope.api.model import GenerateConfig, get_model
+        from evalscope.utils.argument_utils import get_secret_value
+
+        if self._api_model is None:
+            base_url = self.api_url or os.getenv(
+                'DASHSCOPE_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+            )
+            api_key = get_secret_value(self.api_key) if self.api_key else None
+            if not api_key and self.api_url is None:
+                api_key = os.getenv('DASHSCOPE_API_KEY')
+            api_key = api_key or os.getenv('EVALSCOPE_API_KEY')
+            defaults: Dict[str, Any] = {'max_tokens': 1024, 'temperature': 0}
+            if self.model_name == 'qwen3.8-flash':
+                defaults['extra_body'] = {'enable_thinking': False}
+            self._api_model = get_model(
+                self.model_name,
+                eval_type='openai_api',
+                base_url=base_url,
+                api_key=api_key,
+                config=GenerateConfig(**{**defaults, **self.generation_config}),
+                model_args={'max_retries': 0},
+            )
+        output = self._api_model.generate(
+            input=[
+                ChatMessageUser(
+                    content=[
+                        ContentImage(image=image_path),
+                        ContentText(text=self.RECOGNIZE_PROMPT),
+                    ]
+                )
+            ]
+        )
+        if output.error or output.empty or output.completion.startswith('[ERROR]'):
+            raise RuntimeError(output.error or 'VLM API transcription failed.')
+        if output.stop_reason == 'max_tokens':
+            raise ValueError('VLM transcription reached max_tokens; increase the scorer generation_config.max_tokens.')
+        transcript = output.completion.strip()
+        return '' if transcript.casefold() in {'no text recognized', 'no text recognized.'} else transcript
+
+    def _score_counts(self, image_path: str, gt_text: str) -> Tuple[float, float, int]:
+        return text_score_counts(gt_text, self._transcribe(image_path), self.lang)

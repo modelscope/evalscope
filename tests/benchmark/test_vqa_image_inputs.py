@@ -95,6 +95,26 @@ def test_missing_image_keeps_text_only_behavior(adapter: VisionLanguageAdapter, 
     assert [part.type for part in sample.input[0].content] == ['text']
 
 
+@pytest.mark.parametrize('image_format', ['JPEG', 'PNG'])
+def test_chartqa_image_format_and_subset(image_format: str) -> None:
+    data = _image_bytes(image_format)
+    image = {'bytes': data, 'path': 'stale.png'}
+    adapter = _adapter('chartqa')
+    sample = adapter.record_to_sample({
+        'question': 'What is the maximum?', 'answer': '42', 'type': 'augmented_test', 'image': image,
+    })
+    text, picture = sample.input[0].content
+    assert 'What is the maximum?' in text.text
+    assert (sample.target, sample.subset_key) == ('42', 'augmented_test')
+    uri = openai_chat_completion_part(picture)['image_url']['url']
+    header, encoded = uri.split(',', 1)
+    raw = base64.b64decode(encoded, validate=True)
+    assert raw == data
+    with Image.open(BytesIO(raw)) as decoded:
+        assert decoded.format == image_format
+        assert header == f'data:{Image.MIME[decoded.format]};base64'
+
+
 @pytest.mark.parametrize('name', BENCHMARKS)
 @pytest.mark.parametrize('source', ['parquet_bytes', 'jsonl_path'])
 def test_native_pipeline_serializes_images_scores_and_resumes(

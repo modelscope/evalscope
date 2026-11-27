@@ -22,6 +22,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 
 ## Evaluation Notes
 
+- Supports E2B with an image or template containing NumPy; Aliyun Agent Sandbox requires a suitable template. See the [sandbox guide](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html#e2b).
 - Default configuration uses **0-shot** evaluation
 - **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation
@@ -59,7 +60,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 {
   "input": [
     {
-      "id": "be634cb0",
+      "id": "8e9b380c",
       "content": "You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\n\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     }
   ],

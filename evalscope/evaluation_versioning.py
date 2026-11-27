@@ -54,6 +54,7 @@ class ResolvedBenchmarkSpec(BaseModel):
     few_shot_num: int = 0
     few_shot_random: bool = False
     metric_list: list[Any] = Field(default_factory=list)
+    answer_parser_version: Optional[str] = None
     aggregation: str = 'mean'
     primary_metric: Optional[Any] = None
     filters: Optional[Dict[str, Any]] = None
@@ -69,6 +70,7 @@ class ResolvedBenchmarkSpec(BaseModel):
         """Resolve an adapter and its actual member benchmarks before validating cached reviews."""
         members = adapter.evaluation_dependencies()
         spec = cls.from_meta(adapter.benchmark_meta, task_config)
+        spec.answer_parser_version = adapter.answer_parser_version
         spec.dependencies = {
             name: ResolvedBenchmarkDependency(
                 evaluation_version=member.benchmark_meta.evaluation_version,
@@ -357,6 +359,8 @@ def _canonicalize_generation_config(config: Any) -> Any:
 def _fingerprint_benchmark_spec(spec: ResolvedBenchmarkSpec) -> Dict[str, Any]:
     """Include composite semantics while preserving existing fingerprints for ordinary benchmarks."""
     payload = spec.model_dump(mode='json', exclude={'dependencies'})
+    if payload['answer_parser_version'] is None:
+        del payload['answer_parser_version']
     if spec.dependencies:
         payload['dependencies'] = {
             name: {

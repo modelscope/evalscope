@@ -31,6 +31,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
     aggregate_empty_scores: bool = False
     """Run official denominator-based aggregation even when every prediction is unavailable."""
 
+    answer_parser_version: Optional[str] = None
+    """Version of shared answer extraction semantics used by this adapter, if any."""
+
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config

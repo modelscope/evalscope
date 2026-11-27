@@ -116,6 +116,10 @@ def build_run_config(args_dict: dict, runs: list | None = None) -> dict[str, str
         configuration['parallel'] = ', '.join(str(run.parallel) for run in runs)
         configuration['number'] = ', '.join(str(run.number) for run in runs)
         configuration['rate'] = ', '.join(str(run.summary.request_rate) for run in runs)
+        for key in ('dataset', 'max_prompt_length', 'min_prompt_length'):
+            values = list(dict.fromkeys(str((getattr(run, 'args', None) or {}).get(key)) for run in runs))
+            if len(values) > 1:
+                configuration[key] = ', '.join(values)
     return configuration
 
 
@@ -357,6 +361,21 @@ def build_summary_items(
         extra = [
             ('Output Tok Throughput (tok/s)', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput)),
             ('Total Tok Throughput (tok/s)', _cell(Metrics.TOTAL_TOKEN_THROUGHPUT, s.total_token_throughput)),
+            *(
+                [
+                    ('Device Count', _cell(Metrics.DEVICE_COUNT, s.device_count)),
+                    (
+                        'Output Throughput per Device (tok/s)',
+                        _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT_PER_DEVICE, s.output_token_throughput_per_device),
+                    ),
+                    (
+                        'Total Throughput per Device (tok/s)',
+                        _cell(Metrics.TOTAL_TOKEN_THROUGHPUT_PER_DEVICE, s.total_token_throughput_per_device),
+                    ),
+                ]
+                if s.device_count is not None
+                else []
+            ),
             ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
             ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
             ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),

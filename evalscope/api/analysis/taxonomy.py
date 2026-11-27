@@ -37,8 +37,6 @@ ISSUE_NAMES = {
 
 def finding_type(finding: Finding) -> str:
     """Map observed findings without treating tool-derived arguments as a violation."""
-    if finding.category == FindingCategory.OUTCOME:
-        return 'unexplained'
     if finding.rule_id.startswith('env.'):
         return 'environment_failure'
     if finding.rule_id.startswith('guard.'):

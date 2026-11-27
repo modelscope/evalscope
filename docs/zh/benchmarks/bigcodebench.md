@@ -1,32 +1,32 @@
 # BigCodeBench
 
-
 ## 概述
 
-BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实际且具有挑战性的任务。它在更贴近现实的场景中评估大语言模型（LLMs）的真实编程能力，涵盖来自 139 个流行库的 723 个 API 调用。
+BigCodeBench 是一个易于使用的基准测试，用于通过代码解决具有实际意义且富有挑战性的任务。它在更真实的场景下评估大语言模型（LLMs）的实际编程能力，涵盖来自 139 个流行库的多样化函数调用，共计 723 个 API 调用。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
 - **输入**：编程任务描述（文档字符串或自然语言指令）
 - **输出**：完整的 Python 函数实现
-- **库**：139 个流行的 Python 库（如 numpy、pandas、sklearn 等）
+- **库**：139 个流行的 Python 库（numpy, pandas, sklearn 等）
 
-## 主要特性
+## 主要特点
 
-- 包含 1,140 个上下文丰富的 Python 编程任务
-- 提供两种评估模式：Complete（基于文档字符串）和 Instruct（基于自然语言指令）
-- 覆盖来自 139 个流行库的多样化函数调用
-- 使用 `unittest.TestCase` 进行全面的正确性验证
+- 1,140 个具有丰富上下文的 Python 编程任务
+- 两种评估模式：Complete（文档字符串）和 Instruct（自然语言）
+- 涵盖来自 139 个流行库的多样化函数调用
+- 使用 `unittest.TestCase` 进行彻底的正确性验证
 - 支持 pass@k 指标计算
 
 ## 评估说明
 
-- **需要沙箱环境**：要求预装 70 多个 Python 库的沙箱环境
-- 通过 `split` 参数选择两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
-- 每个问题默认超时时间为 240 秒
-- 启用 `calibrate` 选项会在生成代码前添加 `code_prompt`，以对齐函数签名
-- 沙箱环境设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- **需要沙箱环境**：需要预装了 70+ 个 Python 库的沙箱环境
+- 通过 `split` 参数提供两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
+- 默认每个问题的超时时间为 240 秒
+- `calibrate` 选项会在代码前添加 code_prompt，以对齐函数签名
+- 支持通过 `TaskConfig.sandbox.engine='e2b'` 使用官方 E2B；阿里云 Agent Sandbox 需要合适的评估模板。请参阅 [沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 有关设置信息，请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -38,13 +38,16 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分版本** | `v0.1.4` |
+| **评估划分** | `v0.1.4` |
 | **聚合方式** | `mean_and_pass_at_k` |
-
 
 ## 数据统计
 
-*统计数据暂不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 1,140 |
+| 提示词长度（平均值） | 662.78 字符 |
+| 提示词长度（最小/最大值） | 232 / 3464 字符 |
 
 ## 样例示例
 
@@ -54,7 +57,7 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 {
   "input": [
     {
-      "id": "657d2473",
+      "id": "02419373",
       "content": "Calculates the average of the sums of absolute differences between each pair of consecutive numbers for all permutations of a given list. Each permutation is shuffled before calculating the differences. Args: - numbers (list): A list of numbe ... [TRUNCATED 75 chars] ... loat: The average of the sums of absolute differences for each shuffled permutation of the list.\nYou should write self-contained code starting with:\n```\nimport itertools\nfrom random import shuffle\ndef task_func(numbers=list(range(1, 3))):\n```"
     }
   ],
@@ -71,6 +74,8 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 }
 ```
 
+*注意：为便于显示，部分内容已截断。*
+
 ## 提示模板
 
 **提示模板：**
@@ -84,14 +89,14 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 |-----------|------|---------|-------------|
 | `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。可选值：['complete', 'instruct'] |
 | `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
-| `calibrate` | `bool` | `True` | 是否在解决方案前添加 `code_prompt` 以对齐函数签名。 |
-| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后将覆盖默认沙箱镜像。 |
-| `dockerfile` | `str` | `Dockerfile` | `docker_build_context` 内的 Dockerfile 路径。 |
-| `force_rebuild` | `bool` | `False` | 是否强制重建可选的本地 Docker 镜像。 |
+| `calibrate` | `bool` | `True` | 是否在解决方案前添加 code_prompt 以对齐函数签名。 |
+| `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后，将覆盖默认的沙箱镜像。 |
+| `dockerfile` | `str` | `Dockerfile` | docker_build_context 中的 Dockerfile 路径。 |
+| `force_rebuild` | `bool` | `False` | 强制重新构建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境来执行代码。
+此基准测试需要一个用于代码执行的沙箱环境。
 
 ```json
 {

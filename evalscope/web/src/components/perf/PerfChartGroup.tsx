@@ -7,7 +7,7 @@ import { CHART_TITLES } from '@/domain/perf/charts'
 interface PerfChartGroupProps {
   title: string
   charts: readonly string[]
-  fallbackTable: DataTableModel
+  fallbackTable: DataTableModel | ((chart: string) => DataTableModel)
   getChartUrl: (chart: string) => string
   loading?: boolean
 }
@@ -29,7 +29,7 @@ export default function PerfChartGroup({
             <PlotlyChart
               key={chart}
               src={getChartUrl(chart)}
-              fallbackTable={fallbackTable}
+              fallbackTable={typeof fallbackTable === 'function' ? fallbackTable(chart) : fallbackTable}
               title={CHART_TITLES[chart]}
               height={340}
             />

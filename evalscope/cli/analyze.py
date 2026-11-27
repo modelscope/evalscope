@@ -35,6 +35,7 @@ class AnalyzeCMD(CLICommand):
     def execute(self) -> None:
         from evalscope.analysis import diagnose_run
         from evalscope.api.analysis import AnalysisReportConfig
+        from evalscope.report.diagnosis import diagnosis_dir
 
         config = AnalysisReportConfig.from_source(self.args.analysis_config or '{}')
         if self.args.level:
@@ -54,11 +55,12 @@ class AnalyzeCMD(CLICommand):
                 or 'none'
             )
             failure_rate = f'{c.task_failed / c.task_success_known:.1%}' if c.task_success_known else 'unknown'
+            artifact = diagnosis_dir(report.run_dir, report.model, report.benchmark, report.level) / 'diagnosis.json'
             print(
                 f'{report.run_dir} / {report.model}/{report.benchmark}: '
                 f'{c.samples} reviews; level={report.level}; task failures={c.task_failed}/{c.task_success_known}; '
                 f'failure rate={failure_rate}; rule clues={c.task_failed - c.unexplained_failures}/{c.task_failed}; '
                 f'unknown outcomes={c.outcome_unknown}; without rule clues={c.unexplained_failures}/{c.task_failed}; '
                 f'issue groups (all samples; may overlap): {patterns}; calls={report.cost.calls}; '
-                f'output={report.run_dir}/analysis/{report.model}/{report.benchmark}/diagnosis.json'
+                f'output={artifact}'
             )

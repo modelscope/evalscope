@@ -6,7 +6,7 @@ import pytest
 from evalscope.api.messages import ChatMessageUser, ContentImage
 
 
-@pytest.mark.parametrize('scheme', ['http', 'https'])
+@pytest.mark.parametrize('scheme', ['http', 'https', 'HTTP', 'HTTPS', 'hTtP', 'hTtPs'])
 def test_image_urls_are_sent_as_url_sources(scheme: str) -> None:
     pytest.importorskip('anthropic')
     from evalscope.models.utils.anthropic import anthropic_chat_messages

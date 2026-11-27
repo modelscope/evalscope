@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
+from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.report.report import Report, Subset
@@ -87,7 +88,7 @@ OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comp
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class OCRBenchV2Adapter(VisionLanguageAdapter):
@@ -202,7 +203,10 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
             subset_dict['CN'] = unweighted_average_from_subsets(cn_cat_names, subset_dict)
 
             # Compute OVERALL (average of EN and CN)
-            subset_dict['OVERALL'] = unweighted_average_from_subsets(['EN', 'CN'], subset_dict)
+            overall = unweighted_average_from_subsets(['EN', 'CN'], subset_dict)
+            subset_dict['OVERALL'] = overall
+            if overall.num and metric.identity == MetricIdentity(name='accuracy', aggregation='mean'):
+                metric.score = overall.score
 
             # Prepare and append a dummy category to show all computed aggregates
             all_computed = en_cat_names + cn_cat_names + ['EN', 'CN', 'OVERALL']

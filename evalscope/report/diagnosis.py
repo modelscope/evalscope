@@ -96,7 +96,7 @@ def data_fingerprint(run_dir: str, model: str, benchmark: str) -> str:
         digest.update(str(path.relative_to(run_dir)).encode())
         if path.suffix == '.yaml':
             data = yaml_to_dict(str(path)) or {}
-            payload = {key: data.get(key) for key in ('generation_config', 'repeats', 'model_task')}
+            payload = {key: data.get(key) for key in ('datasets', 'repeats')}
             digest.update(json.dumps(payload, sort_keys=True, default=str).encode())
         elif path.suffix == '.json':
             payload = json.loads(path.read_text())
@@ -109,14 +109,35 @@ def data_fingerprint(run_dir: str, model: str, benchmark: str) -> str:
     return digest.hexdigest()
 
 
-def diagnosis_dir(run_dir: str, model: str, benchmark: str) -> Path:
-    """Return the shared location for persisted analysis artifacts."""
-    return Path(run_dir) / 'analysis' / model / benchmark
+def diagnosis_dir(run_dir: str, model: str, benchmark: str, level: str = 'facts') -> Path:
+    """Return the location for a base or model analysis snapshot."""
+    base = Path(run_dir) / 'analysis' / model / benchmark
+    return base / 'diagnose' if level == 'diagnose' else base
 
 
 def load_diagnosis(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optional[DiagnosisReport]]:
     """Read only; never generate diagnostics while serving a report."""
-    target = diagnosis_dir(run_dir, model, benchmark)
+    status, report, _ = load_diagnosis_snapshot(run_dir, model, benchmark)
+    return status, report
+
+
+def load_diagnosis_snapshot(run_dir: str, model: str, benchmark: str) -> Tuple[str, Optional[DiagnosisReport], Path]:
+    """Prefer a current model analysis, with base analysis as the fallback."""
+    base = diagnosis_dir(run_dir, model, benchmark)
+    model_target = diagnosis_dir(run_dir, model, benchmark, 'diagnose')
+    model_status, model_report = read_diagnosis_snapshot(run_dir, model, benchmark, model_target)
+    if model_status == 'ready':
+        return model_status, model_report, model_target
+    base_status, base_report = read_diagnosis_snapshot(run_dir, model, benchmark, base)
+    if base_status == 'ready' or model_status == 'missing':
+        return base_status, base_report, base
+    return model_status, model_report, model_target
+
+
+def read_diagnosis_snapshot(
+    run_dir: str, model: str, benchmark: str, target: Path
+) -> Tuple[str, Optional[DiagnosisReport]]:
+    """Read and validate a snapshot in a specific directory."""
     path = target / 'diagnosis.json'
     if not path.is_file():
         return 'missing', None

@@ -49,3 +49,9 @@ it('keeps low-is-better and unavailable primary scores honest', () => {
   expect(screen.getByText('7%')).toBeInTheDocument()
   expect(screen.getByText('—')).toBeInTheDocument()
 })
+
+it('includes an unscored sample in the dataset count', () => {
+  const report = { ...reports[0], num: 79, execution_summary: { requested: 80 } }
+  render(<LocaleProvider><DatasetNav reports={[report]} active={report.dataset_name} onChange={vi.fn()} /></LocaleProvider>)
+  expect(screen.getByRole('button')).toHaveTextContent('80 samples')
+})

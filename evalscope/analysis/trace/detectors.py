@@ -438,7 +438,7 @@ def detect_termination(ctx: DetectionContext) -> List[Finding]:
     stop_reason = ctx.signals.stop_reason
     if stop_reason in _STOP_REASON_SUBTYPES:
         add(_STOP_REASON_SUBTYPES[stop_reason], Confidence.HIGH, f'stop_reason={stop_reason}')
-    if not (view.final_answer or '').strip() and not view.tool_calls:
+    if not (view.final_answer or '').strip() and not view.tool_calls and not view.has_nontext_output:
         add('empty_answer', Confidence.MEDIUM, 'empty final answer and no tool call')
     status = (view.score_status or 'success').lower()
     if status not in _USABLE_STATUSES:

@@ -9,7 +9,12 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.utils.multi_choices import extract_answer_line, parse_answers, parse_answers_zh
+from evalscope.utils.multi_choices import (
+    MULTI_CHOICE_ANSWER_PARSER_VERSION,
+    extract_answer_line,
+    parse_answers,
+    parse_answers_zh,
+)
 
 CHOICES = ['first', 'second', 'third', 'fourth']
 
@@ -240,7 +245,7 @@ def _parse_in_child_process(contents: list[str]) -> None:
                     sample=Sample(input='question', choices=['a', 'b', 'c', 'd'], target='A'),
                     output=ModelOutput.from_content(model='mock', content=content),
                 )
-                assert parse(state, multiple_correct=True) == {{'A'}}, (parse.__name__, content)
+                assert parse(state, multiple_correct=True) == set(), (parse.__name__, content)
         '''
     )
     completed = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=15)
@@ -248,12 +253,12 @@ def _parse_in_child_process(contents: list[str]) -> None:
 
 
 def test_parse_answers_repeated_labels_with_invalid_suffix() -> None:
-    """Malformed repeated labels return promptly through the existing fallback."""
+    """Malformed repeated labels return promptly without a fallback guess."""
     _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40 + '!]', '答案：' + '[' + 'A ' * 40 + '!]'])
 
 
 def test_parse_answers_repeated_labels_without_closing_bracket() -> None:
-    """Repeated labels without a closing bracket must not stall parsing."""
+    """Repeated labels without a closing bracket must not stall or produce a guess."""
     _parse_in_child_process(['ANSWER: ' + '[' + 'A ' * 40, '答案：' + '[' + 'A ' * 40])
 
 
@@ -471,3 +476,53 @@ def test_bold_answer_key_preserves_literal_asterisks(text: str, expected: str) -
 
 def test_bold_placeholder_does_not_hide_an_earlier_choice() -> None:
     assert parse_answers(_make_state('ANSWER: A\n**Answer**: [LETTER]')) == {'A'}
+
+
+@pytest.mark.parametrize('name', ['a_okvqa', 'ai2d', 'cmmu', 'drivel_multilabel', 'math_vista', 'math_vision', 'mmmu'])
+def test_direct_parser_consumers_declare_scoped_version(name: str) -> None:
+    adapter = get_benchmark(name, TaskConfig(datasets=[name]))
+    assert adapter.answer_parser_version == MULTI_CHOICE_ANSWER_PARSER_VERSION
+
+
+def test_fallback_accepts_single_letter() -> None:
+    """A bare option letter without an ANSWER: marker is an unambiguous choice."""
+    assert parse_answers(_make_state('B')) == {'B'}
+    assert parse_answers(_make_state(' D ')) == {'D'}
+
+
+def test_fallback_rejects_reasoning_text_without_marker() -> None:
+    """Reasoning without an answer marker must not be guessed from option letters."""
+    reasoning = (
+        'Let me analyze this step by step.\n'
+        'Option A represents the first principle.\n'
+        'However, option C contradicts the premise.\n'
+        'Looking at option B, we see it aligns with the theorem.\n'
+        'Therefore, the answer must be D because it captures the essence.\n'
+        'Note that A and C are clearly wrong in this context.'
+    )
+    assert parse_answers(_make_state(reasoning)) == set()
+    # Chinese variant
+    reasoning_zh = (
+        '逐步分析：选项 A 代表第一原理。\n'
+        '然而选项 C 与前提矛盾。\n'
+        '选项 B 符合定理但不完整。\n'
+        '因此答案是 D，因为它完整描述了原理。\n'
+        '注意 A 和 C 显然是错的。'
+    )
+    assert parse_answers_zh(_make_state(reasoning_zh)) == set()
+
+
+def test_fallback_rejects_short_text_without_marker() -> None:
+    """Short prose without an answer marker must not produce a guessed label."""
+    assert parse_answers(_make_state('The answer is D')) == set()
+    assert parse_answers(_make_state('I think C is wrong, so A is the answer')) == set()
+
+
+def test_fallback_rejects_distractor_after_answer() -> None:
+    """A distractor mentioned after the answer must not replace that answer."""
+    reasoning = (
+        'After analysis, the answer is B.\n'
+        'Note: Option D is also worth considering but ultimately wrong.\n'
+        'The key distinction is that C applies only in edge cases.'
+    )
+    assert parse_answers(_make_state(reasoning)) == set()

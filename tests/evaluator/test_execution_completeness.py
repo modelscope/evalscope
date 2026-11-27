@@ -4,6 +4,7 @@ from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.model import ModelOutput
+from evalscope.constants import ScoreStatus
 from evalscope.evaluator.evaluator import DefaultEvaluator, _PoolContext, _WorkItem
 from evalscope.evaluator.execution_tracker import ExecutionTracker
 from evalscope.evaluator.perf_collector import PerfCollector
@@ -41,6 +42,19 @@ def test_execution_summary_marks_all_success_complete() -> None:
 
     assert not summary.incomplete
     assert summary.errored == 0
+
+
+def test_execution_summary_counts_unusable_review_and_ignored_error_once() -> None:
+    tracker = ExecutionTracker()
+    tracker.record_error('test')
+    excluded = SampleScore(sample_id=1, score=Score(status=ScoreStatus.EXCLUDED))
+    degraded = SampleScore(sample_id=2, score=Score(status=ScoreStatus.DEGRADED, value={'acc': 0.0}))
+
+    summary = tracker.summarize({'test': [object()] * 4}, {'test': [_sample_score(0), excluded, degraded]})
+
+    assert summary.succeeded == 2
+    assert summary.errored == 2
+    assert summary.incomplete
 
 
 def test_pool_records_all_ignored_failures() -> None:

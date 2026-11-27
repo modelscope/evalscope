@@ -1,38 +1,38 @@
 # SWE-bench_Verified_Agentic
 
-
 ## 概述
 
-SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-mode）评估，后者是从 SWE-bench 中人工验证筛选出的 500 个样本子集。与提供 oracle 文件上下文的单轮变体不同，模型必须在每个实例专属的 Docker 容器内，通过多轮代理循环自主探索代码仓库、执行 shell 命令、编辑源文件，并最终提交补丁。
+SWE-bench Verified Agentic 是 SWE-bench Verified 的 agentic-mode 评估，后者是从 SWE-bench 中经过人工验证的 500 个样本子集。与 oracle single-turn 变体不同，模型必须在每个实例专属的 Docker 容器内，通过多轮 agent loop 自主探索代码仓库、运行 shell 命令、编辑源文件并提交补丁。
 
 ## 任务描述
 
-- **任务类型**：自动化软件工程 / 缺陷修复（代理模式）
+- **任务类型**：自动化软件工程 / Bug 修复（智能体式）
 - **输入**：GitHub issue 描述（无 oracle 文件上下文）
-- **输出**：自主编辑后通过 `git diff` 收集的代码补丁（diff 格式）
-- **涉及仓库**：12 个流行的 Python 项目（如 Django、Flask、Requests 等）
+- **输出**：从 `git diff` 中收集的代码补丁（diff 格式），该补丁是在自主编辑后生成的
+- **代码仓库**：12 个流行的 Python 项目（Django、Flask、Requests 等）
 
-## 主要特性
+## 主要特点
 
-- 包含 500 个人工验证的 Issue-Pull Request 对
-- 支持多轮代理循环（兼容 mini-swe-agent 的 `swebench.yaml` 配置）
-- 每个实例使用独立的 SWE-bench Docker 容器作为执行沙箱
-- 基于哨兵（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
-- 同时支持函数调用（`toolcall`）和基于文本（`backticks`）的动作协议
+- 500 个经人工验证的 Issue-Pull Request 配对
+- 多轮代理循环（兼容 mini-swe-agent `swebench.yaml`）
+- 每个实例使用 SWE-bench Docker 容器作为执行沙箱
+- 基于哨兵标记的补丁提交协议 (`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`)
+- 支持函数调用 (`toolcall`) 和基于文本 (`backticks`) 的动作协议
 
 ## 评估说明
 
-- 评估前需安装 `pip install swebench==4.1.0`
-- 每个仓库的 Docker 镜像会自动构建或拉取
+- 通过 `TaskConfig.sandbox.engine='e2b'` 支持官方 E2B 和阿里云 Agent Sandbox，避免使用本地 Docker 和本地镜像下载。请参阅[沙箱指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html#e2b)。
+- 在评估前需要执行 `pip install swebench==4.1.0`
+- 为每个代码仓库自动构建/拉取 Docker 镜像
 - 每个实例的最终补丁验证超时时间为 1800 秒（30 分钟）
-- 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 支持本地构建镜像和远程拉取镜像两种方式
+- 详细设置说明请参阅[使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
+- 同时支持本地镜像构建和远程镜像拉取
 
-## 代理模式
+## Agentic 模式
 
-该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+该基准测试在针对每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（镜像 mini-swe-agent 的 `swebench.yaml`）。模型发出 `bash` 命令以探索 `/testbed`、编辑源文件，并最终通过打印哨兵标记 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，并包含一个单一的 `bash` 工具。不支持函数调用的模型可以通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks`；该策略期望每轮对话中包含一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -46,14 +46,13 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
-
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 500 |
-| 提示词长度（平均） | 1699.73 字符 |
-| 提示词长度（最小/最大） | 143 / 24770 字符 |
+| 提示词长度（平均值） | 1699.73 字符 |
+| 提示词长度（最小/最大值） | 143 / 24770 字符 |
 
 ## 样例示例
 
@@ -63,7 +62,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 {
   "input": [
     {
-      "id": "360d65af",
+      "id": "be67f750",
       "content": "Modeling's `separability_matrix` does not compute separability correctly for nested CompoundModels\nConsider the following model:\r\n\r\n```python\r\nfrom astropy.modeling import models as m\r\nfrom astropy.modeling.separable import separability_matri ... [TRUNCATED 762 chars] ...       [ True,  True, False, False],\r\n       [False, False,  True,  True],\r\n       [False, False,  True,  True]])\r\n```\r\nSuddenly the inputs and outputs are no longer separable?\r\n\r\nThis feels like a bug to me, but I might be missing something?\n"
     }
   ],
@@ -124,9 +123,11 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 }
 ```
 
+*注：为便于显示，部分内容已截断。*
+
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 {question}
 ```
@@ -136,9 +137,9 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
-| `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。可选项：['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
+| `pull_remote_images_if_available` | `bool` | `True` | 在构建之前尝试拉取现有的远程 Docker 镜像。 |
+| `force_arch` | `str` | `` | 可选地强制指定用于镜像构建/拉取的架构。选项：['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 

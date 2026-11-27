@@ -1,0 +1,18 @@
+name: PR Intake
+run-name: PR Intake (${{ github.event.action }})
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, edited, labeled]
+
+permissions: {}
+
+jobs:
+  signal:
+    if: >-
+      github.event.action != 'labeled' ||
+      contains(fromJSON('["needs-info","accepted","ready-for-review"]'), github.event.label.name)
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'true'

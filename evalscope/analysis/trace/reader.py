@@ -102,6 +102,16 @@ def _numeric_scores(value: Dict[str, Any]) -> Dict[str, float]:
     return {key: float(item) for key, item in (value or {}).items() if isinstance(item, (bool, int, float))}
 
 
+def has_nontext_output(record: ReviewResult) -> bool:
+    """Media and structured outputs are not eligible for text-only generation checks."""
+    return any(
+        part.type not in ('text', 'reasoning')
+        for message in record.messages
+        if message.role == 'assistant' and isinstance(message.content, list)
+        for part in message.content
+    )
+
+
 def _message_text(message: Any) -> str:
     """Visible text only; ``ChatMessage.text`` already skips reasoning parts."""
     try:
@@ -172,7 +182,6 @@ def _merge_trace(trace: AgentTrace, view: TraceView) -> None:
             call = by_id.get(call_id) if call_id else None
             if call is None:
                 continue
-            call.latency_ms = event.latency_ms
             call.result_event_index = event_index
             if call.result_text is None and isinstance(payload.get('preview'), str):
                 call.result_text = payload['preview']
@@ -195,6 +204,7 @@ def build_view(record: ReviewResult, ref: SampleRef) -> TraceView:
     score = record.sample_score.score
     view = TraceView(
         ref=ref,
+        has_nontext_output=has_nontext_output(record),
         score_value=_numeric_scores(score.value),
         main_score_name=score.main_score_name,
         score_status=getattr(score.status, 'value', str(score.status)),

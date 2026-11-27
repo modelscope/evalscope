@@ -10,6 +10,7 @@ from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.sla.sla_run import (
     SLAResult,
     check_sla,
+    format_run_statistics,
     format_sla_tables,
     get_metric_values,
     parse_sla_params,
@@ -79,6 +80,38 @@ def test_one_missing_run_fails_the_pressure_point_and_keeps_exact_counts() -> No
     assert 'run 3: missing or non-finite p99_ttft' in probe.reasons
     assert result.selections[0].selected_value is None
     assert '11/12' in format_sla_tables(result)
+
+
+@pytest.mark.parametrize(('runs', 'warning_count'), [(1, 1), (2, 1), (3, 1), (5, 0)])
+def test_repeated_run_warning_and_statistics_table(runs: int, warning_count: int) -> None:
+    with patch('evalscope.perf.sla.sla_run.logger.warning') as warn:
+        result = _tune({1: _result(0.01), 2: _result(0.02)}, [{'avg_latency': '<=30ms'}], runs=runs)
+
+    assert len(result.probes) == 2
+    warnings = [call.args[0] for call in warn.call_args_list if '--sla-num-runs=' in call.args[0]]
+    assert len(warnings) == warning_count
+    assert all(f'--sla-num-runs={runs}' in message and '95%' not in message for message in warnings)
+
+    table = format_run_statistics(result)
+    assert bool(table) == (runs >= 2)
+    if runs >= 2:
+        rows = [line.split('|')[1:-1] for line in table.splitlines()[2:]]
+        assert len(rows) == 2
+        assert all('±' in row[2] for row in rows)
+        assert all(row[3].strip() == '-' if runs == 2 else row[3].strip().startswith('[') for row in rows)
+
+
+def test_failed_requests_exclude_only_that_pressure_from_run_statistics() -> None:
+    attempts = iter((_result(0.02), _result(0.02, succeeded=3), _result(0.02)))
+    result = _tune({1: _result(0.01), 2: lambda: next(attempts)}, [{'avg_latency': '<=30ms'}], runs=3)
+
+    eligible, failed = result.probes
+    assert eligible.statistics['avg_latency'].n == 3
+    assert not failed.request_gate_passed
+    assert not failed.statistics
+    assert result.selections[0].selected_value == 1
+    assert '11/12' in format_sla_tables(result)
+    assert len(format_run_statistics(result).splitlines()) == 3
 
 
 @pytest.mark.parametrize('criterion', [{'tps': 'max'}, {'avg_latency': '<=1s'}])

@@ -1,4 +1,4 @@
-import { apiDeleteValidated, apiValidated } from './client'
+import { apiDeleteValidated, apiPostValidated, apiValidated } from './client'
 import type {
   AnalysisResponse,
   DataFrameResponse,
@@ -10,6 +10,7 @@ import type {
   DiagnosisResponse,
   SampleDiagnosesResponse,
 } from './types'
+import type { DiagnosisRunRequest } from './generated/contracts'
 import { parseReportRef } from '@/domain/report/reportRef'
 
 const BASE = '/api/v1/reports'
@@ -149,6 +150,12 @@ export async function getAnalysis(
 export async function getDiagnosis(rootPath: string, ref: string, dataset: string, signal?: AbortSignal): Promise<DiagnosisResponse> {
   return apiValidated<DiagnosisResponse>(`${reportPath(ref)}/diagnosis`, {
     params: { root_path: rootPath, dataset_name: dataset }, signal,
+  })
+}
+
+export function runDiagnosis(rootPath: string, ref: string, dataset: string, options: DiagnosisRunRequest): Promise<DiagnosisResponse> {
+  return apiPostValidated<DiagnosisResponse>(`${reportPath(ref)}/diagnosis`, options, {
+    params: { root_path: rootPath, dataset_name: dataset },
   })
 }
 

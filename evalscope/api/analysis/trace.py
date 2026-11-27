@@ -43,8 +43,6 @@ class FindingCategory(str, Enum):
     TOOL_FAILURE = 'tool_failure'
     REPETITION = 'repetition'
     TERMINATION = 'termination'
-    OUTCOME = 'outcome'
-    """A benchmark-reported failure without a specific trace-level explanation."""
     SIDE_EFFECT = 'side_effect'
     """Informational: a side-effect tool call happened."""
 
@@ -99,7 +97,6 @@ class TraceToolCall(BaseModel):
 
     error_message: Optional[str] = None
     error_source: Optional[Literal['structured', 'text_pattern', 'provider']] = None
-    latency_ms: Optional[float] = None
 
 
 class LoopEvent(BaseModel):
@@ -136,6 +133,7 @@ class TraceView(BaseModel):
     """Visible assistant text per assistant message; reasoning parts are excluded."""
 
     final_answer: Optional[str] = None
+    has_nontext_output: bool = False
     score_value: Dict[str, float] = Field(default_factory=dict)
     main_score_name: Optional[str] = None
     score_status: str = 'success'

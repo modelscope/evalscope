@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import re
-import traceback
 import uuid
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from copy import copy, deepcopy
 from pathlib import Path
+from sys import platform
 from typing import Any, Dict, Iterator, List, Tuple
 
 from tqdm import tqdm
@@ -20,14 +20,7 @@ from evalscope.api.messages.chat_message import (
     ChatMessageUser,
 )
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.report import (
-    Category,
-    Report,
-    Subset,
-    percentage_weighted_average_from_subsets,
-    unweighted_average_from_subsets,
-    weighted_average_from_subsets,
-)
+from evalscope.report import Category, Report, Subset
 
 # ----------------------------
 # Public constants (extracted)
@@ -100,7 +93,7 @@ def _isolated_execution(entry: Dict[str, Any], *, evaluation: bool) -> Iterator[
     # The pinned harness caches all involved classes, including stateless ones,
     # under these exact names. Never clear another invocation's live instances.
     keys = [
-        re.sub(r'[-./]', '_', f'{model_name}_{entry["id"]}_{class_name}_instance')
+        re.sub(r'[-./:]', '_', f'{model_name}_{entry["id"]}_{class_name}_instance')
         for model_name in model_names
         for class_name in entry.get('involved_classes', [])
     ]
@@ -109,6 +102,21 @@ def _isolated_execution(entry: Dict[str, Any], *, evaluation: bool) -> Iterator[
     finally:
         for key in keys:
             vars(multi_turn_utils).pop(key, None)
+
+
+@contextmanager
+def _limit_vector_search_threads() -> Iterator[None]:
+    # Load the encoder before FAISS, as required by the upstream memory module.
+    from bfcl_eval.eval_checker.multi_turn_eval.func_source_code.memory_vector import faiss
+
+    # The PyTorch and FAISS wheels on macOS can load separate OpenMP runtimes.
+    # Keep FAISS single-threaded for this rollout without limiting the API call pool.
+    previous = faiss.omp_get_max_threads()
+    faiss.omp_set_num_threads(1)
+    try:
+        yield
+    finally:
+        faiss.omp_set_num_threads(previous)
 
 
 def run_isolated_inference(
@@ -128,7 +136,12 @@ def run_isolated_inference(
     # Only the backend instance name changes. The API model/client, registry and
     # memory snapshot paths retain their original identity on this shallow copy.
     isolated_handler = copy(handler)
-    with _isolated_execution(entry, evaluation=False) as namespace:
+    vector_search = (
+        _limit_vector_search_threads()
+        if (platform == 'darwin' and entry['id'].startswith('memory_vector_'))
+        else nullcontext()
+    )
+    with vector_search, _isolated_execution(entry, evaluation=False) as namespace:
         isolated_handler.model_name_underline_replaced = namespace
         return isolated_handler.inference(
             entry, include_input_log=include_input_log, exclude_state_log=exclude_state_log
@@ -144,9 +157,8 @@ def patch_openai_completions_handler_empty_tool_calls(handler_cls: type[Any]) ->
     ``tool_calls: []`` instead of omitting/nulling it for text-only completions, so the
     list comprehension over an empty list succeeds and silently produces
     ``model_responses == []``, discarding the model's real final answer. This has been
-    reported and fixed upstream (ShishirPatil/gorilla#1316, #1351) but is not yet
-    included in the ``bfcl-eval`` version this package pins, so we patch the method on
-    the handler class here.
+    reported upstream (ShishirPatil/gorilla#1316, #1351) and still occurs in
+    bfcl-eval 2026.3.23.
     """
 
     def _parse_query_response_FC(self, api_response):
@@ -254,94 +266,101 @@ def run_prereq_inference(
     model_result_dir: Path,
     batch_size: int,
     logger: Any,
-) -> None:
+) -> set[Tuple[str, str]]:
     """
     Run prerequisite inferences for memory snapshot creation if results are missing.
     Optimized to run different (backend, scenario) groups in parallel while preserving in-group order.
+    Return groups whose prerequisite chain could not complete.
     """
-    import re
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     from bfcl_eval.utils import get_directory_structure_by_id
 
     if not prereq_entries:
-        return
+        return set()
 
-    def _parse_backend_scenario_idx(entry_id: str) -> Tuple[str, str, int]:
-        """
-        Extract backend, scenario, and scenario index from an entry id.
-        Expected format:
-          memory_{backend}_prereq_{total_index}-{scenario}-{scenario_index}
-        Returns ('unknown', 'unknown', 0) on failure.
-        """
-        backend = 'unknown'
-        scenario = 'unknown'
-        idx = 0
-
-        m_backend = re.search(r'^memory_(?P<backend>.+?)_prereq_', entry_id)
-        if m_backend:
-            backend = m_backend.group('backend')
-
-        m_tail = re.search(r'-(?P<scenario>[a-zA-Z_]+)-(?P<idx>\d+)$', entry_id)
-        if m_tail:
-            scenario = m_tail.group('scenario')
-            idx = int(m_tail.group('idx'))
-
-        return backend, scenario, idx
-
-    # Group entries by (backend, scenario)
-    groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+    groups: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
     for entry in prereq_entries:
-        backend, scenario, idx = _parse_backend_scenario_idx(entry['id'])
-        entry['_group_backend'] = backend
-        entry['_group_scenario'] = scenario
-        entry['_scenario_idx'] = idx
-        groups.setdefault((backend, scenario), []).append(entry)
+        prefix, scenario, _ = entry['id'].rsplit('-', 2)
+        backend = prefix.removeprefix('memory_').split('_prereq_', 1)[0]
+        groups[backend, scenario].append(entry)
 
-    # Sort entries within each group by scenario index to keep order
-    for group_entries in groups.values():
-        group_entries.sort(key=lambda e: e.get('_scenario_idx', 0))
-
-    # Worker to process a single (backend, scenario) group sequentially
-    def _process_group_entries(group_entries: List[Dict[str, Any]], progress: Any) -> None:
-        for entry in group_entries:
+    def _process_group(backend: str, scenario: str, entries: List[Dict[str, Any]], progress: Any) -> bool:
+        entries.sort(key=lambda entry: int(entry['id'].rsplit('-', 1)[1]))
+        folder = model_result_dir / get_directory_structure_by_id(entries[0]['id']) / 'memory_snapshot'
+        snapshot_path = folder / f'{scenario}_final.json'
+        checkpoints = folder / 'prereq_checkpoints'
+        resume = _memory_resume_index(snapshot_path, checkpoints, backend, entries)
+        progress.update(resume)
+        for entry in entries[resume:]:
             try:
-                memory_snapshot_folder = (
-                    model_result_dir
-                    / get_directory_structure_by_id(entry['id'])
-                    / 'memory_snapshot'
-                    / 'prereq_checkpoints'
-                )
-                existing_filenames = {f.name for f in memory_snapshot_folder.rglob('*.json')}
-                if (entry['id'] + '.json') in existing_filenames:
-                    logger.info(f'Skipping prereq inference for entry ID {entry["id"]} as result already exists.')
-                else:
-                    run_isolated_inference(handler, entry, include_input_log=False, exclude_state_log=False)
-            except Exception as e:
-                logger.error(f'Error during prereq inference for entry ID {entry.get("id")}: {e}')
-                logger.error(traceback.format_exc())
+                run_isolated_inference(handler, entry, include_input_log=False, exclude_state_log=False)
+            except Exception:
+                logger.exception(f'BFCL memory prerequisite {entry["id"]} failed. Later entries depend on this step.')
+                return False
             finally:
-                # tqdm is thread-safe; each worker updates shared progress bar
                 progress.update(1)
+
+        try:
+            has_content = _memory_snapshot_has_content(snapshot_path.read_bytes(), backend)
+        except FileNotFoundError:
+            logger.warning(f'BFCL memory {backend}/{scenario} has no final snapshot at {snapshot_path}.')
+            return False
+        except (OSError, ValueError) as exc:
+            logger.warning(f'BFCL memory {backend}/{scenario} has an unreadable snapshot at {snapshot_path}: {exc}')
+            return False
+        if not has_content:
+            logger.warning(
+                f'BFCL memory {backend}/{scenario} has an empty snapshot at {snapshot_path}. '
+                'Check whether the model called the memory write tools and whether those calls succeeded.'
+            )
+        return True
 
     # Run each (backend, scenario) group in parallel; preserve in-group order
     total = len(prereq_entries)
     with tqdm(total=total, desc='Running prereq inferences for memory snapshots...') as progress:
         max_workers = min(batch_size, len(groups))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(_process_group_entries, group_entries, progress) for group_entries in groups.values()
-            ]
-            for _ in as_completed(futures):
-                # Errors are logged within workers
-                pass
+            futures = {
+                executor.submit(_process_group, backend, scenario, entries, progress): (backend, scenario)
+                for (backend, scenario), entries in groups.items()
+            }
+            return {futures[future] for future in as_completed(futures) if not future.result()}
 
-    # Cleanup temp keys
-    for group_entries in groups.values():
-        for entry in group_entries:
-            entry.pop('_group_backend', None)
-            entry.pop('_group_scenario', None)
-            entry.pop('_scenario_idx', None)
+
+def _memory_snapshot_has_content(data: bytes, backend: str) -> bool:
+    snapshot = json.loads(data)
+    if not isinstance(snapshot, dict):
+        raise ValueError('snapshot must be a JSON object')
+    if backend == 'rec_sum':
+        memory = snapshot.get('memory')
+        if not isinstance(memory, str):
+            raise ValueError('memory must be a string')
+        return bool(memory.strip())
+
+    stores = [snapshot.get(key) for key in ('core_memory', 'archival_memory')]
+    if backend == 'vector':
+        if not all(isinstance(store, dict) and isinstance(store.get('next_id'), int) for store in stores):
+            raise ValueError('vector memory must contain its next entry ID')
+        stores = [store.get('store') for store in stores]
+    if not all(isinstance(store, dict) for store in stores):
+        raise ValueError('core and archival memory stores must be JSON objects')
+    return any(stores)
+
+
+def _memory_resume_index(snapshot_path: Path, checkpoints: Path, backend: str, entries: List[Dict[str, Any]]) -> int:
+    """Resume only from a checkpoint matching the final snapshot used by BFCL."""
+    resume = 0
+    try:
+        snapshot = snapshot_path.read_bytes()
+        _memory_snapshot_has_content(snapshot, backend)
+        for index, entry in enumerate(entries, start=1):
+            if (checkpoints / f'{entry["id"]}.json').read_bytes() == snapshot:
+                resume = index
+    except (OSError, ValueError):
+        # A gap ends the usable prefix. A bad final snapshot requires a fresh start.
+        pass
+    return resume
 
 
 # ----------------------------
@@ -520,7 +539,7 @@ def compute_entry_result(
             index=index,
             model_result_list=model_result,
             possible_answer_item=ground_truth,
-            prompt_entry=prompt_entry,
+            prompt_entry=prompt_entry.copy(),
             model_name=model_name,
             test_category=test_category,
         )
@@ -555,71 +574,87 @@ def compute_entry_result(
 
 
 def compute_aggregate_subsets(report: Report) -> None:
-    """
-    Compute aggregated subsets and overall score for BFCL report.
-    Modifies the report in-place.
-    """
+    """Aggregate BFCL scores with the official treatment of unevaluated categories."""
+    from bfcl_eval.eval_checker.eval_runner_helper import (
+        calculate_percentage_weighted_accuracy,
+        calculate_unweighted_accuracy,
+        calculate_weighted_accuracy,
+        get_category_score,
+    )
+
     for metric in report.metrics:
-        # Collect all subsets in a dictionary for easy access
         subset_dict: Dict[str, Subset] = {}
         for category in metric.categories:
             for subset in category.subsets:
                 subset_dict[subset.name] = subset
 
-        # Step 1: simple_ast
+        official_scores = {
+            subset.name: {
+                'accuracy': subset.score,
+                'total_count': subset.num,
+                'display_accuracy': subset.score,
+            }
+            for subset in subset_dict.values()
+            if subset.num > 0
+        }
+
+        def category_score(name: str) -> dict:
+            if name in official_scores:
+                return official_scores[name]
+            return get_category_score(official_scores, name)
+
+        def add_aggregate(name: str, sources: list[str], result: dict) -> None:
+            official_scores[name] = result
+            # Official counts include unevaluated entries; Report.num remains the actual evaluated count.
+            evaluated_num = sum(subset_dict[source].num for source in sources if source in subset_dict)
+            subset_dict[name] = Subset(name=name, score=result['accuracy'], num=evaluated_num)
+
         simple_subsets = ['simple_python', 'simple_java', 'simple_javascript']
-        simple_ast = unweighted_average_from_subsets(simple_subsets, subset_dict)
-        subset_dict['simple_ast'] = simple_ast
+        simple_ast = calculate_unweighted_accuracy([category_score(name) for name in simple_subsets])
+        add_aggregate('simple_ast', simple_subsets, simple_ast)
 
-        # Step 2.1: non_live (simple_ast, multiple, parallel, parallel_multiple)
         non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
-        non_live = unweighted_average_from_subsets(non_live_subsets, subset_dict)
-        subset_dict['non_live'] = non_live
+        non_live = calculate_unweighted_accuracy([category_score(name) for name in non_live_subsets])
+        add_aggregate('non_live', non_live_subsets, non_live)
 
-        # Step 2.2: live (weighted)
         live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
-        live = weighted_average_from_subsets(live_subsets, subset_dict)
-        subset_dict['live'] = live
+        live = calculate_weighted_accuracy([category_score(name) for name in live_subsets])
+        add_aggregate('live', live_subsets, live)
 
-        # Step 2.3: hallucination (unweighted)
         hallucination_subsets = ['live_irrelevance', 'irrelevance']
-        hallucination = unweighted_average_from_subsets(hallucination_subsets, subset_dict)
-        subset_dict['hallucination'] = hallucination
+        hallucination = calculate_unweighted_accuracy([category_score(name) for name in hallucination_subsets])
+        add_aggregate('hallucination', hallucination_subsets, hallucination)
 
-        # Step 2.4: multi_turn (unweighted)
         multi_turn_subsets = [
             'multi_turn_base',
             'multi_turn_miss_func',
             'multi_turn_miss_param',
             'multi_turn_long_context',
         ]
-        multi_turn = unweighted_average_from_subsets(multi_turn_subsets, subset_dict)
-        subset_dict['multi_turn'] = multi_turn
+        multi_turn = calculate_unweighted_accuracy([category_score(name) for name in multi_turn_subsets])
+        add_aggregate('multi_turn', multi_turn_subsets, multi_turn)
 
-        # Step 2.5: web_search (unweighted)
         web_search_subsets = ['web_search_base', 'web_search_no_snippet']
-        web_search = unweighted_average_from_subsets(web_search_subsets, subset_dict)
-        subset_dict['web_search'] = web_search
+        web_search = calculate_unweighted_accuracy([category_score(name) for name in web_search_subsets])
+        add_aggregate('web_search', web_search_subsets, web_search)
 
-        # Step 2.6: memory (unweighted)
         memory_subsets = ['memory_kv', 'memory_vector', 'memory_rec_sum']
-        memory = unweighted_average_from_subsets(memory_subsets, subset_dict)
-        subset_dict['memory'] = memory
+        memory = calculate_unweighted_accuracy([category_score(name) for name in memory_subsets])
+        add_aggregate('memory', memory_subsets, memory)
 
-        # Step 2.7: agentic (unweighted)
         agentic_subsets = ['web_search', 'memory']
-        agentic = unweighted_average_from_subsets(agentic_subsets, subset_dict)
-        subset_dict['agentic'] = agentic
+        agentic = calculate_unweighted_accuracy([category_score(name) for name in agentic_subsets])
+        add_aggregate('agentic', agentic_subsets, agentic)
 
-        # Step 4: overall (percentage weighted average)
         overall_subsets = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination']
-        overall = percentage_weighted_average_from_subsets(overall_subsets, subset_dict, weights=[40, 30, 10, 10, 10])
-        subset_dict['overall'] = overall
+        overall = calculate_percentage_weighted_accuracy(
+            [category_score(name) for name in overall_subsets],
+            [40, 30, 10, 10, 10],
+            display_na_if_category_missing=False,
+        )
+        add_aggregate('overall', overall_subsets, overall)
 
-        # Add computed scores to the category
         computed_subset_names = ['agentic', 'multi_turn', 'non_live', 'live', 'hallucination', 'overall']
-
-        # Add the computed scores as new subsets in the metric
         dummy_subsets: List[Subset] = []
         for subset_name in computed_subset_names:
             if subset_name in subset_dict and subset_dict[subset_name].num > 0:

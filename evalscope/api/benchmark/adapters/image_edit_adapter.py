@@ -42,9 +42,11 @@ class ImageEditAdapter(Text2ImageAdapter):
             image_path = record[self.image_key]
             if not os.path.isabs(image_path):
                 image_path = os.path.join(os.path.dirname(self.local_file), image_path)
-            if not os.path.exists(image_path):
+            image_path = os.path.abspath(image_path)
+            if not os.path.isfile(image_path):
                 raise FileNotFoundError(f"Image file '{image_path}' not found.")
 
+            record[self.image_key] = image_path
             data_dict[record[self.id_key]] = record
         return data_dict
 
@@ -74,10 +76,10 @@ class ImageEditAdapter(Text2ImageAdapter):
         If local file is not available, all samples are considered valid.
         Otherwise, only samples with valid metadata and image path are kept.
         """
-        if not self.local_data:
+        if self.local_data is None:
             return True
         else:
             sample_id = sample.metadata.get(FileConstants.ID)
-            if (not sample_id) or (not self.get_image_path_from_id(sample_id)):
+            if sample_id is None or sample_id == '' or not self.get_image_path_from_id(sample_id):
                 return False
             return True

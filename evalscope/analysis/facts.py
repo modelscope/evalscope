@@ -10,7 +10,8 @@ from evalscope.api.analysis.trace import FindingCategory
 from evalscope.constants import DEFAULT_LANGUAGE
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 
-from .inputs import BenchmarkInput, SampleInput, has_nontext_output, is_choice_letter, unsupported_content
+from .inputs import BenchmarkInput, SampleInput, is_choice_letter, unsupported_content
+from .trace.reader import has_nontext_output
 
 USABLE = {'success', 'fallback', 'degraded'}
 
@@ -20,6 +21,7 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
     zh = config.language == 'zh' or (config.language == 'auto' and DEFAULT_LANGUAGE == 'zh')
     facts = []
     samples = inputs.samples
+    report = inputs.report
     nontext = sum(has_nontext_output(s.record) for s in samples)
     if nontext:
         coverage.skipped_facts['nontext-output'] = (
@@ -129,15 +131,22 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
     )
     if coverage.errored_without_record:
         coverage.skipped_facts['execution-errors'] = 'Execution error reasons were not persisted in review records.'
+    metric = next((m for m in report.metrics if m.identity == report.primary_metric_identity), None) if report else None
     values = defaultdict(list)
+    score_examples = []
+    primary_name = metric.identity.name if metric else None
+    direction = metric.semantics.direction.value if metric else 'none'
     for s in samples:
         if s.case.score_status in USABLE:
             for name, value in s.case.score_value.items():
                 if math.isfinite(value):
                     values[name].append(value)
+                    if name == primary_name and direction != 'none' and s.case.outcome.task_success is None:
+                        score_examples.append((-value if direction == 'lower_is_better' else value, s))
     if values:
         distributions = []
-        for name, items in sorted(values.items()):
+        for name in sorted(values, key=lambda name: (name != primary_name, name)):
+            items = values[name]
             low, high = min(items), max(items)
             bins = Counter(min(9, int((v - low) / (high - low) * 10)) if high > low else 0 for v in items)
             distributions.append(
@@ -155,6 +164,12 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
             'generic',
             ('样本评分分布', 'Sample score distributions'),
             ('各指标仅包含有效评分；不同指标不混算。', 'Usable scores by metric; different metrics are never pooled.'),
+            examples=[
+                sample
+                for _, sample in sorted(
+                    score_examples, key=lambda item: (item[0], item[1].key.subset, item[1].key.index)
+                )[: config.max_examples]
+            ],
             data={'metrics': distributions},
         )
     else:
@@ -174,7 +189,6 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
             safety,
         )
 
-    report = inputs.report
     if report and report.judge_summary:
         judge = report.judge_summary
         add(
@@ -214,7 +228,6 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
         )
     else:
         coverage.skipped_facts['F-perf'] = 'No performance metrics in the source report.'
-    metric = next((m for m in report.metrics if m.identity == report.primary_metric_identity), None) if report else None
     if metric:
         overall = bounded_quality_ratio(metric.score, metric.semantics)
         weak = []
@@ -286,28 +299,18 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
         ],
         extraction,
     )
-    exact = [s for s in generation if s.stop_reason and s.stop_reason != 'unknown']
-    exact_ids = {(s.key.subset, s.key.index) for s in exact}
-    inferred = [
-        s
-        for s in generation
-        if (s.key.subset, s.key.index) not in exact_ids and s.output_tokens is not None and inputs.max_tokens
-    ]
-    truncated = [s for s in exact if s.stop_reason in ('length', 'max_tokens', 'model_length')]
-    truncated += [s for s in inferred if s.output_tokens >= inputs.max_tokens - 5]
+    recorded_endings = [s for s in generation if s.stop_reason and s.stop_reason != 'unknown']
     rate(
         'F-truncation',
         'generation',
-        ('输出截断', 'Output truncation'),
+        ('达到输出上限', 'Output limit reached'),
         (
-            '优先使用 predictions 的 stop_reason；缺失时才用 token 上限近似，近似不等于确认截断。',
-            'Prediction stop_reason first; token-budget proximity only when absent, as a heuristic.',
+            '仅统计有结束原因的文本样本；达到上限也可能已给出答案。',
+            'Text samples with a recorded ending only. The answer may already be present when the limit is reached.',
         ),
-        truncated,
-        exact + inferred,
+        [s for s in recorded_endings if s.stop_reason in ('length', 'max_tokens', 'model_length')],
+        recorded_endings,
     )
-    if facts and facts[-1].id == 'F-truncation':
-        facts[-1].data = {'exact_denominator': len(exact), 'heuristic_denominator': len(inferred)}
     rate(
         'F-refusal',
         'generation',

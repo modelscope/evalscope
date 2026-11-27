@@ -13,6 +13,7 @@ from evalscope.perf.utils.db_util import average_results
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
+from evalscope.perf.utils.statistics import summarize_runs
 from evalscope.utils.logger import get_logger
 
 from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion, format_sla_operand
@@ -46,6 +47,7 @@ _PERCENTILE_METRICS = {
     'p50_tpot': ('50%', PercentileMetrics.TPOT, 'tpot'),
 }
 _EMBEDDING_RERANK_METRICS = {'avg_latency', 'p99_latency', 'rps'}
+_RECOMMENDED_MIN_RUNS = 5
 _COUNT_FIELDS = (
     Metrics.TOTAL_REQUESTS,
     Metrics.SUCCEED_REQUESTS,
@@ -234,6 +236,11 @@ class SLAAutoTuner:
         logger.info(f'Starting SLA Auto-tune for {self.sla_variable}')
         logger.info(f'SLA Range: [{self.lower_bound}, {self.upper_bound}]')
         logger.info(f'SLA Params: {self.args.sla_params}')
+        if self.args.sla_num_runs < _RECOMMENDED_MIN_RUNS:
+            logger.warning(
+                f'--sla-num-runs={self.args.sla_num_runs} gives limited information about run-to-run variability. '
+                f'For a more informative summary, use at least {_RECOMMENDED_MIN_RUNS} runs per pressure point.'
+            )
 
         # sla_params is a list of criterion groups. Each group is evaluated independently:
         # - Within one group (dict): ALL metrics must pass → AND logic.
@@ -374,6 +381,13 @@ class SLAAutoTuner:
             for metric in self.metric_names
             if all(metric in values for values in run_values)
         }
+        # Summarize metrics present in every run at pressure points that pass the request gate.
+        statistics = {}
+        if request_gate_passed:
+            for metric in metric_values:
+                summary = summarize_runs([values[metric] for values in run_values])
+                if summary is not None:
+                    statistics[metric] = summary
         probe = SLAProbe(
             value=val,
             averaged_result=avg_result,
@@ -384,6 +398,7 @@ class SLAAutoTuner:
             valid=not reasons,
             reasons=reasons,
             metric_values=metric_values,
+            statistics=statistics,
         )
         self.results_cache[val] = probe
         return probe
@@ -680,6 +695,35 @@ class SLAAutoTuner:
         logger.info(f'SLA summary saved to: {json_path}')
 
 
+def format_run_statistics(result: SLAResult, tablefmt: str = 'pipe') -> str:
+    """Render per-metric run statistics for pressure points that passed the request gate.
+
+    Only metrics measured in at least two runs are shown; with a single run per
+    level there is nothing to summarize and the section stays empty.
+    """
+    rows = []
+    for probe in result.probes:
+        for metric, stats in sorted(probe.statistics.items()):
+            if stats.std is None:
+                continue
+            rows.append(
+                [
+                    probe.value,
+                    metric,
+                    f'{stats.mean:.4g} ± {stats.std:.4g}',
+                    f'[{stats.ci_low:.4g}, {stats.ci_high:.4g}]' if stats.ci_low is not None else '-',
+                    stats.n,
+                ]
+            )
+    if not rows:
+        return ''
+    return tabulate(
+        rows,
+        headers=['Pressure', 'Metric', 'Mean ± std', '95% CI', 'Runs'],
+        tablefmt=tablefmt,
+    )
+
+
 def format_sla_tables(result: SLAResult, tablefmt: str = 'pipe') -> str:
     """Render decisions from the same exact counts stored in the SLA result."""
     probe_rows = [
@@ -705,7 +749,11 @@ def format_sla_tables(result: SLAResult, tablefmt: str = 'pipe') -> str:
         probe_rows, headers=['Pressure', 'Succeeded/Total', 'Run status', 'Groups', 'Reason'], tablefmt=tablefmt
     )
     selections = tabulate(selection_rows, headers=['Criteria', 'Selected', 'Status', 'Reason'], tablefmt=tablefmt)
-    return f'Probes:\n{probes}\n\nSelections:\n{selections}'
+    sections = [f'Probes:\n{probes}', f'Selections:\n{selections}']
+    statistics = format_run_statistics(result, tablefmt=tablefmt)
+    if statistics:
+        sections.append(f'Run statistics (per pressure level):\n{statistics}')
+    return '\n\n'.join(sections)
 
 
 def run_sla_auto_tune(args: Arguments, runner: Callable[[Arguments, Optional[str]], Dict[str, Any]]) -> SLAResult:

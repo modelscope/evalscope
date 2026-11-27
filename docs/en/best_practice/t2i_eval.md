@@ -6,7 +6,7 @@ To address these challenges, EvalScope offers a comprehensive solution from auto
 
 1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion, Flux and Qwen-Image, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html).
 
-2. **Intelligent Reporting and Visualization**: Utilizes large models to automatically generate multi-dimensional analysis reports, combined with interactive visualization tools like radar and bar charts, to intuitively display model performance differences across scenarios, aiding developers in quickly identifying model bottlenecks.
+2. **Evaluation Reports and Visualization**: Shows scores and basic analysis alongside interactive charts to help compare performance across scenarios.
 
 This document uses FLUX.1-dev, HiDream-I1-Dev and Qwen-Image models as evaluation subjects on the EvalMuse dataset, providing developers with a complete practice guide from environment setup to result interpretation, leveraging EvalScope's evaluation reporting and visualization features.
 
@@ -68,7 +68,6 @@ task_cfg = TaskConfig(
         'num_inference_steps': 28,  # For HiDream-Dev, recommended steps are 28
         'guidance_scale': 0.0,  # For HiDream-Dev, recommended is 0.0
     },
-    # Whether to generate an analysis report
     # Enable free basic analysis.
     analysis_report=True,
 )
@@ -151,8 +150,10 @@ evalscope service
 
 The report shows basic analysis, scores by dimension, and generated images.
 
+`analysis_report=True` enables free basic analysis. For model analysis, [configure an analysis model explicitly](../user_guides/diagnosis.md). Model analysis uses text and saved scores.
+
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_report.png)
-*Intelligent Report Analysis*
+*Evaluation report*
 
 ![image.png](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/t2i/t2i_overall_score.png)
 *Model Score Distribution*
@@ -181,4 +182,3 @@ The automated evaluation provided by the EvalScope framework objectively achieve
 5.  Han, S. _et al._ EvalMuse-40K: A Reliable and Fine-Grained Benchmark with Comprehensive Human Annotations for Text-to-Image Generation Model Evaluation. Preprint at [https://doi.org/10.48550/arXiv.2412.18150](https://doi.org/10.48550/arXiv.2412.18150)(2024).
     
 6.  Wu, C. _et al._ Qwen-Image Technical Report. Preprint at [https://doi.org/10.48550/arXiv.2508.02324](https://doi.org/10.48550/arXiv.2508.02324)(2025).
-`analysis_report=True` now generates free basic analysis. To request model analysis, [configure an analysis model explicitly](../user_guides/diagnosis.md). Model analysis uses text and saved scores; it does not interpret generated images.
