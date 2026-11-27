@@ -148,6 +148,47 @@ def test_step_is_turn_index_not_span_depth():
     assert trace.step_count == 2, 'step_count must count turns, not nesting depth'
 
 
+def test_tool_span_sibling_of_chats_inherits_the_turn_in_progress():
+    """A tool span under the agent root (sibling of the chats) is not turn 0."""
+    payload = _export(
+        _span('root', 'invoke_agent', start=0, end=10_000_000, attributes=[{'key': 'gen_ai.operation.name', 'value': _str('invoke_agent')}]),
+        _chat_span(
+            'c1',
+            parent='root',
+            start=1,
+            end=2_000_000,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q1')]}),
+                'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a1')]}),
+            },
+        ),
+        _chat_span(
+            'c2',
+            parent='root',
+            start=3,
+            end=4_000_000,
+            **{'gen_ai.output.messages': _messages_attr({'role': 'assistant', 'parts': [_text_part('a2')]})},
+        ),
+        _span(
+            't2',
+            'execute_tool',
+            parent='root',
+            start=5,
+            end=6_000_000,
+            attributes=[
+                {'key': 'gen_ai.operation.name', 'value': _str('execute_tool')},
+                {'key': 'gen_ai.tool.call.id', 'value': _str('call_2')},
+                {'key': 'gen_ai.tool.call.result', 'value': _str('r')},
+            ],
+        ),
+    )
+
+    trace, _ = import_otlp_trace(payload)
+    steps = {e.type: e.step for e in trace.events if e.type in (EventType.TOOL_CALL, EventType.TOOL_RESULT)}
+
+    assert steps == {EventType.TOOL_CALL: 1, EventType.TOOL_RESULT: 1}
+
+
 def test_tool_span_inherits_its_turn_and_dedups_against_messages():
     payload = _export(
         _chat_span(
@@ -873,6 +914,32 @@ def test_assistant_entry_with_text_and_tool_call_is_one_message():
     assert isinstance(assistant, ChatMessageAssistant)
     assert assistant.text == 'Let me search'
     assert assistant.tool_calls and assistant.tool_calls[0].id == 'call_1'
+
+
+def test_tool_call_without_arguments_defaults_to_an_empty_dict():
+    """A no-argument tool call omits ``arguments``; it must not crash the import."""
+    payload = _export(
+        _chat_span(
+            'c1',
+            start=1,
+            end=2,
+            **{
+                'gen_ai.input.messages': _messages_attr({'role': 'user', 'parts': [_text_part('q')]}),
+                'gen_ai.output.messages': _messages_attr(
+                    {
+                        'role': 'assistant',
+                        'parts': [{'type': 'tool_call', 'id': 'call_1', 'name': 'get_time'}],
+                    }
+                ),
+            },
+        )
+    )
+
+    _, messages = import_otlp_trace(payload)
+
+    assistant = messages[1]
+    assert isinstance(assistant, ChatMessageAssistant)
+    assert assistant.tool_calls and assistant.tool_calls[0].function.arguments == {}
 
 
 def test_intermediate_text_with_tool_call_is_not_treated_as_missing_answer(tmp_path):

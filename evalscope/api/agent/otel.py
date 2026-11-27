@@ -242,19 +242,7 @@ def _part_to_message(role: str, part: Dict[str, Any], model: Optional[str]) -> O
             return ChatMessageTool(content=content, tool_call_id=part.get('id'))
         return ChatMessageAssistant(content=content, model=model)
     if part_type == 'tool_call':
-        arguments = part.get('arguments')
-        if not isinstance(arguments, (dict, str)):
-            arguments = _json_dumps(arguments)
-        return ChatMessageAssistant(
-            content='',
-            model=model,
-            tool_calls=[
-                ToolCall(
-                    id=str(part.get('id') or ''),
-                    function=ToolFunction(name=str(part.get('name') or ''), arguments=arguments),
-                )
-            ],
-        )
+        return ChatMessageAssistant(content='', model=model, tool_calls=[_tool_call_from_part(part)])
     if part_type == 'tool_call_response':
         # The GenAI semconv part carries the result under ``response``; accept
         # the older ``content`` spelling as a fallback.
@@ -326,7 +314,13 @@ def _messages_from_attr(value: Any, model: Optional[str]) -> List[ChatMessage]:
 def _tool_call_from_part(part: Dict[str, Any]) -> ToolCall:
     """Build a ``ToolCall`` from one ``parts[]`` entry."""
     arguments = part.get('arguments')
-    if not isinstance(arguments, (dict, str)):
+    if arguments is None:
+        # A no-argument tool call (``get_time()``) omits ``arguments``. The
+        # part is valid; ``ToolFunction`` requires a dict, so default to an
+        # empty one rather than ``json.dumps(None) == 'null'`` (which would
+        # raise on parse).
+        arguments = {}
+    elif not isinstance(arguments, (dict, str)):
         arguments = _json_dumps(arguments)
     return ToolCall(
         id=str(part.get('id') or ''),
@@ -483,12 +477,8 @@ def _chat_steps(ordered: List[Dict[str, Any]]) -> Dict[str, int]:
     agent-level spans use 0.
     """
     by_id = {_span_id(span): span for span in ordered}
-    step_of: Dict[str, int] = {}
-    turn = 0
-    for span in ordered:
-        if _span_attributes(span).get(_OP_NAME) in (_OP_CHAT, _OP_TEXT_COMPLETION):
-            step_of[_span_id(span)] = turn
-            turn += 1
+    chats = [span for span in ordered if _span_attributes(span).get(_OP_NAME) in (_OP_CHAT, _OP_TEXT_COMPLETION)]
+    step_of: Dict[str, int] = {_span_id(span): turn for turn, span in enumerate(chats)}
 
     def resolve(span: Dict[str, Any]) -> int:
         span_id = _span_id(span)
@@ -499,12 +489,21 @@ def _chat_steps(ordered: List[Dict[str, Any]]) -> Dict[str, int]:
         while True:
             parent = by_id.get(current.get('parentSpanId') or '')
             if parent is None or _span_id(parent) in seen:
-                return 0
+                break
             parent_id = _span_id(parent)
             if parent_id in step_of:
                 return step_of[parent_id]
             seen.add(parent_id)
             current = parent
+        # No chat ancestor: a tool span emitted as a sibling of the chat spans
+        # belongs to the turn in progress when it started (the latest chat span
+        # at or before its start time). Without timestamps it stays turn 0.
+        start = _start_ns(span)
+        if start:
+            preceding = [turn for turn, chat in enumerate(chats) if _start_ns(chat) <= start]
+            if preceding:
+                return preceding[-1]
+        return 0
 
     return {_span_id(span): resolve(span) for span in ordered}
 
