@@ -307,6 +307,31 @@ def test_modelscope_cached_snapshot_keeps_repository_metadata(
     assert metadata.read_text(encoding='utf-8') == '{}'
 
 
+def test_modelscope_snapshot_with_legacy_features_without_dtype_uses_sdk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot = tmp_path / 'snapshot'
+    _write_snapshot(snapshot)
+    metadata = snapshot / 'dataset_infos.json'
+    legacy_info = json.dumps({'default': {'features': {'text': {'_type': 'Value'}}}})
+    metadata.write_text(legacy_info, encoding='utf-8')
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        assert kwargs['dataset_name'] == 'owner/data'
+        assert kwargs['split'] == 'test'
+        return HFDataset.from_dict({'text': ['sdk-test']})
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+
+    dataset = load_dataset_from_hub('owner/data', split='test')
+
+    assert dataset['text'] == ['sdk-test']
+    assert metadata.read_text(encoding='utf-8') == legacy_info
+
+
 def test_huggingface_load_does_not_probe_modelscope_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     import datasets
 
