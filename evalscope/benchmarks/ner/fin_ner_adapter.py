@@ -33,7 +33,7 @@ The FinNER dataset is a corpus of financial agreements from public U.S. Security
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='fin_ner',
         pretty_name='FinNER',
         dataset_id='extraordinarylab/fin-ner',

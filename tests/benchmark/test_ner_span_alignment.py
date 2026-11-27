@@ -102,6 +102,24 @@ def test_nested_markup_keeps_existing_alignment_fallback() -> None:
     assert xml_to_bio_tags(prediction, ['John', 'works'], REVERSE_MAP) == ['O', 'O']
 
 
+@pytest.mark.parametrize(
+    ('prediction', 'tokens', 'tags'),
+    [
+        ('<person> Alice </person> won', ['Alice', 'won'], ['B-PER', 'O']),
+        ('<person>\nJohn Smith\n</person> won', ['John', 'Smith', 'won'], ['B-PER', 'I-PER', 'O']),
+        ('John met <person> John </person>', ['John', 'met', 'John'], ['O', 'O', 'B-PER']),
+        ('<person> Alice </person>', ['Alice', 'won'], ['B-PER', 'O']),
+        ('AliceX <person> Alice </person>', ['AliceX', 'Alice', 'won'], ['O', 'B-PER', 'O']),
+        ('<person> Alice </person>', ['AliceX', 'Alice'], ['O', 'B-PER']),
+        ('<person> Ann </person>', ['Ann', 'met', 'Ann'], ['O', 'O', 'O']),
+        ('<person> Ann </person> left', ['Ann', 'met', 'Ann', 'left'], ['O', 'O', 'B-PER', 'O']),
+        ('<person> Ali </person>', ['Alice', 'won'], ['O', 'O']),
+    ],
+)
+def test_whitespace_padded_annotation_is_aligned(prediction: str, tokens: List[str], tags: List[str]) -> None:
+    assert xml_to_bio_tags(clean_prediction(f'<response>{prediction}</response>'), tokens, REVERSE_MAP) == tags
+
+
 @pytest.mark.parametrize('benchmark', NER_BENCHMARKS)
 def test_ner_benchmark_scores_preserve_entity_boundaries(benchmark: str) -> None:
     pytest.importorskip('seqeval')
@@ -116,7 +134,7 @@ def test_ner_benchmark_scores_preserve_entity_boundaries(benchmark: str) -> None
     score = adapter.match_score(sample.target, sample.target, state.target, state)
 
     # CrossNER moved on to v1.2 when it started scoring each subset with its own labels.
-    assert adapter.benchmark_meta.evaluation_version == ('v1.2' if benchmark == 'cross_ner' else 'v1.1')
+    assert adapter.benchmark_meta.evaluation_version == ('v1.3' if benchmark == 'cross_ner' else 'v1.2')
     assert score.metadata['y_pred'] == tags
     assert score.value == {'precision': 1.0, 'recall': 1.0, 'f1': 1.0, 'accuracy': 1.0}
 
@@ -136,14 +154,14 @@ def test_ner_reviews_require_rescoring_after_span_alignment_changes(
         dataset_args={'conll2003': {'local_path': str(data), 'few_shot_num': 0, 'subset_list': ['default']}},
     )
     metadata = get_benchmark('conll2003').benchmark_meta
-    assert metadata.evaluation_version == 'v1.1'
+    assert metadata.evaluation_version == 'v1.2'
     metadata = BENCHMARK_REGISTRY['conll2003']
     monkeypatch.setattr(MockLLM, 'default_output', create_target_text(tokens, tags, ENTITY_MAP))
-    monkeypatch.setattr(metadata, 'evaluation_version', 'v1.0')
+    monkeypatch.setattr(metadata, 'evaluation_version', 'v1.1')
     run_task(TaskConfig(**config))
     prediction_path = work / 'predictions/offline/conll2003_default.jsonl'
     previous_predictions = prediction_path.read_bytes()
-    monkeypatch.setattr(metadata, 'evaluation_version', 'v1.1')
+    monkeypatch.setattr(metadata, 'evaluation_version', 'v1.2')
     with pytest.raises(ValueError, match='rerun_review=True'):
         run_task(TaskConfig(**config, use_cache=str(work)))
     monkeypatch.setattr(MockLLM, 'generate', lambda *args, **kwargs: pytest.fail('Must reuse saved predictions'))
