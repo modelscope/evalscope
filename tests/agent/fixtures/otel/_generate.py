@@ -213,7 +213,8 @@ def _record_capital_run(tracer: trace.Tracer) -> None:
             chat.set_attribute('gen_ai.output.messages', [_assistant('The capital of France is Paris.')])
 
 
-def _record(name: str, recorder) -> None:
+def build_payload(recorder) -> Dict[str, Any]:
+    """Run one recorder through a real ``TracerProvider`` and return the export."""
     exporter = _OtlpJsonExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
@@ -221,17 +222,28 @@ def _record(name: str, recorder) -> None:
     recorder(tracer)
     provider.shutdown()
     payload = exporter.envelope()
-    assert payload is not None, f'no spans captured for {name}'
+    assert payload is not None, 'no spans captured'
+    return payload
+
+
+def _record(name: str, recorder) -> None:
+    payload = build_payload(recorder)
     path = os.path.join(HERE, name)
     with open(path, 'w', encoding='utf-8') as handle:
-        json.dump(payload, handle, indent=2, ensure_ascii=False)
+        # Compact (single line): trace/span ids and timestamps are random per
+        # run, so a pretty-printed diff is noise. The structure-drift test
+        # compares span names / attribute keys, not these ids.
+        json.dump(payload, handle, separators=(',', ':'), ensure_ascii=False)
         handle.write('\n')
     print(f'wrote {path}')
 
 
+RUNS = {'0.otlp.json': _record_weather_run, '1.otlp.json': _record_capital_run}
+
+
 def main() -> None:
-    _record('0.otlp.json', _record_weather_run)
-    _record('1.otlp.json', _record_capital_run)
+    for name, recorder in RUNS.items():
+        _record(name, recorder)
 
 
 if __name__ == '__main__':
