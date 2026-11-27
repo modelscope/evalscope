@@ -37,6 +37,10 @@ const KNOWN_HOST_PAIRS: ReadonlyArray<readonly [string, string]> = [
 ]
 
 it.each([
+  ['anthropic', 'Anthropic Messages'],
+  ['openai_responses', 'OpenAI Responses'],
+  ['openai_response', 'OpenAI Responses'],
+  ['responses', 'OpenAI Responses'],
   ['systemone', 'System One'],
   ['autotrust', 'AutoTrust /decide'],
 ])('labels %s independently of the service provider', (apiType, protocol) => {
