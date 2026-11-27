@@ -238,7 +238,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
     def _count_input_tokens(self, request_str: str) -> int:
         request = json.loads(request_str)
         input_value = request.get('input', '')
-        return self._count_input_value(input_value)
+        return self._count_input_value(request.get('instructions')) + self._count_input_value(input_value)
 
     def _count_input_value(self, value: Any) -> int:
         if isinstance(value, str):
@@ -247,6 +247,8 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             return sum(self._count_input_value(item) for item in value)
         if not isinstance(value, dict):
             return 0
+        if value.get('type') == 'function_call_output':
+            return self._count_input_value(value.get('output'))
         if isinstance(value.get('content'), str):
             return self._count_input_value(value['content'])
         if isinstance(value.get('content'), list):
