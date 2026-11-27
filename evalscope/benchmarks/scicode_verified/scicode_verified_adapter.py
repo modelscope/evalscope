@@ -1,12 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# flake8: noqa: E501
 
 import base64
 import hashlib
 import re
 import shutil
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Dict, List, Optional
+
+from filelock import FileLock
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import DatasetHub, Sample
@@ -16,7 +18,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec
-from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, Tags
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
 from evalscope.utils.logger import get_logger
 
 from ..scicode.prompt_templates import INITIAL_PROMPT
@@ -34,6 +36,8 @@ SCICODE_EVAL_DATA = HERE.parent.parent / 'third_party' / 'scicode' / 'eval_data'
 GOLD_DIR = SCICODE_EVAL_DATA
 OFFICIAL_DIR = SCICODE_EVAL_DATA
 SCICODE_DOCKER_DIR = HERE.parent / 'scicode' / 'docker'
+MODELSCOPE_DATASET_REVISION = '2412b3af319498b46f1a880b07affb6ca5c52d66'
+HF_DATASET_REVISION = '752eb6b786b0e0d0a3b44cdb7c066c559b952658'
 IMPORT_RE = re.compile(r'^\s*(import .*|from .*\s+import\s+.*)', flags=re.MULTILINE)
 ENV_LINE_RE = re.compile(r'^SCV_ENV (\S+) (PASS|FAIL) ([0-9.]+)s$', flags=re.MULTILINE)
 
@@ -95,34 +99,31 @@ sys.exit(1)
         description="""
 ## Overview
 
-SciCode-Verified is a human-verified correction of the SciCode test benchmark (arXiv 2608.04975). A domain-expert audit of the 65 SciCode test problems found 192 defects that reject correct solutions (non-reproducible or wrong gold answers, over-tight tolerances, under-specified or self-contradictory specifications), touching 155 of the 287 scored subproblems. SciCode-Verified fixes them, keeping the scientific task unchanged.
+SciCode-Verified evaluates scientific code generation using expert-corrected SciCode tasks and tests.
 
 ## Task Description
 
 - **Task Type**: Scientific Code Generation
 - **Input**: Multi-step scientific problem with subproblems
 - **Output**: Python code solving each subproblem
-- **Domains**: Physics, Math, Material Science, Biology, Chemistry
+- **Domain**: Physics, Mathematics, Materials Science, Biology, and Chemistry
 
-## Protocol (defaults reproduce the SciCode-Verified harness)
+## Key Features
 
-- 64 problems (problem 2 dropped: its specification admits no verifiable answer), corrected text and test targets (`test_data_cleaned.h5`), 287 scored subproblems.
-- `prompt_mode='official'` (default): one single-turn prompt per subproblem with the official SciCode templates (previous step descriptions + previously extracted code). `prompt_mode='multi_turn'`: evalscope's SciCode conversation (one chat, one turn per subproblem).
-- Steps 13.6, 62.1 and 76.3 are not generated nor scored: their reference code is used (official harness).
-- Extracted code: first ```python block, import lines removed (official harness); dependencies imported once.
-- `grading_envs='or'` (default): each step runs under Python 3.11 / numpy 1.26.4 / scipy 1.13.1 and, if it fails, Python 3.12 / numpy 2.4.2 / scipy 1.17.1; it passes if either passes. 1800 s per environment. `grading_envs='2024'` / `'2025'`: one environment only.
-- The dataset is loaded from the Hugging Face hub (`shhu2001/SciCode-Verified`) unless a local path is given; `problem_ids` restricts the run to some problems.
+- Version 2.2 has 64 problems and 287 scored steps. Three reference steps provide context for later steps.
+- The default prompt includes prior step descriptions and extracted code.
 
 ## Evaluation Notes
 
-- **Sandbox environment required** for code execution
-- Two metrics tracked:
-  - `main_problem_pass_rate`: Complete problem solved
-  - `subproblem_pass_rate`: Individual subproblem success rate (scored subproblems only)
-- The SciCode-Verified paper reports results with and without scientist background (`provide_background`) separately.
+- Requires Docker. Each step has up to 1,800 seconds per Python environment and passes if either environment succeeds.
+- Reports the fraction of solved steps and the fraction of problems with every scored step solved.
+- Report results with and without problem background separately to match the paper.
 """,
-        dataset_id='shhu2001/SciCode-Verified',
+        dataset_id='evalscope/SciCode-Verified',
+        dataset_revision=MODELSCOPE_DATASET_REVISION,
         hf_dataset_id='shhu2001/SciCode-Verified',
+        hf_dataset_revision=HF_DATASET_REVISION,
+        paper_url='https://arxiv.org/abs/2608.04975',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
         primary_metric='main_problem_pass_rate',
         eval_split='test',
@@ -160,9 +161,8 @@ SciCode-Verified is a human-verified correction of the SciCode test benchmark (a
 class SciCodeVerifiedAdapter(SciCodeAdapter):
     """SciCode on the SciCode-Verified data, reproducing the SciCode-Verified harness by default."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.docker_path = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / 'scicode_verified' / 'docker'
         self.problem_ids = {str(p) for p in (self.extra_params.get('problem_ids') or [])}
         self.prompt_mode = self.extra_params.get('prompt_mode', 'official')
         if self.prompt_mode not in ('official', 'multi_turn'):
@@ -172,18 +172,8 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         if not self.grading_envs:
             raise ValueError(f"grading_envs must be 'or', '2024' or '2025', got {mode!r}")
         template = 'multistep_template.txt' if self.provide_background else 'background_comment_template.txt'
-        self.official_template = (OFFICIAL_DIR / template).read_text()
+        self.official_template = (OFFICIAL_DIR / template).read_text(encoding='utf-8')
         self.dataset_info: Dict[str, Any] = {}
-
-    @property
-    def dataset_hub(self) -> str:
-        """SciCode-Verified is only published on the Hugging Face hub: use it unless a local path is configured."""
-        hub = super().dataset_hub
-        return hub if hub == HubType.LOCAL else HubType.HUGGINGFACE
-
-    @dataset_hub.setter
-    def dataset_hub(self, value: str):
-        self._task_config.dataset_hub = value
 
     @staticmethod
     def _md5(path: Path) -> str:
@@ -208,38 +198,42 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
     def sample_filter(self, sample: Sample) -> bool:
         return not self.problem_ids or str(sample.metadata['problem_id']) in self.problem_ids
 
-    def load(self):
-        """Assemble the sandbox build context: grading helpers, the two-environment Dockerfile, the cleaned data."""
-        self.docker_path.mkdir(parents=True, exist_ok=True)
-        # the image tag hashes the whole context: drop files the current recipe does not write
-        for stale in self.docker_path.iterdir():
-            if stale.name not in ('Dockerfile', 'process_data.py', 'test_util.py', 'test_data.h5'):
-                stale.unlink()
-        for name in ('process_data.py', 'test_util.py'):
-            shutil.copyfile(SCICODE_DOCKER_DIR / name, self.docker_path / name)
-        (self.docker_path / 'Dockerfile').write_text(DOCKERFILE)
-        hub = DatasetHub(
-            data_id_or_path=self.dataset_id,
-            data_source=self.dataset_hub,
-            revision=self.dataset_revision,
-            force_redownload=self.force_redownload,
-            cache_dir=self.dataset_dir,
-        )
+    def _prepare_grading_data(self, hub: DatasetHub) -> None:
+        """Prepare the corrected targets and both grading environments."""
         source_path = hub.download_file('test_data_cleaned.h5')
-        target = self.docker_path / 'test_data.h5'
         src = Path(source_path).resolve()
-        if not target.exists() or target.stat().st_size != src.stat().st_size:
-            shutil.copyfile(src, target)
+        h5_md5 = self._md5(src)
+        self._prepare_sandbox_context(src, h5_md5)
         jsonl_path = hub.download_file('data/problems_test.jsonl')
         self.dataset_info = {
             'dataset_id': self.dataset_id,
-            'revision': self._hub_revision(source_path),
+            'revision': self.dataset_revision or self._hub_revision(source_path),
             'problems_test_jsonl_md5': self._md5(Path(jsonl_path).resolve()),
-            'test_data_cleaned_h5_md5': self._md5(src),
+            'test_data_cleaned_h5_md5': h5_md5,
         }
         logger.info(f'SciCode-Verified dataset: {self.dataset_info}')
-        # Skip SciCodeAdapter.load (it downloads the original test_data.h5).
-        return super(SciCodeAdapter, self).load()
+
+    def _prepare_sandbox_context(self, source: Path, h5_md5: str) -> None:
+        files = {name: (SCICODE_DOCKER_DIR / name).read_bytes() for name in ('process_data.py', 'test_util.py')}
+        files['Dockerfile'] = DOCKERFILE.encode()
+        context_id = hashlib.sha256(h5_md5.encode() + b''.join(files.values())).hexdigest()
+        self.docker_path = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / 'scicode_verified' / 'docker' / context_id
+        self.docker_path.parent.mkdir(parents=True, exist_ok=True)
+        with FileLock(f'{self.docker_path}.lock'):
+            self.docker_path.mkdir(exist_ok=True)
+            target = self.docker_path / 'test_data.h5'
+            if target.exists():
+                return
+            for name, content in files.items():
+                (self.docker_path / name).write_bytes(content)
+            with NamedTemporaryFile(dir=self.docker_path.parent, delete=False) as temp:
+                path = Path(temp.name)
+            try:
+                shutil.copyfile(source, path)
+                path.chmod(0o644)
+                path.replace(target)
+            finally:
+                path.unlink(missing_ok=True)
 
     # ------------------------------------------------------------------ #
     # Generation                                                           #
@@ -263,7 +257,7 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         return cls._strip_imports(response)
 
     def _gold_code(self, step_number: str) -> str:
-        return self._strip_imports((GOLD_DIR / f'{step_number}.txt').read_text())
+        return self._strip_imports((GOLD_DIR / f'{step_number}.txt').read_text(encoding='utf-8'))
 
     def _step_text(self, subproblem: Dict[str, Any]) -> str:
         text = subproblem['step_description_prompt']
@@ -382,7 +376,9 @@ class SciCodeVerifiedAdapter(SciCodeAdapter):
         )
         return score
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
         """Score only the generated subproblems (the skipped steps are excluded, as in the official harness)."""
         result: Dict[str, float] = {}
         meta: Dict[str, Any] = {}

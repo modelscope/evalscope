@@ -5,6 +5,7 @@ import base64
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.scicode_verified import scicode_verified_adapter as adapter_module
 from evalscope.benchmarks.scicode_verified.scicode_verified_adapter import OR_WRAPPER, SciCodeVerifiedAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
@@ -187,4 +189,25 @@ def test_problem_filter_and_hub() -> None:
     adapter = make_adapter(problem_ids=['12', 62])
     assert adapter.sample_filter(make_sample('62')) and not adapter.sample_filter(make_sample('5'))
     assert make_adapter().sample_filter(make_sample('5'))
-    assert adapter.dataset_hub == HubType.HUGGINGFACE  # SciCode-Verified is only published on the HF hub
+    assert adapter.dataset_hub == HubType.MODELSCOPE
+    assert adapter.dataset_id == 'evalscope/SciCode-Verified'
+    assert adapter.dataset_revision == '2412b3af319498b46f1a880b07affb6ca5c52d66'
+    adapter.dataset_hub = HubType.HUGGINGFACE
+    assert adapter.dataset_id == 'shhu2001/SciCode-Verified'
+    assert adapter.dataset_revision == '752eb6b786b0e0d0a3b44cdb7c066c559b952658'
+
+
+def test_sandbox_context_tracks_same_size_gold_revisions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(adapter_module, 'DEFAULT_EVALSCOPE_CACHE_DIR', str(tmp_path / 'cache'))
+    gold = tmp_path / 'test_data_cleaned.h5'
+    adapter = make_adapter()
+    gold.write_bytes(b'gold v1')
+    adapter._prepare_sandbox_context(gold, adapter._md5(gold))
+    first_context = adapter.docker_path
+
+    gold.write_bytes(b'gold v2')
+    adapter._prepare_sandbox_context(gold, adapter._md5(gold))
+
+    assert adapter.docker_path != first_context
+    assert (first_context / 'test_data.h5').read_bytes() == b'gold v1'
+    assert (adapter.docker_path / 'test_data.h5').read_bytes() == b'gold v2'
