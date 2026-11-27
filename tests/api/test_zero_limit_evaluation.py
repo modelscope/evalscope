@@ -40,7 +40,7 @@ def test_native_limit_controls_prediction_count(
     data_dir.mkdir()
     rows = [{'question': f'Question {index}', 'A': 'first', 'B': 'second', 'answer': 'B'} for index in range(4)]
     (data_dir / 'default_val.jsonl').write_text('\n'.join(json.dumps(row) for row in rows), encoding='utf-8')
-    monkeypatch.setattr(MockLLM, 'default_output', 'ANSWER: B')
+    monkeypatch.setattr(MockLLM, 'default_output', '答案：B')
     monkeypatch.setattr('evalscope.report.gen_html_report_file', lambda *args, **kwargs: '')
     original_generate = MockLLM.generate
     calls = []
