@@ -248,6 +248,27 @@ def test_generation_facts_do_not_claim_extraction_proves_a_correct_answer(make_r
     assert report.patterns[0].failure_type == 'extraction_failure'
 
 
+@pytest.mark.parametrize('empty_count', [0, 18])
+def test_extraction_rate_uses_only_visible_answers_with_extraction_evidence(make_run: Callable, empty_count: int) -> None:
+    rows = [review(0, output='No letter here.', prediction=''), review(1, prediction='B'), review(2)]
+    rows[2].sample_score.score.extracted_prediction = None
+    rows.extend(review(i + 3, output='  ', prediction='') for i in range(empty_count))
+    root = make_run(rows=rows)
+    report = diagnose_benchmark(str(root), 'm', 'demo', config())
+    facts = {fact.id: fact for fact in report.facts}
+    extraction = facts['F-extraction']
+    assert (extraction.numerator, extraction.denominator, extraction.value, extraction.severity) == (1, 2, 0.5, 'warn')
+    assert (facts['F-empty'].numerator, facts['F-empty'].denominator) == (empty_count, len(rows))
+
+
+def test_only_empty_outputs_have_no_extraction_rate(make_run: Callable) -> None:
+    root = make_run(rows=[review(0, output='', prediction='')])
+    report = diagnose_benchmark(str(root), 'm', 'demo', config())
+    assert 'F-extraction' in report.coverage.skipped_facts
+    assert all(fact.id != 'F-extraction' for fact in report.facts)
+    assert next(fact.value for fact in report.facts if fact.id == 'F-empty') == 1.0
+
+
 def test_html_supports_fresh_diagnosis_and_legacy_fallback(make_run: Callable) -> None:
     from evalscope.report.renderer import gen_html_report_file
 
