@@ -225,6 +225,7 @@
  "pope": "evalscope.benchmarks.pope.pope_adapter",
  "prbench": "evalscope.benchmarks.prbench.prbench_adapter",
  "process_bench": "evalscope.benchmarks.process_bench.process_bench_adapter",
+ "project_eval": "evalscope.benchmarks.project_eval.project_eval_adapter",
  "pubmedqa": "evalscope.benchmarks.pumed_qa.pubmed_qa_adapter",
  "qasc": "evalscope.benchmarks.qasc.qasc_adapter",
  "qwen_image_bench": "evalscope.benchmarks.qwen_image_bench.qwen_image_bench_adapter",

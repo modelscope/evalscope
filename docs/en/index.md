@@ -42,6 +42,7 @@ user_guides/sandbox.md
 user_guides/agent/index.md
 user_guides/diagnosis.md
 user_guides/service.md
+user_guides/project_eval.md
 :::
 
 :::{toctree}
