@@ -270,16 +270,22 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
         and not has_nontext_output(s.record)
         and any(m.role == 'assistant' for m in s.record.messages)
     ]
+    empty_outputs = []
+    extraction = []
+    for sample in generation:
+        if not any(m.role == 'assistant' and (m.text or '').strip() for m in sample.record.messages):
+            empty_outputs.append(sample)
+        elif sample.record.sample_score.score.extracted_prediction is not None:
+            extraction.append(sample)
     rate(
         'F-empty',
         'generation',
         ('生成输出为空', 'Empty generation'),
         ('仅检查非 Agent 样本的可见助手输出。', 'Visible assistant output of non-agent samples only.'),
-        [s for s in generation if not any(m.role == 'assistant' and (m.text or '').strip() for m in s.record.messages)],
+        empty_outputs,
         generation,
     )
     choice_task = inputs.is_multiple_choice
-    extraction = [s for s in generation if s.record.sample_score.score.extracted_prediction is not None]
     rate(
         'F-extraction',
         'generation',
@@ -291,11 +297,8 @@ def collect_facts(inputs: BenchmarkInput, config: AnalysisReportConfig, coverage
         [
             s
             for s in extraction
-            if any(m.role == 'assistant' and (m.text or '').strip() for m in s.record.messages)
-            and (
-                not s.record.sample_score.score.extracted_prediction.strip()
-                or (choice_task and not is_choice_letter(s.record.sample_score.score.extracted_prediction))
-            )
+            if not s.record.sample_score.score.extracted_prediction.strip()
+            or (choice_task and not is_choice_letter(s.record.sample_score.score.extracted_prediction))
         ],
         extraction,
     )

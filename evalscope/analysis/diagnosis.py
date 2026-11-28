@@ -37,7 +37,7 @@ from .inputs import is_choice_letter, load_inputs
 from .trace.export import _env_secrets, export_findings, redact, redact_data
 from .trace.reader import discover_runs, has_nontext_output, iter_report_pairs
 
-ANALYZER_VERSION = '3.4.7'
+ANALYZER_VERSION = '3.4.8'
 _INFORMATIONAL = {FindingCategory.SIDE_EFFECT, FindingCategory.TAINTED_SIDE_EFFECT}
 
 
