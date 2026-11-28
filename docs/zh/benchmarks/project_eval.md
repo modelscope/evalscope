@@ -21,7 +21,7 @@
 
 - 指标：task_pass、rubric_score、evidence_coverage；task_pass 为主指标。
 - 检查只读；带 must-pass outcome criterion 的任务，任意检查失败即失败。
-- 有检查时必须配置 `project_root`；远程状态 API 需要显式 `check_url_prefixes`。
+- 有本地检查（file、JSON、SQLite）时必须配置 `project_root`；只有远程 HTTP 检查时不需要。远程状态 API 需要显式 `check_url_prefixes`。
 - `trace.mode=inline` 要求内联 steps；全 process rubric 且无 trace 的样本不计入指标并标记 `needs_review`。
 
 ## 属性

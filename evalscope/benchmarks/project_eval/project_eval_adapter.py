@@ -64,6 +64,7 @@ class RubricVerdict(BaseModel):
 
 
 RUBRIC_CONTRACT = OutputContract(schema_model=RubricVerdict, allow_json_fences=True)
+_LOCAL_CHECK_TYPES = frozenset({'file_exists', 'file_content', 'json_path', 'sqlite'})
 
 
 def _trace_context(trace: AgentTrace | None) -> tuple[str, str]:
@@ -143,8 +144,8 @@ def _render_judge_prompt(
             '## Evaluation Notes\n'
             '- Metrics: task_pass, rubric_score and evidence_coverage; task_pass is primary.\n'
             '- Checks are read-only; any failed check fails a task that carries a must-pass outcome criterion.\n'
-            '- `project_root` is required when checks are present; remote state APIs need explicit '
-            '`check_url_prefixes`.\n'
+            '- `project_root` is required when local checks are present; remote HTTP checks do not '
+            'need it. Remote state APIs need explicit `check_url_prefixes`.\n'
             '- `trace.mode=inline` requires inline steps; all-process rubrics without trace are excluded '
             'from metrics and marked `needs_review`.\n'
         ),
@@ -271,9 +272,10 @@ class ProjectEvalAdapter(AgentAdapter):
         metadata = metadata or {}
         root = metadata.get(PROJECT_ROOT_KEY) or self._run_config().project_root
         if not root:
-            if task.checks:
+            has_local_checks = any(check.type in _LOCAL_CHECK_TYPES for check in task.checks)
+            if has_local_checks:
                 raise AgentProtocolError(
-                    'missing project_root: configure dataset_args.project_eval.project_root for read-only checks'
+                    'missing project_root: configure dataset_args.project_eval.project_root for local read-only checks'
                 )
             root = os.getcwd()
         return Path(root)

@@ -43,8 +43,9 @@ run_task(TaskConfig(
 ))
 ```
 
-`project_root` 是运行时状态目录，相对检查路径按它解析。任务带 checks 时它必填；
-缺失会直接报错，不再回退到当前工作目录。`check_url_prefixes` 默认为空，HTTP
+`project_root` 是运行时状态目录，相对检查路径按它解析。任务带本地 checks
+（file、JSON 或 SQLite）时它必填；缺失会直接报错，不再回退到当前工作目录。
+只有远程 HTTP checks 时不需要本地 root。`check_url_prefixes` 默认为空，HTTP
 检查只允许 loopback；业务状态 API 分开部署时再显式加入可信 http(s) 前缀
 （不能包含 user info、query 或 fragment）。
 

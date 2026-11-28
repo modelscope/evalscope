@@ -185,6 +185,23 @@ def test_missing_project_root_with_checks_is_rejected() -> None:
         adapter._on_inference(None, adapter.record_to_sample(row))
 
 
+def test_remote_only_checks_do_not_require_project_root() -> None:
+    adapter = ProjectEvalAdapter(benchmark_meta=META, task_config=None)
+    row = {
+        **ROW,
+        'checks': [{
+            'id': 'state-1',
+            'type': 'http_json',
+            'url': 'https://state.example/v1/state',
+            'json_path': 'ok',
+            'expect': True,
+        }],
+    }
+    sample = adapter.record_to_sample(row)
+    task = adapter._task_from_metadata(sample.metadata)
+    assert adapter._root_for(task, sample.metadata) == Path.cwd()
+
+
 def test_inline_trace_mode_requires_steps() -> None:
     turn = AgentTurn(reply='ok', steps=[], trace_available=False)
     adapter = adapter_with(turn)

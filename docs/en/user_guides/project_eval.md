@@ -46,8 +46,9 @@ run_task(TaskConfig(
 ```
 
 `project_root` is the runtime state directory; relative check paths resolve
-against it. It is required when a task has checks; a missing root fails the run
-instead of falling back to the current working directory. `check_url_prefixes`
+against it. It is required when a task has local checks (file, JSON or SQLite);
+a missing root fails the run instead of falling back to the current working
+directory. Remote-only HTTP checks do not need a local root. `check_url_prefixes`
 is empty by default, so HTTP checks are limited to loopback; add a trusted
 http(s) prefix (without user info, query or fragment) when the business state
 API is deployed separately.
