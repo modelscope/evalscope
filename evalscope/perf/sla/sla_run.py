@@ -372,6 +372,9 @@ class SLAAutoTuner:
 
         avg_result = average_results(run_results)
         averaged_metrics = avg_result.get('metrics', {})
+        # A run without a decode interval cannot contribute a zero to the probe's TPOT.
+        if any('avg_tpot' not in values for values in run_values):
+            averaged_metrics.pop(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, None)
         averaged_metrics.update(count_sums)
         averaged_metrics[Metrics.TOTAL_REQUESTS] = total_requests
         averaged_metrics[Metrics.SUCCEED_REQUESTS] = succeeded_requests
