@@ -15,7 +15,7 @@
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
 | `--debug` | `bool` | 是否输出调试信息 | `False` |
-| `--scenario` | `str` | 外部 workload 场景。`agentx` 运行 AIPerf AgentX MVP，也接受 AgentX JSON；见 [AgentX MVP](./agentx.md)。 | `None` |
+| `--scenario` | `str` | 外部 workload：`agentx`（原有 MVP）或 `agentx_harness`（完整语料）。也接受场景 JSON；见 [AgentX](./agentx.md)。 | `None` |
 
 使用 `--api anthropic` 时，`--url` 可填写服务根地址（例如 `https://api.anthropic.com`），也可填写完整的 `/v1/messages` 端点。EvalScope 通过 `x-api-key` 请求头发送 `--api-key`。对于要求使用服务端默认采样值的模型，请留空采样参数。
 

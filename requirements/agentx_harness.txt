@@ -1,0 +1,2 @@
+# AgentX Harness bundles aiperf; never install alongside the agentx extra.
+agentx-harness==1.0.13; python_version >= '3.11' and python_version < '3.14'

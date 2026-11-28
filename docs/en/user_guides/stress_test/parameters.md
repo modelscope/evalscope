@@ -15,7 +15,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |
 | `--debug` | `bool` | Whether to output debug information | `False` |
-| `--scenario` | `str` | External workload scenario. `agentx` runs AIPerf AgentX MVP; also accepts AgentX JSON. See [AgentX MVP](./agentx.md). | `None` |
+| `--scenario` | `str` | External workload: `agentx` (legacy MVP) or `agentx_harness` (full corpus). Also accepts scenario JSON. See [AgentX](./agentx.md). | `None` |
 
 With `--api anthropic`, pass the service base URL (for example, `https://api.anthropic.com`) or the full `/v1/messages` endpoint. EvalScope sends `--api-key` as the `x-api-key` header. Leave sampling options unset when the model requires provider defaults.
 

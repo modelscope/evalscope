@@ -69,3 +69,34 @@ jobs:
       - name: Run perf test
         run: |
           python -m pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s -p no:warnings
+
+  agentx-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: [agentx, agentx_harness]
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      HF_HUB_OFFLINE: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Each matrix job has its own environment: these extras share the aiperf namespace.
+      - name: Install selected AgentX runner
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev,${{ matrix.extra }}]'
+
+      - name: Run offline AgentX contracts and native smoke tests
+        run: |
+          python -m pytest tests/perf/test_agentx.py tests/perf/test_agentx_harness.py -v -s -p no:warnings
