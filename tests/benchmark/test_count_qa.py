@@ -6,6 +6,7 @@ silently corrupts the score instead of raising. These cases pin the parser and t
 import io
 from typing import Any, Dict, List
 
+import pytest
 from PIL import Image
 
 from evalscope.api.registry import get_benchmark
@@ -117,6 +118,26 @@ def test_zero_ground_truth_stays_exact() -> None:
     """A ground truth of 0 has no relative tolerance to spend."""
     assert _score('0', '0') == {'acc': 1.0, 'relaxed_acc': 1.0}
     assert _score('1', '0') == {'acc': 0.0, 'relaxed_acc': 0.0}
+
+
+@pytest.mark.parametrize(('reply', 'reference'), [
+    ('-7', '7'),
+    ('I counted −7 boxes.', '7'),
+    ('**7.9**', '7'),
+    ('0.5', '0'),
+    ('.5', '5'),
+    ('7e-1', '7'),
+    ('7.e-1', '7'),
+    ('I counted 7.9 initially, then 7.', '7'),
+])
+def test_invalid_first_count_cannot_become_a_matching_integer(reply: str, reference: str) -> None:
+    assert _score(reply, reference) == {'acc': 0.0, 'relaxed_acc': 0.0}
+
+
+def test_integer_valued_first_count_preserves_integer_scoring() -> None:
+    assert parse_count('I counted +12.00 boxes, then 15.') == 12
+    assert _score('**0.0**', '0') == {'acc': 1.0, 'relaxed_acc': 1.0}
+    assert _score('105.', '100') == {'acc': 0.0, 'relaxed_acc': 1.0}
 
 
 def test_record_expands_into_one_sample_per_question() -> None:

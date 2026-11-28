@@ -1,5 +1,6 @@
 # flake8: noqa: E501
 import re
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -64,35 +65,28 @@ SYSTEM_PROMPT = (
 # Tolerance of the paper's Relaxed Accuracy metric.
 RELAXED_TOLERANCE = 0.05
 
-_INTEGER_PATTERN = re.compile(r'\d+')
+_NUMBER_PATTERN = re.compile(r'[+\-−]?(?:\d+(?:\.\d*)?|\.\d+)(?P<exponent>[eE][+\-−]?\d+)?')
 
 
 def parse_count(prediction: str) -> Optional[int]:
     """Parse the predicted count from a model reply.
 
-    The system prompt asks for a bare integer, so a compliant reply is used directly after
-    stripping the punctuation and markdown emphasis models add around it. For a verbose reply the
-    first integer is taken, which is the rule the paper states for its rewriter LLM. Note the limit
-    of that rule: in a reply that counts out loud (``'Row 1 has 3, row 2 has 4. Total: 7'``) the
-    first integer is a row label, not the answer. ``None`` means the reply contains no digit at all,
-    which scores 0 rather than being replaced by a guess.
-
-    Args:
-        prediction (str): Raw model reply.
-
-    Returns:
-        Optional[int]: The predicted count, or ``None`` if the reply contains no digit.
+    Accept a first integer or fixed-point value that represents a nonnegative whole count.
+    A missing or invalid first value yields no count, even if a later integer is present.
     """
-    cleaned = prediction.strip().strip('*`_"\'.,:; \n')
-    if _INTEGER_PATTERN.fullmatch(cleaned):
-        return int(cleaned)
-    match = _INTEGER_PATTERN.search(prediction)
-    return int(match.group()) if match else None
+    match = _NUMBER_PATTERN.search(prediction)
+    if match is None or match.group('exponent'):
+        return None
+    value = Decimal(match.group().replace('−', '-'))
+    if value < 0 or value != value.to_integral_value():
+        return None
+    return int(value)
 
 
 @register_benchmark(
     BenchmarkMeta(
         name='count_qa',
+        evaluation_version='v1.1',
         pretty_name='CountQA',
         dataset_id='evalscope/CountQA',
         hf_dataset_id='Jayant-Sravan/CountQA',
