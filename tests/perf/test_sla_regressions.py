@@ -105,12 +105,25 @@ def test_streamed_avg_tpot_sla(
     assert _tune({1: run}, criteria).selections[0].selected_value == selected
 
 
-def test_repeated_tpot_probe_requires_a_measurement_in_every_run() -> None:
-    runs = iter([_streamed_run([(2, 0.0)]), _streamed_run([(1, 0.0)])])
+@pytest.mark.parametrize('missing_first', [False, True])
+def test_repeated_tpot_probe_requires_a_measurement_in_every_run(missing_first: bool) -> None:
+    measured, missing = _streamed_run([(2, 0.0)]), _streamed_run([(1, 0.0)])
+    runs = iter([missing, measured] if missing_first else [measured, missing])
     criteria = [{'avg_tpot': '<=1ms'}]
     result = _tune({1: lambda: next(runs)}, criteria, runs=2)
     assert result.selections[0].selected_value is None
     assert not check_sla(next(iter(result.values())), parse_sla_params(criteria))
+
+
+def test_repeated_probe_preserves_other_optional_metric_averages() -> None:
+    measured, missing = _streamed_run([(2, 0.0)]), _streamed_run([(1, 0.0)])
+    measured['metrics'][Metrics.AVERAGE_PD_HANDOFF_LATENCY] = 20.0
+    runs = iter([measured, missing])
+    result = _tune({1: lambda: next(runs)}, [{'avg_latency': '<=1s'}], runs=2)
+    assert result.selections[0].selected_value == 1
+    metrics = result['parallel_1']['metrics']
+    assert Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN not in metrics
+    assert metrics[Metrics.AVERAGE_PD_HANDOFF_LATENCY] == 10.0
 
 
 def test_one_missing_run_fails_the_pressure_point_and_keeps_exact_counts() -> None:

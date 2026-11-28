@@ -48,6 +48,7 @@ _SUCCESS_COLUMN = ('success_rate', 'Success Rate', 'success_rate')
 # Optional generation metrics a run reports only when measured: summary attribute
 # -> the (avg, p99) column keys it owns.
 _OPTIONAL_SUMMARY_COLUMNS = {
+    'avg_tpot': ('avg_tpot', 'p99_tpot'),
     'avg_pd_handoff_latency': ('avg_pd_handoff_latency', 'p99_pd_handoff_latency'),
     'avg_pd_handoff_overhead': ('avg_pd_handoff_overhead', 'p99_pd_handoff_overhead'),
     'avg_steady_itl': ('avg_steady_itl', 'p99_steady_itl'),

@@ -105,8 +105,10 @@ def _make_db(sub_dir: str, *, n_success: int, n_failed: int) -> None:
         conn.close()
 
 
-# Avg and p99 columns of the optional generation metrics (PD handoff, steady ITL).
+# Avg and p99 columns of the optional generation metrics.
 _OPTIONAL_KEYS = (
+    'avg_tpot',
+    'p99_tpot',
     'avg_pd_handoff_latency',
     'p99_pd_handoff_latency',
     'avg_pd_handoff_overhead',
@@ -273,22 +275,43 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(values['avg_pd_handoff_latency'], 30.0)
         self.assertNotIn(None, list(values.values()))
 
-    def test_detail_prunes_pd_column_when_partially_measured(self):
-        # Mixed sweep: one run measured PD handoff, another did not. The column is
-        # dropped for the whole table so no row leaks a None the float contract rejects.
+    def test_detail_prunes_tpot_and_pd_columns_when_partially_measured(self):
+        # Only one run measured PD handoff and TPOT, so omit both groups from the table.
         mixed_rel = os.path.join('20260104_120000', 'mixed-model')
         mixed_dir = os.path.join(self.tmp, mixed_rel)
-        _make_run(mixed_dir, with_html=False, with_pd=True, sub_name='parallel_1_number_2')
+        _make_run(
+            mixed_dir,
+            with_html=False,
+            with_pd=True,
+            sub_name='parallel_1_number_2',
+            summary_values={'Avg TPOT (ms)': 30.0},
+        )
         _make_run(mixed_dir, with_html=False, with_pd=False, sub_name='parallel_2_number_4')
         res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': mixed_rel})
         self.assertEqual(res.status_code, 200)
         body = res.get_json()
         column_keys = {column['key'] for column in body['summary_columns']}
         self.assertNotIn('avg_pd_handoff_latency', column_keys)
+        self.assertEqual(len(body['summary_rows']), 2)
         for row in body['summary_rows']:
             self.assertEqual(set(row['values']), column_keys)
             self.assertNotIn(None, list(row['values'].values()))
         self._assert_optional_columns_pruned(body)
+
+    def test_detail_keeps_measured_zero_tpot_in_a_sweep(self) -> None:
+        run_dir = os.path.join(self.tmp, self.svc_rel)
+        for parallel, avg, p99 in [(1, 0.0, 0.0), (2, 10.0, 15.0)]:
+            name = f'parallel_{parallel}_number_2'
+            _make_run(run_dir, with_html=False, sub_name=name, summary_values={'Avg TPOT (ms)': avg})
+            _write_json(os.path.join(run_dir, name, 'benchmark_percentile.json'), [
+                {'Percentiles': '99%', 'TPOT (ms)': p99},
+            ])
+        response = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': self.svc_rel})
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertTrue({'avg_tpot', 'p99_tpot'} <= {col['key'] for col in body['summary_columns']})
+        rows = [row['values'] for row in body['summary_rows']]
+        self.assertEqual(sorted((row['avg_tpot'], row['p99_tpot']) for row in rows), [(0.0, 0.0), (10.0, 15.0)])
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})
