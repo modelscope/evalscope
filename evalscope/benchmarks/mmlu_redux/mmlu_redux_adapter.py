@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
@@ -72,10 +73,34 @@ SUBJECT_MAPPING = {
 SUBSET_LIST = list(SUBJECT_MAPPING.keys())
 
 
+def _corrected_targets(annotation: str, choices: list[str], *, multiple: bool) -> list[str]:
+    labels = 'ABCD'[: len(choices)]
+    parts = [annotation]
+    if multiple and annotation not in choices:
+        if annotation.startswith('(') and annotation.endswith(')'):
+            annotation = annotation[1:-1].strip()
+        # Whitespace alone also separates option indices in the published annotations.
+        parts = re.split(r'\s*,\s*|\s+(?:and|or)\s+', annotation)
+        if all(re.fullmatch(r'[0-3A-D](?:\s+[0-3A-D])*', part) for part in parts):
+            parts = [label for part in parts for label in part.split()]
+
+    targets = []
+    for part in parts:
+        if len(part) == 1 and part in labels:
+            targets.append(part)
+        elif len(part) == 1 and part in '0123'[: len(labels)]:
+            targets.append(labels[int(part)])
+        elif part and part in choices:
+            targets.append(labels[choices.index(part)])
+        else:
+            return []
+    return targets
+
+
 @register_benchmark(
     BenchmarkMeta(
         name='mmlu_redux',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         pretty_name='MMLU-Redux',
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""
@@ -126,36 +151,27 @@ class MMLUReduxAdapter(MultiChoiceAdapter):
             self.few_shot_num = 0
             logger.warning('Few-shot examples are not supported for MMLU-Redux dataset. Setting few_shot_num to 0.')
 
-    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample | list[Sample]:
         error_type = record['error_type']
         choices = record['choices']
-        target_index_list = [int(record['answer'])]
-        correct_answer = record['correct_answer']
-        if error_type == 'no_correct_answer' and correct_answer:
-            choices[target_index_list[0]] = correct_answer
-        elif error_type == 'wrong_groundtruth' and correct_answer:
-            try:
-                target_index_list = [int(correct_answer)]
-            except ValueError:
-                choice_index = ord(correct_answer) - ord('A')
-                target_index_list = [choice_index]
-        elif error_type == 'multiple_correct_answers' and correct_answer:
-            correct_answer = correct_answer.strip('()')
-            try:
-                correct_answer = correct_answer.replace(' and ', ',').replace(' or ', ',')
-                # Annotators separate the indices with commas or spaces ('1, 3', '0 1 3').
-                target_index_list = list(map(int, correct_answer.replace(',', ' ').split()))
-            except ValueError:
-                try:
-                    target_index_list = [ord(c) - ord('A') for c in correct_answer.split(',')]
-                except TypeError:
-                    # find the index of the correct answer in choices
-                    target_index_list = [choices.index(c) for c in correct_answer.split(',') if c in choices]
+        original = int(record['answer'])
+        target = ['ABCD'[original]]
+        correct_answer = record.get('correct_answer')
+        annotation = str(correct_answer).strip() if correct_answer is not None else ''
+        if error_type == 'no_correct_answer':
+            if not annotation:
+                return []
+            choices = list(choices)
+            choices[original] = annotation
+        elif error_type in ('wrong_groundtruth', 'multiple_correct_answers'):
+            target = _corrected_targets(annotation, choices, multiple=error_type == 'multiple_correct_answers')
+            if not target:
+                return []
 
         return Sample(
             input=record['question'],
             choices=choices,
-            target=['ABCD'[i] for i in target_index_list] if target_index_list else ['A', 'B', 'C', 'D'],
+            target=target,
             metadata={
                 'error_type': error_type,
                 'correct_answer': correct_answer,
