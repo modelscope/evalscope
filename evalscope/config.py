@@ -267,8 +267,8 @@ class TaskConfig(BaseArgument):
     eval_type: Optional[str] = None
     """Evaluation backend type. One of: 'llm_ckpt' (local checkpoint), 'openai_api',
     'openai_responses_api', 'anthropic_api', 'litellm', 'mock_llm', 'text2image', 'text2speech',
-    'image_editing', 'custom'. Deprecated aliases normalized on input: 'checkpoint' -> 'llm_ckpt',
-    'server' -> 'openai_api'."""
+    'speech2text', 'image_editing', 'custom'. Deprecated aliases normalized on input:
+    'checkpoint' -> 'llm_ckpt', 'server' -> 'openai_api'."""
 
     eval_backend: str = EvalBackend.NATIVE
     """Backend framework to use for evaluation."""
@@ -538,7 +538,10 @@ class TaskConfig(BaseArgument):
 
     def _init_default_eval_batch_size(self) -> None:
         """Remote APIs serve requests concurrently, so raise the default there."""
-        if 'eval_batch_size' not in self.model_fields_set and self.eval_type in REMOTE_API_EVAL_TYPES:
+        is_remote_api = self.eval_type in REMOTE_API_EVAL_TYPES or (
+            self.eval_type == EvalType.SPEECH2TEXT and self.api_url is not None
+        )
+        if 'eval_batch_size' not in self.model_fields_set and is_remote_api:
             self.eval_batch_size = DEFAULT_API_EVAL_BATCH_SIZE
 
     def _parse_rag_eval_config(self) -> None:

@@ -121,3 +121,10 @@ def text2speech() -> type[ModelAPI]:
     from .text2speech_model import Text2SpeechAPI
 
     return Text2SpeechAPI
+
+
+@register_model_api(name='speech2text')
+def speech2text() -> type[ModelAPI]:
+    from .speech2text_model import Speech2TextAPI
+
+    return Speech2TextAPI
