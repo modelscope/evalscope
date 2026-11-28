@@ -155,6 +155,8 @@ class AnthropicMessagesPlugin(ApiPluginBase):
         }
         if param.max_tokens is not None:
             options['max_tokens'] = _sample_int_or_range(param.max_tokens)
+        if param.min_tokens is not None:
+            options['min_tokens'] = param.min_tokens
         overrides = {key: value for key, value in options.items() if value is not None}
         if preserve_existing:
             return {**(param.extra_args or {}), 'max_tokens': 4096, **overrides, **payload}

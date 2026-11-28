@@ -49,6 +49,37 @@ def test_request_conversion_url_and_authentication() -> None:
     }
 
 
+def test_min_tokens_is_forwarded_to_the_request_body() -> None:
+    args = Arguments(
+        model='qwen3.8-flash',
+        api='anthropic',
+        url='https://dashscope.aliyuncs.com/apps/anthropic',
+        api_key='fake-key',
+        max_tokens=1024,
+        min_tokens=512,
+        stream=True,
+    )
+    plugin = ApiRegistry.get_class('anthropic')(args)
+
+    body = plugin.build_request([{'role': 'user', 'content': 'Hello'}])
+
+    assert body['min_tokens'] == 512
+    assert body['max_tokens'] == 1024
+
+
+def test_complete_body_min_tokens_takes_precedence() -> None:
+    args = Arguments(model='cli-model', api='anthropic', min_tokens=512)
+    plugin = AnthropicMessagesPlugin(args)
+
+    body = plugin.build_request({'messages': [{'role': 'user', 'content': 'hello'}], 'min_tokens': 64})
+
+    assert body['min_tokens'] == 64
+
+    body = plugin.build_request({'messages': [{'role': 'user', 'content': 'hello'}]})
+
+    assert body['min_tokens'] == 512
+
+
 @pytest.mark.parametrize(
     ('api', 'options', 'expected'),
     [
